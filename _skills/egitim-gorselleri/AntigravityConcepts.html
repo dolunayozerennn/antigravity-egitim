@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity: Temel Kavramlar</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #07090E;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #FFFFFF;
+            --text-muted: #94A3B8;
+
+            --accent-1: #3B82F6;
+            /* Blue */
+            --accent-2: #8B5CF6;
+            /* Purple */
+            --accent-3: #F59E0B;
+            /* Amber */
+            --accent-4: #10B981;
+            /* Emerald */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Abstract Background Glows */
+        .bg-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            z-index: -1;
+            animation: float 10s infinite alternate ease-in-out;
+            pointer-events: none;
+        }
+
+        .glow-1 {
+            background: var(--accent-1);
+            top: -100px;
+            left: -100px;
+        }
+
+        .glow-2 {
+            background: var(--accent-2);
+            bottom: -100px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            padding: 3rem 2rem;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: fadeDown 1s ease-out forwards;
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        .header-chip {
+            display: inline-block;
+            padding: 0.5rem 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #ffffff, #a5b4fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 2rem;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            opacity: 0;
+            transform: translateY(30px);
+            cursor: pointer;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent-color);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4),
+                0 0 40px rgba(var(--accent-rgb), 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        /* Specific Card Placements */
+        .card-agent {
+            grid-column: span 12;
+            --accent-color: var(--accent-1);
+            --accent-rgb: 59, 130, 246;
+            animation: fadeUp 0.8s ease-out 0.2s forwards;
+            text-align: center;
+        }
+
+        .card-knowledge {
+            grid-column: span 4;
+            --accent-color: var(--accent-2);
+            --accent-rgb: 139, 92, 246;
+            animation: fadeUp 0.8s ease-out 0.4s forwards;
+        }
+
+        .card-skills {
+            grid-column: span 4;
+            --accent-color: var(--accent-3);
+            --accent-rgb: 245, 158, 11;
+            animation: fadeUp 0.8s ease-out 0.5s forwards;
+        }
+
+        .card-projects {
+            grid-column: span 4;
+            --accent-color: var(--accent-4);
+            --accent-rgb: 16, 185, 129;
+            animation: fadeUp 0.8s ease-out 0.6s forwards;
+        }
+
+        /* Icon Container */
+        .icon-wrapper {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: rgba(var(--accent-rgb), 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: var(--accent-color);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(var(--accent-rgb), 0.2);
+        }
+
+        .card-agent .icon-wrapper {
+            margin: 0 auto 1.5rem auto;
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+        }
+
+        .card:hover .icon-wrapper {
+            transform: scale(1.1) rotate(5deg);
+            background: rgba(var(--accent-rgb), 0.2);
+            box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.4);
+        }
+
+        .icon-wrapper svg {
+            width: 32px;
+            height: 32px;
+            stroke-width: 1.5;
+        }
+
+        .card-agent .icon-wrapper svg {
+            width: 40px;
+            height: 40px;
+        }
+
+        /* Typography inside cards */
+        .card h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: white;
+            transition: color 0.3s ease;
+        }
+
+        .card-agent h2 {
+            font-size: 2rem;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .card-agent p {
+            font-size: 1.125rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Connecting Lines (Desktop only) */
+        .connections {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            display: none;
+            /* Can be enabled for complex SVG connections if needed */
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+
+            100% {
+                transform: translateY(-50px) scale(1.1);
+            }
+        }
+
+        @keyframes fadeDown {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+
+            .card-knowledge,
+            .card-skills,
+            .card-projects {
+                grid-column: span 12;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .grid {
+                gap: 1.5rem;
+            }
+
+            .card {
+                padding: 2rem;
+            }
+        }
+
+        /* Subtle glowing dots background */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: -2;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+    <div class="bg-pattern"></div>
+
+    <div class="container">
+
+        <div class="header">
+            <div class="header-chip">Antigravity Temelleri</div>
+            <h1>Yeni Dijital Çalışanınız</h1>
+            <p>Sistemin nasıl çalıştığını teknik terimlere boğulmadan, günlük ofis mantığıyla anlayalım.</p>
+        </div>
+
+        <div class="grid">
+
+            <!-- 1. Asistan (Agent) -->
+            <div class="card card-agent">
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 8V4H8"></path>
+                        <rect x="4" y="8" width="16" height="12" rx="2"></rect>
+                        <path d="M2 14h2"></path>
+                        <path d="M20 14h2"></path>
+                        <path d="M15 13v2"></path>
+                        <path d="M9 13v2"></path>
+                    </svg>
+                </div>
+                <h2>Asistan (Agent)</h2>
+                <p>Senin yerine işleri yapan dijital personelindir. Antigravity'nin ta kendisidir. Tıpkı işe yeni
+                    aldığın zeki ve çalışkan bir ofis asistanı gibi, ona verdiğin görevleri kusursuz bir şekilde yerine
+                    getirmek için çalışır.</p>
+            </div>
+
+            <!-- 2. Hafızası (Knowledge) -->
+            <div class="card card-knowledge">
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                    </svg>
+                </div>
+                <h2>Hafızası<br>(Knowledge)</h2>
+                <p>Çalışanın seni, işini ve şirket kurallarını tanımasını sağlayan temel bilgilerdir. İşe yeni başlayan
+                    personele verilen <strong>"Biz Kimiz, Nasıl Konuşuruz?"</strong> el kitapçığının dijital halidir.
+                </p>
+            </div>
+
+            <!-- 3. Yetenekleri (Skills) -->
+            <div class="card card-skills">
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                </div>
+                <h2>Yetenekleri<br>(Skills)</h2>
+                <p>Çalışanının bir işi yapabilme kapasitesidir. Ona bir yeteneği (örn: internetten araştırma yapmak,
+                    video düzenlemek) bir defa öğretirsin ve o andan itibaren bu yeteneği her işinde ustaca
+                    kullanabilir.</p>
+            </div>
+
+            <!-- 4. İşleri (Projects) -->
+            <div class="card card-projects">
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
+                <h2>İşleri<br>(Projects)</h2>
+                <p>Çalışanın belli bir hedefe ulaşmak için ürettiği, sonucu olan iş veya görev dosyalarıdır. Bir
+                    müşteriye sunulacak spesifik bir taslak dosyası veya "Aylık Rapor Klasörü" gibidir.</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Interactive script to add a subtle 3D tilt effect on mousemove -->
+    <script>
+        const cards = document.querySelectorAll('.card');
+
+        cards.forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const rotateX = ((y - centerY) / centerY) * -5;
+                const rotateY = ((x - centerX) / centerX) * 5;
+
+                card.style.transform = `perspective(1000px) translateY(-10px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) translateY(0) rotateX(0deg) rotateY(0deg)`;
+            });
+        });
+    </script>
+</body>
+
+</html>

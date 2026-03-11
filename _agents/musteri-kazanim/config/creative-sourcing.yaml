@@ -1,0 +1,95 @@
+# ═══════════════════════════════════════════════════
+# 🎨 CREATIVE SOURCING — İtalyan UGC Creator Bulma
+# ═══════════════════════════════════════════════════
+# Kaynak: Projeler/Creative_Sourcing_Italy/ + Projeler/Swc_Insta_Scrape/
+# Amaç: İtalya'daki UGC creator'ları bulup, iş birliği için ulaşmak
+# Referans: _agents/musteri-kazanim/AGENT.md
+# ═══════════════════════════════════════════════════
+
+# --- 🏷️ KAMPANYA BİLGİLERİ ---
+kampanya_adi: "creative-sourcing-italy-2026"
+aciklama: "İtalya merkezli UGC creator'ları bulma ve Sweatcoin için iş birliği teklifi gönderme"
+hedef_tip: "ugc_creator"
+durum: "draft"
+
+# --- 🎯 HEDEF KİTLE (ICP) ---
+icp:
+  platform: ["instagram", "tiktok"]
+  bolge: "Italy"
+  dil: ["IT", "EN"]           # İtalyanca ve/veya İngilizce içerik üretenler
+
+  # UGC Creator parametreleri
+  minimum_takipci: 1000       # UGC creator'lar için düşük eşik
+  maksimum_takipci: 500000    # Mikro-influencer ve nano-influencer odaklı
+  min_icerik_sayisi: 50
+  nis:
+    - "ugc"
+    - "product_review"
+    - "unboxing"
+    - "lifestyle"
+    - "fitness"
+    - "wellness"
+    - "tech"
+  icerik_turu:
+    - "ugc"
+    - "product_review"
+    - "unboxing"
+    - "sponsored_content"
+
+# --- 🔍 ARAMA KRİTERLERİ ---
+arama:
+  anahtar_kelimeler:
+    - "ugc creator italy"
+    - "ugc italia"
+    - "content creator italiano"
+    - "product review italy"
+    - "unboxing italia"
+  hashtag_listesi:
+    - "#ugcitaly"
+    - "#ugcitalia"
+    - "#ugccreator"
+    - "#contentcreator"
+    - "#italianugc"
+  rakip_hesaplar: []
+  max_lead_sayisi: 200        # Daha geniş havuz — UGC creator'lar çok
+
+# --- 📧 OUTREACH AYARLARI ---
+outreach:
+  gonderen_email: ""          # ← Gönderici Gmail adresi
+  sablon_dili: "EN"           # İngilizce iletişim (İtalyanlar da İngilizce kabul eder)
+  sablon_dosyasi: "templates/email-en.md"
+  dry_run: true
+
+  gonderici_adi: ""           # ← Gönderici kişi adı
+  ekstra_bilgi: "Sweatcoin UGC campaign — paid collaboration"
+
+  deger_onerisi: |
+    We are looking for creative UGC creators in Italy for a paid collaboration
+    with Sweatcoin, the health & fitness app with 100M+ downloads worldwide.
+  cta: "Would you be open to discussing a paid UGC collaboration? Reply to this email and I'll share the brief."
+
+# --- ⏱️ SEQUENCE AYARLARI ---
+sequence:
+  profil: "ugc"
+  toplam_adim: 2              # UGC creator'lar için kısa sequence yeterli
+  bekleme_suresi_acilmadi: 5
+  bekleme_suresi_cevaplanmadi: 4
+  gunluk_gonderim_limiti: 40
+  gonderim_araligi: 5
+  gonderim_saatleri: "09:00-18:00"
+  gonderim_gunleri: ["Pzt", "Sal", "Car", "Per", "Cum"]
+  saat_dilimi: "UTC+1"        # İtalya saat dilimi
+
+# --- 📁 DOSYA YOLLARI ---
+dosyalar:
+  ham_cikti: "data/creative-sourcing-italy-2026_raw.json"
+  zenginlestirilmis: "data/creative-sourcing-italy-2026_enriched.json"
+  mesajlar: "data/creative-sourcing-italy-2026_messages.json"
+  log: "data/creative-sourcing-italy-2026_log.csv"
+  takip: "data/creative-sourcing-italy-2026_takip.csv"
+
+# --- 📋 NOTLAR ---
+# Bu config şu projelerden türetilmiştir:
+#   - Projeler/Creative_Sourcing_Italy/ → İtalyan UGC creator bulma scriptleri
+#   - Projeler/Swc_Insta_Scrape/       → Apify scraper + email finder mantığı
+# Orijinal scriptler çoklu versiyonlar içerir, bu config birleşik yapıyı temsil eder.

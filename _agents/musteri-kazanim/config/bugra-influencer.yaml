@@ -1,0 +1,103 @@
+# ═══════════════════════════════════════════════════
+# 🎬 BUĞRA — Etkinlik Influencer Outreach Kampanyası
+# ═══════════════════════════════════════════════════
+# Kaynak: Projeler/Bugra_Influencer_Kampanya/config.py → YAML'a dönüştürüldü
+# Referans: _agents/musteri-kazanim/AGENT.md
+# ═══════════════════════════════════════════════════
+
+# --- 🏷️ KAMPANYA BİLGİLERİ ---
+kampanya_adi: "bugra-etkinlik-influencer-2026"
+aciklama: "Türkiye'deki etkinlik/festival/konser alanında influencer'ları bulup, iş birliği teklifi gönderme"
+hedef_tip: "influencer"
+durum: "draft"
+
+# --- 🎯 HEDEF KİTLE (ICP) ---
+icp:
+  platform: ["instagram", "tiktok"]
+  bolge: "Türkiye"
+  dil: ["TR"]
+
+  # Influencer profili
+  minimum_takipci: 10000
+  maksimum_takipci: 5000000
+  nis: []                     # Buğra dolduracak: ["lifestyle", "müzik", "eğlence", "etkinlik"]
+  icerik_dili: ["TR"]
+
+# --- 🔍 ARAMA KRİTERLERİ ---
+arama:
+  # Instagram arama
+  anahtar_kelimeler:
+    # Buğra dolduracak — örnekler:
+    # - "etkinlik istanbul"
+    # - "konser istanbul"
+    # - "festival türkiye"
+    # - "lifestyle türkiye"
+    # - "influencer iş birliği"
+    []
+
+  hashtag_listesi:
+    # Buğra dolduracak — örnekler:
+    # - "#istanbuletkinlik"
+    # - "#konseristanbul"
+    # - "#festivalturkiye"
+    []
+
+  # TikTok arama kelimeleri (ayrı liste)
+  tiktok_anahtar_kelimeler:
+    # Buğra dolduracak — örnekler:
+    # - "istanbul etkinlik"
+    # - "türkiye festival"
+    # - "eğlence içerik"
+    []
+
+  rakip_hesaplar: []
+  max_lead_sayisi: 100
+
+# --- 📧 OUTREACH AYARLARI ---
+outreach:
+  gonderen_email: ""          # ← Buğra'nın Gmail adresi
+  sablon_dili: "TR"
+  sablon_dosyasi: "templates/email-tr.md"
+  deger_onerisi: ""           # ← Etkinlik hakkında değer önerisi
+  cta: "Detayları konuşmak için kısa bir görüşme ayarlayabilir miyiz?"
+  dry_run: true
+
+  # Kişiselleştirme bilgileri
+  gonderici_adi: ""           # ← Buğra'nın adı
+  ekstra_bilgi: ""            # ← Etkinlik adı (ör: "İstanbul Yaz Müzik Festivali")
+
+# --- ⏱️ SEQUENCE AYARLARI ---
+sequence:
+  profil: "influencer"
+  toplam_adim: 3
+  bekleme_suresi_acilmadi: 5
+  bekleme_suresi_cevaplanmadi: 3
+  gunluk_gonderim_limiti: 50
+  gonderim_araligi: 5
+  gonderim_saatleri: "09:00-17:00"
+  gonderim_gunleri: ["Pzt", "Sal", "Car", "Per", "Cum"]
+  saat_dilimi: "UTC+3"
+
+# --- 📁 DOSYA YOLLARI ---
+dosyalar:
+  ham_cikti: "data/bugra-etkinlik-influencer-2026_raw.json"
+  zenginlestirilmis: "data/bugra-etkinlik-influencer-2026_enriched.json"
+  mesajlar: "data/bugra-etkinlik-influencer-2026_messages.json"
+  log: "data/bugra-etkinlik-influencer-2026_log.csv"
+  takip: "data/bugra-etkinlik-influencer-2026_takip.csv"
+
+# --- 🔑 API KAYNAKLARI ---
+# API anahtarları bu dosyaya YAZILMAZ!
+# Gerekli tokenlar:
+#   APIFY_TOKEN       → _knowledge/api-anahtarlari.md veya env: APIFY_TOKEN
+#   HUNTER_API_KEY    → _knowledge/api-anahtarlari.md veya env: HUNTER_API_KEY
+#   APOLLO_API_KEY    → _knowledge/api-anahtarlari.md veya env: APOLLO_API_KEY
+#   Gmail credentials → credentials.json + token.json (OAuth2)
+
+# --- 📋 NOTLAR ---
+# Bu config, Projeler/Bugra_Influencer_Kampanya/config.py'deki parametre yapısından türetilmiştir.
+# Orijinal proje 4 adımlı pipeline kullanır:
+#   1_influencer_bul.py → Lead bulma (Instagram + TikTok Apify scraping)
+#   2_email_topla.py    → Email toplama (Bio → Instagram buton → Hunter → Apollo waterfall)
+#   3_outreach_gonder.py → Gmail API ile outreach gönderim
+#   4_takip_guncelle.py  → CSV bazlı takip ve yanıt yönetimi

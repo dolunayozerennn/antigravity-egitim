@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Sunucusu (Model Context Protocol) Nedir?</title>
+
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- FontAwesome for standard icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #050a14;
+            --container-bg: rgba(15, 23, 42, 0.6);
+            --card-bg: rgba(30, 41, 59, 0.5);
+
+            --neon-blue: #00f0ff;
+            --neon-purple: #8a2be2;
+            --neon-green: #00ff66;
+            --neon-yellow: #ffdf00;
+            --glass-border: rgba(255, 255, 255, 0.1);
+
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(138, 43, 226, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08) 0%, transparent 50%);
+            overflow-x: hidden;
+        }
+
+        /* Ambient glowing orbs */
+        .ambient-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: floatOrb 10s infinite alternate ease-in-out;
+        }
+
+        .orb-1 {
+            width: 300px;
+            height: 300px;
+            background: rgba(0, 240, 255, 0.2);
+            top: 10%;
+            left: 20%;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: rgba(138, 43, 226, 0.2);
+            bottom: 10%;
+            right: 10%;
+            animation-delay: -5s;
+        }
+
+        @keyframes floatOrb {
+            0% {
+                transform: translateY(0) scale(1);
+            }
+
+            100% {
+                transform: translateY(-30px) scale(1.1);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #fff, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Metafor Konteyneri */
+        .metaphor-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 60px;
+            flex-wrap: wrap;
+        }
+
+        /* Cam Efektli Kartlar */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            flex: 1;
+            min-width: 300px;
+            max-width: 380px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Spesifik Kart Stilleri */
+        .card-brain {
+            border-top: 2px solid var(--neon-purple);
+        }
+
+        .card-brain:hover {
+            box-shadow: 0 20px 50px rgba(138, 43, 226, 0.2);
+        }
+
+        .card-mcp {
+            border-top: 2px solid var(--neon-green);
+            transform: scale(1.05);
+            /* Make it slightly more prominent */
+            z-index: 10;
+        }
+
+        .card-mcp:hover {
+            transform: scale(1.08) translateY(-5px);
+            box-shadow: 0 20px 50px rgba(0, 255, 102, 0.2);
+        }
+
+        .card-world {
+            border-top: 2px solid var(--neon-blue);
+        }
+
+        .card-world:hover {
+            box-shadow: 0 20px 50px rgba(0, 240, 255, 0.2);
+        }
+
+        /* Konnektör Çizgileri */
+        .connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: var(--neon-green);
+            animation: pulse 2s infinite;
+        }
+
+        .connector i {
+            font-size: 2rem;
+            filter: drop-shadow(0 0 10px var(--neon-green));
+        }
+
+        .data-flow {
+            width: 100px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            position: relative;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .data-flow::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 50%;
+            background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+            animation: flowRight 1.5s infinite linear;
+        }
+
+        .connector.left .data-flow::after {
+            background: linear-gradient(90deg, transparent, var(--neon-purple), transparent);
+        }
+
+        .connector.right .data-flow::after {
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+        }
+
+        @keyframes flowRight {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(200%);
+            }
+        }
+
+        /* Resimler ve İkonlar */
+        .card-icon-wrapper {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 25px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-icon-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.5));
+            transition: transform 0.5s ease;
+        }
+
+        .glass-card:hover .card-icon-wrapper img {
+            transform: scale(1.1) translateY(-5px) rotate(3deg);
+        }
+
+        .mcp-glow {
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, var(--neon-green) 0%, transparent 70%);
+            opacity: 0.3;
+            filter: blur(20px);
+            z-index: -1;
+            animation: pulseGlow 3s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% {
+                opacity: 0.2;
+                transform: scale(0.9);
+            }
+
+            100% {
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+        }
+
+        /* Kart İçerikleri */
+        .glass-card h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: white;
+        }
+
+        .glass-card p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .badge-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: auto;
+        }
+
+        .badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        .badge.purple {
+            color: #d8b4fe;
+            border-color: rgba(216, 180, 254, 0.3);
+            background: rgba(216, 180, 254, 0.05);
+        }
+
+        .badge.green {
+            color: #86efac;
+            border-color: rgba(134, 239, 172, 0.3);
+            background: rgba(134, 239, 172, 0.05);
+        }
+
+        .badge.blue {
+            color: #93c5fd;
+            border-color: rgba(147, 197, 253, 0.3);
+            background: rgba(147, 197, 253, 0.05);
+        }
+
+        /* Örnekler Bölümü */
+        .examples-section {
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 40px;
+            background: var(--container-bg);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 1s ease-out 0.3s backwards;
+        }
+
+        .examples-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .examples-header h3 {
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .example-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .example-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .example-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .ex-github .example-icon {
+            color: white;
+            background: #333;
+        }
+
+        .ex-files .example-icon {
+            color: #ffca28;
+            background: rgba(255, 202, 40, 0.1);
+        }
+
+        .ex-db .example-icon {
+            color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.1);
+        }
+
+        .example-content h4 {
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .example-content p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            .metaphor-container {
+                flex-direction: column;
+            }
+
+            .connector {
+                flex-direction: row;
+                margin: 10px 0;
+            }
+
+            .connector i {
+                transform: rotate(90deg);
+            }
+
+            .data-flow {
+                width: 4px;
+                height: 50px;
+            }
+
+            .data-flow::after {
+                width: 100%;
+                height: 50%;
+                animation: flowDown 1.5s infinite linear;
+            }
+
+            @keyframes flowDown {
+                0% {
+                    transform: translateY(-100%);
+                }
+
+                100% {
+                    transform: translateY(200%);
+                }
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+
+    <div class="header">
+        <h1>MCP Sunucusu Nedir?</h1>
+        <p>Yapay Zekanın dış dünyayla bağlantı kurmasını sağlayan Evrensel Prizler.</p>
+    </div>
+
+    <div class="metaphor-container">
+
+        <!-- Yapay Zeka (Beyin) -->
+        <div class="glass-card card-brain" style="animation: fadeInUp 0.8s ease-out;">
+            <div class="card-icon-wrapper">
+                <img src="assets/ai_brain_mcp.png" alt="Yapay Zeka Beyin">
+            </div>
+            <h2>1. Yapay Zeka (Beyin)</h2>
+            <p>Çok zekidir, konuşmayı anlar, plan yapar, kod yazar. Ancak <b>elleri ve gözleri yoktur</b>. Kendi başına
+                bilgisayarınızdaki bir dosyaya bakamaz veya internetten veri çekemez.</p>
+            <div class="badge-container">
+                <span class="badge purple"><i class="fas fa-brain"></i> Düşünme</span>
+                <span class="badge purple"><i class="fas fa-comment-dots"></i> Yorumlama</span>
+            </div>
+        </div>
+
+        <div class="connector left">
+            <div class="data-flow"></div>
+            <i class="fas fa-plug"></i>
+        </div>
+
+        <!-- MCP Sunucusu (Adaptör) -->
+        <div class="glass-card card-mcp" style="animation: fadeInUp 0.8s ease-out 0.1s;">
+            <div class="card-icon-wrapper">
+                <div class="mcp-glow"></div>
+                <img src="assets/universal_adapter_mcp.png" alt="MCP Adaptör">
+            </div>
+            <h2 style="color: var(--neon-green)">2. MCP Sunucusu</h2>
+            <p>Yapay zeka için boyut ve dil gözetmeksizin her şeye uyabilen <b>Evrensel Bir Priz (Universal Adapter)</b>
+                gibidir. Yapay zekanın eline gerekli "alet çantasını" verir ve dış dünyayla güvenli iletişim kurmasını
+                sağlar.</p>
+            <div class="badge-container">
+                <span class="badge green"><i class="fas fa-exchange-alt"></i> Çevirmen</span>
+                <span class="badge green"><i class="fas fa-shield-alt"></i> Güvenli Köprü</span>
+            </div>
+        </div>
+
+        <div class="connector right">
+            <i class="fas fa-wifi"></i>
+            <div class="data-flow"></div>
+        </div>
+
+        <!-- Dış Dünya -->
+        <div class="glass-card card-world" style="animation: fadeInUp 0.8s ease-out 0.2s;">
+            <div class="card-icon-wrapper"
+                style="font-size: 80px; color: #fff; text-shadow: 0 10px 30px rgba(0, 240, 255, 0.5);">
+                <i class="fas fa-globe"></i>
+            </div>
+            <h2>3. Dış Dünya (Araçlar)</h2>
+            <p>Bilgisayarınızdaki klasörler, GitHub deponuz, veri tabanlarınız, web siteleri veya API servisleri. Yapay
+                zekanın müdahale edeceği gerçek çalışma alanları.</p>
+            <div class="badge-container">
+                <span class="badge blue"><i class="fab fa-github"></i> Sistemler</span>
+                <span class="badge blue"><i class="fas fa-folder-open"></i> Dosyalar</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Örnekler -->
+    <div class="examples-section">
+        <div class="examples-header">
+            <h3>Gerçek Dünyadan Örnekler</h3>
+            <p style="color: var(--text-muted)">Antigravity asistanınızın kullandığı bazı araç kutuları</p>
+        </div>
+
+        <div class="examples-grid">
+            <div class="example-item ex-github">
+                <div class="example-icon"><i class="fab fa-github"></i></div>
+                <div class="example-content">
+                    <h4>GitHub MCP</h4>
+                    <p>Yapay zekanın sanki bir yazılımcıymış gibi kod okumasını, Commit atmasını ve Pull Request
+                        açmasını sağlar.</p>
+                </div>
+            </div>
+
+            <div class="example-item ex-files">
+                <div class="example-icon"><i class="fas fa-folder-tree"></i></div>
+                <div class="example-content">
+                    <h4>FileSystem (Dosya) MCP</h4>
+                    <p>Bilgisayarınızdaki "Masaüstü/Antigravity" içindeki dosyaları okuyup, onlara yeni kod yazmasına
+                        imkan tanır.</p>
+                </div>
+            </div>
+
+            <div class="example-item ex-db">
+                <div class="example-icon"><i class="fas fa-database"></i></div>
+                <div class="example-content">
+                    <h4>PostgreSQL MCP</h4>
+                    <p>Veritabanına bağlanıp, tabloları incelemesine ve size SQL sorguları çalıştırmasına olanak verir.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

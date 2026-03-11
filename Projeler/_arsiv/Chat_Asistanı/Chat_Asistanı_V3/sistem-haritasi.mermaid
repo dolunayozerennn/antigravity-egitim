@@ -1,0 +1,55 @@
+---
+title: Sosyal Medya Otomatik Yanıtlama Sistemi — Akış Haritası
+---
+
+flowchart TD
+
+    %% 1. MESAJI AL
+    A[Müşteri Mesaj Gönderir\nInstagram / WhatsApp / Messenger / TikTok] --> B[ManyChat]
+    B -->|POST webhook| C[Webhook Endpoint\nkullanici_id + platform + last_text_input]
+    C --> D{Webhook Secret\nDoğru mu?}
+    D -->|Hayır| D1[401 Döndür\nİsteği Reddet]
+    D -->|Evet| E{Mesaj Türü\nNedir?}
+
+    %% 2. MESAJI İŞLE
+    E -->|URL — Medya| F[Medya İndir\nHTTP GET]
+    E -->|Düz Metin| K[Metin Olarak Kaydet]
+
+    F --> G{Medya Türü\nTespit}
+    G -->|image/*| H[Görsel Analiz\nVision API\nGörselde ne olduğunu açıkla]
+    G -->|audio/* veya video/*| I[Ses Transkript\nWhisper API\nDil: Türkçe]
+
+    H --> J[Sonucu Metin Olarak Kaydet\nKullanıcı görsel iletti...]
+    I --> J
+
+    %% 3. CEVAP ÜRET
+    J --> L[AI Agent]
+    K --> L
+
+    L --> L1[Sistem Promptu Yükle\nsistem-promptu.md]
+    L1 --> L2[Bilgi Tabanı Yükle\nbilgi-tabani.md]
+    L2 --> L3[Konuşma Hafızası Ekle\nSon 10 mesaj — subscriber_id bazlı]
+    L3 --> L4[Yanıt Üret\nJSON: metin + link_url]
+
+    %% 4. YANITIT TEMİZLE
+    L4 --> M[Yanıt Temizleme\nBoşluk temizle — 2500 karakter kes\nURL normalize et]
+
+    %% 5. MANYCHAT'E GÖNDER
+    M --> N{link_url\nDolu mu?}
+
+    N -->|Boş — Sadece Metin| O1[setCustomField\nCevap metnini yaz]
+    O1 --> P1[sendFlow\nMetin flow tetikle]
+
+    N -->|Dolu — Metin + Link| O2[setCustomField\nCevap metnini yaz]
+    O2 --> O3[setCustomField\nLink URL yaz]
+    O3 --> P2[sendFlow\nLink flow tetikle]
+
+    P1 --> Q[ManyChat\nMesajı Müşteriye İletir]
+    P2 --> Q
+
+    %% STİL
+    style A fill:#e1f5fe,stroke:#0288d1
+    style B fill:#fff3e0,stroke:#f57c00
+    style L fill:#f3e5f5,stroke:#7b1fa2
+    style Q fill:#e8f5e9,stroke:#388e3c
+    style D1 fill:#ffebee,stroke:#c62828

@@ -1,0 +1,105 @@
+# ==========================================
+# 🔐 HASSAS DOSYALAR — ASLA COMMIT ETMEYİN
+# ==========================================
+
+# Environment ve API Key dosyaları
+.env
+.env.*
+!.env.example
+credentials.env
+*.env
+
+# OAuth Token dosyaları
+token.json
+credentials.json
+
+# API anahtarları içeren knowledge dosyası
+# NOT: Bu dosya lokal kalmalı, GitHub'a gitmemeli
+# Eğer yapı paylaşılacaksa templates/api-anahtarlari-sablon.md kullanılmalı
+_knowledge/api-anahtarlari.md
+
+# Merkezi credential deposu — TÜM tokenlar burada
+_knowledge/credentials/master.env
+_knowledge/credentials/oauth/
+_knowledge/credentials/google-service-account.json
+_knowledge/credentials/*.json
+
+# ==========================================
+# SİSTEM VE CACHE DOSYALARI
+# ==========================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# ==========================================
+# PROJE-SPESİFİK
+# ==========================================
+
+# Gemini brain (kişisel konuşma geçmişi)
+.gemini/
+
+# Output dosyaları (büyük medya dosyaları)
+*.mp4
+*.mov
+*.avi
+*.wav
+*.mp3
+
+# Log dosyaları
+*.log
+.railway-token
+railway-token.txt
+
+# Temp ve output klasörleri
+**/temp/
+**/output/*.mp4
+
+# Agent kampanya data dosyaları (lokal kalmalı)
+_agents/*/data/*.csv
+_agents/*/data/*.json
+
+# Proje-spesifik env dosyaları
+Projeler/**/.env
+Projeler/**/.env.*
+!Projeler/**/.env.example
+Paylasima_Hazir_Projeler/**/.env*
+!Paylasima_Hazir_Projeler/**/.env.example

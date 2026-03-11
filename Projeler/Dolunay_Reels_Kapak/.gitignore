@@ -1,0 +1,21 @@
+# Ortam ve credentials
+.env
+token.json
+credentials.json
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Outputs (kullanıcının kendi kişisel görselleri)
+outputs/
+ham-dolunay-fotolari/
+
+# macOS
+.DS_Store
+
+# Logs
+run.log
+*.log

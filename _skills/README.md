@@ -1,0 +1,50 @@
+# 🛠 Skills
+
+Bu klasör, Antigravity'ye öğretilen kalıcı yetenekleri (skill'leri) içerir.
+
+Her skill, kendi klasörü içinde bir `SKILL.md` dosyasıyla tanımlanır.
+Antigravity bir göreve başlamadan önce ilgili skill'i okuyarak nasıl davranacağını öğrenir.
+
+---
+
+## Mevcut Skill'ler ve Kullanan Agent'lar
+
+| # | Skill | Açıklama | Kullanan Agent(lar) |
+|---|-------|---------|---------------------|
+| 1 | `rakip-analiz` | Rakip analizi ve izleme | 🤖 `icerik-uretim` |
+| 2 | `folder-paylasim` | Klasör bazlı paylaşım | 🤖 `yayinla-paylas` |
+| 3 | `kie-ai-video-production` | Video, görsel ve ses üretimi | 🤖 `icerik-uretim` |
+| 4 | `lead-generation` | Potansiyel müşteri ve veri toplama (Apify) | 🤖 `musteri-kazanim` |
+| 5 | `eposta-gonderim` | Toplanan verilere e-posta gönderimi (Gmail) | 🤖 `musteri-kazanim` |
+| 6 | `canli-yayina-al` | GitHub + Railway ile 7/24 deployment | 🤖 `yayinla-paylas` |
+| 7 | `proje-gorsellestirici` | HTML tabanlı proje görselleştirme | 🤖 `yayinla-paylas` |
+| 8 | `proje-paylasimi` | Proje export ve paylaşıma hazırlama | 🤖 `yayinla-paylas` |
+| 9 | `sosyal-medya-paylasim` | Sosyal medya paylaşım otomasyonu | — (bağımsız) |
+| 10 | `egitim-gorselleri` | Web temelli görselleştirmeler | — (bağımsız) |
+| 11 | `website-olusturucu` | Web sitesi oluşturma | — (bağımsız) |
+| 12 | `sifre-yonetici` | Merkezi şifre/token yönetimi ve dağıtımı | Tüm agent'lar |
+
+---
+
+## Yeni Skill Nasıl Eklenir?
+
+1. `_skills/` altında yeni bir klasör aç (örn. `apify-analizi/`)
+2. İçine `SKILL.md` dosyası oluştur
+3. `SKILL.md` içine şu formatı kullan:
+
+```markdown
+---
+name: Skill Adı
+description: Bu skill ne zaman kullanılır?
+---
+
+## Açıklama
+...
+
+## Adımlar
+1. ...
+2. ...
+
+## Çıktı Formatı
+...
+```

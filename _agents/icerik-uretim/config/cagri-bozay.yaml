@@ -1,0 +1,139 @@
+# ═══════════════════════════════════════════════════════════════
+# 🎬 Çağrı Bozay — İçerik Üretim Agent Konfigürasyonu
+# ═══════════════════════════════════════════════════════════════
+# Agent: _agents/icerik-uretim/AGENT.md
+# Amaç: Çağrı Bozay markası için Dubai gayrimenkul içerik üretim
+#        pipeline'ının varsayılan ayarlarını tanımlar.
+# ═══════════════════════════════════════════════════════════════
+
+# ── Marka Profili ──────────────────────────────────────────────
+marka:
+  isim: "Çağrı Bozay"
+  unvan: "Dubai Yatırım Danışmanı"
+  platformlar:
+    instagram: "@cagri.bozay"
+    tiktok: "@cagri.bozay"
+    youtube: "Çağrı Bozay"
+  web_sitesi: null  # Varsa eklenecek
+
+# ── Dil ve Ton Kuralları ──────────────────────────────────────
+dil:
+  ana_dil: "Türkçe"
+  teknik_terimler: "İngilizce olduğu gibi bırakılır (mortgage, ROI, DLD Fee, off-plan)"
+  para_birimi:
+    birincil: "USD"
+    ikincil: "TRY"  # TL karşılığı parantez içinde verilir
+  kur_araci: "Projeler/Dubai_Emlak_İçerik_Yazarı/tools/currency.py"
+
+ton:
+  stil: "samimi-profesyonel"
+  aciklama: >
+    Samimi ama güvenilir. Sohbet havasında ama teknik detaylardan kaçmaz.
+    "Şimdi dikkatli dinle" gibi otoriter değil,
+    "İşte bu bilgiye sahip olan, yatırımda her zaman öne geçer" gibi değer sunan yaklaşım.
+  cumle_uzunlugu: "kisa"  # Video için yazılıyor — her cümle nefes alınabilir uzunlukta
+  hikaye_payoff: true  # Her scriptin sonunda izleyiciye somut bir değer/bilgi sunulmalı
+
+# ── Hedef Kitle ────────────────────────────────────────────────
+hedef_kitle:
+  tanim: "Türkiye'den Dubai'ye yatırım düşünen orta-üst gelir grubu"
+  yas_araligi: "30-55"
+  gelir_profili: "orta-üst"
+  ilgi_alanlari:
+    - "Gayrimenkul yatırımı"
+    - "Pasif gelir"
+    - "Yurt dışı yatırım"
+    - "Dubai yaşam"
+  agri_noktalari:
+    - "Türkiye'deki enflasyondan korunma"
+    - "Doların değer artışından faydalanma"
+    - "Güvenli liman arayışı"
+
+# ── İçerik Kategorileri ───────────────────────────────────────
+icerik_turleri:
+  bolge_analizi:
+    aciklama: "Dubai bölgelerinin artı/eksi dengeli analizi"
+    format: "Hook → Script → Tablo (✅/❌) → CTA"
+    referans: "Projeler/Dubai_Emlak_İçerik_Yazarı/reference-scripts/bölgeler_scriptleri.md"
+    workflow: "_agents/icerik-uretim/workflows/script-yaz.md"
+
+  gayrimenkul_yatirimi:
+    aciklama: "Genel yatırım bilgisi ve tavsiyeleri"
+    format: "Soru-Cevap veya sohbet formatında akıcı metin"
+    referans: "Projeler/Dubai_Emlak_İçerik_Yazarı/reference-scripts/gayrimenkul_yatirimi_scriptleri.md"
+    workflow: "_agents/icerik-uretim/workflows/script-yaz.md"
+
+  yatirim_hesaplama:
+    aciklama: "Rakamlarla desteklenmiş somut yatırım senaryoları"
+    format: "Hook → Hesaplama → Tablo → Net Sonuç → CTA"
+    referans: "Projeler/Dubai_Emlak_İçerik_Yazarı/reference-scripts/yatirim_hesaplama_scriptleri.md"
+    workflow: "_agents/icerik-uretim/workflows/hesaplama-scripti.md"
+
+  ilham_uyarlama:
+    aciklama: "Rakip videolardan ilham alarak orijinal script üretimi"
+    format: "Kaynak analiz + farklılaştırılmış yeni script"
+    workflow: "_agents/icerik-uretim/workflows/ilham-al.md"
+
+# ── Hesaplama Metrikleri ──────────────────────────────────────
+hesaplama_metrikleri:
+  deger_artisi_ilk_3_yil: 0.08   # %8/yıl
+  deger_artisi_4_yil_sonra: 0.07 # %7/yıl
+  kira_roi: 0.07                  # %7/yıl
+  mortgage_faizi: 0.045           # %4.5/yıl
+  mortgage_vadesi: 20             # yıl
+  pesinat_orani: 0.20             # %20
+  hesap_araci: "Projeler/Dubai_Emlak_İçerik_Yazarı/tools/calculator.py"
+
+# ── Marka Kuralları (Kesin Yasak ve Zorunluluklar) ────────────
+kurallar:
+  yasaklar:
+    - "Kesin kazanırsınız"
+    - "Garantili getiri"
+    - "Risk yok"
+    - "Hemen alın"
+    - "Son fırsat" (gerçek değilse)
+    - Abartılı ve temelsiz vaatler
+
+  zorunluluklar:
+    - "Her scriptte CTA (Call to Action) olmalı"
+    - "Hesaplama içeriklerinde tablo zorunlu"
+    - "Rakam içeriyorsa kaynak linki zorunlu"
+    - "Bölge analizlerinde artı/eksi dengesi şart"
+    - "TL karşılığı verilmeli (hesaplama içeriklerinde)"
+    - "En az 3 referans script okunmalı"
+
+  format_yapisi:
+    hook: "1-2 cümle — dikkat çekici açılış"
+    script: "Akıcı paragraflar veya soru-cevap formatı"
+    tablo: "Avantaj/Dezavantaj veya hesaplama tablosu"
+    cta: "Soru veya takip çağrısı"
+
+# ── Skill ve Tool Referansları ────────────────────────────────
+skills:
+  icerik_yazari: "Projeler/Dubai_Emlak_İçerik_Yazarı/skills/icerik-yazari/SKILL.md"
+  video_uretim: "_skills/kie-ai-video-production/SKILL.md"
+  rakip_analiz: "_skills/rakip-analiz/SKILL.md"
+
+tools:
+  hesap_makinesi: "Projeler/Dubai_Emlak_İçerik_Yazarı/tools/calculator.py"
+  transkript: "Projeler/Dubai_Emlak_İçerik_Yazarı/tools/transcript.py"
+  doviz_cevirici: "Projeler/Dubai_Emlak_İçerik_Yazarı/tools/currency.py"
+  radar_motor: "_skills/rakip-analiz/scripts/radar_engine.py"
+
+# ── Rakip Listesi ─────────────────────────────────────────────
+rakipler:
+  dosya: "Projeler/Dubai_Emlak_İçerik_Yazarı/rakipler.md"
+  platformlar:
+    - "Instagram"
+    - "TikTok"
+    - "YouTube"
+
+# ── API Anahtarları ───────────────────────────────────────────
+api:
+  kaynak: "_knowledge/api-anahtarlari.md"
+  gerekli_anahtarlar:
+    - "Kie AI API Key"
+    - "Supadata API Key (transkript için)"
+    - "Apify Token (rakip analizi için)"
+    - "ElevenLabs API Key (seslendirme için — opsiyonel)"
+    - "ImgBB API Key (görsel yükleme için — opsiyonel)"

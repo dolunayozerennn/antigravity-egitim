@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity: Sistem Anatomisi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-base: #0a0a0e;
+            --box-bg: #12131a;
+            --box-border: #232533;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+
+            --c-agent: #3b82f6;
+            /* Mavi */
+            --c-knowledge: #a855f7;
+            /* Mor */
+            --c-skills: #f59e0b;
+            /* Turuncu */
+            --c-projects: #10b981;
+            /* Yeşil */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+
+            background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.05), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05), transparent 40%);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* Anatomy Container */
+        .anatomy-tree {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 900px;
+            gap: 0;
+        }
+
+        /* Blocks */
+        .block {
+            background: var(--box-bg);
+            border: 1px solid var(--box-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .block:hover {
+            transform: translateY(-4px);
+        }
+
+        .block-header {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1.25rem;
+        }
+
+        .icon-wrapper {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--theme-color);
+        }
+
+        .icon-wrapper svg {
+            width: 28px;
+            height: 28px;
+            stroke-width: 2;
+        }
+
+        .block-content h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.2rem;
+        }
+
+        .block-content .subtitle {
+            font-size: 0.85rem;
+            color: var(--theme-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* List Styles */
+        ul.example-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        ul.example-list li {
+            position: relative;
+            padding-left: 1.75rem;
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        ul.example-list li.example-item {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.75rem 0.75rem 0.75rem 2.25rem;
+            border-radius: 8px;
+            border-left: 2px solid var(--theme-color);
+            margin-top: 0.25rem;
+        }
+
+        ul.example-list li::before {
+            content: "•";
+            position: absolute;
+            left: 0.5rem;
+            top: 0px;
+            color: var(--theme-color);
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        ul.example-list li.example-item::before {
+            content: "→";
+            font-size: 1rem;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        ul.example-list li strong {
+            color: var(--theme-color);
+            font-weight: 700;
+        }
+
+        /* Specific Theme Colors */
+        .block-agent {
+            --theme-color: var(--c-agent);
+        }
+
+        .block-agent:hover {
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+
+        .block-knowledge {
+            --theme-color: var(--c-knowledge);
+        }
+
+        .block-knowledge:hover {
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+
+        .block-skills {
+            --theme-color: var(--c-skills);
+        }
+
+        .block-skills:hover {
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+
+        .block-projects {
+            --theme-color: var(--c-projects);
+        }
+
+        .block-projects:hover {
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        /* Row Layouts */
+        .row-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            width: 100%;
+        }
+
+        /* Connectors */
+        .connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+            width: 100%;
+            position: relative;
+        }
+
+        .connector::before {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--box-border), transparent, var(--box-border));
+        }
+
+        .arrow-down {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-base);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .arrow-down svg {
+            width: 20px;
+            height: 20px;
+            opacity: 0.7;
+            color: var(--text-muted);
+        }
+
+        /* Left side colored accent line */
+        .block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--theme-color);
+            border-top-left-radius: 20px;
+            border-bottom-left-radius: 20px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 900px) {
+            .row-split {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+
+            .row-split .block {
+                margin-bottom: 0;
+            }
+
+            .row-split .block:first-child::after {
+                content: '↓';
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 60px;
+                width: 100%;
+                color: var(--text-muted);
+                font-size: 1.5rem;
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Sistem Anatomisi</h1>
+        <p>Ne neyin üzerinde? Kim neyden besleniyor?</p>
+    </div>
+
+    <div class="anatomy-tree">
+
+        <!-- 1. SEVİYE: Merkez / Uygulayıcı -->
+        <div class="block block-agent">
+            <div class="block-header">
+                <div class="icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <rect x="4" y="8" width="16" height="12" rx="2"></rect>
+                        <path d="M12 8V4H8"></path>
+                        <path d="M2 14h2"></path>
+                        <path d="M20 14h2"></path>
+                    </svg>
+                </div>
+                <div class="block-content">
+                    <div class="subtitle">1. Seviye • Merkez Yönetici</div>
+                    <h2>Asistan (Agent)</h2>
+                </div>
+            </div>
+            <ul class="example-list">
+                <li>Sizinle doğrudan muhatap olan ana varlık.</li>
+                <li>Verdiğiniz tüm görevleri devralan ve yöneten asıl kişi.</li>
+                <li>İşi yapmak için aşağıdaki hafızayı ve yetenekleri çağıran koordinatör.</li>
+                <li class="example-item"><strong>Örnek:</strong> "Bana şu konu hakkında detaylı bir rapor çıkar"
+                    dediğiniz dijital çalışan.</li>
+                <li class="example-item"><strong>Örnek:</strong> Gelen e-postalarınızı sizin yerinize okuyup
+                    sınıflandıran yapay zeka beyni.</li>
+            </ul>
+        </div>
+
+        <div class="connector">
+            <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M12 5v14M19 12l-7 7-7-7" />
+                </svg></div>
+        </div>
+
+        <!-- 2. SEVİYE: Beslendiği Kaynaklar (Hafıza ve Yetenek) -->
+        <div class="row-split">
+
+            <div class="block block-knowledge">
+                <div class="block-header">
+                    <div class="icon-wrapper">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+                        </svg>
+                    </div>
+                    <div class="block-content">
+                        <div class="subtitle">2. Seviye • Sabit Kurallar</div>
+                        <h2>Hafıza (Knowledge)</h2>
+                    </div>
+                </div>
+                <ul class="example-list">
+                    <li>Şirketinizin temel prensipleri ve kültürü.</li>
+                    <li>Asistanın konuşurken kullanacağı markaya özel ton.</li>
+                    <li>Aylık güncellediğiniz ürün fiyat listeleri veya kataloglar.</li>
+                    <li class="example-item"><strong>Örnek:</strong> "Biz potansiyel müşterilerimize asla resmi 'siz'
+                        diye hitap etmeyiz, daima samimi bir dil kullanırız."</li>
+                    <li class="example-item"><strong>Örnek:</strong> "Haziran ayı kampanyalarımızda fiyatı sormadan %20
+                        indirim vurgusu yap."</li>
+                </ul>
+            </div>
+
+            <div class="block block-skills">
+                <div class="block-header">
+                    <div class="icon-wrapper">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </div>
+                    <div class="block-content">
+                        <div class="subtitle">2. Seviye • Aktif Modüller</div>
+                        <h2>Yetenekler (Skills)</h2>
+                    </div>
+                </div>
+                <ul class="example-list">
+                    <li>İnterneti gezerek saniyeler içinde araştırma yapabilme gücü.</li>
+                    <li>LinkedIn gibi yerlerden saatlerce müşteri verisi (lead) toplama becerisi.</li>
+                    <li>Sadece metin değil, otonom olarak video ve ses oluşturabilme yetisi.</li>
+                    <li class="example-item"><strong>Örnek:</strong> Yüzlerce sayfalık PDF'leri okuyup analiz çıkarma
+                        "okuma" yeteneği.</li>
+                    <li class="example-item"><strong>Örnek:</strong> İstenilen tarzda videoları sıfırdan oluşturma
+                        "kurgu" modülü.</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <div class="connector">
+            <div class="arrow-down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M12 5v14M19 12l-7 7-7-7" />
+                </svg></div>
+        </div>
+
+        <!-- 3. SEVİYE: Çıktı / Projeler -->
+        <div class="block block-projects">
+            <div class="block-header">
+                <div class="icon-wrapper">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </div>
+                <div class="block-content">
+                    <div class="subtitle">3. Seviye • Çıktı & Sonuç</div>
+                    <h2>İşler / Dosyalar (Projects)</h2>
+                </div>
+            </div>
+            <ul class="example-list" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <li>Ortaya çıkmış B2B satış kampanyası planları.</li>
+                <li>Rakiplerin bu haftaki pazar analizi raporları.</li>
+                <li>Gönderilmeye hazır kişiselleştirilmiş toplu mail listeleri.</li>
+                <li>Otomatik olarak kaydedilmiş, yayına hazır post taslakları.</li>
+                <li class="example-item" style="grid-column: 1 / -1;"><strong>Örnek:</strong> Tamamlanmış ve teslim
+                    edilmiş "Eylül Ayı Reklam Videoları" klasörü.</li>
+                <li class="example-item" style="grid-column: 1 / -1;"><strong>Örnek:</strong> Yetenekler kullanılarak
+                    kazınmış "Startup Kurucuları Data" Excel listesi.</li>
+            </ul>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

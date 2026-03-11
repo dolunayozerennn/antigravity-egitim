@@ -1,0 +1,41 @@
+# 📋 Deploy Edilmiş Projeler Kayıt Defteri
+
+Bu dosya, Railway'e deploy edilen projelerin ID bilgilerini saklar.
+Re-deploy'larda bu bilgiler kullanılarak gereksiz API sorguları atlanır.
+
+---
+
+### shorts-demo-bot
+- **Railway Project ID:** `01bf8d6e-9eb4-4a42-aaa0-0103e6e56033`
+- **Service ID:** `151725ce-0416-41dd-9b94-768353c919b5`
+- **Environment ID:** —
+- **GitHub Repo:** `dolunayozerennn/shorts-demo-bot`
+- **Lokal Klasör:** `Projeler/Shorts_Demo_Otomasyonu/`
+- **Start Komutu:** `python bot.py`
+- **Son Deploy:** 2026-03-10
+- **Durum:** ✅ Aktif
+
+---
+
+### sweatcoin-email-automation
+- **Railway Project ID:** `0c1ff084-c7a2-4e46-8372-2fb9c58ec6e4`
+- **Service ID:** `08224222-4d79-43ec-b649-1a8ac4c8c8ad`
+- **Environment ID:** `6b719f66-e9a6-45d3-81b5-a566fabb829f`
+- **GitHub Repo:** `dolunayozerennn/sweatcoin-email-automation`
+- **Lokal Klasör:** `Projeler/Swc_Email_Responder/`
+- **Start Komutu:** `python railway_scheduler.py`
+- **Son Deploy:** 2026-03-10
+- **Durum:** ✅ Aktif
+
+---
+
+### tele-satis-crm
+- **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6`
+- **Service ID:** `faba9665-7499-4ab7-9e8a-d2a26050733f`
+- **Environment ID:** `be2153d6-97b5-4b47-84f9-9bb679693b78`
+- **GitHub Repo:** `dolunayozerennn/tele-satis-crm`
+- **Lokal Klasör:** `Projeler/Tele_Satis_CRM/`
+- **Start Komutu:** `python main.py`
+- **Son Deploy:** 2026-03-11
+- **Durum:** ⏳ Env vars eksik (NOTION_API_TOKEN, GOOGLE_SERVICE_ACCOUNT_JSON)
+
