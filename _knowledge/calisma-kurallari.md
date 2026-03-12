@@ -34,6 +34,7 @@ Antigravity/
 | Shorts_Demo_Otomasyonu | Telegram video bot | Railway 7/24 |
 | Dolunay_Reels_Kapak | Kapak üretim agenti | Cron otomasyon |
 | Dubai_Emlak_İçerik_Yazarı | İçerik üretim sistemi | Bağımsız ekosistem |
+| Marka_Is_Birligi | Marka iş birliği outreach | Aktif — /marka-outreach |
 
 ## 🔐 Şifre/Token Yönetim Kuralları (OTOMATİK)
 

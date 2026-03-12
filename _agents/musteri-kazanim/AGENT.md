@@ -32,7 +32,7 @@ Bu agent, **herhangi bir hedef kitle** için müşteri kazanım sürecini uçtan
 |---------|---------------|----------------|
 | 🎬 **Influencer Outreach** | Türkiye'deki etkinlik influencer'larına ulaşma | `Projeler/Bugra_Influencer_Kampanya/` |
 | 🏢 **B2B Lead Gen** | SaaS şirketlerine cold email kampanyası | `_arsiv/B2B_Outreach/` |
-| 🤝 **Marka İş Birliği** | AI markalarına influencer olarak iş birliği teklifi | `_arsiv/Instagram_İş_Birliği_Scraper/` |
+| 🤝 **Marka İş Birliği** | AI markalarına influencer olarak iş birliği teklifi | `Projeler/Marka_Is_Birligi/` |
 | 🎨 **Creator Sourcing** | İtalyan UGC creator'larını bulma ve ulaşma | `_arsiv/Creative_Sourcing_Italy/` |
 | 📱 **Sosyal Medya Scraping** | Instagram/TikTok'tan toplu profil toplama | `_arsiv/Swc_Insta_Scrape/` |
 
@@ -538,7 +538,8 @@ _agents/musteri-kazanim/
 │   ├── ornek-kampanya.yaml          ← Yeni kampanyalar için şablon
 │   ├── bugra-influencer.yaml        ← Buğra etkinlik influencer config
 │   ├── sweatcoin-outreach.yaml      ← Sweatcoin marka iş birliği config
-│   └── creative-sourcing.yaml       ← İtalyan UGC creator config
+│   ├── creative-sourcing.yaml       ← İtalyan UGC creator config
+│   └── marka-isbirligi.yaml         ← Marka İş Birliği kampanya config
 ├── templates/
 │   ├── email-tr.md                  ← Türkçe email şablonları
 │   ├── email-en.md                  ← İngilizce email şablonları
@@ -583,6 +584,7 @@ _agents/musteri-kazanim/
 | Outreach Skill | `_skills/eposta-gonderim/SKILL.md` | Gmail API gönderim motoru |
 | Lead Toplama Workflow | `_agents/workflows/lead-toplama.md` | Bağımsız kullanılabilir workflow |
 | Outreach Workflow | `_agents/workflows/mail-gonder.md` | Bağımsız kullanılabilir workflow |
+| Marka Outreach Workflow | `_agents/workflows/marka-outreach.md` | Marka iş birliği özel pipeline |
 | API Anahtarları | `_knowledge/api-anahtarlari.md` | Tüm servis credential'ları |
 
 ### Referans Projeler (Öğrenim Kaynağı)
@@ -590,6 +592,7 @@ _agents/musteri-kazanim/
 | Proje | Ne Öğrenildi |
 |-------|-------------|
 | `Projeler/Bugra_Influencer_Kampanya/` | 4 adımlı pipeline yapısı, config.py formatı, takip CSV sütunları |
+| `Projeler/Marka_Is_Birligi/` | ✅ **AKTİF** — Marka iş birliği outreach, HTML şablonlu mail, kişiselleştirilmiş kampanya |
 | `Projeler/_arsiv/B2B_Outreach/` | 3 katmanlı mimari, ICP tanımı, sequence dallanma mantığı, lead JSON şeması |
 | `Projeler/_arsiv/Instagram_İş_Birliği_Scraper/` | Contact bulma waterfall'u (Hunter → Apollo), DM/Email şablonları, false positive filtreleme |
 | `Projeler/_arsiv/Creative_Sourcing_Italy/` | Çok dilli outreach, UGC creator parametreleri |

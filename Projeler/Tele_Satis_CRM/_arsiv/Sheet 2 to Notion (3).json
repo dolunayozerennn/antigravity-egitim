@@ -1,0 +1,339 @@
+{
+  "name": "Sheet 2 to Notion",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "10uTCr65VlIBng0Sxlmz7h1Q2y5AWBp1qDQHTeqI7mGU",
+          "mode": "list",
+          "cachedResultName": "Skool - Dolunay Özeren Leads",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10uTCr65VlIBng0Sxlmz7h1Q2y5AWBp1qDQHTeqI7mGU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 76091790,
+          "mode": "list",
+          "cachedResultName": "Mart-2026-Saat Bazlı",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/10uTCr65VlIBng0Sxlmz7h1Q2y5AWBp1qDQHTeqI7mGU/edit#gid=76091790"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1664,
+        272
+      ],
+      "id": "c545b74b-ceb4-4e45-9105-f8cb507d6d26",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "b5mO1yWmIxnuFaFt",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// === VERİ TEMİZLEME ===\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n\n  // Telefon: temizle ve formatla\n  let phone = String(data.phone_number || '');\n  phone = phone.replace(/^p:\\+?/, '').replace(/[\\s\\+\\-\\(\\)]/g, '');\n\n  if (phone.startsWith('90') && phone.length === 12) {\n    phone = '+' + phone.slice(0,2) + ' ' + phone.slice(2,5) + ' ' + phone.slice(5,8) + ' ' + phone.slice(8);\n  } else {\n    phone = '+' + phone;\n  }\n\n  // İsim: baş harfleri büyük\n  let name = (data.full_name || '').trim();\n  name = name.split(' ').map(w => {\n    if (!w) return '';\n    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();\n  }).join(' ');\n\n  // Bütçe\n  const validBudgets = ['$0 - $20', '$20 - $50', '$50 - $150', '$150+'];\n  let budget = (data['100%_otomatik_youtube_kanalı_açmak_için_yatırım_bütçeniz_nedir?'] || '').replace(/_/g, ' ');\n  if (!validBudgets.includes(budget)) budget = '';\n\n  // Email\n  let email = (data.email || '').trim().toLowerCase();\n\n  results.push({\n    json: {\n      ...data,\n      clean_name: name,\n      clean_phone: phone,\n      clean_email: email,\n      clean_budget: budget\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1424,
+        272
+      ],
+      "id": "553555e0-8c1f-4221-9d2f-62aae3cda237",
+      "name": "Veri Temizleme"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "31226924-bb82-800e-9ada-d6f16399eba0",
+          "mode": "list",
+          "cachedResultName": "AI Factory Satış Leads",
+          "cachedResultUrl": "https://www.notion.so/31226924bb82800e9adad6f16399eba0"
+        },
+        "returnAll": true,
+        "simple": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        -1184,
+        272
+      ],
+      "id": "10399720-0591-4fac-8182-cd7d1d2471fb",
+      "name": "Duplikasyon Kontrol",
+      "alwaysOutputData": true,
+      "credentials": {
+        "notionApi": {
+          "id": "eUfKr3nz3TcKL0fH",
+          "name": "Notion API New"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// === 7 GÜN KURALI İLE DUPLİKASYON DEĞERLENDİRME ===\nconst items = $('Veri Temizleme').all();\nconst searchResults = $input.all();\nconst now = new Date();\nconst results = [];\n\n// Her lead için ayrı ayrı kontrol et\nfor (const leadItem of items) {\n  const lead = leadItem.json;\n  let isDuplicate = false;\n  let matchReason = '';\n\n  for (const result of searchResults) {\n    const r = result.json;\n    if (!r.id) continue;\n\n    // simple: false format desteği\n    const resultEmail = (r.email || r.properties?.email?.email || '').toLowerCase();\n    const resultPhone = (r.Phone || r.properties?.Phone?.phone_number || '').replace(/[\\s\\+\\-\\(\\)p:]/g, '');\n    const cleanPhone = (lead.clean_phone || '').replace(/[\\s\\+\\-\\(\\)]/g, '');\n\n    const matchedEmail = resultEmail && resultEmail === lead.clean_email;\n    const matchedPhone = resultPhone && resultPhone === cleanPhone;\n\n    if (!matchedEmail && !matchedPhone) continue;\n\n    // Eşleşme var, 7 gün içinde mi?\n    const createdTime = new Date(r.createdTime || r.created_time || r.properties?.Eklendi?.created_time || '');\n    const daysSinceCreated = (now - createdTime) / (1000 * 60 * 60 * 24);\n\n    if (daysSinceCreated <= 7) {\n      isDuplicate = true;\n      if (matchedEmail && matchedPhone) matchReason = 'Email + Telefon eşleşti';\n      else if (matchedEmail) matchReason = 'Email eşleşti';\n      else matchReason = 'Telefon eşleşti';\n      matchReason += ` (${Math.round(daysSinceCreated)} gün önce kayıt var)`;\n      break;\n    }\n  }\n\n  results.push({\n    json: {\n      ...lead,\n      isDuplicate,\n      matchReason\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        272
+      ],
+      "id": "727e6304-1bfe-4251-81b8-43ee6b143947",
+      "name": "7 Gün Kuralı"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-new-lead",
+              "leftValue": "={{ $json.isDuplicate }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -704,
+        272
+      ],
+      "id": "4212c9f1-57f2-4352-abb7-6a61c122fe7a",
+      "name": "Yeni Lead mi?"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "31226924-bb82-800e-9ada-d6f16399eba0",
+          "mode": "list",
+          "cachedResultName": "AI Factory Satış Leads",
+          "cachedResultUrl": "https://www.notion.so/31226924bb82800e9adad6f16399eba0"
+        },
+        "title": "={{ $json.clean_name }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Bütçe|select",
+              "selectValue": "={{ $json.clean_budget }}"
+            },
+            {
+              "key": "Durum|status",
+              "statusValue": "Aranacak"
+            },
+            {
+              "key": "email|email",
+              "emailValue": "={{ $json.clean_email }}"
+            },
+            {
+              "key": "Phone|phone_number",
+              "phoneValue": "={{ $json.clean_phone }}"
+            },
+            {
+              "key": "Komisyon|select",
+              "selectValue": "Ödenmedi"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        -464,
+        144
+      ],
+      "id": "31d1fb49-d357-424e-ba86-2e53b51709c3",
+      "name": "Create Database Page",
+      "credentials": {
+        "notionApi": {
+          "id": "eUfKr3nz3TcKL0fH",
+          "name": "Notion API New"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-has-error",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        144
+      ],
+      "id": "ae096986-bee1-4352-bf7d-4babbf344b3f",
+      "name": "Hata Var mı?"
+    },
+    {
+      "parameters": {
+        "sendTo": "ozerendolunay@gmail.com",
+        "subject": "=⚠️ Lead Aktarım Hatası | {{ $('Veri Temizleme').first().json.clean_name }}",
+        "emailType": "text",
+        "message": "=Notion'a lead aktarılırken hata oluştu.\n\n📋 Lead Bilgileri:\nİsim: {{ $('Veri Temizleme').first().json.clean_name }}\nEmail: {{ $('Veri Temizleme').first().json.clean_email }}\nTelefon: {{ $('Veri Temizleme').first().json.clean_phone }}\nBütçe: {{ $('Veri Temizleme').first().json.clean_budget }}\n\nWorkflow link: https://srnfcwia.rcsrv.net/workflow/x5kSnrmSd6AuIEnRl-5Rn?projectId=6zogeT4E1WF3Ki8b&parentFolderId=lSGmRdWu6zU4SCbz\n\n❌ Hata:\n{{ $json.error.message || JSON.stringify($json.error) }}\n\nn8n üzerinden kontrol edin.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "15044013-41f1-4d1e-8e89-87f68f79f397",
+      "name": "Hata Bildirimi",
+      "webhookId": "5bfc3489-9d13-491c-9e25-187d3c494cbb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "jDWJ61xaiaBVW09Y",
+          "name": "ozerendolunay@gmail.com"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Veri Temizleme",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veri Temizleme": {
+      "main": [
+        [
+          {
+            "node": "Duplikasyon Kontrol",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplikasyon Kontrol": {
+      "main": [
+        [
+          {
+            "node": "7 Gün Kuralı",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7 Gün Kuralı": {
+      "main": [
+        [
+          {
+            "node": "Yeni Lead mi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yeni Lead mi?": {
+      "main": [
+        [
+          {
+            "node": "Create Database Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Database Page": {
+      "main": [
+        [
+          {
+            "node": "Hata Var mı?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hata Var mı?": {
+      "main": [
+        [
+          {
+            "node": "Hata Bildirimi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "acc9dc7f-7ca4-4e3e-9701-56c8d2365748",
+  "meta": {
+    "instanceId": "26864db373f0c5e66d53d970bf3488b1dfb1ddc0d9f0bf0196c5111c9404a806"
+  },
+  "id": "PftB-BD9vfr7IWzFEI7Pj",
+  "tags": []
+}

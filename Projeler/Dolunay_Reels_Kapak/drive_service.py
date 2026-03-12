@@ -1,41 +1,18 @@
 import os
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
+import sys
 from googleapiclient.http import MediaFileUpload
 
-# If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
+# ── Merkezi Google Auth ──────────────────────────────────────────────────────
+# Antigravity merkezi token sistemi kullanılır.
+# Token: _knowledge/credentials/oauth/gmail-outreach-token.json
+_antigravity_root = os.path.join(os.path.expanduser("~/Desktop/Antigravity"))
+sys.path.insert(0, os.path.join(_antigravity_root, "_knowledge", "credentials", "oauth"))
+from google_auth import get_drive_service
+
 
 def authenticate_google_drive():
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.json'):
-        try:
-            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-        except Exception as e:
-            print(f"Warning: Failed to load existing token.json: {e}")
-            os.remove('token.json')
-            creds = None
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            if not os.path.exists('credentials.json'):
-                 print("Error: credentials.json not found! Please provide Google Drive OAuth credentials.")
-                 return None
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=8080, prompt='consent')
-        # Save the credentials for the next run
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
-            
-    return build('drive', 'v3', credentials=creds)
+    """Merkezi google_auth modülü üzerinden Drive service döndür."""
+    return get_drive_service("outreach")
 
 def _extract_folder_id(folder_url: str):
     folder_id = None

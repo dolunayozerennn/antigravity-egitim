@@ -1,16 +1,16 @@
 """
 Tele Satış CRM — Google Sheets Okuma Modülü
 Google Sheets API v4 ile her iki tab'dan yeni satırları okur.
-Production'da Service Account, lokalde OAuth2 kullanır.
+Production'da Service Account, lokalde merkezi google_auth kullanır.
 """
 import os
+import sys
 import json
 import logging
 from typing import Optional
 
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
@@ -41,28 +41,14 @@ class SheetsReader:
                 sa_info, scopes=SCOPES
             )
         else:
-            # 2) OAuth2 (Lokal Geliştirme)
-            logger.info("🔑 OAuth2 ile authentication yapılıyor...")
-            token_path = os.path.join(os.path.dirname(__file__), "token.json")
-            creds_path = os.path.join(os.path.dirname(__file__), "credentials.json")
-
-            if os.path.exists(token_path):
-                creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-
-            if not creds or not creds.valid:
-                if creds and creds.expired and creds.refresh_token:
-                    creds.refresh(Request())
-                elif os.path.exists(creds_path):
-                    flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
-                    creds = flow.run_local_server(port=0)
-                else:
-                    raise RuntimeError(
-                        "Google credentials bulunamadı. "
-                        "GOOGLE_SERVICE_ACCOUNT_JSON veya credentials.json gerekli."
-                    )
-                # Token'ı kaydet
-                with open(token_path, "w") as f:
-                    f.write(creds.to_json())
+            # 2) Merkezi Google Auth (Lokal Geliştirme)
+            logger.info("🔑 Merkezi google_auth ile authentication yapılıyor...")
+            _antigravity_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            sys.path.insert(0, os.path.join(_antigravity_root, "_knowledge", "credentials", "oauth"))
+            from google_auth import get_sheets_service
+            self.service = get_sheets_service("outreach")
+            logger.info("✅ Google Sheets API bağlantısı kuruldu (merkezi auth)")
+            return
 
         self.service = build("sheets", "v4", credentials=creds)
         logger.info("✅ Google Sheets API bağlantısı kuruldu")

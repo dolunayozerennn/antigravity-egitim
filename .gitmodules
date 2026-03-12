@@ -1,0 +1,3 @@
+[submodule "Projeler/Swc_Email_Responder"]
+	path = Projeler/Swc_Email_Responder
+	url = https://github.com/dolunayozerennn/sweatcoin-email-automation.git

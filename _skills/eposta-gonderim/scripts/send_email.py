@@ -1,50 +1,21 @@
 import os
+import sys
 import argparse
 import base64
 import json
 import csv
 from datetime import datetime
 from email.mime.text import MIMEText
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from google.auth.exceptions import RefreshError
 
-SCOPES = ['https://www.googleapis.com/auth/gmail.send']
-CREDENTIALS_FILE = "/Users/dolunayozeren/Desktop/Antigravity/_skills/eposta-gonderim/credentials.json"
-TOKEN_FILE = os.path.join(os.path.dirname(__file__), "../token.json")
+# Merkezi Google Auth modülünü import et
+_antigravity_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+sys.path.insert(0, os.path.join(_antigravity_root, "_knowledge", "credentials", "oauth"))
+from google_auth import get_gmail_service
 
-def get_gmail_service():
-    """Gets the Gmail API service, handling OAuth2 locally."""
-    creds = None
-    if os.path.exists(TOKEN_FILE):
-        try:
-            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-        except Exception as e:
-            print(f"Token read error: {e}. Will re-authenticate.")
-            creds = None
-            
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            try:
-                from google.auth.transport.requests import Request
-                creds.refresh(Request())
-            except RefreshError:
-                print("Refresh token is invalid or expired. Deleting token.json and re-authenticating...")
-                os.remove(TOKEN_FILE)
-                creds = None
-                
-        if not creds:
-            if not os.path.exists(CREDENTIALS_FILE):
-                raise FileNotFoundError(f"Missing OAuth credentials file at {CREDENTIALS_FILE}")
-            
-            flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-            creds = flow.run_local_server(port=8080, prompt='consent', access_type='offline')
-            
-            with open(TOKEN_FILE, 'w') as f:
-                f.write(creds.to_json())
-                
-    return build('gmail', 'v1', credentials=creds)
+
+def get_gmail_service_local():
+    """Gets the Gmail API service via centralized auth."""
+    return get_gmail_service("outreach")
 
 def update_csv_status(csv_path, row_id, new_status, message):
     """Updates the target CSV file with Outreach Status, Date, and Message."""
@@ -108,7 +79,7 @@ if __name__ == "__main__":
     print(f"🚀 Outreach Engine starting for {args.to}...")
     
     try:
-        service = get_gmail_service()
+        service = get_gmail_service_local()
     except Exception as e:
         print(f"❌ Failed to initialize Gmail Service: {e}")
         if args.csv and args.row_id is not None:

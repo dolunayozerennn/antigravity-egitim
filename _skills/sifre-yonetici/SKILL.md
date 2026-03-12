@@ -148,27 +148,68 @@ Aşağıdaki tablo, her servis için hangi environment variable'ların gerektiğ
 | ElevenLabs | `ELEVENLABS_API_KEY` | |
 | Railway | `RAILWAY_TOKEN` | |
 
-## OAuth Token Yönetimi
+## OAuth Token Yönetimi (Merkezi Sistem)
 
-Google OAuth token dosyaları (`token.json`, `token.pickle`) merkezi klasörde saklanır:
+Google OAuth tokenları merkezi modül üzerinden yönetilir. **Projelerde ayrı token dosyası tutulmaz.**
+
+### Merkezi Yapı
 ```
 _knowledge/credentials/oauth/
-├── gmail-outreach-token.json    ← ozerendolunay@gmail.com
+├── google_auth.py              ← TÜM projeler bu modülü import eder
+├── auth_helper.py              ← İlk seferlik yetkilendirme scripti
+├── gmail-outreach-token.json   ← ozerendolunay@gmail.com (Gmail+Drive+Sheets)
+├── gmail-swc-token.json        ← d.ozeren@sweatco.in (Gmail+Drive+Sheets)
 ├── gmail-outreach-credentials.json
-├── gmail-swc-token.pickle       ← d.ozeren@sweatco.in
-└── reels-kapak-token.json       ← Drive/Sheets erişimi
+└── gmail-swc-credentials.json
 ```
 
-Proje bu dosyalara ihtiyaç duyarsa:
+### Projelerde Kullanım
+Google API'ye ihtiyaç duyan bir proje varsa, **symlink veya token kopyası yerine** doğrudan modülü import et:
+
+```python
+import sys, os
+# Antigravity kök dizinini bul
+antigravity_root = os.path.expanduser("~/Desktop/Antigravity")
+sys.path.insert(0, os.path.join(antigravity_root, "_knowledge/credentials/oauth"))
+from google_auth import get_gmail_service, get_sheets_service, get_drive_service
+
+# Outreach hesabı (ozerendolunay@gmail.com)
+gmail = get_gmail_service("outreach")
+sheets = get_sheets_service("outreach")
+drive = get_drive_service("outreach")
+
+# Sweatcoin hesabı (d.ozeren@sweatco.in)
+gmail = get_gmail_service("swc")
+sheets = get_sheets_service("swc")
+```
+
+### Token Scope'ları (Her İki Hesap)
+Her token aşağıdaki TÜM scope'ları içerir — ayrı ayrı token gerekmez:
+- `gmail.modify` — Gmail okuma, yazma, gönderme, silme
+- `gmail.send` — Gmail gönderme
+- `drive.file` — Google Drive dosya erişimi
+- `spreadsheets` — Google Sheets okuma/yazma
+
+### Token Yenileme
+- Token'lar `refresh_token` içerir → **otomatik yenilenir**
+- `google_auth.py` modülü token süresini kontrol eder ve gerekirse sessizce yeniler
+- Kullanıcıdan terminal veya tarayıcı etkileşimi **asla gerekmez**
+
+### Sorun Giderme
 ```bash
-# Symlink oluştur
-ln -sf ../../../_knowledge/credentials/oauth/gmail-outreach-token.json Projeler/XYZ/token.json
+# Token durumlarını kontrol et
+cd _knowledge/credentials/oauth && python3 auth_helper.py status
+
+# Token'ı yeniden oluştur (sadece sorun varsa)
+cd _knowledge/credentials/oauth && python3 auth_helper.py outreach
+cd _knowledge/credentials/oauth && python3 auth_helper.py swc
 ```
 
 ## Güvenlik Kuralları
 
 1. **`master.env` asla GitHub'a gitmez** — `.gitignore` ile korunur
 2. **`google-service-account.json` asla GitHub'a gitmez** — `.gitignore` ile korunur
-3. **Hardcoded token yasak** — Tarama scripti ile tespit et
-4. **Paylaşılan projelerde `.env.example` kullan** — asıl değerler yerine placeholder
-5. **Railway/Cloud deploy'da** — `master.env`'deki değerler Railway environment variables olarak ayrıca set edilir
+3. **`oauth/` klasörü asla GitHub'a gitmez** — `.gitignore` ile korunur
+4. **Hardcoded token yasak** — Tarama scripti ile tespit et
+5. **Paylaşılan projelerde `.env.example` kullan** — asıl değerler yerine placeholder
+6. **Railway/Cloud deploy'da** — `master.env`'deki değerler Railway environment variables olarak ayrıca set edilir

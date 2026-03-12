@@ -12,6 +12,9 @@ credentials.env
 # OAuth Token dosyaları
 token.json
 credentials.json
+*.pickle
+*.pickle.DEPRECATED
+*.DEPRECATED
 
 # API anahtarları içeren knowledge dosyası
 # NOT: Bu dosya lokal kalmalı, GitHub'a gitmemeli
@@ -89,6 +92,8 @@ yarn-error.log*
 .railway-token
 railway-token.txt
 
+
+
 # Temp ve output klasörleri
 **/temp/
 **/output/*.mp4
@@ -103,3 +108,16 @@ Projeler/**/.env.*
 !Projeler/**/.env.example
 Paylasima_Hazir_Projeler/**/.env*
 !Paylasima_Hazir_Projeler/**/.env.example
+
+# Büyük data/analiz dosyaları — repo'yu şişirmesin
+**/history_analysis.json
+**/optimized_prompts_log.json
+**/creator_outreach_tracking.csv
+
+# Deprecated token dosyaları
+*.pickle.DEPRECATED
+*.DEPRECATED
+
+# Fatura Oluşturucu — üretilen PDF'ler ve fontlar
+_skills/fatura-olusturucu/uretilen-faturalar/
+_skills/fatura-olusturucu/*.ttf

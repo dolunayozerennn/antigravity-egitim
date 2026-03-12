@@ -36,6 +36,24 @@ Re-deploy'larda bu bilgiler kullanılarak gereksiz API sorguları atlanır.
 - **GitHub Repo:** `dolunayozerennn/tele-satis-crm`
 - **Lokal Klasör:** `Projeler/Tele_Satis_CRM/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-11
-- **Durum:** ⏳ Env vars eksik (NOTION_API_TOKEN, GOOGLE_SERVICE_ACCOUNT_JSON)
+- **Son Deploy:** 2026-03-12
+- **Durum:** ✅ Aktif (v2: 3 tab + WhatsApp Link + Ne zaman ulaşalım?)
 
+---
+
+### dolunay-reels-kapak
+- **Platform:** Mac Cron (lokal)
+- **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
+- **Start Komutu:** `python main.py`
+- **Durum:** ✅ Aktif — Mac cron ile çalışıyor
+
+---
+
+## 📌 Sadece Lokal Projeler (Deploy Yok)
+
+| Proje | Klasör | Not |
+|-------|--------|-----|
+| Bugra Influencer | `Projeler/Bugra_Influencer_Kampanya/` | Dışarıya paylaşılacak template |
+| Dubai Emlak İçerik | `Projeler/Dubai_Emlak_İçerik_Yazarı/` | Lokal |
+| Marka İş Birliği | `Projeler/Marka_Is_Birligi/` | Lokal |
+| Emlak Arazi Drone | `Projeler/Emlak_Arazi_Drone_Çekim/` | Lokal |

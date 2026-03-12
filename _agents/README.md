@@ -24,7 +24,7 @@ musteri-kazanim/
 └── data/             ← Kampanya çıktıları (git-ignored)
 ```
 
-**İlişkili Workflow'lar:** `/lead-toplama`, `/mail-gonder`
+**İlişkili Workflow'lar:** `/lead-toplama`, `/mail-gonder`, `/marka-outreach`
 
 ---
 
@@ -83,6 +83,7 @@ Tüm slash-command workflow'ları `_agents/workflows/` altında bulunur. Her wor
 | `icerik-uretimi.md` | `/icerik-uretimi` | 🎬 icerik-uretim |
 | `proje-paylas.md` | `/proje-paylas` | 🚀 yayinla-paylas |
 | `proje-gorsellestir.md` | `/proje-gorsellestir` | 🚀 yayinla-paylas |
+| `marka-outreach.md` | `/marka-outreach` | 🎯 musteri-kazanim |
 
 ---
 

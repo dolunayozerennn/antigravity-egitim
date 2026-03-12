@@ -1,0 +1,71 @@
+# ═══════════════════════════════════════════════════
+# Marka İş Birliği — Kampanya Konfigürasyonu
+# ═══════════════════════════════════════════════════
+# Bu config Projeler/Marka_Is_Birligi/ projesine aittir.
+# Agent tarafından çağrıldığında bu dosya kullanılır.
+# Proje kendi config dosyasını da barındırır:
+#   → Projeler/Marka_Is_Birligi/config/kampanya.yaml
+
+# --- 🏷️ KAMPANYA BİLGİLERİ ---
+kampanya_adi: "marka-isbirligi-2026"
+aciklama: "Dolunay Özeren markalarla influencer iş birliği outreach kampanyası"
+hedef_tip: "b2b_sirket"
+durum: "draft"
+
+# --- 🎯 HEDEF KİTLE (ICP) ---
+icp:
+  platform: ["web"]
+  bolge: "Türkiye"
+  dil: ["TR"]
+  
+  sektor: ["yapay zeka", "teknoloji", "dijital araçlar", "SaaS", "AI üretkenlik"]
+  sirket_buyuklugu: ""
+  hedef_pozisyonlar: ["Pazarlama Müdürü", "İletişim Sorumlusu", "Marka Yöneticisi"]
+  
+  minimum_takipci: 0
+  maksimum_takipci: 0
+  nis: []
+  icerik_dili: ["TR"]
+
+# --- 🔍 ARAMA KRİTERLERİ ---
+arama:
+  anahtar_kelimeler:
+    - "AI tools"
+    - "AI productivity apps"
+    - "tech startups"
+    - "dijital araçlar"
+    - "SaaS products"
+  hashtag_listesi: []
+  rakip_hesaplar: []
+  max_lead_sayisi: 50
+
+# --- 📧 OUTREACH AYARLARI ---
+outreach:
+  gonderen_email: "ozerendolunay@gmail.com"
+  sablon_dili: "TR"
+  sablon_dosyasi: "Projeler/Marka_Is_Birligi/mail_templates/collaboration_tr.html"
+  deger_onerisi: "Markanızın estetik anlayışını kendi kitlemle paylaşarak karşılıklı bir büyüme ve etki alanı oluşturmak"
+  cta: "Detayları konuşmak için dönüşünüzü bekliyorum"
+  dry_run: true
+
+# --- ⏱️ SEQUENCE AYARLARI ---
+sequence:
+  profil: "influencer"
+  toplam_adim: 2
+  bekleme_suresi_acilmadi: 5
+  bekleme_suresi_cevaplanmadi: 3
+  gunluk_gonderim_limiti: 30
+  gonderim_araligi: 10
+  gonderim_saatleri: "09:00-17:00"
+  gonderim_gunleri: ["Pzt", "Sal", "Car", "Per", "Cum"]
+  saat_dilimi: "UTC+3"
+
+# --- 📁 DOSYA YOLLARI ---
+dosyalar:
+  proje_dizini: "Projeler/Marka_Is_Birligi/"
+  ham_cikti: "Projeler/Marka_Is_Birligi/data/markalar_raw.json"
+  zenginlestirilmis: "Projeler/Marka_Is_Birligi/data/markalar_enriched.json"
+  mesajlar: "Projeler/Marka_Is_Birligi/data/markalar_messages.json"
+  log: "Projeler/Marka_Is_Birligi/data/markalar_log.csv"
+  mevcut_liste: "Projeler/Marka_Is_Birligi/data/markalar.csv"
+  mail_template: "Projeler/Marka_Is_Birligi/mail_templates/collaboration_tr.html"

@@ -39,64 +39,28 @@ def config_yukle(config_yolu: str) -> dict:
 
 def credentials_yollarini_bul() -> tuple[str, str]:
     """
-    Gmail OAuth2 credentials ve token dosya yollarını belirler.
-    Sırasıyla: scriptin bulunduğu dizin, proje kökü, _knowledge/ dizini.
+    DEPRECATED: Bu fonksiyon artık kullanılmıyor.
+    Merkezi google_auth modülü kullanılır.
+    Geriye uyumluluk için bırakılmıştır.
     """
-    base_dirs = [
-        os.path.dirname(os.path.abspath(__file__)),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "_knowledge"),
-    ]
-
-    cred_file = "credentials.json"
-    token_file = "token.json"
-
-    for d in base_dirs:
-        full = os.path.join(os.path.normpath(d), cred_file)
-        if os.path.exists(full):
-            cred_file = full
-            token_file = os.path.join(os.path.normpath(d), token_file)
-            break
-
-    return cred_file, token_file
+    return "", ""
 
 
 # ═══════════════════════════════════════════════════
 # 🔐 GMAIL KİMLİK DOĞRULAMA
 # ═══════════════════════════════════════════════════
 
-SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
+# Merkezi Google Auth modülünü import et
+_antigravity_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+sys.path.insert(0, os.path.join(_antigravity_root, "_knowledge", "credentials", "oauth"))
+from google_auth import get_gmail_service as _get_gmail_service
 
 
-def authenticate(cred_file: str, token_file: str):
-    """Gmail API OAuth2 kimlik doğrulaması."""
-    from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    from google.auth.transport.requests import Request
-
-    creds = None
-
-    if os.path.exists(token_file):
-        creds = Credentials.from_authorized_user_file(token_file, SCOPES)
-
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            print("[INFO] Token yenileniyor...")
-            creds.refresh(Request())
-        else:
-            if not os.path.exists(cred_file):
-                print(f"❌ HATA: {cred_file} bulunamadı!")
-                print("   → Gmail OAuth2 credentials dosyasını doğru konuma koy.")
-                sys.exit(1)
-            print("[INFO] Tarayıcıda Google hesabınızla giriş yapın...")
-            flow = InstalledAppFlow.from_client_secrets_file(cred_file, SCOPES)
-            creds = flow.run_local_server(port=8080)
-
-        with open(token_file, "w") as f:
-            f.write(creds.to_json())
-        print("[INFO] ✅ Token kaydedildi.")
-
-    return creds
+def authenticate(cred_file: str = "", token_file: str = ""):
+    """Gmail API OAuth2 kimlik doğrulaması — Merkezi token sistemi."""
+    # cred_file ve token_file parametreleri geriye uyumluluk için bırakılmıştır
+    # Artık merkezi google_auth kullanılır
+    return _get_gmail_service("outreach")
 
 
 # ═══════════════════════════════════════════════════
@@ -261,15 +225,8 @@ def main():
     print(f"{'='*60}")
 
     # Gmail kimlik doğrulama
-    cred_file, token_file = credentials_yollarini_bul()
-    creds = authenticate(cred_file, token_file)
+    service = authenticate()
     print("[INFO] ✅ Gmail API bağlantısı başarılı.")
-
-    if args.auth_only:
-        return
-
-    from googleapiclient.discovery import build
-    service = build("gmail", "v1", credentials=creds)
 
     # Enriched listeyi yükle
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
