@@ -1,0 +1,26 @@
+{
+    "description": "Dolunay'ın halihazırda iş birliği yaptığı markalar. Outreach listesinden hariç tutulacak.",
+    "brands": [
+        "Aithor", "İdeaSoft", "Top View", "Zio Koltuk", "Klayve",
+        "TopView", "HiCut", "eSIMio", "Temu", "VidAU", "Nim AI",
+        "ReelsApp", "HelloSpeak", "eSIM io", "Head ai", "Pippit AI",
+        "ManyChat", "Nim", "AI Blaze", "Hepsiburada", "Sharge",
+        "Creati", "Printify", "Lovart", "KickResume", "Emergent",
+        "Oyliyo", "Meshy", "ChatLLM", "CapCut", "LawChat", "Kimi",
+        "Ryhtmix", "Typeless", "Medeo", "Tripo", "Blink", "Abacus",
+        "Dokie", "Verdent", "GenSpark", "Skywork", "Mureka", "Arcads",
+        "Syntx", "Pixelcut", "Lexi AI", "ArtFlow", "Creatify"
+    ],
+    "instagram_handles_to_exclude": [
+        "aithor", "ideasoft", "topview", "topview_ai", "topviewai",
+        "temu", "vidau", "nim_ai", "nim.ai", "nimai", "manychat",
+        "hepsiburada", "creati", "creatiai.official", "printify",
+        "lovart", "lovart.ai", "kickresume", "meshy", "meshy.ai",
+        "capcut", "kimi", "kimiai.official", "kimiai", "medeo",
+        "medeo.ai", "abacus", "abacus.ai", "abacusai", "verdent",
+        "verdent__ai", "verdentai", "genspark", "genspark_ai",
+        "gensparkui", "arcads", "arcadsai", "syntx_ai", "syntx_global",
+        "pixelcut", "pixelcutapp", "lexi_ai", "lexiai",
+        "artflow", "artflowai", "creatify", "creatifyai"
+    ]
+}
