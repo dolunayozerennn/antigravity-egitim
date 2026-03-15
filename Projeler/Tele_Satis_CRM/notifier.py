@@ -61,7 +61,7 @@ def send_error_notification(lead_info: dict, error_message: str):
         )
         msg.attach(MIMEText(body, "plain", "utf-8"))
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
             server.login(Config.SMTP_USER, Config.SMTP_APP_PASSWORD)
             server.sendmail(
                 Config.SMTP_USER, Config.ERROR_NOTIFY_EMAIL, msg.as_string()

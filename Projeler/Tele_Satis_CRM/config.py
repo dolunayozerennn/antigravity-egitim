@@ -41,8 +41,9 @@ class Config:
     # Google Auth — Production: Service Account, Lokal: OAuth2
     GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
 
-    # Duplikasyon Kuralı
-    DEDUP_WINDOW_DAYS = int(os.environ.get("DEDUP_WINDOW_DAYS", "7"))
+    # Notion API Koruması
+    NOTION_RATE_LIMIT_DELAY = float(os.environ.get("NOTION_RATE_LIMIT_DELAY", "0.35"))
+    NOTION_MAX_RETRIES = int(os.environ.get("NOTION_MAX_RETRIES", "3"))
 
     # Bütçe Seçenekleri (Notion select alanıyla eşleşmeli)
     VALID_BUDGETS = ["$0 - $20", "$20 - $50", "$50 - $150", "$150+"]

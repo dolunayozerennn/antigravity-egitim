@@ -5,7 +5,7 @@ Google Sheets'ten Notion'a lead aktarım otomasyonu.
 Meta reklamlarından gelen lead'leri:
 1. Google Sheets'ten okur (5 dk polling)
 2. Veriyi temizler (telefon, isim, email, bütçe)
-3. Duplikasyon kontrolü yapar (7 gün kuralı)
+3. Duplikasyon kontrolü yapar (telefon/email filtresi)
 4. Notion CRM'e ekler (Durum: Aranacak, Komisyon: Ödenmedi)
 5. Hata durumunda bildirim gönderir
 
@@ -13,12 +13,15 @@ Kullanım:
     python main.py           # Sürekli polling (5 dk)
     python main.py --once    # Tek döngü çalıştır
 """
+import re
 import sys
 import time
 import signal
 import logging
 import argparse
 from datetime import datetime
+
+from requests.exceptions import ConnectionError, Timeout
 
 from config import Config
 from sheets_reader import SheetsReader
@@ -78,6 +81,10 @@ def run_cycle(reader: SheetsReader, writer: NotionWriter) -> dict:
     stats["total"] = len(new_rows)
     logger.info(f"📥 {len(new_rows)} yeni satır alındı, işleniyor...")
 
+    # Batch içi dedup set — aynı döngüde cross-tab duplicate'leri engeller
+    seen_phones: set[str] = set()
+    seen_emails: set[str] = set()
+
     # 2) Her satırı işle
     for row in new_rows:
         # Veri temizle
@@ -86,6 +93,26 @@ def run_cycle(reader: SheetsReader, writer: NotionWriter) -> dict:
         # İsim boşsa atla (geçersiz kayıt)
         if not cleaned["clean_name"]:
             logger.warning(f"⚠️ İsim boş, satır atlanıyor: {row}")
+            stats["skipped"] += 1
+            continue
+
+        # Batch içi dedup — aynı polling döngüsünde aynı lead'i iki kez işleme
+        phone_key = re.sub(r"[^\d]", "", cleaned["clean_phone"])
+        email_key = cleaned["clean_email"]
+
+        if phone_key and phone_key in seen_phones:
+            logger.info(
+                f"🔁 Batch-dedup: {cleaned['clean_name']} telefon zaten "
+                f"bu döngüde işlendi, atlanıyor"
+            )
+            stats["skipped"] += 1
+            continue
+
+        if email_key and email_key in seen_emails:
+            logger.info(
+                f"🔁 Batch-dedup: {cleaned['clean_name']} email zaten "
+                f"bu döngüde işlendi, atlanıyor"
+            )
             stats["skipped"] += 1
             continue
 
@@ -99,6 +126,14 @@ def run_cycle(reader: SheetsReader, writer: NotionWriter) -> dict:
         elif result["action"] == "error":
             stats["errors"] += 1
             send_error_notification(cleaned, result.get("error", "Bilinmeyen hata"))
+
+        # Başarılı veya skip olan lead'leri de seen set'lere ekle
+        # Böylece farklı tab'dan gelen aynı kişi için gereksiz Notion sorgusu yapılmaz
+        if result["action"] in ("created", "skipped"):
+            if phone_key:
+                seen_phones.add(phone_key)
+            if email_key:
+                seen_emails.add(email_key)
 
     return stats
 
@@ -160,7 +195,17 @@ def main():
         cycle_count += 1
         logger.info(f"─── Döngü #{cycle_count} ─── {datetime.now().strftime('%H:%M:%S')}")
 
-        stats = run_cycle(reader, writer)
+        try:
+            stats = run_cycle(reader, writer)
+        except (ConnectionError, Timeout) as e:
+            logger.error(
+                f"❌ Geçici ağ hatası, sonraki döngüde tekrar denenecek: {e}"
+            )
+            send_error_notification(
+                {"clean_name": "SISTEM", "clean_email": "-", "clean_phone": "-"},
+                f"Geçici ağ hatası: {e}",
+            )
+            stats = {"total": 0, "created": 0, "skipped": 0, "errors": 0}
 
         if stats["total"] > 0:
             logger.info(

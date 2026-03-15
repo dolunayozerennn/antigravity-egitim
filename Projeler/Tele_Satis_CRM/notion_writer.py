@@ -4,11 +4,11 @@ Duplikasyon kontrolü + Lead oluşturma.
 Doğrudan Notion API kullanır (MCP yok — Railway'de çalışacak).
 """
 import re
+import time
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 import requests
+from requests.exceptions import ConnectionError, Timeout
 
 from config import Config
 
@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 NOTION_API_URL = "https://api.notion.com/v1"
 WHATSAPP_BASE = "https://wa.me/"
 NOTION_VERSION = "2022-06-28"
+
+# Geçici API hataları — retry ile kurtarabileceğimiz HTTP status kodları
+_RETRYABLE_STATUS_CODES = {429, 502, 503, 504}
 
 
 class NotionWriter:
@@ -29,6 +32,8 @@ class NotionWriter:
             "Notion-Version": NOTION_VERSION,
         }
         self.database_id = Config.NOTION_DATABASE_ID
+        self._rate_limit_delay = Config.NOTION_RATE_LIMIT_DELAY
+        self._max_retries = Config.NOTION_MAX_RETRIES
 
     @staticmethod
     def _build_whatsapp_link(phone: str) -> str:
@@ -42,107 +47,120 @@ class NotionWriter:
         digits = re.sub(r"[^\d]", "", phone)
         return f"{WHATSAPP_BASE}{digits}" if digits else ""
 
-    def _query_recent_leads(self) -> list[dict]:
+    def _api_call(self, method: str, url: str, **kwargs) -> requests.Response:
         """
-        Son N gün içinde oluşturulan lead'leri Notion'dan çeker.
-        Tüm DB'yi çekmek yerine tarih filtresi uygular → performans.
+        Notion API çağrısı yapar.
+        - Rate limit delay uygular (429 önleme)
+        - Geçici hatalarda (429, 502, 503, timeout) otomatik retry yapar
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=Config.DEDUP_WINDOW_DAYS)
-        cutoff_iso = cutoff.isoformat()
+        last_err = None
+        for attempt in range(self._max_retries):
+            try:
+                if attempt > 0:
+                    wait = 2 ** attempt
+                    logger.warning(
+                        f"⚠️ Notion API geçici hata, {wait}s sonra tekrar "
+                        f"deneniyor (deneme {attempt + 1}/{self._max_retries})..."
+                    )
+                    time.sleep(wait)
 
+                resp = getattr(requests, method)(url, headers=self.headers, **kwargs)
+
+                # Rate limit aşıldı veya geçici sunucu hatası
+                if resp.status_code in _RETRYABLE_STATUS_CODES:
+                    retry_after = float(resp.headers.get("Retry-After", 2 ** attempt))
+                    logger.warning(
+                        f"⚠️ Notion {resp.status_code}, {retry_after}s bekleniyor..."
+                    )
+                    time.sleep(retry_after)
+                    last_err = requests.HTTPError(response=resp)
+                    continue
+
+                resp.raise_for_status()
+
+                # Başarılı çağrıdan sonra rate limit delay
+                time.sleep(self._rate_limit_delay)
+                return resp
+
+            except (ConnectionError, Timeout) as e:
+                last_err = e
+                if attempt < self._max_retries - 1:
+                    continue
+                raise
+
+        # Tüm denemeler başarısız
+        if isinstance(last_err, requests.HTTPError):
+            raise last_err
+        raise last_err  # type: ignore
+
+    def _query_by_phone(self, phone: str) -> list[dict]:
+        """Notion'da telefon numarasına göre lead arar."""
         url = f"{NOTION_API_URL}/databases/{self.database_id}/query"
         payload = {
             "filter": {
-                "property": "Eklendi",
-                "created_time": {
-                    "on_or_after": cutoff_iso,
-                },
+                "property": "Phone",
+                "phone_number": {"equals": phone},
             },
-            "page_size": 100,
+            "page_size": 1,
         }
+        resp = self._api_call("post", url, json=payload)
+        return resp.json().get("results", [])
 
-        all_results = []
-        has_more = True
-        start_cursor = None
-
-        while has_more:
-            if start_cursor:
-                payload["start_cursor"] = start_cursor
-
-            resp = requests.post(url, headers=self.headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-
-            all_results.extend(data.get("results", []))
-            has_more = data.get("has_more", False)
-            start_cursor = data.get("next_cursor")
-
-        logger.debug(
-            f"📋 Son {Config.DEDUP_WINDOW_DAYS} günden {len(all_results)} kayıt çekildi"
-        )
-        return all_results
-
-    def _extract_lead_info(self, page: dict) -> dict:
-        """Notion page'inden email ve telefon bilgisini çıkarır."""
-        props = page.get("properties", {})
-
-        email = ""
-        if "email" in props and props["email"].get("email"):
-            email = props["email"]["email"].lower()
-
-        phone = ""
-        if "Phone" in props and props["Phone"].get("phone_number"):
-            phone = re.sub(r"[\s+\-()p:]", "", props["Phone"]["phone_number"])
-
-        created_time = page.get("created_time", "")
-
-        return {
-            "email": email,
-            "phone": phone,
-            "created_time": created_time,
+    def _query_by_email(self, email: str) -> list[dict]:
+        """Notion'da email adresine göre lead arar."""
+        url = f"{NOTION_API_URL}/databases/{self.database_id}/query"
+        payload = {
+            "filter": {
+                "property": "email",
+                "email": {"equals": email},
+            },
+            "page_size": 1,
         }
+        resp = self._api_call("post", url, json=payload)
+        return resp.json().get("results", [])
 
-    def check_duplicate(self, clean_email: str, clean_phone: str) -> tuple[bool, str]:
+    def _query_by_name(self, name: str) -> list[dict]:
+        """Notion'da isime göre lead arar (email+telefon yoksa fallback)."""
+        url = f"{NOTION_API_URL}/databases/{self.database_id}/query"
+        payload = {
+            "filter": {
+                "property": "İsim",
+                "title": {"equals": name},
+            },
+            "page_size": 1,
+        }
+        resp = self._api_call("post", url, json=payload)
+        return resp.json().get("results", [])
+
+    def check_duplicate(self, clean_email: str, clean_phone: str,
+                        clean_name: str = "") -> tuple[bool, str]:
         """
-        7 gün kuralı ile duplikasyon kontrolü yapar.
-        
+        Notion API filtresi ile duplikasyon kontrolü yapar.
+        Telefon veya email ile doğrudan sorgular — tarih penceresi yok.
+
         Returns:
             (is_duplicate, match_reason)
         """
-        recent_leads = self._query_recent_leads()
-        clean_phone_stripped = re.sub(r"[\s+\-()]", "", clean_phone)
+        # 1) Telefon ile kontrol
+        if clean_phone:
+            results = self._query_by_phone(clean_phone)
+            if results:
+                logger.info(f"🔁 Duplike tespit: Telefon eşleşti ({clean_phone})")
+                return True, f"Telefon eşleşti ({clean_phone})"
 
-        for page in recent_leads:
-            info = self._extract_lead_info(page)
+        # 2) Email ile kontrol
+        if clean_email:
+            results = self._query_by_email(clean_email)
+            if results:
+                logger.info(f"🔁 Duplike tespit: Email eşleşti ({clean_email})")
+                return True, f"Email eşleşti ({clean_email})"
 
-            matched_email = info["email"] and info["email"] == clean_email
-            matched_phone = (
-                info["phone"]
-                and clean_phone_stripped
-                and info["phone"] == clean_phone_stripped
-            )
-
-            if not matched_email and not matched_phone:
-                continue
-
-            # Eşleşme var — kaç gün önce oluşturulmuş?
-            try:
-                created = datetime.fromisoformat(
-                    info["created_time"].replace("Z", "+00:00")
-                )
-                days_ago = (datetime.now(timezone.utc) - created).days
-            except (ValueError, TypeError):
-                days_ago = 0
-
-            if matched_email and matched_phone:
-                reason = f"Email + Telefon eşleşti ({days_ago} gün önce kayıt var)"
-            elif matched_email:
-                reason = f"Email eşleşti ({days_ago} gün önce kayıt var)"
-            else:
-                reason = f"Telefon eşleşti ({days_ago} gün önce kayıt var)"
-
-            logger.info(f"🔁 Duplike tespit: {reason}")
-            return True, reason
+        # 3) Ne email ne telefon varsa, isim ile fallback
+        if not clean_phone and not clean_email and clean_name:
+            results = self._query_by_name(clean_name)
+            if results:
+                logger.info(f"🔁 Duplike tespit: İsim eşleşti ({clean_name})")
+                return True, f"İsim eşleşti ({clean_name})"
 
         return False, ""
 
@@ -208,8 +226,7 @@ class NotionWriter:
             "properties": properties,
         }
 
-        resp = requests.post(url, headers=self.headers, json=payload)
-        resp.raise_for_status()
+        resp = self._api_call("post", url, json=payload)
 
         result = resp.json()
         logger.info(
@@ -231,7 +248,7 @@ class NotionWriter:
 
         try:
             # Duplikasyon kontrolü
-            is_dup, reason = self.check_duplicate(email, phone)
+            is_dup, reason = self.check_duplicate(email, phone, name)
 
             if is_dup:
                 return {
@@ -247,6 +264,12 @@ class NotionWriter:
                 "name": name,
                 "notion_id": result.get("id"),
             }
+
+        except (ConnectionError, Timeout) as e:
+            # Geçici ağ hatası — bu lead'i atlamak yerine yukarı fırlat,
+            # böylece döngü durur ve sonraki polling'de tekrar denenir
+            logger.error(f"❌ Geçici ağ hatası ({name}): {e}")
+            raise
 
         except requests.HTTPError as e:
             error_msg = str(e)
