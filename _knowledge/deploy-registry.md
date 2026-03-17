@@ -14,8 +14,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/shorts-demo-bot`
 - **Lokal Klasör:** `Projeler/Shorts_Demo_Otomasyonu/`
 - **Start Komutu:** `python bot.py`
-- **Son Deploy:** 2026-03-10
-- **Durum:** ✅ Aktif
+- **Son Deploy:** 2026-03-17
+- **Durum:** ✅ Aktif (README güncellendi, Kie AI referansı kaldırıldı)
 
 ---
 
@@ -27,8 +27,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/sweatcoin-email-automation`
 - **Lokal Klasör:** `Projeler/Swc_Email_Responder/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-03-17
-- **Durum:** ✅ Aktif (v2.4: Genuine inbound mailler artık agent'a yönlendiriliyor)
+- **Son Deploy:** 2026-03-17 (redeploy: 23:30 TSİ — .env.example güncellendi, 8 dosya sync)
+- **Durum:** ✅ Aktif (v2.6: .env.example yeni auth sistemi, sweatcoin_automation.py + handover.md kaldırıldı, smoke test ✅)
 
 ---
 
@@ -40,8 +40,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/tele-satis-crm`
 - **Lokal Klasör:** `Projeler/Tele_Satis_CRM/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-12
-- **Durum:** ✅ Aktif (v2: 3 tab + WhatsApp Link + Ne zaman ulaşalım?)
+- **Son Deploy:** 2026-03-17
+- **Durum:** ✅ Aktif (v3: Bulk dedup + DEDUP_WINDOW_DAYS fix — GitHub sync doğrulandı)
 
 ---
 
@@ -53,8 +53,19 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/dolunay-reels-kapak`
 - **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
 - **Start Komutu:** `python worker.py`
-- **Son Deploy:** 2026-03-12
-- **Durum:** ✅ Aktif
+- **Son Deploy:** 2026-03-18 (büyük refactor: README güncellendi, 7 yardımcı script eklendi, copy_image.py kaldırıldı, smoke test ✅)
+- **Durum:** ✅ Aktif (multi-theme + revision engine + yardımcı scriptler — GitHub sync doğrulandı)
+
+### revizyon-cron (dolunay-reels-kapak projesi içinde)
+- **Platform:** `railway`
+- **Railway Project ID:** `fed6db49-de57-4fbe-9988-528416f1b668`
+- **Service ID:** `1e740cb1-3b80-47e3-a863-2d27c7f2c01a`
+- **Environment ID:** `f555d0bb-125e-4d15-838e-dbeb2936a721`
+- **GitHub Repo:** `dolunayozerennn/dolunay-reels-kapak`
+- **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
+- **Start Komutu:** `python revision_cron_worker.py`
+- **Son Deploy:** 2026-03-18 (refactor ile birlikte redeploy, smoke test ✅)
+- **Durum:** ✅ Aktif (Günde 5 kez: 10:00, 13:00, 16:00, 19:00, 22:00 TSİ)
 
 ---
 
@@ -77,8 +88,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/lead-notifier-bot`
 - **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-15
-- **Durum:** ✅ Aktif (v2: retry, rate-limit, reconnect, Telegram birincil kanal)
+- **Son Deploy:** 2026-03-17
+- **Durum:** ✅ Aktif (v2: retry, rate-limit, reconnect — GitHub sync doğrulandı)
 
 ---
 
@@ -97,8 +108,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/isbirligi-tahsilat-takip`
 - **Lokal Klasör:** `Projeler/Isbirligi_Tahsilat_Takip/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** `2026-03-16`
-- **Durum:** ✅ Aktif
+- **Son Deploy:** `2026-03-17`
+- **Durum:** ✅ Aktif (Telegram kaldırıldı, Notion-based state)
 
 ### marka-is-birligi
 - **Platform:** `railway`
@@ -113,16 +124,16 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-### lead-arama-zamanlayici
+### tele-satis-notifier
 - **Platform:** `railway`
 - **Railway Project ID:** `0aea5336-444e-4d6b-8bb3-e47614651055`
 - **Service ID:** `ec68b31f-93fc-44da-8c3d-fe19a5e6eba7`
 - **Environment ID:** `d90e6b8d-720e-447c-8940-00d604b0a0b8`
-- **GitHub Repo:** `dolunayozerennn/lead-arama-zamanlayici`
-- **Lokal Klasör:** `Projeler/Lead_Arama_Zamanlayici/`
+- **GitHub Repo:** `dolunayozerennn/tele-satis-notifier`
+- **Lokal Klasör:** `Projeler/Tele_Satis_Notifier/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-16
-- **Durum:** ✅ Aktif (Lead zamanlama bildirimi — dolunay@dolunay.ai → eceyarencna@gmail.com)
+- **Son Deploy:** 2026-03-17 (redeploy: 23:04 TSİ — deployment ID: 38111212)
+- **Durum:** ✅ Aktif (Tele Satış lead zamanlama bildirimi — dolunay@dolunay.ai → eceyarencna@gmail.com, smoke test ✅)
 
 ### akilli-watchdog
 - **Platform:** `railway`
@@ -132,8 +143,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/akilli-watchdog`
 - **Lokal Klasör:** `Projeler/Akilli_Watchdog/`
 - **Start Komutu:** `python main.py --loop`
-- **Son Deploy:** 2026-03-16
-- **Durum:** ✅ Aktif (LLM-destekli pipeline sağlık izleme — 24 saatte 1 kontrol)
+- **Son Deploy:** 2026-03-17 (redeploy: 23:15 TSİ — kapsamlı README + config isim düzeltmesi)
+- **Durum:** ✅ Aktif (LLM-destekli pipeline sağlık izleme — 24 saatte 1 kontrol, smoke test ✅)
 
 ---
 
@@ -145,6 +156,6 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/Dolunay_AI_Website`
 - **Lokal Klasör:** `Projeler/Dolunay_AI_Website/`
 - **Start Komutu:** `npm run build && npm run preview -- --host --port $PORT`
-- **Son Deploy:** 2026-03-16
-- **Durum:** ✅ Aktif (Vite Frontend Uygulaması)
+- **Son Deploy:** 2026-03-17
+- **Durum:** ✅ Aktif (Vite Frontend — Node 20+ fix, Tailwind CSS v4 compat)
 
