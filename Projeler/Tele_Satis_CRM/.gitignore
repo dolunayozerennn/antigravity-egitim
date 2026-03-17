@@ -28,6 +28,9 @@ Thumbs.db
 # Logs
 *.log
 
+# State (restart persist)
+.last_row_counts.json
+
 # Railway
 .railway-bin/
 

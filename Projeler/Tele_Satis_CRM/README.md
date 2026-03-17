@@ -104,10 +104,8 @@ def authenticate(self):
 
 | Kaynak | Erişim | Not |
 |--------|--------|-----|
-| `Skool - Dolunay Özeren Leads` | ✅ Var | 3 tab okunabiliyor |
-| Tab: `Mart-2026` | ✅ OK | — |
-| Tab: `Mart-2026-Saat Bazlı` | ✅ OK | — |
-| Tab: `Saat-Bazlı - v2` | ✅ OK | — |
+| `Skool - Dolunay Özeren Leads` | ✅ Var | 1 tab okunabiliyor |
+| Tab: `Mart-2026-Saat Bazlı-v2` | ✅ OK | Sadece bu tab okunuyor |
 | Scope: `spreadsheets.readonly` | ✅ OK | Sadece okuma |
 
 ---

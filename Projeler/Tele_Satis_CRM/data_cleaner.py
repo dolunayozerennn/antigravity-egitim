@@ -12,19 +12,45 @@ logger = logging.getLogger(__name__)
 
 def clean_phone(raw_phone: str) -> str:
     """
-    Telefon numarasını temizler ve formatlar.
-    Türk numarası: +90 5XX XXX XXXX
+    Türkiye telefon numarasını temizler ve uluslararası formata çevirir.
+
+    Desteklenen giriş formatları:
+      - 5348970627        → +90 534 897 0627  (ülke kodu eksik)
+      - 05461383982       → +90 546 138 3982  (yerel format)
+      - p:+905321234567   → +90 532 123 4567  (form prefix'i)
+      - 905321234567      → +90 532 123 4567  (tam format)
+      - +90 (532) 123-45-67 → +90 532 123 4567
+
+    Referans: _skills/telefon-formatlayici/SKILL.md
     """
     phone = str(raw_phone or "")
-    # p:+ prefix'ini kaldır
-    phone = re.sub(r"^p:\+?", "", phone)
-    # Tüm boşluk, +, -, (, ) karakterlerini kaldır
-    phone = re.sub(r"[\s+\-()]", "", phone)
 
-    # Türk numarası formatla
+    # 1. Prefix temizliği (p:+ gibi form prefixleri)
+    phone = re.sub(r"^p:\+?", "", phone)
+
+    # 2. Tüm non-digit karakterleri kaldır
+    phone = re.sub(r"[^\d]", "", phone)
+
+    if not phone:
+        return ""
+
+    # 3. 090... → 90... (ülke kodu önünde gereksiz sıfır)
+    if phone.startswith("090") and len(phone) == 13:
+        phone = phone[1:]
+
+    # 4. Yerel format: 05XX... (11 hane) → 90 + 5XX...
+    if phone.startswith("0") and len(phone) == 11:
+        phone = "90" + phone[1:]
+
+    # 5. Ülke kodsuz mobil: 5XX... (10 hane) → 90 + 5XX...
+    if phone.startswith("5") and len(phone) == 10:
+        phone = "90" + phone
+
+    # 6. Doğru TR mobil: 905XXXXXXXX (12 hane) → formatlı
     if phone.startswith("90") and len(phone) == 12:
         return f"+{phone[:2]} {phone[2:5]} {phone[5:8]} {phone[8:]}"
 
+    # 7. Diğer — olduğu gibi döndür
     return f"+{phone}" if phone else ""
 
 
@@ -56,15 +82,41 @@ def clean_budget(raw_budget: str) -> str:
 
 def clean_timing(raw_timing: str) -> str:
     """
-    Ulaşım zamanı tercihini temizler.
-    Toleranslı eşleşme sağlar veya direkt string döner.
+    Ulaşım zamanı tercihini temizler ve Notion select alanına uygun hale getirir.
+
+    Sheets'ten gelen veriler alt çizgili ve küçük harfli olabilir:
+      - aramayın,_mesaj_atın → Aramayın mesaj atın
+      - gün_içinde          → Gün içinde
+      - akşam_6'dan_sonra   → Akşam 6'dan sonra
+
+    ÖNEMLİ: Notion select alanlarında virgül YASAK olduğu için
+    "Aramayın, mesaj atın" yerine "Aramayın mesaj atın" kullanılır.
+
+    Geçerli bir seçenek yoksa boş döner (400 Bad Request önlemi).
     """
-    timing = str(raw_timing or "").strip()
-    valid_options = ["Akşam 6'dan sonra", "Gün içinde", "Haftasonu", "Aramayın, mesaj atın"]
-    for opt in valid_options:
-        if opt.lower() == timing.lower():
-            return opt
-    return timing if timing else ""
+    timing = str(raw_timing or "").strip().replace("_", " ")
+    # Virgülü de kaldır (Notion select'te yasak)
+    timing_no_comma = timing.replace(",", "")
+
+    # Sheets → Notion mapping (büyük/küçük harf toleranslı)
+    TIMING_MAP = {
+        "akşam 6'dan sonra":    "Akşam 6'dan sonra",
+        "gün içinde":           "Gün içinde",
+        "haftasonu":            "Haftasonu",
+        "aramayın mesaj atın":  "Aramayın mesaj atın",
+        "aramayın, mesaj atın": "Aramayın mesaj atın",
+    }
+
+    key = timing_no_comma.lower()
+    if key in TIMING_MAP:
+        return TIMING_MAP[key]
+
+    # Virgüllü hâliyle de dene
+    key_with_comma = timing.lower()
+    if key_with_comma in TIMING_MAP:
+        return TIMING_MAP[key_with_comma]
+
+    return ""
 
 
 def clean_lead(raw_data: dict) -> dict:

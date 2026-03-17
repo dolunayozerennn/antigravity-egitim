@@ -17,11 +17,19 @@ class Config:
         "SPREADSHEET_ID",
         "10uTCr65VlIBng0Sxlmz7h1Q2y5AWBp1qDQHTeqI7mGU"
     )
-    SHEET_TABS = [
-        {"name": "Mart-2026", "gid": 0},
-        {"name": "Mart-2026-Saat Bazlı", "gid": 76091790},
-        {"name": "Saat-Bazlı - v2", "gid": 0},
-    ]
+
+    # Tab isimleri — SHEET_TABS env var ile ayarlanabilir
+    # Format: "Tab1,Tab2,Tab3" (virgülle ayrılmış)
+    # Yeni ay'da kod değişikliği yerine Railway'de env var güncellemesi yeterli
+    _sheet_tabs_env = os.environ.get("SHEET_TABS", "")
+    if _sheet_tabs_env:
+        SHEET_TABS = [
+            {"name": name.strip()} for name in _sheet_tabs_env.split(",") if name.strip()
+        ]
+    else:
+        SHEET_TABS = [
+            {"name": "Mart-2026-Saat Bazlı-v2"},
+        ]
 
     # Notion
     NOTION_API_TOKEN = os.environ.get("NOTION_API_TOKEN", "")

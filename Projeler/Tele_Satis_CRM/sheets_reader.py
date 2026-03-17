@@ -38,6 +38,8 @@ class SheetsReader:
         self.service = None
         # Her tab için en son okunan satır sayısını takip eder
         self._last_row_counts: dict[str, int] = self._load_state()
+        # İşlem onaylanana kadar geçici sayılar burada tutulur
+        self._pending_counts: dict[str, int] = {}
 
     @staticmethod
     def _load_state() -> dict[str, int]:
@@ -161,8 +163,7 @@ class SheetsReader:
             # Son 48 saatin satırlarını döndür.
             # Duplikasyon kontrolü zaten var olanları atlayacak,
             # ama crash sırasında kaçanları kurtaracak.
-            self._last_row_counts[tab_name] = total
-            self._save_state()
+            self._pending_counts[tab_name] = total
 
             recent_rows = self._filter_recent_rows(all_rows, hours=48)
             if recent_rows:
@@ -192,8 +193,7 @@ class SheetsReader:
 
         if total > last_count:
             new_rows = all_rows[last_count:]
-            self._last_row_counts[tab_name] = total
-            self._save_state()
+            self._pending_counts[tab_name] = total
             logger.info(
                 f"📊 '{tab_name}': {len(new_rows)} yeni satır bulundu "
                 f"(toplam: {total})"
@@ -208,13 +208,11 @@ class SheetsReader:
                 f"({last_count} → {total}). Sheets'te satır silinmiş olabilir. "
                 f"Counter sıfırlandı."
             )
-            self._last_row_counts[tab_name] = total
-            self._save_state()
+            self._pending_counts[tab_name] = total
             return []
 
         # Değişiklik yok
-        self._last_row_counts[tab_name] = total
-        self._save_state()
+        self._pending_counts[tab_name] = total
         return []
 
     @staticmethod
@@ -244,6 +242,31 @@ class SheetsReader:
                 continue
 
         return recent
+
+    def confirm_processed(self):
+        """
+        Lead'ler başarıyla işlendikten sonra çağrılır.
+        Pending counts'u last_row_counts'a taşır ve diske kaydeder.
+        Böylece sonraki polling sadece gerçekten yeni satırları okur.
+        """
+        if self._pending_counts:
+            self._last_row_counts.update(self._pending_counts)
+            self._pending_counts.clear()
+            self._save_state()
+            logger.debug("✅ Satır sayıları onaylandı ve kaydedildi")
+
+    def rollback_pending(self):
+        """
+        İşlem sırasında hata olduğunda çağrılır.
+        Pending counts temizlenir — sonraki polling aynı satırları tekrar okur.
+        Bu sayede geçici ağ hatası yüzünden lead kaybolmaz.
+        """
+        if self._pending_counts:
+            logger.info(
+                f"↩️ Pending counts geri alındı — sonraki polling'de "
+                f"aynı satırlar tekrar okunacak: {self._pending_counts}"
+            )
+            self._pending_counts.clear()
 
     def poll_all_tabs(self) -> list[dict]:
         """

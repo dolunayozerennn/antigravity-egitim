@@ -68,6 +68,7 @@ def run_cycle(reader: SheetsReader, writer: NotionWriter) -> dict:
         new_rows = reader.poll_all_tabs()
     except Exception as e:
         logger.error(f"❌ Google Sheets okunamadı: {e}")
+        reader.rollback_pending()
         send_error_notification(
             {"clean_name": "SISTEM", "clean_email": "-", "clean_phone": "-"},
             f"Google Sheets okuma hatası: {e}",
@@ -75,6 +76,7 @@ def run_cycle(reader: SheetsReader, writer: NotionWriter) -> dict:
         return stats
 
     if not new_rows:
+        reader.confirm_processed()
         logger.info("📭 Yeni lead yok")
         return stats
 
@@ -135,6 +137,8 @@ def run_cycle(reader: SheetsReader, writer: NotionWriter) -> dict:
             if email_key:
                 seen_emails.add(email_key)
 
+    # Tüm lead'ler işlendi — satır sayılarını onayla ve kaydet
+    reader.confirm_processed()
     return stats
 
 
@@ -198,6 +202,7 @@ def main():
         try:
             stats = run_cycle(reader, writer)
         except (ConnectionError, Timeout) as e:
+            reader.rollback_pending()
             logger.error(
                 f"❌ Geçici ağ hatası, sonraki döngüde tekrar denenecek: {e}"
             )
