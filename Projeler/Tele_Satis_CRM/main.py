@@ -83,43 +83,60 @@ def run_cycle(reader: SheetsReader, writer: NotionWriter) -> dict:
     stats["total"] = len(new_rows)
     logger.info(f"📥 {len(new_rows)} yeni satır alındı, işleniyor...")
 
-    # Batch içi dedup set — aynı döngüde cross-tab duplicate'leri engeller
-    seen_phones: set[str] = set()
-    seen_emails: set[str] = set()
-
-    # 2) Her satırı işle
+    # Tüm lead'leri temizle (geçersizleri atla)
+    cleaned_leads = []
     for row in new_rows:
-        # Veri temizle
         cleaned = clean_lead(row)
-
-        # İsim boşsa atla (geçersiz kayıt)
         if not cleaned["clean_name"]:
             logger.warning(f"⚠️ İsim boş, satır atlanıyor: {row}")
             stats["skipped"] += 1
-            continue
+        else:
+            cleaned_leads.append(cleaned)
 
-        # Batch içi dedup — aynı polling döngüsünde aynı lead'i iki kez işleme
-        phone_key = re.sub(r"[^\d]", "", cleaned["clean_phone"])
+    if not cleaned_leads:
+        reader.confirm_processed()
+        return stats
+
+    # Toplu Notion kontrolü
+    logger.info(f"🔍 {len(cleaned_leads)} lead için toplu duplikasyon kontrolü yapılıyor...")
+    try:
+        existing_phones, existing_emails, existing_names = writer.bulk_check_duplicates(cleaned_leads)
+    except Exception as e:
+        logger.error(f"❌ Toplu duplikasyon kontrolü başarısız: {e}")
+        reader.rollback_pending()
+        raise
+
+    # Batch içi dedup set — Notion verileriyle başlatıyoruz (cross-tab engellemek için de işe yarar)
+    seen_phones: set[str] = existing_phones.copy()
+    seen_emails: set[str] = existing_emails.copy()
+    seen_names: set[str] = existing_names.copy()
+
+    # 2) Her satırı işle
+    for cleaned in cleaned_leads:
+        phone_key = re.sub(r"[^\d]", "", cleaned["clean_phone"]) if cleaned["clean_phone"] else ""
         email_key = cleaned["clean_email"]
+        name_key = cleaned["clean_name"]
+
+        is_dup = False
+        reason = ""
 
         if phone_key and phone_key in seen_phones:
-            logger.info(
-                f"🔁 Batch-dedup: {cleaned['clean_name']} telefon zaten "
-                f"bu döngüde işlendi, atlanıyor"
-            )
+            is_dup = True
+            reason = f"Telefon eşleşti ({phone_key})"
+        elif email_key and email_key in seen_emails:
+            is_dup = True
+            reason = f"Email eşleşti ({email_key})"
+        elif not phone_key and not email_key and name_key and name_key in seen_names:
+            is_dup = True
+            reason = f"İsim eşleşti ({name_key})"
+
+        if is_dup:
+            logger.info(f"🔁 Duplike tespit: {cleaned['clean_name']} - {reason}, atlanıyor")
             stats["skipped"] += 1
             continue
 
-        if email_key and email_key in seen_emails:
-            logger.info(
-                f"🔁 Batch-dedup: {cleaned['clean_name']} email zaten "
-                f"bu döngüde işlendi, atlanıyor"
-            )
-            stats["skipped"] += 1
-            continue
-
-        # Notion'a ekle (duplikasyon kontrolü dahil)
-        result = writer.process_lead(cleaned)
+        # Notion'a ekle (artık tekil kontrol atlancak)
+        result = writer.process_lead(cleaned, skip_duplicate_check=True)
 
         if result["action"] == "created":
             stats["created"] += 1
@@ -130,12 +147,14 @@ def run_cycle(reader: SheetsReader, writer: NotionWriter) -> dict:
             send_error_notification(cleaned, result.get("error", "Bilinmeyen hata"))
 
         # Başarılı veya skip olan lead'leri de seen set'lere ekle
-        # Böylece farklı tab'dan gelen aynı kişi için gereksiz Notion sorgusu yapılmaz
+        # Böylece farklı tab'dan gelen aynı kişi için gereksiz işlem yapılmaz
         if result["action"] in ("created", "skipped"):
             if phone_key:
                 seen_phones.add(phone_key)
             if email_key:
                 seen_emails.add(email_key)
+            if name_key:
+                seen_names.add(name_key)
 
     # Tüm lead'ler işlendi — satır sayılarını onayla ve kaydet
     reader.confirm_processed()

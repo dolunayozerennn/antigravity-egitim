@@ -4,6 +4,7 @@ n8n'deki "Veri Temizleme" node'unun Python karşılığı.
 """
 import re
 import logging
+import difflib
 
 from config import Config
 
@@ -115,6 +116,11 @@ def clean_timing(raw_timing: str) -> str:
     key_with_comma = timing.lower()
     if key_with_comma in TIMING_MAP:
         return TIMING_MAP[key_with_comma]
+
+    # Hızlı yazım hatalarına karşı Fuzzy (Esnemeli) Eşleştirme (Oran: 0.70)
+    matches = difflib.get_close_matches(key_with_comma, TIMING_MAP.keys(), n=1, cutoff=0.7)
+    if matches:
+        return TIMING_MAP[matches[0]]
 
     return ""
 
