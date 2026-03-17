@@ -53,6 +53,9 @@ class Config:
     NOTION_RATE_LIMIT_DELAY = float(os.environ.get("NOTION_RATE_LIMIT_DELAY", "0.35"))
     NOTION_MAX_RETRIES = int(os.environ.get("NOTION_MAX_RETRIES", "3"))
 
+    # Duplikasyon penceresi (gün cinsinden) — geriye dönük uyumluluk için
+    DEDUP_WINDOW_DAYS = int(os.environ.get("DEDUP_WINDOW_DAYS", "7"))
+
     # Bütçe Seçenekleri (Notion select alanıyla eşleşmeli)
     VALID_BUDGETS = ["$0 - $20", "$20 - $50", "$50 - $150", "$150+"]
 
