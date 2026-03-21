@@ -23,10 +23,7 @@ import os
 import sys
 import time
 import json
-import schedule
-import threading
 from datetime import datetime, timezone, timedelta
-from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # ── Proje path'ini ayarla ────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +52,7 @@ _service_status = {
     "total_errors": 0,
     "pipeline_stats": {},
     "followup_stats": {},
+    "report_stats": {},
 }
 
 
@@ -90,13 +88,23 @@ def start_health_server():
 # ═══════════════════════════════════════════════════════════════════════
 
 def run_weekly_pipeline():
-    """Haftalık marka keşif + outreach pipeline'ını çalıştır."""
+    """Haftalik marka kesif + outreach pipeline'ini calistir."""
     now = tr_now()
     weekday = now.weekday()
 
     if weekday >= 5:
         print(f"📅 {now.strftime('%Y-%m-%d %H:%M')} — Hafta sonu, atlanıyor.")
         return
+
+    # Önce yanit/bounce kontrolü yap
+    print(f"\n{'='*60}")
+    print(f"🔍 RESPONSE CHECK (pipeline öncesi): {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
+    print(f"{'='*60}\n")
+    try:
+        from src.response_checker import check_responses
+        check_responses(dry_run=False)
+    except Exception as e:
+        print(f"⚠️ Response check hatası: {e}")
 
     print(f"\n{'='*60}")
     print(f"🚀 HAFTALIK PİPELİNE başladı: {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
@@ -128,6 +136,16 @@ def run_followup_check():
         print(f"📅 {now.strftime('%Y-%m-%d %H:%M')} — Hafta sonu, atlanıyor.")
         return
 
+    # Önce yanıt/bounce kontrolü yap
+    print(f"\n{'='*60}")
+    print(f"🔍 RESPONSE CHECK (follow-up öncesi): {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
+    print(f"{'='*60}\n")
+    try:
+        from src.response_checker import check_responses
+        check_responses(dry_run=False)
+    except Exception as e:
+        print(f"⚠️ Response check hatası: {e}")
+
     print(f"\n{'='*60}")
     print(f"📬 FOLLOW-UP KONTROLÜ başladı: {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
     print(f"{'='*60}\n")
@@ -150,55 +168,67 @@ def run_followup_check():
         _service_status["total_errors"] += 1
 
 
+def run_weekly_report_job():
+    """Haftalık raporu oluştur ve gönder."""
+    now = tr_now()
+    weekday = now.weekday()
+    
+    # Sadece Cuma günleri çalışmalı ama manuel tetikleme de olabilir
+    
+    print(f"\n{'='*60}")
+    print(f"📊 HAFTALIK RAPOR başladı: {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
+    print(f"{'='*60}\n")
+    
+    _service_status["total_runs"] += 1
+    
+    try:
+        from src.reporter import run_weekly_report
+        run_weekly_report()
+        print(f"\n✅ Rapor tamamlandı: {tr_now().strftime('%H:%M:%S')} (TR)")
+        _service_status["last_job_run"] = tr_now().isoformat()
+        _service_status["last_job_result"] = "report_success"
+    except Exception as e:
+        print(f"❌ Rapor hatası: {e}")
+        import traceback
+        traceback.print_exc()
+        _service_status["last_job_run"] = tr_now().isoformat()
+        _service_status["last_job_result"] = f"report_error: {str(e)[:200]}"
+        _service_status["total_errors"] += 1
+
+
 # ═══════════════════════════════════════════════════════════════════════
-# 🚀 Ana Giriş Noktası
+# 🚀 Ana Giriş Noktası (Cron Modu)
 # ═══════════════════════════════════════════════════════════════════════
 
 def main():
-    _service_status["scheduler_started_at"] = datetime.now().isoformat()
-
     now_tr = tr_now()
+    weekday = now_tr.weekday()
     print("=" * 60)
-    print("🤝 Marka İş Birliği — Otomatik Outreach Sistemi")
-    print("   📊 Haftalık Pipeline: Pazartesi 10:00 (TR)")
-    print("   📬 Follow-Up Check:  Perşembe 10:00 (TR)")
-    print("   🏥 Health Check: Aktif (idle-sleep koruması)")
+    print("🤝 Marka İş Birliği — Otomatik Outreach Sistemi (Cron Modu)")
     print(f"   🕐 Sunucu UTC: {datetime.now(timezone.utc).strftime('%H:%M')} → TR: {now_tr.strftime('%H:%M')}")
+    print(f"   📅 Gün (0=Pzt, 6=Paz): {weekday}")
     print("=" * 60)
 
-    # Health check sunucusu
-    health_thread = threading.Thread(target=start_health_server, daemon=True)
-    health_thread.start()
+    # Pazartesi (0) -> Haftalık Pipeline
+    if weekday == 0:
+        print("➡️ Pazartesi: run_weekly_pipeline tetikleniyor...")
+        run_weekly_pipeline()
 
-    # ═══════════════════════════════════════════════════════
-    # Schedule: Haftalık Pipeline — Pazartesi 10:00 TR = 07:00 UTC
-    # ═══════════════════════════════════════════════════════
-    schedule.every().monday.at("07:00").do(run_weekly_pipeline)
+    # Perşembe (3) -> Follow-Up Kontrolü
+    elif weekday == 3:
+        print("➡️ Perşembe: run_followup_check tetikleniyor...")
+        run_followup_check()
 
-    # ═══════════════════════════════════════════════════════
-    # Schedule: Follow-Up — Perşembe 10:00 TR = 07:00 UTC
-    # ═══════════════════════════════════════════════════════
-    schedule.every().thursday.at("07:00").do(run_followup_check)
+    # Cuma (4) -> Haftalık Rapor
+    elif weekday == 4:
+        print("➡️ Cuma: run_weekly_report_job tetikleniyor...")
+        run_weekly_report_job()
 
-    print(f"\n⏰ Scheduler aktif. Bir sonraki çalışma: {schedule.next_run()}")
-    print("🔁 Bekleniyor...\n")
+    else:
+        print("➡️ Bugün planlanmış bir görev bulunmuyor.")
 
-    # Ana döngü — crash korumalı
-    consecutive_errors = 0
-    while True:
-        try:
-            schedule.run_pending()
-            consecutive_errors = 0
-        except Exception as e:
-            consecutive_errors += 1
-            print(f"⚠️ Scheduler döngü hatası #{consecutive_errors}: {e}")
-            if consecutive_errors >= 10:
-                print("🔴 10 ardışık hata! 5 dakika bekleniyor...")
-                time.sleep(300)
-                consecutive_errors = 0
-
-        time.sleep(30)
-
+    print("\n👋 İşlem tamamlandı, çıkılıyor.")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
