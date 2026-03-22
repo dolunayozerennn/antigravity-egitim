@@ -7,6 +7,7 @@
 .env.*
 !.env.example
 credentials.env
+config.env
 *.env
 
 # OAuth Token dosyaları
@@ -64,6 +65,7 @@ yarn-error.log*
 .cursor/
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
@@ -121,3 +123,6 @@ Paylasima_Hazir_Projeler/**/.env*
 # Fatura Oluşturucu — üretilen PDF'ler ve fontlar
 _skills/fatura-olusturucu/uretilen-faturalar/
 _skills/fatura-olusturucu/*.ttf
+
+# Lead Pipeline state files
+Projeler/Lead_Pipeline/.state_*.json

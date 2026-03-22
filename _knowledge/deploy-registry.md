@@ -4,6 +4,10 @@ Bu dosya, Railway'e deploy edilen ve cron ile çalışan projelerin ID bilgileri
 Re-deploy'larda bu bilgiler kullanılarak gereksiz API sorguları atlanır.
 Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kontrol eder.
 
+> **⚠️ MİMARİ NOT (Mart 2026):** Çift-repo problemi nedeniyle **Native Mono-Repo** mimarisine geçilmiştir.
+> Eskiden her projenin ayrı bir `GitHub Repo` alanı varken, yeni projelerin tamamı `dolunayozerennn/antigravity-egitim` üzerinden Railway'in "Root Directory" ayarıyla deploy edilecektir.
+> Aşağıdaki eski projeler, vakit bulunduğunda monorepo'ya taşınıp eski repoları arşivlenebilir. Yeni projelerde her zaman `antigravity-egitim` reposu hedeflenmelidir.
+
 ---
 
 ### shorts-demo-bot
@@ -27,45 +31,42 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/sweatcoin-email-automation`
 - **Lokal Klasör:** `Projeler/Swc_Email_Responder/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-03-17 (redeploy: 23:30 TSİ — .env.example güncellendi, 8 dosya sync)
-- **Durum:** ✅ Aktif (v2.6: .env.example yeni auth sistemi, sweatcoin_automation.py + handover.md kaldırıldı, smoke test ✅)
+- **Son Deploy:** 2026-03-21 (migration: Railway Cron Job olarak ayarlandı)
+- **Durum:** ✅ Aktif (v2.6: Railway Cron geçişi yapıldı, schedule: 0 7,11,15 * * 1-5)
 
 ---
 
-### tele-satis-crm
-- **Platform:** `railway`
+### tele-satis-crm ⛔ (KALDIRILDI)
+- **Platform:** `railway` → **SİLİNDİ**
 - **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6`
-- **Service ID:** `faba9665-7499-4ab7-9e8a-d2a26050733f`
-- **Environment ID:** `be2153d6-97b5-4b47-84f9-9bb679693b78`
+- **Service ID:** `faba9665-7499-4ab7-9e8a-d2a26050733f` (silindi)
 - **GitHub Repo:** `dolunayozerennn/tele-satis-crm`
-- **Lokal Klasör:** `Projeler/Tele_Satis_CRM/`
-- **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-17
-- **Durum:** ✅ Aktif (v3: Bulk dedup + DEDUP_WINDOW_DAYS fix — GitHub sync doğrulandı)
+- **Lokal Klasör:** `Projeler/Tele_Satis_CRM/` (arşiv)
+- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
 
 ---
 
 ### dolunay-reels-kapak
-- **Platform:** `railway`
+- **Platform:** `railway-cron`
 - **Railway Project ID:** `fed6db49-de57-4fbe-9988-528416f1b668`
 - **Service ID:** `98fa5736-7e6f-454a-a648-22e47a92c28a`
 - **Environment ID:** `f555d0bb-125e-4d15-838e-dbeb2936a721`
 - **GitHub Repo:** `dolunayozerennn/dolunay-reels-kapak`
 - **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
 - **Start Komutu:** `python worker.py`
-- **Son Deploy:** 2026-03-18 (büyük refactor: README güncellendi, 7 yardımcı script eklendi, copy_image.py kaldırıldı, smoke test ✅)
-- **Durum:** ✅ Aktif (multi-theme + revision engine + yardımcı scriptler — GitHub sync doğrulandı)
+- **Son Deploy:** 2026-03-21 (migration: Railway Cron Job olarak ayarlandı)
+- **Durum:** ✅ Aktif (multi-theme + revision engine + Railway Cron geçişi, schedule: 0 6,12,18 * * *)
 
 ### revizyon-cron (dolunay-reels-kapak projesi içinde)
-- **Platform:** `railway`
+- **Platform:** `railway-cron`
 - **Railway Project ID:** `fed6db49-de57-4fbe-9988-528416f1b668`
 - **Service ID:** `1e740cb1-3b80-47e3-a863-2d27c7f2c01a`
 - **Environment ID:** `f555d0bb-125e-4d15-838e-dbeb2936a721`
 - **GitHub Repo:** `dolunayozerennn/dolunay-reels-kapak`
 - **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
 - **Start Komutu:** `python revision_cron_worker.py`
-- **Son Deploy:** 2026-03-18 (refactor ile birlikte redeploy, smoke test ✅)
-- **Durum:** ✅ Aktif (Günde 5 kez: 10:00, 13:00, 16:00, 19:00, 22:00 TSİ)
+- **Son Deploy:** 2026-03-21 (migration: Railway Cron Job olarak ayarlandı)
+- **Durum:** ✅ Aktif (Günde 5 kez: Railway Cron ile çalışıyor, schedule: 0 7,10,13,16,19 * * *)
 
 ---
 
@@ -80,16 +81,83 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-### lead-notifier-bot
-- **Platform:** `railway`
-- **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6` (tele-satis-crm proj. içinde servis)
-- **Service ID:** `4d0cfb99-8b2a-4585-86b3-44cc4967bc59`
-- **Environment ID:** `be2153d6-97b5-4b47-84f9-9bb679693b78`
+### lead-notifier-bot ⛔ (KALDIRILDI)
+- **Platform:** `railway` → **SİLİNDİ**
+- **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6`
+- **Service ID:** `4d0cfb99-8b2a-4585-86b3-44cc4967bc59` (silindi)
 - **GitHub Repo:** `dolunayozerennn/lead-notifier-bot`
-- **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/`
+- **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/` (arşiv)
+- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
+
+---
+
+### isbirligi-tahsilat-takip
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `8f70b293-dc33-426a-95f7-19741d3ae03c`
+- **Service ID:** `533f2a47-c8f6-4e3b-a5a1-0f5b2f9b8b8d`
+- **Environment ID:** `cc3aa405-1388-421c-93af-146fa91f1a1e`
+- **GitHub Repo:** `dolunayozerennn/isbirligi-tahsilat-takip`
+- **Lokal Klasör:** `Projeler/Isbirligi_Tahsilat_Takip/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-17
-- **Durum:** ✅ Aktif (v2: retry, rate-limit, reconnect — GitHub sync doğrulandı)
+- **Son Deploy:** 2026-03-21 (migration: Notion Workspace değiştirildi — smoke test ✅)
+- **Durum:** ✅ Aktif (Notion-based state, Gmail API OAuth2 e-posta)
+
+---
+
+### marka-is-birligi
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `6994adc2-edb2-4c91-b43d-237f28d41a69`
+- **Service ID:** `997b869b-bd24-4be5-b37f-d5ff2f85232b`
+- **Environment ID:** `5fc44142-a014-4a20-912d-c1424bfae895`
+- **GitHub Repo:** `dolunayozerennn/marka-is-birligi`
+- **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
+- **Start Komutu:** `python railway_scheduler.py`
+- **Son Deploy:** 2026-03-21 (fix: markalar.csv otomatik oluşturma — Railway deploy sonrası data kalıcılık sorunu çözüldü, deployment ID: 33f5b55d, smoke test ✅)
+- **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — CSV auto-init)
+
+---
+
+### tele-satis-notifier ⛔ (KALDIRILDI)
+- **Platform:** `railway-cron` → **SİLİNDİ**
+- **Railway Project ID:** `0aea5336-444e-4d6b-8bb3-e47614651055`
+- **Service ID:** `ec68b31f-93fc-44da-8c3d-fe19a5e6eba7` (silindi)
+- **GitHub Repo:** `dolunayozerennn/tele-satis-notifier`
+- **Lokal Klasör:** `Projeler/Tele_Satis_Notifier/` (arşiv)
+- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
+
+---
+
+### akilli-watchdog
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `ec3ea7b1-9bdb-4886-a197-026ee2d2126c`
+- **Service ID:** `ddb6ddd6-4918-4b27-bd5c-946bb829bc42`
+- **Environment ID:** `45ef43a9-5ba2-475b-be50-56aaaf6b9906`
+- **GitHub Repo:** `dolunayozerennn/akilli-watchdog`
+- **Lokal Klasör:** `Projeler/Akilli_Watchdog/`
+- **Start Komutu:** `python main.py`
+- **Son Deploy:** 2026-03-21 (migration: Railway Cron Job olarak ayarlandı, deployment ID: bd8b7883)
+- **Durum:** ✅ Aktif (Günde 1 kez çalışır — UTC 00:00. Sürekli uyanık kalmadığından fatura optmizasyonu yapıldı.)
+
+---
+
+### dolunay-ai-website ⛔ (KALDIRILDI)
+- **Platform:** `railway` → **SİLİNDİ** (Netlify'a taşındı)
+- **Railway Project ID:** `58765514-d122-4653-99c5-e9958330e5a4`
+- **Service ID:** `af8d86d9-aa29-4e4b-bdca-70dd40f7c452` (silindi)
+- **GitHub Repo:** `dolunayozerennn/Dolunay_AI_Website`
+- **Lokal Klasör:** `Projeler/Dolunay_AI_Website/`
+- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Website zaten Netlify'da barınıyor, Railway'deki kopya gereksizdi.
+
+---
+
+### lead-pipeline (BİRLEŞİK CRON JOB) ✅ YENİ
+- **Platform:** `railway-cron` — **DEPLOY BEKLİYOR**
+- **Lokal Klasör:** `Projeler/Lead_Pipeline/`
+- **Start Komutu:** `python main.py`
+- **Cron Schedule:** `*/5 * * * *` (5 dakikada bir)
+- **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
+- **Son Güncelleme:** 2026-03-22 (oluşturuldu — maliyet optimizasyonu)
+- **Durum:** 🟡 Deploy bekliyor (GitHub repo ve Railway servis oluşturulacak)
 
 ---
 
@@ -97,65 +165,18 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 | Proje | Klasör | Platform | Not |
 |-------|--------|----------|-----|
-| Dubai Emlak İçerik | `Projeler/Dubai_Emlak_İçerik_Yazarı/` | `local-only` | Lokal |
-| Emlak Arazi Drone | `Projeler/Emlak_Arazi_Drone_Çekim/` | `local-only` | Lokal |
-
-### Isbirligi_Tahsilat_Takip
-- **Platform:** `railway`
-- **Railway Project ID:** `8f70b293-dc33-426a-95f7-19741d3ae03c`
-- **Service ID:** `533f2a47-c8f6-4e3b-a5a1-0f5b2f9b8b8d`
-- **Environment ID:** `cc3aa405-1388-421c-93af-146fa91f1a1e`
-- **GitHub Repo:** `dolunayozerennn/isbirligi-tahsilat-takip`
-- **Lokal Klasör:** `Projeler/Isbirligi_Tahsilat_Takip/`
-- **Start Komutu:** `python main.py`
-- **Son Deploy:** `2026-03-17`
-- **Durum:** ✅ Aktif (Telegram kaldırıldı, Notion-based state)
-
-### marka-is-birligi
-- **Platform:** `railway`
-- **Railway Project ID:** `6994adc2-edb2-4c91-b43d-237f28d41a69`
-- **Service ID:** `997b869b-bd24-4be5-b37f-d5ff2f85232b`
-- **Environment ID:** `5fc44142-a014-4a20-912d-c1424bfae895`
-- **GitHub Repo:** `dolunayozerennn/marka-is-birligi`
-- **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
-- **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-03-16
-- **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor)
+| Dubai Emlak İçerik | `Projeler/Dubai_Emlak_İçerik_Yazarı/` | `local-only` | Geliştirme aşamasında |
+| Emlak Arazi Drone | `Projeler/Emlak_Arazi_Drone_Çekim/` | `local-only` | Geliştirme aşamasında |
 
 ---
 
-### tele-satis-notifier
-- **Platform:** `railway`
-- **Railway Project ID:** `0aea5336-444e-4d6b-8bb3-e47614651055`
-- **Service ID:** `ec68b31f-93fc-44da-8c3d-fe19a5e6eba7`
-- **Environment ID:** `d90e6b8d-720e-447c-8940-00d604b0a0b8`
-- **GitHub Repo:** `dolunayozerennn/tele-satis-notifier`
-- **Lokal Klasör:** `Projeler/Tele_Satis_Notifier/`
-- **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-17 (redeploy: 23:04 TSİ — deployment ID: 38111212)
-- **Durum:** ✅ Aktif (Tele Satış lead zamanlama bildirimi — dolunay@dolunay.ai → eceyarencna@gmail.com, smoke test ✅)
+## 🗂 Lokal Servisler (LaunchAgent / Cron)
 
-### akilli-watchdog
-- **Platform:** `railway`
-- **Railway Project ID:** `ec3ea7b1-9bdb-4886-a197-026ee2d2126c`
-- **Service ID:** `ddb6ddd6-4918-4b27-bd5c-946bb829bc42`
-- **Environment ID:** `45ef43a9-5ba2-475b-be50-56aaaf6b9906`
-- **GitHub Repo:** `dolunayozerennn/akilli-watchdog`
-- **Lokal Klasör:** `Projeler/Akilli_Watchdog/`
-- **Start Komutu:** `python main.py --loop`
-- **Son Deploy:** 2026-03-17 (redeploy: 23:15 TSİ — kapsamlı README + config isim düzeltmesi)
-- **Durum:** ✅ Aktif (LLM-destekli pipeline sağlık izleme — 24 saatte 1 kontrol, smoke test ✅)
-
----
-
-### dolunay-ai-website
-- **Platform:** `railway`
-- **Railway Project ID:** `58765514-d122-4653-99c5-e9958330e5a4`
-- **Service ID:** `228b5ddb-680d-46d6-af71-761f046e51c7`
-- **Environment ID:** `6ba7e55d-f0f0-4bd9-89f9-9b09200f00dc`
-- **GitHub Repo:** `dolunayozerennn/Dolunay_AI_Website`
-- **Lokal Klasör:** `Projeler/Dolunay_AI_Website/`
-- **Start Komutu:** `npm run build && npm run preview -- --host --port $PORT`
-- **Son Deploy:** 2026-03-17
-- **Durum:** ✅ Aktif (Vite Frontend — Node 20+ fix, Tailwind CSS v4 compat)
-
+### servis-izleyici (health check)
+- **Platform:** `cron-local`
+- **LaunchAgent:** `com.antigravity.servis-izleyici`
+- **LogPath:** `_skills/servis-izleyici/logs/health_check.log`
+- **CronSchedule:** Saatlik (her 3600 saniyede bir)
+- **Lokal Klasör:** `_skills/servis-izleyici/`
+- **Start Komutu:** `python3 scripts/health_check.py`
+- **Durum:** ✅ Aktif — LaunchAgent ile saatlik çalışıyor

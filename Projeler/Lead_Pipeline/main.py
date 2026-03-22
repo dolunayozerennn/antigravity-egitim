@@ -1,0 +1,237 @@
+"""
+Lead Pipeline — Birleşik Ana Modül (Cron Job)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Tele Satış CRM + Lead Notifier Bot'u tek bir cron job'da birleştirir.
+
+Çalışma mantığı:
+  1. CRM Sheets'ten yeni lead'leri oku → Temizle → Notion'a yaz
+  2. Notifier Sheets'ten yeni lead'leri oku → Telegram + Email bildirim gönder
+  3. CRM Sheets'ten gelen lead'ler için de bildirim gönder
+  4. Çık (cron schedule ile 5 dakikada bir tetiklenir)
+
+Maliyet optimizasyonu:
+  - Eski: 2 ayrı always-on servis (~$4.40/ay)
+  - Yeni: 1 cron job (~$1.00/ay)
+  - Tasarruf: ~$3.40/ay
+"""
+import sys
+import time
+import logging
+from datetime import datetime
+
+from config import Config
+from sheets_reader import SheetsReader
+from data_cleaner import clean_lead
+from notion_writer import NotionWriter
+from notifier import process_and_notify
+
+# ── LOGGING ──────────────────────────────────────────────────
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger("lead_pipeline")
+
+
+def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter) -> list[dict]:
+    """
+    CRM Pipeline: Sheets → Temizle → Notion'a yaz.
+    Returns: Oluşturulan yeni lead'lerin raw data listesi (bildirim için).
+    """
+    logger.info("═══ CRM Pipeline başlatılıyor ═══")
+
+    try:
+        new_rows = crm_reader.poll_all_tabs()
+    except Exception as e:
+        logger.error(f"❌ CRM Sheets okunamadı: {e}")
+        crm_reader.rollback_pending()
+        return []
+
+    if not new_rows:
+        logger.info("📭 CRM: Yeni lead yok")
+        crm_reader.confirm_processed()
+        return []
+
+    logger.info(f"📊 CRM: {len(new_rows)} yeni satır bulundu")
+
+    # Toplu veri temizleme
+    cleaned_leads = []
+    for row in new_rows:
+        try:
+            cleaned = clean_lead(row)
+            cleaned_leads.append(cleaned)
+        except Exception as e:
+            logger.error(f"❌ Veri temizleme hatası: {e}")
+            continue
+
+    if not cleaned_leads:
+        logger.warning("⚠️ CRM: Temizlenebilir lead bulunamadı")
+        crm_reader.confirm_processed()
+        return []
+
+    # Toplu (bulk) duplikasyon kontrolü — API çağrılarını azaltır
+    try:
+        existing_phones, existing_emails, existing_names = notion.bulk_check_duplicates(cleaned_leads)
+        logger.info(
+            f"🔍 Bulk duplikasyon kontrolü: "
+            f"{len(existing_phones)} telefon, "
+            f"{len(existing_emails)} email, "
+            f"{len(existing_names)} isim eşleşti"
+        )
+    except Exception as e:
+        logger.error(f"❌ Bulk duplikasyon kontrolü hatası: {e}")
+        existing_phones, existing_emails, existing_names = set(), set(), set()
+
+    # Lead'leri Notion'a ekle
+    created_leads = []
+    stats = {"created": 0, "skipped": 0, "error": 0}
+
+    for cleaned in cleaned_leads:
+        # Hızlı duplikasyon kontrolü (bulk sonuçlarıyla)
+        is_dup = False
+        if cleaned["clean_phone"] and cleaned["clean_phone"] in existing_phones:
+            is_dup = True
+            logger.info(f"🔁 Duplike (bulk): {cleaned['clean_name']} — telefon")
+        elif cleaned["clean_email"] and cleaned["clean_email"] in existing_emails:
+            is_dup = True
+            logger.info(f"🔁 Duplike (bulk): {cleaned['clean_name']} — email")
+        elif (not cleaned["clean_phone"] and not cleaned["clean_email"]
+              and cleaned["clean_name"] and cleaned["clean_name"] in existing_names):
+            is_dup = True
+            logger.info(f"🔁 Duplike (bulk): {cleaned['clean_name']} — isim")
+
+        if is_dup:
+            stats["skipped"] += 1
+            continue
+
+        try:
+            result = notion.process_lead(cleaned, skip_duplicate_check=True)
+            action = result.get("action", "error")
+            stats[action] = stats.get(action, 0) + 1
+
+            if action == "created":
+                created_leads.append(cleaned["raw"])
+                # Yeni numaraları/emailleri cache'e ekle (sonraki dup kontrolü için)
+                if cleaned["clean_phone"]:
+                    existing_phones.add(cleaned["clean_phone"])
+                if cleaned["clean_email"]:
+                    existing_emails.add(cleaned["clean_email"])
+        except Exception as e:
+            logger.error(f"❌ Notion yazım hatası ({cleaned['clean_name']}): {e}")
+            stats["error"] += 1
+
+    logger.info(
+        f"📋 CRM Sonuç: ✅ {stats['created']} oluşturuldu | "
+        f"🔁 {stats['skipped']} duplike | "
+        f"❌ {stats['error']} hata"
+    )
+
+    crm_reader.confirm_processed()
+    return created_leads
+
+
+def run_notifier_pipeline(notifier_reader: SheetsReader, crm_created_leads: list[dict]):
+    """
+    Notifier Pipeline: Sheets → Bildirim gönder.
+    + CRM'den yeni oluşturulan lead'ler için de bildirim gönderir.
+    """
+    logger.info("═══ Notifier Pipeline başlatılıyor ═══")
+
+    # 1. CRM'den oluşturulan lead'ler için bildirim
+    if crm_created_leads:
+        logger.info(f"📣 CRM'den {len(crm_created_leads)} yeni lead için bildirim gönderiliyor...")
+        for lead_data in crm_created_leads:
+            try:
+                process_and_notify(lead_data)
+            except Exception as e:
+                logger.error(f"❌ CRM lead bildirimi hatası: {e}")
+
+    # 2. Notifier Sheets'ten yeni lead'leri oku ve bildir
+    try:
+        new_rows = notifier_reader.poll_all_tabs()
+    except Exception as e:
+        logger.error(f"❌ Notifier Sheets okunamadı: {e}")
+        notifier_reader.rollback_pending()
+        return
+
+    if not new_rows:
+        logger.info("📭 Notifier: Yeni lead yok")
+        notifier_reader.confirm_processed()
+        return
+
+    logger.info(f"📣 Notifier: {len(new_rows)} yeni lead için bildirim gönderiliyor...")
+
+    notify_stats = {"success": 0, "partial": 0, "failed": 0}
+
+    for lead_data in new_rows:
+        try:
+            result = process_and_notify(lead_data)
+            if result["telegram"] and result["email"]:
+                notify_stats["success"] += 1
+            elif result["telegram"] or result["email"]:
+                notify_stats["partial"] += 1
+            else:
+                notify_stats["failed"] += 1
+        except Exception as e:
+            logger.error(f"❌ Bildirim hatası: {e}")
+            notify_stats["failed"] += 1
+
+    logger.info(
+        f"📣 Notifier Sonuç: ✅ {notify_stats['success']} tam | "
+        f"⚠️ {notify_stats['partial']} kısmi | "
+        f"❌ {notify_stats['failed']} başarısız"
+    )
+
+    notifier_reader.confirm_processed()
+
+
+def main():
+    """Ana pipeline — cron job olarak 5 dakikada bir çalışır."""
+    start_time = time.time()
+    logger.info("=" * 60)
+    logger.info(f"🚀 Lead Pipeline başlatılıyor — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info("=" * 60)
+
+    # Konfigürasyon doğrulaması
+    if not Config.validate():
+        logger.error("❌ Konfigürasyon hatalı — çıkılıyor")
+        sys.exit(1)
+
+    # Reader'ları oluştur
+    crm_reader = SheetsReader(
+        spreadsheet_id=Config.CRM_SPREADSHEET_ID,
+        sheet_tabs=Config.CRM_SHEET_TABS,
+        reader_name="crm"
+    )
+
+    notifier_reader = SheetsReader(
+        spreadsheet_id=Config.NOTIFIER_SPREADSHEET_ID,
+        sheet_tabs=Config.NOTIFIER_SHEET_TABS,
+        reader_name="notifier"
+    )
+
+    # Notion writer
+    notion = NotionWriter()
+
+    # Pipeline çalıştır
+    try:
+        # Adım 1: CRM Pipeline (Sheets → Notion)
+        crm_created_leads = run_crm_pipeline(crm_reader, notion)
+
+        # Adım 2: Notifier Pipeline (Sheets → Telegram + Email)
+        run_notifier_pipeline(notifier_reader, crm_created_leads)
+
+    except Exception as e:
+        logger.error(f"❌ Pipeline hatası: {e}", exc_info=True)
+        sys.exit(1)
+
+    elapsed = time.time() - start_time
+    logger.info(f"✅ Lead Pipeline tamamlandı — {elapsed:.1f}s sürdü")
+    logger.info("=" * 60)
+
+
+if __name__ == "__main__":
+    main()
