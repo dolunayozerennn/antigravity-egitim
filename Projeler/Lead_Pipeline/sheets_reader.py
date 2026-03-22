@@ -11,7 +11,6 @@ import logging
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 
-from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -170,28 +169,51 @@ class SheetsReader:
 
     # ── AUTHENTICATION ───────────────────────────────────────
 
+    def _build_oauth_credentials(self, token_info: dict):
+        """OAuth2 refresh token'dan credentials oluşturur."""
+        from google.oauth2.credentials import Credentials as OAuthCredentials
+        return OAuthCredentials(
+            token=token_info.get("token"),
+            refresh_token=token_info.get("refresh_token"),
+            token_uri=token_info.get("token_uri", "https://oauth2.googleapis.com/token"),
+            client_id=token_info.get("client_id"),
+            client_secret=token_info.get("client_secret"),
+            scopes=token_info.get("scopes", SCOPES),
+        )
+
     def authenticate(self):
-        """Google Sheets API'ye bağlanır."""
-        sa_info = Config.get_google_credentials_info()
+        """Google Sheets API'ye bağlanır. Öncelik: OAuth > ServiceAccount > Lokal."""
 
-        if sa_info:
-            logger.info(f"🔑 [{self.reader_name}] Service Account ile authentication")
-            self._creds = service_account.Credentials.from_service_account_info(
-                sa_info, scopes=SCOPES
-            )
+        # 1) OAuth Token (Production — Railway'de GOOGLE_OUTREACH_TOKEN_JSON)
+        oauth_info = Config.get_oauth_token_info()
+        if oauth_info:
+            logger.info(f"🔑 [{self.reader_name}] OAuth token ile authentication")
+            self._creds = self._build_oauth_credentials(oauth_info)
             self.service = build("sheets", "v4", credentials=self._creds)
+            logger.info(f"✅ [{self.reader_name}] Google Sheets API bağlantısı kuruldu (OAuth)")
         else:
-            logger.info(f"🔑 [{self.reader_name}] Merkezi google_auth ile authentication (Lokal)")
-            _antigravity_root = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), "..", "..")
-            )
-            sys.path.insert(0, os.path.join(
-                _antigravity_root, "_knowledge", "credentials", "oauth"
-            ))
-            from google_auth import get_sheets_service
-            self.service = get_sheets_service("outreach")
-
-        logger.info(f"✅ [{self.reader_name}] Google Sheets API bağlantısı kuruldu")
+            # 2) Service Account
+            sa_info = Config.get_google_credentials_info()
+            if sa_info:
+                from google.oauth2 import service_account
+                logger.info(f"🔑 [{self.reader_name}] Service Account ile authentication")
+                self._creds = service_account.Credentials.from_service_account_info(
+                    sa_info, scopes=SCOPES
+                )
+                self.service = build("sheets", "v4", credentials=self._creds)
+                logger.info(f"✅ [{self.reader_name}] Google Sheets API bağlantısı kuruldu (SA)")
+            else:
+                # 3) Lokal google_auth (geliştirme ortamı)
+                logger.info(f"🔑 [{self.reader_name}] Merkezi google_auth ile authentication (Lokal)")
+                _antigravity_root = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), "..", "..")
+                )
+                sys.path.insert(0, os.path.join(
+                    _antigravity_root, "_knowledge", "credentials", "oauth"
+                ))
+                from google_auth import get_sheets_service
+                self.service = get_sheets_service("outreach")
+                logger.info(f"✅ [{self.reader_name}] Google Sheets API bağlantısı kuruldu (Lokal)")
 
         # State'i yükle
         if not self._state_loaded:

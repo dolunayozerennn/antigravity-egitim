@@ -68,6 +68,7 @@ class Config:
 
     # ── GOOGLE AUTH ─────────────────────────────────────────────────
     GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+    GOOGLE_OUTREACH_TOKEN_JSON = os.environ.get("GOOGLE_OUTREACH_TOKEN_JSON", "")
 
     @classmethod
     def validate(cls):
@@ -80,12 +81,17 @@ class Config:
         if not cls.TELEGRAM_BOT_TOKEN:
             logger.warning("⚠️ TELEGRAM_BOT_TOKEN tanımlı değil — Telegram bildirimleri kapalı")
 
-        if not cls.GOOGLE_SERVICE_ACCOUNT_JSON:
-            creds_path = os.path.join(os.path.dirname(__file__), "credentials.json")
-            if not os.path.exists(creds_path):
-                errors.append(
-                    "GOOGLE_SERVICE_ACCOUNT_JSON env variable'ı veya credentials.json dosyası bulunamadı"
-                )
+        # Google auth: OAuth token VEYA Service Account VEYA lokal credentials
+        has_google_auth = (
+            cls.GOOGLE_OUTREACH_TOKEN_JSON
+            or cls.GOOGLE_SERVICE_ACCOUNT_JSON
+            or os.path.exists(os.path.join(os.path.dirname(__file__), "credentials.json"))
+        )
+        if not has_google_auth:
+            errors.append(
+                "Google auth bulunamadı. GOOGLE_OUTREACH_TOKEN_JSON, "
+                "GOOGLE_SERVICE_ACCOUNT_JSON veya credentials.json gerekli"
+            )
 
         if errors:
             for err in errors:
@@ -97,11 +103,22 @@ class Config:
 
     @classmethod
     def get_google_credentials_info(cls):
-        """Google credentials bilgisini döner (service account JSON parse)."""
+        """Google Service Account credentials bilgisini döner."""
         if cls.GOOGLE_SERVICE_ACCOUNT_JSON:
             try:
                 return json.loads(cls.GOOGLE_SERVICE_ACCOUNT_JSON)
             except json.JSONDecodeError:
                 logger.error("GOOGLE_SERVICE_ACCOUNT_JSON parse edilemedi")
+                return None
+        return None
+
+    @classmethod
+    def get_oauth_token_info(cls):
+        """Google OAuth token bilgisini döner (GOOGLE_OUTREACH_TOKEN_JSON)."""
+        if cls.GOOGLE_OUTREACH_TOKEN_JSON:
+            try:
+                return json.loads(cls.GOOGLE_OUTREACH_TOKEN_JSON)
+            except json.JSONDecodeError:
+                logger.error("GOOGLE_OUTREACH_TOKEN_JSON parse edilemedi")
                 return None
         return None
