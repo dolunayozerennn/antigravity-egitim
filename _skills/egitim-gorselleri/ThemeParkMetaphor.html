@@ -1,783 +1,450 @@
 <!DOCTYPE html>
 <html lang="tr">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platform vs API — Restoran Metaforu</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <title>Antigravity: Platform, API ve MCP Analojisi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0
-        }
-
         :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --glass: rgba(30, 41, 59, 0.6);
-            --border: rgba(148, 163, 184, 0.15);
-            --text: #e2e8f0;
-            --muted: #94a3b8;
-            --accent-platform: #f59e0b;
-            --accent-api: #3b82f6;
-            --green: #10b981;
-            --red: #ef4444;
-            --purple: #a855f7;
+            --bg: #07090E;
+            --surface: rgba(255,255,255,0.03);
+            --border: rgba(255,255,255,0.07);
+            --text: #FFFFFF;
+            --muted: #8896B0;
+            --platform: #F59E0B; --platform-rgb: 245,158,11;
+            --api: #3B82F6; --api-rgb: 59,130,246;
+            --mcp: #A855F7; --mcp-rgb: 168,85,247;
+            --kredi: #EC4899; --kredi-rgb: 236,72,153;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Outfit',sans-serif; }
+        body { background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+        /* Background effects */
+        .bg-glow {
+            position:fixed; width:550px; height:550px; border-radius:50%;
+            filter:blur(140px); opacity:0.1; z-index:0; pointer-events:none;
+            animation:float 14s infinite alternate ease-in-out;
+        }
+        .glow-1 { background:var(--platform); top:-200px; left:-200px; }
+        .glow-2 { background:var(--mcp); bottom:-200px; right:-200px; animation-delay:-7s; }
+        .bg-grid {
+            position:fixed; inset:0; z-index:0; pointer-events:none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+            background-size:60px 60px;
         }
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden
-        }
+        .page { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:3rem 2rem 5rem; }
 
-        /* Hero */
-        .hero {
-            text-align: center;
-            padding: 60px 20px 20px
+        /* ═══ HEADER ═══ */
+        .header {
+            text-align:center; margin-bottom:4rem;
+            opacity:0; transform:translateY(-20px);
+            animation:fadeDown 1s ease-out forwards;
         }
-
-        .hero h1 {
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 900;
-            background: linear-gradient(135deg, #f59e0b, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1.2;
-            margin-bottom: 12px
+        .chip {
+            display:inline-block; padding:0.5rem 1.2rem; border-radius:100px;
+            background:rgba(255,255,255,0.04); border:1px solid var(--border);
+            font-size:0.82rem; font-weight:600; color:var(--muted);
+            letter-spacing:0.12em; text-transform:uppercase; margin-bottom:1.5rem;
         }
-
-        .hero p {
-            font-size: 1.15rem;
-            color: var(--muted);
-            max-width: 750px;
-            margin: 0 auto;
-            line-height: 1.6
+        .header h1 {
+            font-size:3.6rem; font-weight:900; line-height:1.1; margin-bottom:1rem;
+            background:linear-gradient(135deg, var(--platform) 0%, var(--api) 50%, var(--mcp) 100%);
+            -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
         }
+        .header p { color:var(--muted); font-size:1.2rem; max-width:800px; margin:0 auto; line-height:1.7; }
 
-        /* Key Insight Banner */
-        .key-insight {
-            max-width: 900px;
-            margin: 28px auto 0;
-            padding: 20px 28px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(59, 130, 246, 0.08));
-            border: 1px solid rgba(168, 85, 247, 0.25);
-            display: flex;
-            align-items: center;
-            gap: 16px
+        /* ═══ SECTION HEADER ═══ */
+        .sec-label {
+            display:flex; align-items:center; gap:0.9rem;
+            margin-bottom:2rem; opacity:0; transform:translateY(20px);
         }
-
-        .key-insight .icon-bulb {
-            font-size: 2rem;
-            flex-shrink: 0
+        .sec-label.visible { opacity:1; transform:translateY(0); transition:all 0.7s ease; }
+        .sec-num {
+            width:46px; height:46px; border-radius:14px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:1.15rem; font-weight:700; flex-shrink:0;
         }
+        .sec-label h2 { font-size:2.1rem; font-weight:700; }
+        .sec-label h2 span { color:var(--muted); font-weight:400; }
+        .sec-label p { color:var(--muted); font-size:1.1rem; margin-top:0.2rem; }
 
-        .key-insight p {
-            font-size: .95rem;
-            color: var(--text);
-            line-height: 1.6
+        /* ═══ CHEF CONTEXT (SECTION 1) ═══ */
+        .chef-context {
+            display:flex; gap:3rem; align-items:center; justify-content:center;
+            background:rgba(255,255,255,0.02); border:1px solid var(--border);
+            padding:3.5rem 2.5rem; border-radius:24px; margin-bottom:3rem;
+            backdrop-filter:blur(12px);
+            opacity:0; transform:translateY(30px); transition:all 0.8s ease;
         }
-
-        .key-insight .hl {
-            color: #a855f7;
-            font-weight: 700
+        .chef-context.visible { opacity:1; transform:translateY(0); }
+        .chef-box { text-align:center; flex:1; max-width:280px; }
+        .chef-box img { width:100%; border-radius:20px; border:2px solid rgba(255,255,255,0.08); box-shadow:0 10px 40px rgba(0,0,0,0.4); }
+        
+        .flow-split {
+            display:flex; flex-direction:column; gap:2.2rem; align-items:center; justify-content:center;
         }
-
-        /* Layout */
-        .container {
-            max-width: 1300px;
-            margin: 0 auto;
-            padding: 0 24px 60px
+        .split-arrow { font-size:2.4rem; filter:grayscale(1) opacity(0.3); animation:pulseArrow 2s infinite; }
+        .split-arrow.up { transform:translateY(15px) rotate(-15deg); }
+        .split-arrow.down { transform:translateY(-15px) rotate(15deg); }
+        
+        .stores-list { flex:1.2; display:flex; flex-direction:column; gap:1.2rem; }
+        .store-row {
+            display:flex; align-items:center; gap:1.2rem; padding:1.2rem 1.6rem;
+            background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+            border-radius:18px; transition:transform 0.3s;
         }
+        .store-row:hover { transform:translateX(8px); background:rgba(255,255,255,0.05); }
+        .store-row .emoji { font-size:2.6rem; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4)); flex-shrink:0;}
+        .store-row .info h4 { font-size:1.25rem; font-weight:700; margin-bottom:0.3rem; color:#fff; }
+        .store-row .info p { font-size:0.95rem; color:var(--muted); line-height:1.5; }
+        .store-row .digital { display:inline-block; font-size:0.8rem; padding:0.2rem 0.6rem; background:rgba(255,255,255,0.1); border-radius:8px; margin-top:0.4rem; font-weight:600; color:#fff; }
 
-        .columns {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 32px;
-            margin-top: 40px
-        }
-
-        /* Side Cards */
-        .side-card {
-            border-radius: 24px;
-            padding: 36px 28px;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            transition: transform .3s
-        }
-
-        .side-card:hover {
-            transform: translateY(-4px)
-        }
-
-        .side-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px
-        }
-
-        .side-card.platform {
-            background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, var(--card) 40%)
-        }
-
-        .side-card.platform::before {
-            background: linear-gradient(90deg, #f59e0b, #f97316)
-        }
-
-        .side-card.api {
-            background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, var(--card) 40%)
-        }
-
-        .side-card.api::before {
-            background: linear-gradient(90deg, #3b82f6, #6366f1)
-        }
-
-        /* Gate */
-        .gate {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            padding: 24px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            margin-bottom: 28px
-        }
-
-        .gate img {
-            width: 100px;
-            height: 100px;
-            object-fit: contain;
-            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
-            border-radius: 12px
-        }
-
-        .gate-info h3 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 6px
-        }
-
-        .gate-info .subtitle {
-            font-size: 1.3rem;
-            font-weight: 800;
-            line-height: 1
-        }
-
-        .gate-info .desc {
-            font-size: .85rem;
-            color: var(--muted);
-            margin-top: 8px;
-            line-height: 1.5
-        }
-
-        /* Section Title */
-        .section-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px
-        }
-
-        .section-title::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border)
-        }
-
-        /* Feature rows */
-        .feature {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 16px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            margin-bottom: 12px;
-            transition: all .25s ease
-        }
-
-        .feature:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(148, 163, 184, 0.3)
-        }
-
-        .feature img {
-            width: 56px;
-            height: 56px;
-            object-fit: contain;
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
-            border-radius: 8px
-        }
-
-        .feature-info {
-            flex: 1
-        }
-
-        .feature-info h4 {
-            font-size: .95rem;
-            font-weight: 700;
-            margin-bottom: 2px
-        }
-
-        .feature-info p {
-            font-size: .8rem;
-            color: var(--muted);
-            line-height: 1.4
-        }
-
-        /* Badge */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: .72rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            white-space: nowrap
-        }
-
-        .badge.easy {
-            background: rgba(16, 185, 129, 0.15);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3)
-        }
-
-        .badge.tech {
-            background: rgba(59, 130, 246, 0.15);
-            color: #3b82f6;
-            border: 1px solid rgba(59, 130, 246, 0.3)
-        }
-
-        /* Center Overlap Section */
-        .overlap-section {
-            margin-top: 48px;
-            text-align: center
-        }
-
-        .overlap-section h2 {
-            font-size: 1.8rem;
-            font-weight: 900;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #f59e0b, #a855f7, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent
-        }
-
-        .overlap-section .sub {
-            color: var(--muted);
-            font-size: 1rem;
-            margin-bottom: 32px;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-            line-height: 1.6
-        }
-
-        .same-product-card {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 32px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(168, 85, 247, 0.08), rgba(59, 130, 246, 0.05));
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 28px
-        }
-
-        .same-product-card img {
-            width: 120px;
-            height: 120px;
-            object-fit: contain;
-            filter: drop-shadow(0 4px 20px rgba(168, 85, 247, 0.3));
-            border-radius: 16px
-        }
-
-        .same-product-card .text h3 {
-            font-size: 1.3rem;
-            font-weight: 800;
-            margin-bottom: 8px
-        }
-
-        .same-product-card .text p {
-            color: var(--muted);
-            line-height: 1.6;
-            font-size: .9rem
-        }
-
-        .same-product-card .text .hl-amber {
-            color: #f59e0b;
-            font-weight: 700
-        }
-
-        .same-product-card .text .hl-blue {
-            color: #3b82f6;
-            font-weight: 700
-        }
-
-        /* Examples Grid */
-        .examples-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-            margin-top: 32px;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto
-        }
-
+        /* ═══ TRIPLE LAYOUT (SECTION 2 & 3) ═══ */
+        .triple-row { display:grid; grid-template-columns:repeat(3, 1fr); gap:2rem; margin-bottom:1.5rem; }
+        
         .example-card {
-            padding: 24px;
-            border-radius: 18px;
-            border: 1px solid var(--border);
-            text-align: left;
-            transition: transform .3s
+            background:var(--surface); border:1px solid var(--border);
+            border-radius:22px; overflow:hidden; position:relative;
+            backdrop-filter:blur(16px);
+            display:flex; flex-direction:column;
+            opacity:0; transform:translateY(30px);
+            transition:all 0.8s cubic-bezier(0.16,1,0.3,1);
         }
-
+        .example-card.visible { opacity:1; transform:translateY(0); }
+        .example-card::before {
+            content:''; position:absolute; top:0; left:0; right:0; height:4px;
+            background:var(--accent); z-index:2;
+        }
         .example-card:hover {
-            transform: translateY(-3px)
+            transform:translateY(-6px);
+            border-color:rgba(255,255,255,0.12);
+            box-shadow:0 24px 60px rgba(0,0,0,0.5), 0 0 30px rgba(var(--accent-rgb),0.08);
         }
 
-        .example-card.amber {
-            background: linear-gradient(180deg, rgba(245, 158, 11, 0.06), var(--card))
+        .card-photo { position:relative; overflow:hidden; }
+        .card-photo img { width:100%; display:block; aspect-ratio:16/10; object-fit:cover; transition:transform 0.6s ease; }
+        .example-card:hover .card-photo img { transform:scale(1.03); }
+        .card-photo .photo-badge {
+            position:absolute; bottom:12px; left:12px;
+            padding:0.45rem 0.9rem; border-radius:10px;
+            background:rgba(7,9,14,0.85); backdrop-filter:blur(12px);
+            border:1px solid rgba(var(--accent-rgb),0.3);
+            font-size:0.88rem; font-weight:700; color:var(--accent);
+            display:flex; align-items:center; gap:0.35rem; z-index:2;
         }
 
-        .example-card.blue {
-            background: linear-gradient(180deg, rgba(59, 130, 246, 0.06), var(--card))
+        .card-body { padding:1.8rem; display:flex; flex-direction:column; flex:1; }
+        .card-body .huge-title { font-size:2.6rem; font-weight:900; margin-bottom:0.2rem; line-height:1; letter-spacing:1px; text-transform:uppercase; color:var(--accent); }
+        .card-body .sub-title { font-size:1.15rem; font-weight:600; color:#fff; margin-bottom:1.2rem; }
+
+        /* ═══ STEP LIST (ADIM ADIM) ═══ */
+        .step-list { margin-bottom:1.5rem; }
+        .step-list ul { list-style:none; padding-left:0; }
+        .step-list li {
+            position:relative; padding-left:1.2rem; margin-bottom:0.6rem;
+            font-size:0.95rem; color:var(--muted); line-height:1.5;
+        }
+        .step-list li::before {
+            content:"•"; position:absolute; left:0; top:0;
+            color:var(--accent); font-weight:bold; font-size:1.2rem;
         }
 
-        .example-card img {
-            width: 48px;
-            height: 48px;
-            object-fit: contain;
-            margin-bottom: 12px;
-            border-radius: 8px
+        /* ═══ TICK/CROSS TABLE (KARŞILAŞTIRMA) ═══ */
+        .tick-table {
+            margin-top:auto;
+            display:flex; flex-direction:column; gap:0.6rem;
+            background:rgba(0,0,0,0.3); padding:1rem 1.2rem; border-radius:14px; 
+            border:1px solid rgba(255,255,255,0.05);
         }
+        .t-row { display:flex; align-items:flex-start; gap:0.8rem; font-size:0.92rem; color:var(--muted); }
+        .t-row b { color:#fff; font-weight:500; }
+        .t-row .ico { font-size:1.15rem; flex-shrink:0; line-height:1.2; }
 
-        .example-card h4 {
-            font-size: .95rem;
-            font-weight: 700;
-            margin-bottom: 6px
-        }
+        /* ═══ DUAL LAYOUT ═══ */
+        .dual-row { display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; margin-bottom:1.5rem; }
 
-        .example-card p {
-            font-size: .8rem;
-            color: var(--muted);
-            line-height: 1.5
-        }
+        /* ═══ DIVIDER ═══ */
+        .divider { height:1px; margin:4rem 0; background:linear-gradient(to right, transparent, rgba(255,255,255,0.06), transparent); }
 
-        .example-card .tag {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: .7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: .5px
-        }
+        /* ═══ ANIMATIONS ═══ */
+        @keyframes fadeDown { to{opacity:1;transform:translateY(0);} }
+        @keyframes pulseArrow { 0%,100%{transform:translateX(0); opacity:0.3;} 50%{transform:translateX(6px); opacity:0.8;} }
 
-        .example-card.amber .tag {
-            background: rgba(245, 158, 11, 0.15);
-            color: #f59e0b
-        }
+        /* ═══ SMALL VS LIST ═══ */
+        .vs-row { display:flex; flex-direction:column; gap:0.6rem; margin-top:0.8rem; }
+        .vs-item { font-size:0.95rem; color:var(--muted); display:flex; gap:10px; align-items:center; line-height:1.4; padding:0.6rem 0.8rem; border-radius:10px; background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.03); }
+        .vs-item b { color:var(--text); font-weight:600; display:inline-block; min-width:85px; }
+        .vs-ico { flex-shrink:0; font-size:1.2rem; display:flex; align-items:center; }
 
-        .example-card.blue .tag {
-            background: rgba(59, 130, 246, 0.15);
-            color: #3b82f6
-        }
-
-        /* Links */
-        .example-card .link-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 8px
-        }
-
-        .example-card .link-row a {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 12px;
-            border-radius: 10px;
-            font-size: .72rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all .2s ease;
-            border: 1px solid var(--border)
-        }
-
-        .example-card.amber .link-row a {
-            color: #f59e0b;
-            background: rgba(245, 158, 11, 0.08)
-        }
-
-        .example-card.amber .link-row a:hover {
-            background: rgba(245, 158, 11, 0.2);
-            border-color: rgba(245, 158, 11, 0.4);
-            transform: translateY(-1px)
-        }
-
-        .example-card.blue .link-row a {
-            color: #3b82f6;
-            background: rgba(59, 130, 246, 0.08)
-        }
-
-        .example-card.blue .link-row a:hover {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: rgba(59, 130, 246, 0.4);
-            transform: translateY(-1px)
-        }
-
-        /* Bottom Note */
-        .bottom-note {
-            text-align: center;
-            margin-top: 48px;
-            padding: 32px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(168, 85, 247, 0.06), rgba(59, 130, 246, 0.06));
-            border: 1px solid var(--border)
-        }
-
-        .bottom-note h3 {
-            font-size: 1.5rem;
-            font-weight: 800;
-            margin-bottom: 10px
-        }
-
-        .bottom-note p {
-            color: var(--muted);
-            max-width: 750px;
-            margin: 0 auto;
-            line-height: 1.6
-        }
-
-        .bottom-note .highlight {
-            color: #f59e0b;
-            font-weight: 700
-        }
-
-        .bottom-note .highlight-blue {
-            color: #3b82f6;
-            font-weight: 700
-        }
-
-        .bottom-note .highlight-purple {
-            color: #a855f7;
-            font-weight: 700
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px)
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0)
-            }
-        }
-
-        .animate {
-            animation: fadeInUp .6s ease forwards;
-            opacity: 0
-        }
-
-        .delay-1 {
-            animation-delay: .1s
-        }
-
-        .delay-2 {
-            animation-delay: .2s
-        }
-
-        .delay-3 {
-            animation-delay: .3s
-        }
-
-        .delay-4 {
-            animation-delay: .4s
-        }
-
-        .delay-5 {
-            animation-delay: .5s
-        }
-
-        .delay-6 {
-            animation-delay: .6s
-        }
-
-        .delay-7 {
-            animation-delay: .7s
-        }
-
-        .delay-8 {
-            animation-delay: .8s
-        }
-
-        .delay-9 {
-            animation-delay: .9s
-        }
-
-        .delay-10 {
-            animation-delay: 1s
-        }
-
-        @media(max-width:1000px) {
-            .examples-grid {
-                grid-template-columns: 1fr 1fr
-            }
-        }
-
-        @media(max-width:800px) {
-            .columns {
-                grid-template-columns: 1fr
-            }
-
-            .same-product-card {
-                flex-direction: column;
-                text-align: center
-            }
-
-            .examples-grid {
-                grid-template-columns: 1fr
-            }
+        /* ═══ RESPONSIVE ═══ */
+        @media (max-width:980px) {
+            .triple-row { grid-template-columns:1fr; }
+            .chef-context { flex-direction:column; padding:2rem 1.5rem; }
+            .flow-split { flex-direction:row; gap:1.5rem; }
+            .split-arrow { transform:rotate(90deg) !important; }
+            .dual-row { grid-template-columns:1fr; }
+            .header h1 { font-size:2.6rem; }
         }
     </style>
 </head>
-
 <body>
 
-    <div class="hero animate">
-        <h1>Platform vs API — Aynı Hizmet, İki Farklı Kapı</h1>
-        <p>API anahtarı ile platform aboneliği <em>farklı ürünler</em> değil. İkisi de aynı servisi kullanır; sadece
-            <strong>erişim yöntemi</strong> farklıdır.
-        </p>
+<div class="bg-glow glow-1"></div>
+<div class="bg-glow glow-2"></div>
+<div class="bg-grid"></div>
+
+<div class="page">
+
+    <!-- ═══════ HEADER ═══════ -->
+    <div class="header">
+        <div class="chip">Antigravity: İhtiyaçlar ve Dağıtım Metaforu</div>
+        <h1>Platform vs API vs MCP</h1>
+        <!-- "Nasıl ürün alınır"dan ziyade "Nasıl erişilir" üzerinden kurgu yapıldı -->
+        <p>Aşçının mutfağına ürünleri taşımak için kullandığı üç farklı çağ.</p>
     </div>
 
-    <div class="key-insight animate delay-1">
-        <div class="icon-bulb">💡</div>
-        <p>Bir restorana <span class="hl">ön kapıdan müşteri olarak</span> da girebilirsin, <span class="hl">arka
-                kapıdan şef olarak</span> da girebilirsin. İkisinde de <strong>aynı yemeği</strong> yersin ve
-            <strong>aynı krediyi</strong> tüketirsin. Fark sadece erişim şeklinde.
-        </p>
-    </div>
-
-    <div class="container">
-        <div class="columns">
-
-            <!-- ========== PLATFORM SIDE ========== -->
-            <div class="side-card platform animate delay-2">
-
-                <div class="gate">
-                    <img src="assets/front_door.png" alt="Ön Kapı — Platform">
-                    <div class="gate-info">
-                        <h3 style="color:var(--accent-platform)">1. YOL: PLATFORM</h3>
-                        <div class="subtitle">🚪 Ön Kapı — Müşteri Girişi</div>
-                        <p class="desc">Web sitesine veya uygulamaya giriş yapıyorsun.<br>Tıkla, yaz, kullan — teknik
-                            bilgi gerekmez.</p>
-                    </div>
-                </div>
-
-                <div class="section-title">Özellikler</div>
-
-                <div class="feature animate delay-3">
-                    <div style="font-size:2rem">🖱️</div>
-                    <div class="feature-info">
-                        <h4>Görsel Arayüz (GUI)</h4>
-                        <p>Butonlar, menüler, formlar — tıkla ve kullan</p>
-                    </div>
-                    <span class="badge easy">Kolay</span>
-                </div>
-
-                <div class="feature animate delay-4">
-                    <div style="font-size:2rem">👤</div>
-                    <div class="feature-info">
-                        <h4>Hesap ile Giriş</h4>
-                        <p>E-posta ve şifre ile giriş yap, hemen kullanmaya başla</p>
-                    </div>
-                    <span class="badge easy">Kolay</span>
-                </div>
-
-                <div class="feature animate delay-5">
-                    <div style="font-size:2rem">🔄</div>
-                    <div class="feature-info">
-                        <h4>Manuel İşlem</h4>
-                        <p>Her işlemi tek tek kendin yaparsın</p>
-                    </div>
-                    <span class="badge easy">Manuel</span>
-                </div>
-
-            </div>
-
-            <!-- ========== API SIDE ========== -->
-            <div class="side-card api animate delay-2">
-
-                <div class="gate">
-                    <img src="assets/back_door.png" alt="Arka Kapı — API">
-                    <div class="gate-info">
-                        <h3 style="color:var(--accent-api)">2. YOL: API</h3>
-                        <div class="subtitle">🔧 Arka Kapı — Teknik Erişim</div>
-                        <p class="desc">Kod ile doğrudan sisteme bağlanıyorsun.<br>Otomasyon kurabilir, toplu işlem
-                            yapabilirsin.</p>
-                    </div>
-                </div>
-
-                <div class="section-title">Özellikler</div>
-
-                <div class="feature animate delay-3">
-                    <div style="font-size:2rem">💻</div>
-                    <div class="feature-info">
-                        <h4>Kod ile Erişim</h4>
-                        <p>HTTP istekleri, JSON verileri — programatik erişim</p>
-                    </div>
-                    <span class="badge tech">Teknik</span>
-                </div>
-
-                <div class="feature animate delay-4">
-                    <div style="font-size:2rem">🔑</div>
-                    <div class="feature-info">
-                        <h4>API Anahtarı ile Giriş</h4>
-                        <p>Özel bir anahtar alırsın, kodun bu anahtarla çalışır</p>
-                    </div>
-                    <span class="badge tech">Teknik</span>
-                </div>
-
-                <div class="feature animate delay-5">
-                    <div style="font-size:2rem">⚡</div>
-                    <div class="feature-info">
-                        <h4>Otomasyon İmkanı</h4>
-                        <p>Toplu işlem, zamanlama, otomatik karar alma</p>
-                    </div>
-                    <span class="badge tech">Otomasyon</span>
-                </div>
-
-            </div>
-
-        </div><!-- columns -->
-
-        <!-- ========== SAME PRODUCT — CENTER ========== -->
-        <div class="overlap-section animate delay-6">
-            <h2>Peki Sonuçta Ne Değişiyor?</h2>
-            <p class="sub">Kapı farklı olsa da içerideki hizmet ve kredi havuzu aynı.</p>
-
-            <div class="same-product-card animate delay-7">
-                <img src="assets/credit_pack.png" alt="Aynı Kredi Havuzu">
-                <div class="text">
-                    <h3>🎯 Aynı Paket, Aynı Kredi</h3>
-                    <p>
-                        Örneğin <span class="hl-amber">Apollo</span>'da 1000 kredilik bir paket aldın.
-                        İster platformdan kullan, ister API'den kullan — <strong>aynı 1000 krediyi</strong> tüketirsin.
-                        <br><br>
-                        <span class="hl-blue">Hunter.io</span>'da da durum aynı: Aboneliğin ne ise o kadar hakkın var.
-                        Ha web sitesinden aramışsın, ha API ile aramışsın; sonuçta <strong>aynı paketi</strong>
-                        harcıyorsun.
-                    </p>
-                </div>
+    <!-- ═══════ 1. AŞÇININ İHTİYACI (ÇOKLU TEDARİK) ═══════ -->
+    <section>
+        <div class="sec-label" data-reveal>
+            <div class="sec-num" style="background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);">1</div>
+            <div>
+                <h2>Çoklu Tedarik <span>— Neden Birden Fazla Dükkan?</span></h2>
+                <p>Bir aşçı tek başına harika bir yemeği (projeyi) nasıl hazırlar? Malzemeleri farklı dükkanlardan toplayarak.</p>
             </div>
         </div>
 
-        <!-- ========== REAL EXAMPLES ========== -->
-        <div class="overlap-section animate delay-7" style="margin-top:40px">
-            <h2>Gerçek Hayat Örnekleri</h2>
-            <p class="sub">Aynı hizmete iki farklı kapıdan erişmek pratikte nasıl görünüyor?</p>
+        <div class="chef-context" data-reveal>
+            <!-- 1. Aşçı -->
+            <div class="chef-box">
+                <img src="assets/agent_chef.png" alt="Baş Aşçı">
+            </div>
+            
+            <!-- Oklar -->
+            <div class="flow-split">
+                <div class="split-arrow up">↗️</div>
+                <div class="split-arrow">➡️</div>
+                <div class="split-arrow down">↘️</div>
+            </div>
 
-            <div class="examples-grid">
-                <div class="example-card amber animate delay-7">
-                    <img src="assets/lead_search.png" alt="Apollo Platform">
-                    <h4>Apollo — Platformdan</h4>
-                    <p>Web sitesine giriş yap, filtreler kur, "Ara" butonuna tıkla. Tek tek sonuçlara bak ve listeye
-                        ekle.</p>
-                    <span class="tag">Ön Kapı — Manuel</span>
-                    <div class="link-row"><a href="https://app.apollo.io" target="_blank">🔗 app.apollo.io</a></div>
-                </div>
-                <div class="example-card blue animate delay-7">
-                    <img src="assets/lead_search.png" alt="Apollo API">
-                    <h4>Apollo — API'den</h4>
-                    <p>Kod yazarak 500 kişilik listeyi otomatik çek, filtrele ve dosyaya kaydet. Dakikalar içinde biter.
-                    </p>
-                    <span class="tag">Arka Kapı — Otomatik</span>
-                    <div class="link-row"><a href="https://apolloio.github.io/apollo-api-docs/" target="_blank">🔗 API
-                            Docs</a></div>
-                </div>
-                <div class="example-card amber animate delay-8">
-                    <img src="assets/email_send.png" alt="Hunter Platform">
-                    <h4>Hunter.io — Platformdan</h4>
-                    <p>Domain yaz, "Find" tıkla, çıkan e-postaları gör. Tek tek kopyala, not al.</p>
-                    <span class="tag">Ön Kapı — Manuel</span>
-                    <div class="link-row"><a href="https://hunter.io" target="_blank">🔗 hunter.io</a></div>
-                </div>
-                <div class="example-card blue animate delay-8">
-                    <img src="assets/email_send.png" alt="Hunter API">
-                    <h4>Hunter.io — API'den</h4>
-                    <p>1000 domainin e-postalarını otomatik bul, CSV'ye kaydet, CRM'e aktar. Hepsi bir script ile.</p>
-                    <span class="tag">Arka Kapı — Otomatik</span>
-                    <div class="link-row"><a href="https://hunter.io/api-documentation" target="_blank">🔗 API Docs</a>
+            <!-- Dükkanlar -->
+            <div class="stores-list">
+                <div class="store-row">
+                    <div class="emoji">🍎</div>
+                    <div class="info">
+                        <h4>Manav <span style="font-weight:400;color:var(--muted);font-size:1rem;">(Meyve Lâzım)</span></h4>
+                        <span class="digital" style="color:var(--platform);">Dijital Karşılığı: Kie AI (Video)</span>
                     </div>
                 </div>
-                <div class="example-card amber animate delay-9">
-                    <img src="assets/front_door.png" alt="ChatGPT Platform">
-                    <h4>ChatGPT — Platformdan</h4>
-                    <p>chatgpt.com'a gir, sohbet kutusuna yaz, cevabını al. Görsel arayüzle yapay zeka kullan.</p>
-                    <span class="tag">Ön Kapı — Manuel</span>
-                    <div class="link-row"><a href="https://chatgpt.com" target="_blank">🔗 chatgpt.com</a></div>
+                <div class="store-row">
+                    <div class="emoji">🛒</div>
+                    <div class="info">
+                        <h4>Süpermarket <span style="font-weight:400;color:var(--muted);font-size:1rem;">(Makarna Lâzım)</span></h4>
+                        <span class="digital" style="color:var(--api);">Dijital Karşılığı: Apollo (Müşteri Datası)</span>
+                    </div>
                 </div>
-                <div class="example-card blue animate delay-9">
-                    <img src="assets/back_door.png" alt="OpenAI API">
-                    <h4>ChatGPT — API'den</h4>
-                    <p>platform.openai.com'dan API key al, kodla GPT-4o'ya bağlan. Toplu metin üret, otomasyon kur.</p>
-                    <span class="tag">Arka Kapı — Otomatik</span>
-                    <div class="link-row"><a href="https://platform.openai.com" target="_blank">🔗
-                            platform.openai.com</a></div>
+                <div class="store-row">
+                    <div class="emoji">🧀</div>
+                    <div class="info">
+                        <h4>Mandıra <span style="font-weight:400;color:var(--muted);font-size:1rem;">(Peynir Lâzım)</span></h4>
+                        <span class="digital" style="color:var(--mcp);">Dijital Karşılığı: ChatGPT (Metin & Mail)</span>
+                    </div>
                 </div>
             </div>
         </div>
+    </section>
 
-        <!-- Bottom Insight -->
-        <div class="bottom-note animate delay-8">
-            <h3>Özetle 🎯</h3>
-            <p>
-                <span class="highlight">Platform</span> ve <span class="highlight-blue">API</span> farklı ürünler değil
-                — <span class="highlight-purple">aynı hizmete açılan iki farklı kapı</span>.
-                <br><br>
-                Fark sadece <strong>nasıl eriştiğinde</strong>. Platform → tıkla ve kullan (manuel). API → kodla eriş
-                (otomasyon).
-                <br>
-                Sonuçta <strong>aynı krediyi</strong> tüketirsin, <strong>aynı veriyi</strong> alırsın.
-                <br><br>
-                Antigravity ile biz <span class="highlight-blue">arka kapıyı</span> kullanıyoruz — çünkü otomasyon
-                istiyoruz. 🚀
-            </p>
+    <!-- ═══════ 2. ÜRÜNLERE NASIL ULAŞACAĞIZ? (3 KAPISI) ═══════ -->
+    <section>
+        <div class="sec-label" data-reveal>
+            <div class="sec-num" style="background:rgba(var(--mcp-rgb),0.12);color:var(--mcp);border:1px solid rgba(var(--mcp-rgb),0.25);">2</div>
+            <div>
+                <h2>Erişim Yöntemleri <span>— Malzemeyi Nasıl Taşıyacağız?</span></h2>
+                <p>Aşçı, malzemeleri laboratuvarına taşımak için bu üç farklı erişim yönteminden birini seçer.</p>
+            </div>
         </div>
 
-    </div><!-- container -->
+        <div class="triple-row">
+            <!-- PLATFORM -->
+            <div class="example-card" data-reveal style="--accent:var(--platform);--accent-rgb:var(--platform-rgb);">
+                <div class="card-photo">
+                    <img src="assets/front_door.png" alt="Ön Kapı">
+                    <div class="photo-badge">🛍️ ÖN KAPI</div>
+                </div>
+                <div class="card-body">
+                    <h2 class="huge-title">PLATFORM</h2>
+                    <div class="sub-title">Bizzat Yürüyüp Alışveriş Yapmak</div>
+                    
+                    <div class="step-list">
+                        <ul>
+                            <li>Şapkayı giy ve web platformuna gidip giriş yap.</li>
+                            <li>Tıklayarak ve sayfaları geçerek ürünü kendin seç.</li>
+                            <li>Çıkan sonucu kendi ellerinle bilgisayara indir.</li>
+                        </ul>
+                    </div>
 
+                    <div class="tick-table">
+                        <div class="t-row"><span class="ico">✅</span> <b>Sürekli Manuel Efor</b></div>
+                        <div class="t-row"><span class="ico">❌</span> <b>Kod & Çırak İhtiyacı</b></div>
+                        <div class="t-row"><span class="ico">❌</span> <b>Otomatik Çalışma</b></div>
+                        <div class="t-row"><span class="ico">❌</span> <b>Evrensel Bağlantı</b></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API -->
+            <div class="example-card" data-reveal style="--accent:var(--api);--accent-rgb:var(--api-rgb);">
+                <div class="card-photo">
+                    <!-- Ön kapı ile tutarlı: back_door -->
+                    <img src="assets/back_door.png" alt="Arka Kapı">
+                    <div class="photo-badge">🔑 ARKA KAPI</div>
+                </div>
+                <div class="card-body">
+                    <h2 class="huge-title">API</h2>
+                    <div class="sub-title">Depo Anahtarı + Çırak Gönderme</div>
+                    
+                    <div class="step-list">
+                        <ul>
+                            <li>Dükkânın arka kapısından Depo Anahtarı (API) alırsın.</li>
+                            <li>Sadece o dükkânın dilini bilen özel Çırak (Kod) yazarsın.</li>
+                            <li>Çırak elinde anahtarla senin yerine gidip taşıma işini otomatik yapar.</li>
+                        </ul>
+                    </div>
+
+                    <div class="tick-table">
+                        <div class="t-row"><span class="ico">❌</span> <b>Sürekli Manuel Efor</b></div>
+                        <div class="t-row"><span class="ico">✅</span> <b>Kod & Çırak İhtiyacı</b></div>
+                        <div class="t-row"><span class="ico">✅</span> <b>Otomatik Çalışma</b></div>
+                        <div class="t-row"><span class="ico">❌</span> <b>Evrensel Bağlantı</b></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP -->
+            <div class="example-card" data-reveal style="--accent:var(--mcp);--accent-rgb:var(--mcp-rgb);">
+                <div class="card-photo">
+                    <!-- Tesisat için yeni yüksek detaylı gerçekçi boru/pipeline imajı -->
+                    <img src="assets/mcp_pipeline.png" alt="Bağdaştırıcı">
+                    <div class="photo-badge">🔌 TESİSAT</div>
+                </div>
+                <div class="card-body">
+                    <h2 class="huge-title">MCP</h2>
+                    <div class="sub-title">Evrensel Boru Hattı Döşemek</div>
+                    
+                    <div class="step-list">
+                        <ul>
+                            <li>Mutfağınızla dükkanlar arasına akıllı bir hat döşersiniz.</li>
+                            <li>Siz sadece ihtiyacı belirtin; tesisat geri kalanını zekice halleder.</li>
+                            <li>Her dükkan için ayrı bir kod (çırak) yazmaya gerek kalmaz.</li>
+                        </ul>
+                    </div>
+
+                    <div class="tick-table">
+                        <div class="t-row"><span class="ico">❌</span> <b>Sürekli Manuel Efor</b></div>
+                        <div class="t-row"><span class="ico">❌</span> <b>Kod & Çırak İhtiyacı</b></div>
+                        <div class="t-row"><span class="ico">✅</span> <b>Otomatik Çalışma</b></div>
+                        <div class="t-row"><span class="ico">✅</span> <b>Evrensel Bağlantı</b></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ═══════ 3. ZENGİN ÖRNEKLERİN DİJİTAL DÜNYADAKİ HALİ ═══════ -->
+    <section>
+        <div class="sec-label" data-reveal>
+            <div class="sec-num" style="background:rgba(var(--github-rgb),0.12);color:var(--github);border:1px solid rgba(var(--github-rgb),0.25);">3</div>
+            <div>
+                <h2>Gerçek Uygulama Örnekleri <span>— Sahadaki Karşılıkları</span></h2>
+                <p>Birinci bölümde bahsettiğimiz dükkanlara giderken bu üç yöntemi nasıl kullanıyoruz?</p>
+            </div>
+        </div>
+
+        <div class="triple-row">
+            <!-- Example: Kie AI (Realistic Image) -->
+            <div class="example-card" data-reveal style="--accent:var(--platform);--accent-rgb:var(--platform-rgb);">
+                <div class="card-photo">
+                    <img src="assets/project_youtube.png" alt="Kie AI">
+                    <div class="photo-badge">🎥 Video / Görsel</div>
+                </div>
+                <div class="card-body" style="padding:1.5rem;">
+                    <h3 style="font-size:1.5rem;">Kie AI (Manav)</h3>
+                    <div class="vs-row">
+                        <div class="vs-item"><span class="vs-ico" style="color:var(--platform)">🛍️</span> <div><b style="color:var(--platform);">Platform:</b> Siteye gir, resmi yükle, butona bas, videoyu elle PC'ye indir.</div></div>
+                        <div class="vs-item"><span class="vs-ico" style="color:var(--api)">🔑</span> <div><b style="color:var(--api);">API:</b> Kodlanmış Bot (Çırak) her gün çalışır, videoyu api ile sana teslim eder.</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Example: Apollo (Realistic Image) -->
+            <div class="example-card" data-reveal style="--accent:var(--api);--accent-rgb:var(--api-rgb);">
+                <div class="card-photo">
+                    <img src="assets/lead_search.png" alt="Apollo">
+                    <div class="photo-badge">🥩 Lead Çekimi</div>
+                </div>
+                <div class="card-body" style="padding:1.5rem;">
+                    <h3 style="font-size:1.5rem;">Apollo (Süpermarket)</h3>
+                    <div class="vs-row">
+                        <div class="vs-item"><span class="vs-ico" style="color:var(--platform)">🛍️</span> <div><b style="color:var(--platform);">Platform:</b> Filtre yapıp listeleri Excel üzerinden elle bilgisayara taşıyorsun.</div></div>
+                        <div class="vs-item"><span class="vs-ico" style="color:var(--api)">🔑</span> <div><b style="color:var(--api);">API:</b> Sistem (Apify gibi) elindeki anahtarla JSON formatında binlerce datayı uyuşmazlıksız emer.</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Example: ChatGPT (Realistic Image) -->
+            <div class="example-card" data-reveal style="--accent:var(--mcp);--accent-rgb:var(--mcp-rgb);">
+                <div class="card-photo">
+                    <img src="assets/email_send.png" alt="ChatGPT">
+                    <div class="photo-badge">🤖 Akıl & Karar</div>
+                </div>
+                <div class="card-body" style="padding:1.5rem;">
+                    <h3 style="font-size:1.5rem;">ChatGPT (Mandıra)</h3>
+                    <div class="vs-row">
+                        <div class="vs-item"><span class="vs-ico" style="color:var(--platform)">🛍️</span> <div><b style="color:var(--platform);">Platform:</b> Siteye girip copy-paste yapar, soruyu sorar ve metni kopyalarak mail atarsın.</div></div>
+                        <div class="vs-item"><span class="vs-ico" style="color:var(--api)">🔑</span> <div><b style="color:var(--api);">API:</b> Kendi uygulamana bağlar, yazdığın kod üzerinden metni anında çektirirsin.</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    const obs = new IntersectionObserver((entries) => {
+        entries.forEach((e, i) => {
+            if (e.isIntersecting) {
+                const siblings = e.target.parentElement.querySelectorAll('[data-reveal]');
+                const idx = Array.from(siblings).indexOf(e.target);
+                e.target.style.transitionDelay = `${idx * 0.12}s`;
+                e.target.classList.add('visible');
+                obs.unobserve(e.target);
+            }
+        });
+    }, { threshold:0.01, rootMargin:'0px 0px 200px 0px' });
+
+    document.querySelectorAll('[data-reveal]').forEach(el => obs.observe(el));
+
+    document.querySelectorAll('.example-card').forEach(card => {
+        card.addEventListener('mousemove', e => {
+            const r = card.getBoundingClientRect();
+            const x = e.clientX - r.left;
+            const y = e.clientY - r.top;
+            const rx = ((y - r.height/2) / (r.height/2)) * -3;
+            const ry = ((x - r.width/2) / (r.width/2)) * 3;
+            card.style.transform = `perspective(1000px) translateY(-6px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = `perspective(1000px) translateY(0) rotateX(0) rotateY(0)`;
+        });
+    });
+</script>
 </body>
-
 </html>
