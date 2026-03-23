@@ -31,8 +31,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/sweatcoin-email-automation`
 - **Lokal Klasör:** `Projeler/Swc_Email_Responder/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-03-21 (migration: Railway Cron Job olarak ayarlandı)
-- **Durum:** ✅ Aktif (v2.6: Railway Cron geçişi yapıldı, schedule: 0 7,11,15 * * 1-5)
+- **Son Deploy:** 2026-03-23 (fix: is_team_email domain regex bug fixed to preserve internal emails)
+- **Durum:** ✅ Aktif (v2.7: is_team_email fix, Railway Cron geçişi yapıldı, schedule: 0 7,11,15 * * 1-5)
 
 ---
 
