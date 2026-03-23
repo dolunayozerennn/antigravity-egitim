@@ -123,7 +123,29 @@ class SheetsReader:
                 logger.debug(f"✅ [{self.reader_name}] State kaydedildi (Sheets _Meta)")
             except HttpError as e:
                 if "Unable to parse range" in str(e) or e.resp.status == 400:
-                    logger.info(f"📝 [{self.reader_name}] _Meta tab oluşturulamıyor (readonly). Env fallback kullanılıyor.")
+                    try:
+                        # Tab oluştur
+                        self.service.spreadsheets().batchUpdate(
+                            spreadsheetId=self.spreadsheet_id,
+                            body={
+                                "requests": [{
+                                    "addSheet": {
+                                        "properties": {"title": _STATE_META_TAB}
+                                    }
+                                }]
+                            }
+                        ).execute()
+                        logger.info(f"✨ [{self.reader_name}] _Meta tab oluşturuldu")
+                        # Tekrar güncelle
+                        self.service.spreadsheets().values().update(
+                            spreadsheetId=self.spreadsheet_id,
+                            range=f"'{_STATE_META_TAB}'!A1",
+                            valueInputOption="RAW",
+                            body={"values": values},
+                        ).execute()
+                        logger.debug(f"✅ [{self.reader_name}] State kaydedildi (Sheets _Meta)")
+                    except Exception as sub_e:
+                        logger.info(f"📝 [{self.reader_name}] _Meta tab oluşturulamadı (readonly). Env fallback kullanılıyor. Hata: {sub_e}")
                 else:
                     raise
         except Exception as e:
