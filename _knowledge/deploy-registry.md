@@ -153,15 +153,15 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 ### lead-pipeline (BİRLEŞİK CRON JOB) ✅
 - **Platform:** `railway-cron`
 - **Railway Project ID:** `fc91edb9-5d93-413d-b9b7-75ae81033204`
-- **Service ID:** `66dee762-474a-4973-9f04-d99f3a2f532b`
+- **Service ID:** `b4a28784-6e03-473f-b8fa-c1021820d703` (Recreated to fix webhook & root path issue)
 - **Environment ID:** `69c5c773-b69a-4077-a7ff-7b29258a3ad1`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (mono-repo, Root Dir: `Projeler/Lead_Pipeline`)
 - **Lokal Klasör:** `Projeler/Lead_Pipeline/`
 - **Start Komutu:** `python main.py`
-- **Cron Schedule:** `*/5 * * * *` (5 dakikada bir)
+- **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
 - **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
-- **Son Deploy:** 2026-03-22 (ilk deploy — maliyet optimizasyonu, deployment ID: dacc0200)
-- **Durum:** ✅ Aktif (Build SUCCESS, cron çalışıyor)
+- **Son Deploy:** 2026-03-23 (Webhook bug & root directory fixed. Son deployment SUCCESS)
+- **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
 
 ---
 
