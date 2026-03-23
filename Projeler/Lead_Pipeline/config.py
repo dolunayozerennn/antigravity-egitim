@@ -41,7 +41,7 @@ class Config:
         ]
     else:
         NOTIFIER_SHEET_TABS = [
-            {"name": "Sayfa1"}
+            {"name": "Sheet1"}
         ]
 
     # ── NOTION (CRM Hedef) ──────────────────────────────────────────
