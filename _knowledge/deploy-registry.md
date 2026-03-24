@@ -53,27 +53,22 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-### dolunay-reels-kapak
+### dolunay-reels-kapak (Unified Worker)
 - **Platform:** `railway-cron`
 - **Railway Project ID:** `fed6db49-de57-4fbe-9988-528416f1b668`
 - **Service ID:** `98fa5736-7e6f-454a-a648-22e47a92c28a`
 - **Environment ID:** `f555d0bb-125e-4d15-838e-dbeb2936a721`
-- **GitHub Repo:** `dolunayozerennn/dolunay-reels-kapak`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Dolunay_Reels_Kapak`)
 - **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
-- **Start Komutu:** `python worker.py`
-- **Son Deploy:** 2026-03-21 (migration: Railway Cron Job olarak ayarlandı)
-- **Durum:** ✅ Aktif (multi-theme + revision engine + Railway Cron geçişi, schedule: 0 6,12,18 * * *)
+- **Start Komutu:** `python unified_worker.py`
+- **Cron Schedule:** `0 6,12,18 * * *` (Günde 3 kez: 09:00, 15:00, 21:00 TR)
+- **Son Deploy:** 2026-03-24 (stabilizasyon: SDK standardizasyonu, hata yönetimi, unified_worker geçişi, mono-repo bağlantısı)
+- **Durum:** ✅ Aktif (Kapak üretimi + revizyon kontrolü tek worker'da birleştirildi)
 
-### revizyon-cron (dolunay-reels-kapak projesi içinde)
-- **Platform:** `railway-cron`
+### revizyon-cron ⛔ (KALDIRILDI — unified_worker'a taşındı)
 - **Railway Project ID:** `fed6db49-de57-4fbe-9988-528416f1b668`
-- **Service ID:** `1e740cb1-3b80-47e3-a863-2d27c7f2c01a`
-- **Environment ID:** `f555d0bb-125e-4d15-838e-dbeb2936a721`
-- **GitHub Repo:** `dolunayozerennn/dolunay-reels-kapak`
-- **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
-- **Start Komutu:** `python revision_cron_worker.py`
-- **Son Deploy:** 2026-03-21 (migration: Railway Cron Job olarak ayarlandı)
-- **Durum:** ✅ Aktif (Günde 5 kez: Railway Cron ile çalışıyor, schedule: 0 7,10,13,16,19 * * *)
+- **Service ID:** `1e740cb1-3b80-47e3-a863-2d27c7f2c01a` (silindi)
+- **Durum:** ⛔ Kaldırıldı (2026-03-24) — unified_worker.py içinde birleştirildi
 
 ---
 
@@ -153,8 +148,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python run_pipeline.py --from-notion`
 - **Cron Schedule:** `0 3 * * *` (Günlük, UTC 03:00)
 - **Son Deploy:** 2026-03-24 (initial deploy: Railway CronJob olarak kuruldu)
-- **Durum:** ⚠️ Beklemede — GITHUB_TOKEN eksik (blog publish için gerekli)
-- **Env Vars:** GROQ_API_KEY, GEMINI_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64)
+- **Durum:** ✅ Aktif (Günlük UTC 03:00, Notion'dan yeni "Yayınlandı" videoları seçip otomatik blog üretip dolunay.ai'ye publish eder)
+- **Env Vars:** GROQ_API_KEY, GEMINI_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64), GITHUB_TOKEN
 
 ---
 ## 📌 Sadece Lokal Projeler (Deploy Yok)
