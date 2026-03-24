@@ -77,6 +77,7 @@ Aşağıdaki dosyalar ana pipeline'ın parçası **değildir**. Ad-hoc kullanım
 | `NOTION_TOKEN` | ✅ | Notion API anahtarı |
 | `NOTION_DATABASE_ID` | ✅ | Video veritabanı ID |
 | `GOOGLE_DRIVE_CREDENTIALS_JSON` | ✅ | Google Drive SA JSON |
+| `GEMINI_API_KEY` | ✅ | Gemini kapak metni ve vision analizleri için |
 | `REFERENCE_PHOTO_URL` | ✅ | Referans kişi fotoğrafı URL |
 
 ## 🏗️ Deployment
@@ -94,4 +95,4 @@ Aşağıdaki dosyalar ana pipeline'ın parçası **değildir**. Ad-hoc kullanım
 - **v1:** Tek tema, 3 varyasyon
 - **v2:** Autonomous agent + Drive entegrasyonu
 - **v3:** Multi-theme (3 tema × 2 varyasyon), revision engine, batch processing
-- **v4 (Güncel):** Unified worker (cron), production-grade error handling, timeouts & cost optimization
+- **v4 (Güncel):** Unified worker (cron), production-grade error handling, timeouts, google-genai SDK migration & cost optimization

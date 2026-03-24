@@ -15,13 +15,13 @@
 | `NOTION_SOCIAL_TOKEN` | master.env | İşbirlikleri Notion workspace |
 | `KIE_API_KEY` | master.env | Kie AI pipeline (Reels kapak) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | master.env | Google Drive upload yetkisi |
-| `OPENAI_API_KEY` | master.env | Revizyon değerlendirmesi için |
+| `GEMINI_API_KEY` | master.env | Revizyon değerlendirmesi ve metin üretimi |
 
 ## Dosya Yapısı (kısa)
 - `unified_worker.py` → Konsolide edilmiş ana cron (Kapak üretimi + Revizyon)
 - `check_revisions_job.py` → Revizyon işlerini yöneten modül
 - `autonomous_cover_agent.py` → Kie Workflow tetikleme ana motoru (Timeout vs eklendi)
-- `revision_engine.py` → Feedback'leri algılayıp yeni prompt üretir (google-generativeai SDK)
+- `revision_engine.py` → Feedback'leri algılayıp yeni prompt üretir (google-genai SDK)
 - `notion_service.py` → Notion'dan meta dataları çeker
 - `composition_engine.py` → Multi-theme kapak varyasyonlarını yönetir.
 
@@ -31,4 +31,4 @@
 
 ## Son Doğrulama
 - **Tarih:** 2026-03-24
-- **Durum:** ✅ Stabilized & Fully Operational (7/7 bug fix, dependencies optimized, timeouts added)
+- **Durum:** ✅ Stabilized & Fully Operational (google-genai migrated, bug fixes, dependencies optimized, timeouts added)
