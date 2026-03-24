@@ -160,8 +160,25 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
 - **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
-- **Son Deploy:** 2026-03-23 (Webhook bug & root directory fixed. Son deployment SUCCESS)
+- **Son Deploy:** 2026-03-24 (fix: cronSchedule railway.json'a eklendi — Railway service instance'da 0 0 1 1 * olarak kalmıştı, */10 * * * * olarak düzeltildi)
 - **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
+- **⚠️ Telegram Notu:** TELEGRAM_CHAT_ID=847006455 (Savaş) "chat not found" hatası. Savaş bot'a /start göndermeli.
+
+---
+
+### blog-yazici-cron
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `49e850fc-df64-43eb-a839-18976b3965ff`
+- **Service ID:** `bdaaa906-abed-477c-b67c-dacec39fe733`
+- **Environment ID:** `84e15123-336f-4a16-8fea-5c12fa932760`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo)
+- **Root Directory:** `Projeler/Blog_Yazici/`
+- **Lokal Klasör:** `Projeler/Blog_Yazici/`
+- **Start Komutu:** `python run_pipeline.py --from-notion`
+- **Cron Schedule:** `0 3 * * *` (Günlük, UTC 03:00)
+- **Son Deploy:** 2026-03-24 (initial deploy: Railway CronJob olarak kuruldu)
+- **Durum:** ⚠️ Beklemede — GITHUB_TOKEN eksik (blog publish için gerekli)
+- **Env Vars:** GROQ_API_KEY, GEMINI_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64)
 
 ---
 
