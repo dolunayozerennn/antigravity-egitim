@@ -1,28 +1,33 @@
-# Lead Notifier Bot
+# Lead Notifier Bot 🚀
 
-Bu proje, belirlenen bir Google Sheets dosyasındaki yeni satırları (leadleri) tarar ve yeni bir ekleme algıladığı anda hem E-Posta adresine hem de Telegram botu aracılığıyla belirttiğiniz sohbete anlık bildirim atar. `Tele_Satis_CRM` alt yapısı örnek alınarak yazılmıştır ancak içerisine Notion entegrasyonu veya spesifik "telefon formatı" kuralları içermez. Sadece Sheets => Mail & Telegram mantığıyla çalışır.
+Bu proje, belirlenen bir Google Sheets dosyasındaki yeni eklenen potansiyel müşteri satırlarını (leadleri) tarar ve yeni bir ekleme algıladığı anda hem E-Posta adresine hem de Telegram botu aracılığıyla belirttiğiniz sohbete anlık (7/24) bildirim atar. 
 
-## Özellikler
-- **Google Sheets Entegrasyonu:** Her iterasyonda tabloya yeni eklenmiş satır(lar)ı yakalar.
-- **Mail Uyarı Sistemi:** Ayarladığınız adrese "yeni lead düştü" şeklinde bilgileri forwardlar.
-- **Telegram Entegrasyonu:** Ayarladığınız gruba/sohbete lead içeriğini gönderir.
+Proje, Antigravity **Native Mono-Repo** standartlarına (`antigravity-egitim`) tam uyumlu olarak çalışır ve kendi başına otonom Railway worker'ı olarak canlıya alınmıştır!
 
-## Proje Yapılandırması (Environment Variables)
+## ✨ Özellikler
+- **Google Sheets Entegrasyonu (Stateless Okuma):** Her polling döngüsünde tabloyu tarar, `.last_row_counts.json` veya memory referansıyla değişen satırları saptar.
+- **Mail Uyarı Sistemi:** Ayarladığınız yetkili adrese ("Savaş Bey vb.") e-posta gönderir.
+- **Telegram Entegrasyonu:** Ayarladığınız iletişim veya şirket grubuna bizzat bildirim atar.
+- **Monorepo Uyumlu:** `_knowledge/credentials/google-service-account.json` üzerinden lokal ortamda global credential okuyarak çalışır. 
 
-Aşağıdaki yapılandırmalar `master.env` veya lokal projenizin ayar dosyalarından çekilecektir:
+## 🔐 Proje Yapılandırması (Environment Variables)
+
+Aşağıdaki yapılandırmalar `master.env` dosyasından veya canlı ortamda iseniz **Railway Environment Variables** sekmesinden çekilecektir:
 
 - `SPREADSHEET_ID`: İzlenecek Spreadhseet'in kimliği.
-- `SHEET_TABS`: İzlenecek Sheet sayfa/sekme adı. Virgülle çoklu (Sayfa1,Sayfa2) ayrılabilir. Varsayılan *Sayfa1*.
-- `NOTIFY_EMAIL`: Bildirimin kime/hangi hesaba gideceği. (Savaş Bey'in adresi vb.)
-- `SMTP_USER`: Gönderici e-posta (genelde ozerendolunay@gmail.com).
-- `SMTP_APP_PASSWORD`: Gönderici e-postanın Google App Password şifresi.
-- `TELEGRAM_BOT_TOKEN`: Telegram tarafında oluşturulan botun anahtar adresi.
-- `TELEGRAM_CHAT_ID`: Botun size veya bulunduğunuz gruba mesaj atabilmesi için o chat'e ait özel ID.
+- `SHEET_TABS`: İzlenecek sheet içerisindeki sayfa/sekme adı. (Örn: `Sayfa1`)
+- `GOOGLE_SERVICE_ACCOUNT_JSON`: Eğer `_knowledge` içindeki JSON dosyasını okuyamıyorsa, Railway üzerinde base64 veya direkt json objesi olan authentication değeri.
+- `NOTIFY_EMAIL`: Bildirimin kime/hangi hesaba gideceği. (Örn: `savasgocgen@gmail.com`)
+- `SMTP_USER`: Bildirimi ateşleyecek olan bot/gönderici e-posta (genelde `ozerendolunay@gmail.com`).
+- `SMTP_APP_PASSWORD`: Gönderici Gmail hesabının Google App Password güvenlik anahtarı.
+- `TELEGRAM_BOT_TOKEN`: Telegram tarafında (@botfather) oluşturulan bildirim botunun anahtarı.
+- `TELEGRAM_CHAT_ID`: Botun size veya bulunduğunuz şirket grubuna uyarı atabilmesi için o hedefin benzersiz ID'si.
 
-## Nasıl Kullanılır?
+## 🛠️ Nasıl Kullanılır?
 
-1. Her ihtimale karşı Telegram Bot Token bilgilerini ayarlayın.
-2. Botun size ulaşacağı Chat ID numarası için, bota `merhaba` mesajı atın ve `python get_chat_id.py` çalıştırın. Ekranda size verilen numarayı ayarlara ekleyin.
-3. Kodu çalıştırmak için `python main.py` yazmanız yeterlidir. Varsayılan olarak her 5 dakikada bir kontrol sağlar.
+1. Tüm credential veya API şifrelerinizi yukarıdaki liste uyarınca `master.env` dosyasına kaydedin. Eğer Telegram ID'nizi bilmiyorsanız, bota `/start` deyin ve `python get_chat_id.py` kodunu çalıştırıp ekrandaki sayıyı kaydedin.
+2. Botun lokal ortamda hatasız çalışıp çalışmadığını tek bir deneme döngüsü ile doğrulamak için `python main.py --once` çalıştırın.
+3. Bot 5 dakikada bir veri tarar otonom moda almak için: `python main.py` yazın.
 
-**Not:** Bu projenin yapısı `Tele_Satis_CRM` ile birebir aynı polling mekanizmasına sahiptir ama **ayrı** bir deployment olarak çalışması için tasarlandı. İstendiğinde Railway'e tek başına yüklenebilir.
+**☁️ Railway Deploy Notu:** 
+Projenin deployment'ı `antigravity-egitim` (ana repo) üzerinden sağlanır. Railway üzerinde Root Directory olarak `Projeler/Lead_Notifier_Bot` seçilmiştir ve `python main.py` start komutuyla 7/24 çalışmaktadır. Herhangi kod güncellemesi atıldığında `/canli-yayina-al` veya sadece commit sayesinde otonom deploy tetiklenir.
