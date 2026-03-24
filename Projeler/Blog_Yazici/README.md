@@ -1,8 +1,8 @@
 # 📝 Blog Yazıcı — Reels-to-Blog Otomasyon Sistemi
 
 > **Proje Konumu:** `Antigravity/Projeler/Blog_Yazici/`  
-> **Durum:** 🟢 Multi-Video Pipeline hazır  
-> **Son Güncelleme:** 2026-03-22
+> **Durum:** 🟢 Production (Railway'de yayında)  
+> **Son Güncelleme:** 2026-03-25
 
 ---
 
@@ -115,6 +115,9 @@ python3 run_pipeline.py typeless5
 - [x] **Dinamik Annotation** — vision_analysis.json'dan otomatik adım oluşturma
 - [x] **Script Extractor** — Notion caption'dan script.txt oluşturma
 - [x] **Hardcoded script kaldırıldı** — Tüm scriptler dinamik yüklenir
+- [x] **Production Stabilizasyonu (24 Mart)** — Tüm HTTP isteklerine (Kie AI, ImgBB, Notion, GitHub) timeout eklendi, Railway'de sonsuz bekleme riski çözüldü
+- [x] **Otonom Deployment** — Dockerize edildi, Railway CronJob olarak ayarlandı
+- [x] **Notion Status Geri Yazma (25 Mart)** — İşlenen videoların Notion statüsü "Blog Yazıldı" olarak kilitlenir (sonsuz döngü önleme)
 
 ---
 
@@ -125,7 +128,6 @@ python3 run_pipeline.py typeless5
 
 ### Öncelik 2: Kalite İyileştirmeleri
 - Multi-video merge (tek video yerine tüm ekran kayıtlarını birleştir)
-- Notion'a blog durumu geri yazma (status update)
 
 ---
 
@@ -154,3 +156,5 @@ python3 run_pipeline.py typeless5
 | 2026-03-22 | Gemini 2.5 Flash → Gemini 2.5 Pro yükseltme |
 | 2026-03-22 | notion_video_selector.py: Notion → confidence scoring |
 | 2026-03-22 | **Multi-Video Pipeline v2.0:** drive_downloader.py, script_extractor.py, dinamik annotation modu, --from-notion flag |
+| 2026-03-24 | **Production Stabilizasyonu:** Tüm API çağrılarına timeout eklendi, Dockerize edildi, Railway'de cron job olarak devreye alındı |
+| 2026-03-25 | **Kritik Bugfix:** `opencv-python-headless` bağımlılığı eklendi, Notion status update eklendi, processed_videos.json uyumsuzluğu giderildi, Gemini timeout artırıldı |
