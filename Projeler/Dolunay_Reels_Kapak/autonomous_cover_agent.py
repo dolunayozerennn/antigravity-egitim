@@ -6,7 +6,11 @@ import json
 from dotenv import load_dotenv
 import google.generativeai as genai
 
-load_dotenv("/Users/dolunayozeren/Desktop/Antigravity/_knowledge/credentials/master.env")
+load_dotenv()
+# master.env sadece lokal ortamda mevcut, Railway'de env variables direkt set edilir
+_master_env = "/Users/dolunayozeren/Desktop/Antigravity/_knowledge/credentials/master.env"
+if os.path.exists(_master_env):
+    load_dotenv(_master_env)
 
 KIE_API_KEY = os.getenv("KIE_API_KEY")
 IMGBB_API_KEY = os.getenv("IMGBB_API_KEY")
@@ -30,7 +34,7 @@ def upload_to_imgbb(image_path: str) -> str:
         "key": IMGBB_API_KEY,
         "image": encoded_image
     }
-    response = requests.post(url, data=payload)
+    response = requests.post(url, data=payload, timeout=30)
     if response.status_code == 200:
         img_url = response.json()["data"]["url"]
         print(f"Uploaded successfully to ImgBB: {img_url}")
@@ -66,7 +70,7 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
         }
     }
     
-    response = requests.post(create_url, headers=headers, json=payload)
+    response = requests.post(create_url, headers=headers, json=payload, timeout=30)
     if response.status_code != 200:
         print(f"Failed to create task: {response.text}")
         return None
@@ -78,11 +82,19 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
         
     print(f"Task created successfully. Task ID: {task_id}. Waiting for completion...")
     
-    # Polling for result
+    # Polling for result with MAX TIMEOUT (5 minutes)
     poll_url = f"https://api.kie.ai/api/v1/jobs/recordInfo?taskId={task_id}"
+    max_poll_seconds = 300  # 5 dakika max
+    poll_start = time.time()
     
     while True:
-        poll_resp = requests.get(poll_url, headers=headers)
+        # Timeout guard: sonsuz döngüyü engelle
+        elapsed = time.time() - poll_start
+        if elapsed > max_poll_seconds:
+            print(f"⏱️ Polling timeout ({max_poll_seconds}s). Aborting.")
+            return None
+        
+        poll_resp = requests.get(poll_url, headers=headers, timeout=30)
         if poll_resp.status_code != 200:
              print(f"Polling failed: {poll_resp.text}")
              time.sleep(5)
@@ -319,7 +331,7 @@ def evaluate_image_with_vision(image_url: str, style_guide: str, expected_text: 
          return {"score": 0, "critique": "Gemini Client Error", "improved_prompt": ""}
     
     try:
-         img_resp = requests.get(image_url)
+         img_resp = requests.get(image_url, timeout=30)
          img_bytes = img_resp.content
     except Exception as e:
          print(f"Failed to fetch image for evaluation: {e}")
@@ -575,7 +587,7 @@ def run_autonomous_generation(local_person_image_path: str, video_topic: str, ma
                   
     if best_image_url:
          print(f"\nDownloading final best cover (Score: {best_score})")
-         img_data = requests.get(best_image_url).content
+         img_data = requests.get(best_image_url, timeout=30).content
          with open(output_path, 'wb') as handler:
               handler.write(img_data)
          print(f"Final cover saved to {output_path}")

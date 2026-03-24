@@ -12,6 +12,11 @@ if os.path.exists(_master_env):
 from notion_service import NOTION_TOKEN, DATABASE_ID
 from revision_engine import process_all_revisions
 
+# Null guard: Railway'de env var eksikse erken çık
+if not NOTION_TOKEN or not DATABASE_ID:
+    print("⚠️ NOTION_TOKEN veya DATABASE_ID tanımlı değil. Revizyon kontrolü atlanıyor.")
+
+
 def get_recently_edited_pages(hours_ago: int = 24) -> list:
     """
     Fetches pages from the Notion database that were edited within the last N hours.

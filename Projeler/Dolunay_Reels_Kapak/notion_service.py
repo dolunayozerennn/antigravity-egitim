@@ -21,7 +21,7 @@ def get_page_content(page_id: str) -> str:
     
     # We use requests directly for simplicity and robustness
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=30)
         if response.status_code != 200:
             return ""
             
@@ -66,7 +66,7 @@ def get_ready_videos():
             }
         }
         
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
         
         if response.status_code != 200:
             print(f"Error querying Notion API: {response.status_code} - {response.text}")
@@ -218,7 +218,7 @@ def add_revision_panel(page_id: str, themes_with_links: list) -> bool:
     blocks = _build_revision_blocks(themes_with_links)
     
     try:
-        response = requests.patch(url, headers=headers, json={"children": blocks})
+        response = requests.patch(url, headers=headers, json={"children": blocks}, timeout=30)
         if response.status_code == 200:
             print(f"✅ Revizyon paneli Notion sayfasına eklendi: {page_id}")
             return True
@@ -260,7 +260,7 @@ def read_revision_feedback(page_id: str) -> list:
     }
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=30)
         if response.status_code != 200:
             print(f"❌ Notion blokları okunamadı: {response.status_code}")
             return []
@@ -365,7 +365,7 @@ def update_feedback_block(block_id: str, new_text: str, is_error: bool = False) 
     }
     
     try:
-        response = requests.patch(url, headers=headers, json=payload)
+        response = requests.patch(url, headers=headers, json=payload, timeout=30)
         return response.status_code == 200
     except Exception as e:
         print(f"❌ Feedback bloğu güncellenemedi: {e}")

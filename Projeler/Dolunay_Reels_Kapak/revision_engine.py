@@ -31,14 +31,14 @@ from autonomous_cover_agent import (
 )
 from drive_service import upload_cover_to_drive
 
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
 try:
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=GEMINI_API_KEY)
+    _gemini_ready = True
 except Exception as e:
-    print(f"Warning: Failed to initialize Gemini Client: {e}")
-    client = None
+    print(f"Warning: Failed to initialize Gemini: {e}")
+    _gemini_ready = False
 
 
 def download_image_from_url(url: str, output_path: str) -> bool:
@@ -75,8 +75,8 @@ def analyze_existing_cover(image_path: str) -> str:
     Pozisyon, ışıklandırma, renk paleti, kıyafet, ifade, metin stili vb. detayları çıkarır.
     Bu analiz revize prompt'unda referans olarak kullanılır.
     """
-    if not client:
-        return "Analysis unavailable - Gemini client not initialized"
+    if not _gemini_ready:
+        return "Analysis unavailable - Gemini not initialized"
     
     try:
         with open(image_path, "rb") as f:
@@ -99,10 +99,10 @@ def analyze_existing_cover(image_path: str) -> str:
         Be VERY SPECIFIC — I will use this description to recreate the same image with only small changes.
         Return as a structured description, not JSON."""
         
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[
-                types.Part.from_bytes(data=img_bytes, mime_type="image/png"),
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        response = model.generate_content(
+            [
+                {"mime_type": "image/png", "data": img_bytes},
                 prompt
             ]
         )
@@ -122,7 +122,7 @@ def generate_revision_prompt(original_analysis: str, feedback: str, cover_text: 
     Orijinal görselin analizini ve kullanıcı feedback'ini birleştirerek
     minimal değişiklik yapan bir prompt oluşturur.
     """
-    if not client:
+    if not _gemini_ready:
         # Fallback: basit prompt
         return (
             f"Recreate this social media cover with the same style and composition. "
@@ -162,10 +162,8 @@ IMPORTANT RULES:
 
 Return ONLY the prompt text, nothing else."""
 
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=meta_prompt
-        )
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        response = model.generate_content(meta_prompt)
         
         prompt = response.text.strip()
         

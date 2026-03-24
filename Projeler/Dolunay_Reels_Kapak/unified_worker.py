@@ -21,6 +21,8 @@ def main():
     print(f"🚀 Unified Worker başlatıldı — {start.strftime('%Y-%m-%d %H:%M:%S')} UTC")
     print(f"{'='*60}\n")
 
+    errors = 0
+
     # ── Adım 1: Yeni kapak üretimi ──
     print("📸 [1/2] Kapak üretimi başlıyor...")
     try:
@@ -28,6 +30,7 @@ def main():
         process_ready_videos()
     except Exception as e:
         print(f"❌ Kapak üretimi hatası: {e}", file=sys.stderr)
+        errors += 1
 
     # ── Adım 2: Revizyon kontrolü ──
     print("\n🔄 [2/2] Revizyon kontrolü başlıyor...")
@@ -36,14 +39,22 @@ def main():
         run_cron_job()
     except Exception as e:
         print(f"❌ Revizyon kontrolü hatası: {e}", file=sys.stderr)
+        errors += 1
 
     # ── Özet ──
     elapsed = (datetime.datetime.utcnow() - start).total_seconds()
     print(f"\n{'='*60}")
-    print(f"✅ Unified Worker tamamlandı — {elapsed:.1f} saniye")
+    if errors == 0:
+        print(f"✅ Unified Worker tamamlandı — {elapsed:.1f} saniye")
+    elif errors == 1:
+        print(f"⚠️ Unified Worker tamamlandı (1 adımda hata) — {elapsed:.1f} saniye")
+    else:
+        print(f"❌ Unified Worker tamamlandı (tüm adımlar hatalı) — {elapsed:.1f} saniye")
     print(f"{'='*60}")
+
+    return errors
 
 
 if __name__ == "__main__":
-    main()
-    sys.exit(0)
+    errors = main()
+    sys.exit(1 if errors >= 2 else 0)
