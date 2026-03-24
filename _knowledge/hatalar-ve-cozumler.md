@@ -217,6 +217,16 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Kural:** Railway container'larında dosya yolu `/app/` altındadır. `Path.parents` index erişimlerinde **mutlaka** uzunluk kontrolü yap veya enumerate ile güvenli eriş.
 - **Tarih:** Mart 2026
 
+### ⚠️ API İsteklerinde Timeout Eksikliği — Sonsuz Bekleme (Hang) (KRİTİK)
+- **Sorun:** Pipeline (örn. Blog Yazıcı, Kapak Üretici) Notion, ImgBB, GitHub veya Kie AI'a `requests.get()` veya `requests.post()` atıyor ancak `timeout` parametresi verilmemiş. Railway ağında geçici bir kopukluk veya hedefin yanıt vermemesi durumunda container **sonsuza kadar** o satırda asılı kalıyor (hang). Cron job'ların CPU süresini tüketip kilitlenmesine neden oluyor.
+- **Kök Neden:** Python `requests` kütüphanesi varsayılan olarak timeout'suz (sonsuz bekleme) çalışır.
+- **Çözüm:** Tüm dış API çağrılarına zorunlu olarak `timeout=30` (veya `60`) eklendi.
+  ```python
+  resp = requests.post("https://api.github.com/...", headers=headers, json=data, timeout=30)
+  ```
+- **Kural:** Herhangi bir dış servise istek atan her fonksiyona **istisnasız** `timeout` parametresi ekle.
+- **Tarih:** Mart 2026
+
 ---
 
 ## MCP Bağlantı Sorunları
