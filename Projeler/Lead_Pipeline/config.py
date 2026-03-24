@@ -66,6 +66,9 @@ class Config:
     SMTP_USER = os.environ.get("SMTP_USER", "")
     SMTP_APP_PASSWORD = os.environ.get("SMTP_APP_PASSWORD", "")
 
+    # ── LLM (Parsing) ──────────────────────────────────────────────
+    GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+
     # ── GOOGLE AUTH ─────────────────────────────────────────────────
     GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
     GOOGLE_OUTREACH_TOKEN_JSON = os.environ.get("GOOGLE_OUTREACH_TOKEN_JSON", "")

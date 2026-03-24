@@ -21,7 +21,7 @@ from datetime import datetime
 
 from config import Config
 from sheets_reader import SheetsReader
-from data_cleaner import clean_lead
+from data_cleaner import clean_leads_bulk
 from notion_writer import NotionWriter
 from notifier import process_and_notify
 
@@ -57,15 +57,12 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter) -> list[dic
 
     logger.info(f"📊 CRM: {len(new_rows)} yeni satır bulundu")
 
-    # Toplu veri temizleme
-    cleaned_leads = []
-    for row in new_rows:
-        try:
-            cleaned = clean_lead(row)
-            cleaned_leads.append(cleaned)
-        except Exception as e:
-            logger.error(f"❌ Veri temizleme hatası: {e}")
-            continue
+    # Toplu veri temizleme (LLM Bulk Parsing)
+    try:
+        cleaned_leads = clean_leads_bulk(new_rows)
+    except Exception as e:
+        logger.error(f"❌ Toplu veri temizleme hatası: {e}")
+        cleaned_leads = []
 
     if not cleaned_leads:
         logger.warning("⚠️ CRM: Temizlenebilir lead bulunamadı")
@@ -204,7 +201,8 @@ def main():
     crm_reader = SheetsReader(
         spreadsheet_id=Config.CRM_SPREADSHEET_ID,
         sheet_tabs=Config.CRM_SHEET_TABS,
-        reader_name="crm"
+        reader_name="crm",
+        use_state_tab=False
     )
 
     notifier_reader = SheetsReader(

@@ -39,10 +39,11 @@ _STATE_META_CELL = "A1"
 class SheetsReader:
     """İki farklı spreadsheet'i okuyabilen birleşik reader."""
 
-    def __init__(self, spreadsheet_id: str, sheet_tabs: list[dict], reader_name: str = "default"):
+    def __init__(self, spreadsheet_id: str, sheet_tabs: list[dict], reader_name: str = "default", use_state_tab: bool = True):
         self.spreadsheet_id = spreadsheet_id
         self.sheet_tabs = sheet_tabs
         self.reader_name = reader_name
+        self.use_state_tab = use_state_tab
         self.service = None
         self._creds = None
         self._last_row_counts: dict[str, int] = {}
@@ -54,7 +55,8 @@ class SheetsReader:
 
     def _load_state_from_sheets(self):
         """Google Sheets _Meta tab'ından state yükler."""
-        if self._state_loaded:
+        if self._state_loaded or not self.use_state_tab:
+            self._state_loaded = True
             return
 
         try:
@@ -99,6 +101,9 @@ class SheetsReader:
 
     def _save_state_to_sheets(self):
         """State'i Google Sheets _Meta tab'ına yazar."""
+        if not self.use_state_tab:
+            return
+
         # Env variable'a da yaz
         clean_state = {}
         for k, v in self._last_row_counts.items():
@@ -308,9 +313,16 @@ class SheetsReader:
     # ── YENİ SATIR TESPİTİ ──────────────────────────────────
 
     def get_new_rows(self, tab_name: str) -> list[dict]:
-        """Sadece eklenen yeni satırları döner."""
+        """Sadece eklenen yeni satırları döner. State kapalıysa son N satırı döner."""
         all_rows = self.get_all_rows(tab_name)
         total = len(all_rows)
+
+        # Eğer state kapalıysa (Notion'ı duplicate kaynağı olarak kullanıyorsak) her seferinde son 150 satırı dön.
+        if not self.use_state_tab:
+            fallback_count = min(150, total)
+            logger.info(f"📊 [{self.reader_name}] '{tab_name}': State kapalı, son {fallback_count} satır çekildi (Duplicate kontrolüne gidecek).")
+            return all_rows[-fallback_count:]
+
         state_key = f"{self.reader_name}:{tab_name}"
         last_count = self._last_row_counts.get(state_key, 0)
 
@@ -378,6 +390,8 @@ class SheetsReader:
 
     def confirm_processed(self):
         """Pending counts'u kalıcı yapar."""
+        if not self.use_state_tab:
+            return
         if self._pending_counts:
             self._last_row_counts.update(self._pending_counts)
             self._pending_counts.clear()
