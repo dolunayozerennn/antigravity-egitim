@@ -4,6 +4,8 @@ Batch Cover Generation Script
 Bu script belirli videoların kapağını üretir.
 Normal pipeline "Çekildi - Edit YOK" statüsünü filtreler ama
 bu script doğrudan belirtilen videoları işler.
+
+📐 Mode: 3 Themes × 2 Variants = 6 Covers per video
 """
 
 import os
@@ -11,7 +13,7 @@ import random
 import json
 import requests
 from dotenv import load_dotenv
-from autonomous_cover_agent import run_autonomous_generation, generate_cover_text_and_scene
+from autonomous_cover_agent import run_autonomous_generation, generate_three_themes
 from drive_service import upload_cover_to_drive, check_covers_exist
 
 load_dotenv()
@@ -91,7 +93,8 @@ def get_page_content(page_id: str) -> str:
 
 def process_batch_videos():
     print("=" * 60)
-    print("  BATCH COVER GENERATION - 8 Videos")
+    print("  BATCH COVER GENERATION (Multi-Theme)")
+    print("  📐 3 Themes × 2 Variants = 6 Covers per video")
     print("=" * 60)
 
     # Create outputs folder if not exists
@@ -100,7 +103,10 @@ def process_batch_videos():
     # Get available pre-processed photos
     cutout_dir = "outputs/cutouts"
     if not os.path.exists(cutout_dir):
-        print(f"Error: {cutout_dir} directory not found. Run process_all_raw.py first.")
+        # Fallback to assets/cutouts
+        cutout_dir = "assets/cutouts"
+    if not os.path.exists(cutout_dir):
+        print(f"Error: No cutout directory found.")
         return
 
     available_cutouts = [f for f in os.listdir(cutout_dir) if f.lower().endswith(('png', 'jpg', 'jpeg'))]
@@ -137,62 +143,80 @@ def process_batch_videos():
         else:
             print(f"  Warning: No script found for this video")
 
-        # Generate cover text AND scene description together
         topic = video['name']
-        text_result = generate_cover_text_and_scene(topic, script_content)
-        main_text = text_result.get("cover_text", topic.upper())
-        scene_description = text_result.get("scene_description", "")
 
-        print(f"  Cover Text: {main_text}")
-        print(f"  Scene: {scene_description}")
+        # Generate 3 different themes via Gemini
+        themes = generate_three_themes(topic, script_content)
+        
+        print(f"\n  📌 Generated {len(themes)} themes:")
+        for t_idx, theme in enumerate(themes, 1):
+            print(f"     Tema {t_idx}: {theme.get('theme_name', '?').upper()} → \"{theme.get('cover_text', '?')}\"")
 
-        video_variants_success = 0
+        video_covers_success = 0
 
-        # Generate 3 variants
-        for variant_index in range(1, 4):
-            print(f"\n>> Generating Variant {variant_index} for {video['name']}")
+        # Select ONE cutout for ALL variants (face consistency)
+        cutout_name = random.choice(available_cutouts)
+        cutout_path = os.path.join(cutout_dir, cutout_name)
+        print(f"  Using cutout for all variants: {cutout_name}")
 
-            # Select a random cutout
-            cutout_name = random.choice(available_cutouts)
-            cutout_path = os.path.join(cutout_dir, cutout_name)
-            print(f"   Using cutout: {cutout_name}")
+        # Select 2 extra cutout references for face identity reinforcement
+        other_cutouts = [c for c in available_cutouts if c != cutout_name]
+        extra_cutout_paths = []
+        if len(other_cutouts) >= 2:
+            extras = random.sample(other_cutouts, 2)
+            extra_cutout_paths = [os.path.join(cutout_dir, e) for e in extras]
+        elif len(other_cutouts) == 1:
+            extra_cutout_paths = [os.path.join(cutout_dir, other_cutouts[0])]
+        print(f"  Extra face references: {len(extra_cutout_paths)}")
 
-            # Run Autonomous Generation Loop
-            safe_video_name = "".join([c for c in video['name'] if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
-            final_cover_filename = f"{safe_video_name} KAPAK {variant_index}.png"
-            final_cover_path = os.path.join("outputs", final_cover_filename)
+        # For each theme, generate 2 variants
+        for t_idx, theme in enumerate(themes, 1):
+            theme_name = theme.get("theme_name", f"theme{t_idx}")
+            cover_text = theme.get("cover_text", "BUNU İZLE")
+            scene_description = theme.get("scene_description", "")
 
-            print(f"   Generating AI Cover Variant {variant_index} (Max 2 Attempts)...")
+            print(f"\n  ── Tema {t_idx}/{len(themes)}: {theme_name.upper()} ──")
+            print(f"     Metin: {cover_text}")
+            print(f"     Sahne: {scene_description[:100]}...")
 
-            success = run_autonomous_generation(
-                local_person_image_path=cutout_path,
-                video_topic=topic,
-                main_text=main_text,
-                output_path=final_cover_path,
-                max_retries=2,
-                variant_index=variant_index,
-                script_text=script_content,
-                scene_description=scene_description
-            )
+            for v_idx in range(1, 3):  # 2 variants per theme
+                print(f"\n     🎨 Varyasyon {v_idx}/2 üretiliyor...")
 
-            if not success:
-                print(f"   Failed to generate variant {variant_index}. Skipping to next variant.")
-                continue
+                safe_video_name = "".join([c for c in video['name'] if c.isalpha() or c.isdigit() or c == ' ']).rstrip()
+                final_cover_filename = f"{safe_video_name} KAPAK T{t_idx}_{theme_name}_V{v_idx}.png"
+                final_cover_path = os.path.join("outputs", final_cover_filename)
 
-            video_variants_success += 1
+                success = run_autonomous_generation(
+                    local_person_image_path=cutout_path,
+                    video_topic=topic,
+                    main_text=cover_text,
+                    output_path=final_cover_path,
+                    max_retries=2,
+                    variant_index=v_idx,
+                    script_text=script_content,
+                    scene_description=scene_description,
+                    extra_cutout_paths=extra_cutout_paths
+                )
 
-            # Upload to Google Drive
-            print("   Uploading to Google Drive...")
-            upload_cover_to_drive(final_cover_path, drive_url, file_name=f"Kapak {variant_index}.png")
+                if not success:
+                    print(f"     ❌ Varyasyon {v_idx} başarısız.")
+                    continue
 
-        status = f"OK - {video_variants_success}/3 variants"
-        if video_variants_success == 0:
-            status = "FAILED - No variants generated"
+                video_covers_success += 1
+
+                # Upload to Google Drive
+                drive_file_name = f"Kapak T{t_idx} ({theme_name}) V{v_idx}.png"
+                print(f"     ☁️ Drive'a yükleniyor: {drive_file_name}")
+                upload_cover_to_drive(final_cover_path, drive_url, file_name=drive_file_name)
+
+        status = f"OK - {video_covers_success}/6 covers"
+        if video_covers_success == 0:
+            status = "FAILED - No covers generated"
         results_summary.append({"name": video['name'], "status": status})
 
     # Print summary
     print("\n" + "=" * 60)
-    print("  BATCH COVER GENERATION SUMMARY")
+    print("  BATCH COVER GENERATION SUMMARY (Multi-Theme)")
     print("=" * 60)
     for result in results_summary:
         icon = "✅" if "OK" in result['status'] else "⏭️" if "SKIPPED" in result['status'] else "❌"

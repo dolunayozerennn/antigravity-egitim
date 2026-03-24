@@ -1,9 +1,11 @@
 ---
 name: Production Deploy (GitHub + Railway)
 description: |
-  Bir projeyi Antigravity test ortamından production'a taşımak için kullan.
-  GitHub MCP üzerinden kod push eder, Railway üzerinden 7/24 deploy eder.
+  Bir projeyi Antigravity ortamından production'a taşımak için kullan.
+  GitHub MCP üzerinden kod push eder, Railway GraphQL API ile 7/24 deploy eder.
   Kullanıcıyı hiçbir aşamada chat ortamından çıkarmaz.
+  ⚠️ KULLANICIYA ASLA "dashboard'a git", "tıkla", "bağla" DEMEZSİN.
+  TÜM İŞLEMLER API İLE YAPILIR.
   Bu skill'i şu durumlarda kullan:
   - Kullanıcı "bunu deploy et", "bu 7/24 çalışsın", "production'a al" dediğinde
   - Kullanıcı "Railway'e koy", "GitHub'a push et ve çalıştır" dediğinde
@@ -11,9 +13,30 @@ description: |
   - Kullanıcı "güncelle", "redeploy" dediğinde mevcut deploy'u günceller
 ---
 
-# 🚀 Production Deploy — Uçtan Uca Deployment Skill'i
+# 🚀 Production Deploy — Tam Otonom Deployment Skill'i
 
 Bu skill, Antigravity chat ortamından **hiç çıkmadan** bir projeyi GitHub'a push edip Railway'de 7/24 çalışır hale getirmeyi sağlar.
+
+---
+
+## ⛔ MUTLAK KURAL: KULLANICIYA MANUEL İŞLEM YAPTIRMA
+
+```
+❌ ASLA şunları söyleme:
+  - "Railway dashboard'a git ve repo'yu bağla"
+  - "GitHub'da Settings'e gidip..."  
+  - "Railway.app'i aç ve..."
+  - "Şu linke tıkla..."
+  - "Manuel olarak..."
+
+✅ HER ŞEYİ KENDİN YAP:
+  - GitHub repo → GitHub MCP araçları ile
+  - Railway proje oluşturma → GraphQL API (projectCreate) ile  
+  - Railway'e GitHub bağlama → GraphQL API (serviceCreate + source) ile
+  - Environment variables → GraphQL API (variableCollectionUpsert) ile
+  - Deploy tetikleme → GraphQL API (serviceInstanceRedeploy) ile
+  - Log okuma → GraphQL API (deploymentLogs) ile
+```
 
 ---
 
@@ -21,30 +44,44 @@ Bu skill, Antigravity chat ortamından **hiç çıkmadan** bir projeyi GitHub'a 
 
 Tüm deploy süreci Antigravity tarafından yönetilir:
 - **GitHub** → MCP Server üzerinden (repo oluşturma, push, güvenlik)
-- **Railway** → GraphQL API üzerinden (deploy, env variables, monitoring)
-- **Kullanıcıdan istenen tek şey:** Railway Token (bir kez)
+- **Railway** → GraphQL API üzerinden (proje oluşturma, servis oluşturma, GitHub bağlama, env variables, deploy, monitoring)
+- **Kullanıcıdan istenen:** HİÇBİR ŞEY
 
 ---
 
-## ⚡ ADIM 0 — İLK ADIM: Deploy Türünü Belirle (ZORUNLU)
+## 🔑 Railway Token (OTOMATİK — Kullanıcıya SORMA)
 
-Her deploy talebi geldiğinde **önce mevcut durumu kontrol et**, sonra uygun akışa geç.
+**Token:** `14ac7442-43fc-480a-b7e2-e8b5dacf1bb3`
+
+**Kaynaklar (sıralı):**
+1. `_skills/canli-yayina-al/scripts/railway-token.txt`
+2. `_knowledge/credentials/master.env` → `RAILWAY_TOKEN`
+3. `_knowledge/api-anahtarlari.md` → Railway bölümü
+
+**⚠️ ÖNEMLİ:**
+- Token'ı kullanıcıdan **ASLA** sorma
+- Token'ı commit'e veya log'a **ASLA** yazma
+- Her Railway API çağrısında `Authorization: Bearer TOKEN` header'ı kullan
+
+---
+
+## ⚡ ADIM 0 — DEPLOY TÜRÜNÜ BELİRLE (ZORUNLU)
+
+Her deploy talebi geldiğinde **önce mevcut durumu kontrol et**:
 
 ```
 🔄 DEPLOY AKIŞI — KARAR AĞACI
 │
-├─ 1. Proje kayıt defterini kontrol et:
-│     → `_knowledge/deploy-registry.md` dosyasını oku
+├─ 1. deploy-registry.md kontrol et:
+│     → `_knowledge/deploy-registry.md` oku
 │     → Bu proje daha önce deploy edilmiş mi?
 │
-├─ 2. GitHub'da repo var mı kontrol et:
-│     → GitHub MCP → get_file_contents(owner, repo) ile repo erişimi dene
-│     → 404 alırsa → repo yok
-│     → Dosya dönerse → repo mevcut
+├─ 2. GitHub'da repo var mı?
+│     → GitHub MCP → get_file_contents(owner, repo) dene
+│     → 404 → repo yok | Dosya → repo var
 │
-├─ 3. Railway'de proje var mı kontrol et:
-│     → GraphQL API → projects listesi al
-│     → Proje adıyla eşleşen var mı bak
+├─ 3. Railway'de proje var mı?
+│     → GraphQL: { projects { edges { node { id name } } } }
 │
 └─ SONUÇ:
    ├─ GitHub ✅ + Railway ✅ → RE-DEPLOY AKIŞI (Bölüm 🔄)
@@ -54,101 +91,39 @@ Her deploy talebi geldiğinde **önce mevcut durumu kontrol et**, sonra uygun ak
 
 ---
 
-## 📋 Ön Gereksinimler
+## 🔧 Railway GraphQL API — Temel Çağrı Şablonu
 
-### Her Zaman Mevcut
-- ✅ GitHub MCP Server bağlı (Antigravity zaten bu donanıma sahip)
-- ✅ GitHub hesabı: `dolunayozerennn`
+**Endpoint:** `https://backboard.railway.app/graphql/v2`
 
-### 🔑 Railway Token (OTOMATİK BULUNUR — Kullanıcıya SORMA)
-
-**Token kaynağı:** `_knowledge/api-anahtarlari.md` → Railway bölümü
-
-**Token okuma prosedürü (HER deploy'da uygula):**
-1. `view_file` tool'u ile `_knowledge/api-anahtarlari.md` dosyasını oku
-2. `### Railway` bölümünden token'ı al (backtick'ler arasındaki UUID)
-3. Token'ı her Railway API çağrısında `Authorization: Bearer TOKEN` header'ı olarak kullan
-
-**⚠️ ÖNEMLİ KURALLAR:**
-- Token `HENÜZ_KAYDEDİLMEDİ` yazıyorsa → kullanıcıdan **bir kez** iste ve dosyaya kaydet
-- Token bir kez kaydedildikten sonra bir daha **ASLA** kullanıcıya sorma
-- Token'ı hiçbir zaman commit'e veya log'a yazma
-
----
-
-## 🔧 Railway Komutlarını Çalıştırma
-
-### Yöntem A — GraphQL API (BİRİNCİL — HER ZAMAN ÇALIŞIR)
-
-GraphQL API, Railway işlemlerinin **ana yöntemidir**. Token ile her zaman çalışır.
-
-**Temel API çağrı şablonu:**
 ```bash
 curl -s -X POST https://backboard.railway.app/graphql/v2 \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer RAILWAY_TOKEN" \
+  -H "Authorization: Bearer 14ac7442-43fc-480a-b7e2-e8b5dacf1bb3" \
   -d '{"query": "GRAPHQL_QUERY"}'
 ```
 
-**Hazır GraphQL Sorguları:**
+### 📋 Tüm GraphQL Sorgu & Mutation Kataloğu
 
-#### 1. Proje Listesi (tüm projeler + servisler):
-```graphql
-{ projects { edges { node { id name services { edges { node { id name } } } } } } }
-```
+#### BİLGİ ALMA (Query)
 
-#### 2. Environment'ları Listele:
-```graphql
-{ project(id: "PROJE_ID") { environments { edges { node { id name } } } } }
-```
+| İşlem | GraphQL |
+|-------|---------|
+| Proje listesi | `{ projects { edges { node { id name services { edges { node { id name } } } } } } }` |
+| Proje detay | `{ project(id: "ID") { id name environments { edges { node { id name } } } services { edges { node { id name } } } } }` |
+| Env variables oku | `{ variables(projectId: "P", environmentId: "E", serviceId: "S") }` |
+| Deploy durumu | `{ deployments(first: 5, input: { projectId: "P", environmentId: "E", serviceId: "S" }) { edges { node { id status createdAt } } } }` |
+| Deploy logları | `{ deploymentLogs(deploymentId: "D", limit: 50) { message timestamp severity } }` |
 
-#### 3. Environment Variable Okuma:
-```graphql
-{ variables(projectId: "PROJE_ID", environmentId: "ENV_ID", serviceId: "SERVIS_ID") }
-```
+#### OLUŞTURMA & DEĞİŞTİRME (Mutation)
 
-#### 4. Environment Variable Yazma/Güncelleme:
-```graphql
-mutation { variableCollectionUpsert(input: {
-  projectId: "PROJE_ID",
-  environmentId: "ENV_ID",
-  serviceId: "SERVIS_ID",
-  variables: { KEY: "VALUE" }
-}) }
-```
-
-#### 5. Redeploy Tetikleme:
-```graphql
-mutation { serviceInstanceRedeploy(serviceId: "SERVIS_ID", environmentId: "ENV_ID") }
-```
-
-#### 6. Son Deployment'ların Durumunu Kontrol:
-```graphql
-{ deployments(first: 5, input: { projectId: "PROJE_ID", environmentId: "ENV_ID", serviceId: "SERVIS_ID" }) {
-  edges { node { id status createdAt } }
-} }
-```
-
-#### 7. Deployment Loglarını Oku:
-```graphql
-{ deploymentLogs(deploymentId: "DEPLOY_ID", limit: 50) {
-  message timestamp severity
-} }
-```
-
-### Yöntem B — CLI (OPSİYONEL — Sadece Global Kurulumda)
-
-CLI, token sorunları nedeniyle **her zaman çalışmayabilir**. Yalnızca global kurulum varsa dene:
-
-```bash
-# CLI mevcut mu kontrol et:
-which railway
-
-# Varsa token ile çalıştır:
-RAILWAY_TOKEN="token" railway <komut>
-```
-
-**⚠️ CLI `Unauthorized` hatası verirse → Zaman kaybetme, direkt GraphQL API'ye geç.**
+| İşlem | GraphQL |
+|-------|---------|
+| **Proje oluştur** | `mutation { projectCreate(input: { name: "proje-adi", description: "aciklama" }) { id name environments { edges { node { id name } } } } }` |
+| **Servis oluştur (GitHub'dan)** | `mutation { serviceCreate(input: { projectId: "P", name: "servis-adi", source: { repo: "owner/repo" }, branch: "main" }) { id name } }` |
+| **Mevcut servise GitHub bağla** | `mutation { serviceConnect(id: "SERVIS_ID", input: { repo: "owner/repo", branch: "main" }) { id } }` |
+| **Servis ayarlarını güncelle** | `mutation { serviceInstanceUpdate(serviceId: "S", environmentId: "E", input: { startCommand: "python main.py", restartPolicyType: ON_FAILURE, restartPolicyMaxRetries: 10 }) }` |
+| **Env variable ekle** | `mutation { variableCollectionUpsert(input: { projectId: "P", environmentId: "E", serviceId: "S", variables: { KEY: "VALUE" } }) }` |
+| **Redeploy tetikle** | `mutation { serviceInstanceRedeploy(serviceId: "S", environmentId: "E") }` |
 
 ---
 
@@ -156,55 +131,82 @@ RAILWAY_TOKEN="token" railway <komut>
 
 ### Adım 1: Güvenlik Kontrolü (Pre-Deploy)
 
-Deploy'dan **ÖNCE** bu kontrol listesini uygula:
-
 ```
 [ ] .env dosyası var mı? → .gitignore'a eklenmiş mi?
-[ ] Kodun içinde hardcoded API key var mı? → Varsa environment variable'a çevir
-[ ] token.json, credentials.json gibi hassas dosyalar var mı? → .gitignore'a ekle
+[ ] Kodun içinde hardcoded API key var mı? → Varsa os.environ.get() ile değiştir
+[ ] token.json, credentials.json var mı? → .gitignore'a ekle
 [ ] requirements.txt / package.json güncel mi?
 [ ] Ana çalışma komutu belli mi? (örn: python bot.py, node index.js)
 ```
 
 **⚠️ MUTLAKA YAP:**
-- Tüm `.py`, `.js`, `.ts`, `.env` dosyalarını API key pattern'leri için tara:
+- `.py`, `.js`, `.ts`, `.env` dosyalarını key pattern'leri için tara:
   - `sk-`, `AIza`, `ghp_`, `gsk_`, `apify_api_`, `pplx-`, `GOCSPX` gibi prefix'ler
-  - Hardcoded token'lar varsa `os.environ.get()` veya `os.getenv()` ile değiştir
-  - ⚠️ **Fallback değerlerini de kontrol et!** `os.environ.get('KEY', 'gercek-key-burasi')` gibi kullanımlar da tehlikelidir
+  - `os.environ.get('KEY', 'gercek-key-burasi')` gibi fallback'ları da kontrol et
 
-### Adım 2: Push Edilecek Dosyaları Belirle (Push Karar Ağacı)
+### Adım 1.5: ⚠️ KOD SAĞLIK KONTROLÜ (ZORUNLU — ATLANMAZ!)
 
-GitHub'a dosya push etmeden **önce** bu karar ağacını uygula:
+> **Bu adım push'tan ÖNCE çalıştırılır. Başarısız olursa PUSH YAPMA.**
+
+**1) Python Syntax Kontrolü:**
+```bash
+cd PROJE_KLASÖRÜ && python3 -m py_compile *.py 2>&1
+```
+
+**2) Import Zinciri Testi (KRİTİK — AttributeError, ImportError gibi hataları yakalar):**
+```bash
+cd PROJE_KLASÖRÜ && python3 -c "
+import sys; sys.path.insert(0, '.')
+import importlib, os
+errors = []
+for f in os.listdir('.'):
+    if f.endswith('.py') and f != 'setup.py':
+        mod = f[:-3]
+        try:
+            importlib.import_module(mod)
+        except Exception as e:
+            errors.append(f'{mod}: {e}')
+if errors:
+    for e in errors: print(f'❌ {e}')
+    sys.exit(1)
+else:
+    print('✅ Tüm modüller başarıyla import edildi')
+"
+```
+
+**3) Mevcut Testleri Çalıştır:**
+- `tests/` klasörü varsa → `python3 -m pytest tests/ -v` veya `python3 tests/test_*.py`
+- `run_test.py` varsa → `python3 run_test.py`
+- Test başarısızsa → ❌ PUSH YAPMA
+
+**4) Re-deploy ise: Lokal ↔ GitHub Diff Kontrolü:**
+- GitHub'daki dosyalarla lokal dosyaları karşılaştır
+- Push edilmemiş değişiklik varsa → bunları da push'a dahil et
+
+**⛔ BU ADIM ATLANILAMAZ. Her push'tan önce çalıştırılmalıdır.**
+
+### Adım 2: Push Dosyalarını Belirle
 
 ```
 📁 PUSH KARAR AĞACI
 
-1. Proje klasöründeki tüm dosyaları listele (list_dir veya find_by_name)
-
+1. Proje klasöründeki tüm dosyaları listele
 2. .gitignore pattern'lerine göre eleme yap
-
-3. Aşağıdaki dosyaları KESİNLİKLE PUSH ETME:
+3. Aşağıdakileri KESİNLİKLE PUSH ETME:
    ❌ .env, *.env, config.env
    ❌ token.json, token.pickle, credentials.json, service-account.json
    ❌ __pycache__/, venv/, .venv/, node_modules/
-   ❌ .DS_Store, *.swp, *.swo
-   ❌ .railway-bin/
-   ❌ Büyük dosyalar (>500KB — history_analysis.json, *.pickle gibi)
-   ❌ İzleme/debug dosyaları (*.log, debug_*, test_output_*)
-
-4. PUSH EDİLECEK dosyaları tek liste halinde kullanıcıya göster:
-   "📤 Push edilecek dosyalar: bot.py, requirements.txt, railway.json, .gitignore"
-
-5. Kullanıcıdan onay al, sonra push_files MCP ile TEK COMMIT'te push et
+   ❌ .DS_Store, *.swp, .railway-bin/
+   ❌ Büyük dosyalar (>500KB)
+4. Listeyi kullanıcıya göster, onay al
+5. push_files MCP ile TEK COMMIT'te push et
 ```
 
 ### Adım 3: .gitignore & railway.json Oluştur
 
-**`.gitignore` yoksa veya eksikse** `templates/.gitignore.template` şablonunu kullan.
+**`.gitignore` yoksa** standart template kullan.
 
-**`railway.json` oluştur** — projenin kök dizinine:
-
-**Python projeleri için:**
+**`railway.json` oluştur:**
 ```json
 {
   "$schema": "https://railway.app/railway.schema.json",
@@ -217,214 +219,253 @@ GitHub'a dosya push etmeden **önce** bu karar ağacını uygula:
 }
 ```
 
-**Node.js projeleri için:**
-```json
-{
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": { "builder": "NIXPACKS" },
-  "deploy": {
-    "startCommand": "node DOSYA_ADI.js",
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
-  }
-}
-```
-
 ### Adım 4: GitHub'a Push (MCP Üzerinden)
 
-1. **Private repo oluştur:**
-   ```
-   GitHub MCP → create_repository
-   - name: proje-adi (küçük harf, tire ile)
-   - private: true
-   - description: Kısa açıklama + "(runs on Railway)" notu
-   ```
-
-2. **Dosyaları push et (Adım 2'deki listeye göre):**
-   ```
-   GitHub MCP → push_files
-   - Adım 2'de belirlenen dosya listesini TEK COMMIT'te push et
-   - ⚠️ ASLA şunları push etme: .env, token.json, credentials.json, __pycache__, venv/
-   ```
-
-3. **Push sonrası doğrulama:**
-   ```
-   GitHub MCP → get_file_contents ile repo'daki dosyaları kontrol et
-   - .env push edilmemiş olmalı
-   - API key içeren dosya push edilmemiş olmalı
-   ```
-
-### Adım 5: Railway Deploy (GraphQL API ile)
-
-1. **Token'ı oku** → `_knowledge/api-anahtarlari.md` dosyasından `view_file` ile
-
-2. **Railway'de GitHub repo bağlantısı kur:**
-   - Kullanıcıya Railway dashboard linkini ver:
-     `https://railway.app/new/github → repo seç`
-   - VEYA mevcut bir Railway projesine GitHub repo bağla
-
-3. **Projeyi bul veya oluştur (API ile):**
-   ```graphql
-   { projects { edges { node { id name services { edges { node { id name } } } } } } }
-   ```
-
-4. **Environment Variables ayarla (API ile):**
-   ```graphql
-   mutation { variableCollectionUpsert(input: {
-     projectId: "PROJE_ID", environmentId: "ENV_ID", serviceId: "SERVIS_ID",
-     variables: { KEY1: "VALUE1", KEY2: "VALUE2" }
-   }) }
-   ```
-
-5. **Deploy tetikle (API ile):**
-   ```graphql
-   mutation { serviceInstanceRedeploy(serviceId: "SERVIS_ID", environmentId: "ENV_ID") }
-   ```
-
-6. **Deployment durumunu takip et** → Aşağıdaki "Deployment Durum Takibi" bölümüne bak
-
-### Adım 6: Post-Deploy Doğrulama & Kayıt
-
 ```
-[ ] Deployment durumu SUCCESS mu? (Durum Takibi bölümüne bak)
-[ ] Loglar temiz mi? Hata yok mu?
-[ ] Servis başarıyla başladı mı?
-[ ] GitHub Secret Scanning uyarısı var mı? → Varsa hemen düzelt
-[ ] Environment variables doğru set edilmiş mi?
+1. Private repo oluştur:
+   → GitHub MCP → create_repository(name, private: true)
+
+2. Dosyaları push et:
+   → GitHub MCP → push_files (tek commit)
+
+3. Push sonrası doğrulama:
+   → GitHub MCP → get_file_contents ile kontrol
+   → .env push edilmemiş olmalı
 ```
 
-**✅ Her başarılı deploy sonrası → `_knowledge/deploy-registry.md` dosyasına kaydet** (Bölüm 📋'ye bak)
+### Adım 5: Railway Deploy (100% API ile — KULLANICIYA HİÇBİR ŞEY SORDURMA)
+
+Bu adım **tamamen otomatik** yapılır. Kullanıcıya dashboard linki bile verme.
+
+#### 5.1 — Yeni Railway Projesi Oluştur
+
+```bash
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "mutation { projectCreate(input: { name: \"PROJE_ADI\", description: \"ACIKLAMA\" }) { id name environments { edges { node { id name } } } } }"}'
+```
+
+**Dönen yanıttan al:**
+- `project.id` → Proje ID
+- `project.environments.edges[0].node.id` → Environment ID (production)
+
+#### 5.2 — GitHub Repo'dan Servis Oluştur
+
+```bash
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "mutation { serviceCreate(input: { projectId: \"PROJE_ID\", name: \"SERVIS_ADI\", source: { repo: \"dolunayozerennn/REPO_ADI\" }, branch: \"main\" }) { id name } }"}'
+```
+
+> **⚠️ NOT:** Bu mutation direkt GitHub repo'yu Railway servisine bağlar.
+> Dashboard'a gitmeye GEREK YOK. `source: { repo: "owner/repo" }` Railway'in 
+> GitHub App bağlantısı üzerinden çalışır.
+
+#### 5.3 — Servis Ayarlarını Güncelle (Start Command, Restart Policy)
+
+```bash
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "mutation { serviceInstanceUpdate(serviceId: \"SERVIS_ID\", environmentId: \"ENV_ID\", input: { startCommand: \"python main.py\", restartPolicyType: ON_FAILURE, restartPolicyMaxRetries: 10 }) }"}'
+```
+
+#### 5.4 — Environment Variables Ayarla
+
+```bash
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "mutation { variableCollectionUpsert(input: { projectId: \"PROJE_ID\", environmentId: \"ENV_ID\", serviceId: \"SERVIS_ID\", variables: { KEY1: \"VALUE1\", KEY2: \"VALUE2\" } }) }"}'
+```
+
+#### 5.5 — Deploy Tetikle
+
+Servis oluşturulduğunda GitHub repo bağlıysa **otomatik deploy başlar**.
+Başlamazsa manuel tetikle:
+
+```bash
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "mutation { serviceInstanceRedeploy(serviceId: \"SERVIS_ID\", environmentId: \"ENV_ID\") }"}'
+```
+
+#### 5.6 — Deploy Durumunu Takip Et
+
+→ Aşağıdaki "Deployment Durum Takibi" bölümüne bak.
+
+### Adım 6: Post-Deploy Doğrulama, Smoke Test & Kayıt
+
+```
+[ ] Deployment SUCCESS mu?
+[ ] Environment variables doğru mu?
+```
+
+#### ⚠️ SMOKE TEST (ZORUNLU — ATLANMAZ!)
+
+> **Deploy SUCCESS olması servisin çalıştığı anlamına GELMEZ.**
+> Smoke test ile production'da gerçekten sağlıklı çalıştığını doğrula.
+
+**1) 60 saniye bekle** (servis başlasın)
+
+**2) Deployment loglarını çek:**
+```bash
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "{ deploymentLogs(deploymentId: \"DEPLOY_ID\", limit: 100) { message severity timestamp } }"}'
+```
+
+**3) Fatal error pattern'lerini ara:**
+- `AttributeError` — özellik bulunamadı (örn: Config.DEDUP_WINDOW_DAYS)
+- `ImportError` / `ModuleNotFoundError` — modül eksik
+- `SyntaxError` — yazım hatası
+- `NameError` — tanımsız değişken
+- `KeyError` — eksik anahtar
+- `TypeError` — yanlış tip
+- `Traceback (most recent call last)` — Python crash
+- `Process exited with code 1` — servis çöktü
+
+**4) Sonuç:**
+- Fatal error varsa → ❌ Düzelt → Push → Deploy → Smoke test (tekrar)
+- Fatal error yoksa → ✅ Smoke test geçti
+
+```
+[ ] Smoke test geçti ✅
+[ ] deploy-registry.md'ye kaydet ✅
+```
+
+**⛔ BU ADIM ATLANILAMAZ. Her deploy sonrası çalıştırılmalıdır.**
 
 ---
 
 ## 🔄 RE-DEPLOY AKIŞI (Güncelleme)
 
-Proje zaten deploy edildiyse (Adım 0'da tespit edildiyse):
-
 ### R1: Kayıt Defterinden Bilgileri Al
 ```
-→ _knowledge/deploy-registry.md'den proje ID, servis ID, environment ID'yi oku
-→ Bu sayede API sorguları minimuma iner (proje aramaya gerek yok)
+→ _knowledge/deploy-registry.md'den proje ID, servis ID, environment ID oku
+→ API sorguları minimuma iner
 ```
 
 ### R2: Kod Değişikliklerini GitHub'a Push Et
 ```
-GitHub MCP → push_files (değişen + yeni dosyalar)
-veya
-GitHub MCP → create_or_update_file (tek dosya güncelleme — SHA ile)
+→ GitHub MCP → push_files (değişen + yeni dosyalar)
+→ veya create_or_update_file (tek dosya — SHA ile)
+→ SHA almak için: get_file_contents
 ```
-**Dosyaların SHA'larını almak için:** `GitHub MCP → get_file_contents` kullan
 
-### R3: Redeploy Tetikle
-```graphql
-mutation { serviceInstanceRedeploy(serviceId: "KAYITLI_SERVIS_ID", environmentId: "KAYITLI_ENV_ID") }
+### R3: Redeploy Tetikle (Otomatik değilse)
+```bash
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "mutation { serviceInstanceRedeploy(serviceId: \"KAYITLI_SERVIS_ID\", environmentId: \"KAYITLI_ENV_ID\") }"}'
 ```
-> **NOT:** Railway GitHub integration aktifse, GitHub'a push sonrası **otomatik deploy** olur. Bu durumda R3'ü atla.
 
-### R4: Deployment Durumunu Takip Et
-→ Aşağıdaki "Deployment Durum Takibi" bölümüne bak
+> **NOT:** Railway GitHub integration aktifse, push sonrası **otomatik deploy** olur.
+
+### R4: Deploy Durumunu Takip Et
 
 ---
 
 ## 📊 Deployment Durum Takibi
 
-Deploy tetiklendikten sonra GraphQL API ile durumu periyodik kontrol et:
-
-```graphql
-{ deployments(first: 3, input: {
-    projectId: "PROJE_ID", environmentId: "ENV_ID", serviceId: "SERVIS_ID"
-  }) { edges { node { id status createdAt } } }
-}
+```bash
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "{ deployments(first: 3, input: { projectId: \"P\", environmentId: \"E\", serviceId: \"S\" }) { edges { node { id status createdAt } } } }"}'
 ```
 
-### Durum Tablosu
-
-| Status      | Anlam                        | Aksiyon                                   |
-|-------------|------------------------------|-------------------------------------------|
-| `QUEUED`    | Build sırasında bekliyor     | ⏳ 2 dk bekle, tekrar kontrol et          |
-| `BUILDING`  | Build ediliyor               | ⏳ 2 dk bekle, tekrar kontrol et          |
-| `DEPLOYING` | Container başlatılıyor       | ⏳ 1 dk bekle, tekrar kontrol et          |
-| `SUCCESS`   | ✅ Çalışıyor                 | Log kontrol et, kullanıcıya rapor ver     |
-| `FAILED`    | ❌ Build veya start hatası   | Log oku, hatayı analiz et ve çöz          |
-| `CRASHED`   | ❌ Uygulama çalışırken çöktü | Log oku, crash nedenini bul               |
-| `SKIPPED`   | Önceki deploy tarafından atlandı | ⚪ Normal, yoksay                      |
+| Status | Anlam | Aksiyon |
+|--------|-------|---------|
+| `QUEUED` | Sırada | ⏳ 2 dk bekle |
+| `BUILDING` | Build ediliyor | ⏳ 2 dk bekle |
+| `DEPLOYING` | Container başlatılıyor | ⏳ 1 dk bekle |
+| `SUCCESS` | ✅ Çalışıyor | Log kontrol et, rapor ver |
+| `FAILED` | ❌ Hata | Log oku, düzelt |
+| `CRASHED` | ❌ Çöktü | Log oku, düzelt |
 
 ### Polling Stratejisi
-
 ```
 1. Deploy tetikle
-2. 30 saniye bekle
-3. Durum kontrol et (API çağrısı)
-4. QUEUED veya BUILDING ise → 2 dk bekle, tekrar kontrol (max 3 döngü)
-5. DEPLOYING ise → 1 dk bekle, tekrar kontrol
-6. SUCCESS ise → Log oku, kullanıcıya rapor ver ✅
-7. FAILED/CRASHED ise → Log oku, hatayı çöz
+2. 30 saniye bekle  
+3. Durum kontrol et
+4. QUEUED/BUILDING → 2 dk bekle (max 3 döngü)
+5. DEPLOYING → 1 dk bekle
+6. SUCCESS → Rapor ver ✅
+7. FAILED/CRASHED → Log oku, düzelt
 ```
-
-### ⏱️ Timeout Kuralları
-
-- **5 dakikadan uzun QUEUED kalırsa:**
-  → Kullanıcıya bilgi ver:
-  > "Railway build kuyruğu yoğun, deployment sıraya alındı.
-  > Dashboard'dan takip edebilirsin: https://railway.app/project/PROJE_ID"
-
-- **Önceki SUCCESS deployment zaten aktifse:**
-  → Yeni deployment QUEUED kalsa bile mevcut servis çalışmaya **devam eder**.
-  → Kullanıcıya: *"Mevcut versiyon aktif çalışıyor, yeni versiyon build kuyruğunda"* de.
 
 ---
 
-## 📋 Deploy Edilmiş Projeler Kayıt Defteri
+## 📊 Mevcut Projeye Yeni Servis Ekleme
 
-Her başarılı deploy sonrası **`_knowledge/deploy-registry.md`** dosyasına proje bilgilerini kaydet.
+Bazen yeni bir servis, mevcut bir Railway projesinin içine eklenmek istenir:
 
-**Kayıt formatı:**
+```bash
+# 1. Mevcut projenin environment ID'sini al
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "{ project(id: \"MEVCUT_PROJE_ID\") { environments { edges { node { id name } } } } }"}'
+
+# 2. Yeni servisi mevcut projeye ekle
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer TOKEN" \
+  -d '{"query": "mutation { serviceCreate(input: { projectId: \"MEVCUT_PROJE_ID\", name: \"yeni-servis\", source: { repo: \"dolunayozerennn/repo-adi\" }, branch: \"main\" }) { id name } }"}'
+
+# 3. Env variables ayarla (aynı environment ID kullanılır)
+# 4. Otomatik deploy başlar
+```
+
+---
+
+## 📋 Deploy Kayıt Defteri
+
+Her başarılı deploy sonrası **`_knowledge/deploy-registry.md`** dosyasına kaydet:
+
 ```markdown
 ### [Proje Adı]
+- **Platform:** `railway`
 - **Railway Project ID:** `xxxxx-xxxx-xxxx`
 - **Service ID:** `xxxxx-xxxx-xxxx`
 - **Environment ID:** `xxxxx-xxxx-xxxx`
 - **GitHub Repo:** `dolunayozerennn/repo-adi`
+- **Lokal Klasör:** `Projeler/Proje_Adi/`
 - **Start Komutu:** `python bot.py`
-- **Son Deploy:** 2026-03-10
+- **Son Deploy:** YYYY-MM-DD
 - **Durum:** ✅ Aktif
 ```
-
-Bu kayıt defteri sayesinde:
-- Re-deploy'larda ID araması yapılmaz (anında erişim)
-- Mevcut deployment'lar kolayca kontrol edilir
-- Proje bilgileri tek yerde saklanır
 
 ---
 
 ## 🛡️ Güvenlik Protokolü
 
-### Pre-Deploy (Push öncesi)
-1. **Kod taraması:** `grep -rn --include="*.py" --include="*.js" --include="*.ts" "sk-\|AIza\|ghp_\|gsk_\|apify_api_\|pplx-\|GOCSPX\|environ.get.*'[a-zA-Z0-9_-]\{10,\}'" .`
-2. **Hardcoded key varsa:** `os.environ.get('KEY_NAME')` ile değiştir
-3. **.gitignore:** Şablonu uygula
-4. **Dosya kontrolü:** .env, token.json, credentials.json push edilmeyecek
+### Pre-Deploy
+1. Kod taraması: hardcoded key'ler → env variable'a çevir
+2. .gitignore kontrolü
+3. Hassas dosyaların push edilmediğini doğrula
 
-### Post-Deploy (Push sonrası)
-1. **GitHub Secret Scanning:** Push sonrası uyarı gelirse hemen:
-   - Sızan key'i revoke et (servis sağlayıcıdan)
-   - Yeni key al
-   - Railway env variable güncelle
-   - Git history'den temizle (gerekirse force push)
+### Post-Deploy  
+1. GitHub Secret Scanning uyarısı → varsa key'i revoke et + yenile
+2. Railway env variables doğru set edilmiş mi?
 
 ---
 
-## ❌ Yaygın Hatalar ve Çözümler
+## ❌ Yaygın Hatalar
 
-| Hata | Neden | Çözüm |
-|------|-------|-------|
-| `ModuleNotFoundError` | requirements.txt eksik | `pip freeze > requirements.txt` ve push |
-| `KeyError: 'ENV_VAR'` | Railway'de env var set edilmemiş | API ile `variableCollectionUpsert` yap |
-| `401 Unauthorized` (API) | Token yanlış veya süresi dolmuş | `_knowledge/api-anahtarlari.md` kontrol et |
-| `401 Unauthorized` (CLI) | CLI token uyumsuzluğu | **CLI'yı bırak, GraphQL API kullan** |
-| `GitHub Secret Scanning Alert` | API key commit'e girmiş | Key'i revoke et, yenisini al, history temizle |
-| `Build failed` | Python/Node versiyon uyumsuzluğu | `runtime.txt` veya `engines` alanı ekle |
-| `QUEUED uzun sürüyor` | Railway build kuyruğu yoğun | Bekle veya dashboard'dan takip et |
+| Hata | Çözüm |
+|------|-------|
+| `ModuleNotFoundError` | requirements.txt eksik → oluştur + push |
+| `KeyError: 'ENV_VAR'` | Railway env var eksik → `variableCollectionUpsert` |
+| `401 Unauthorized` (API) | Token kontrol et |
+| `GitHub Secret Scanning` | Key revoke + yenile + history temizle |
+| `Build failed` | runtime.txt veya Python versiyon ekle |
 
 ---
 
@@ -434,27 +475,19 @@ Bu kayıt defteri sayesinde:
 _skills/canli-yayina-al/
 ├── SKILL.md                          ← Bu dosya (ana yönerge)
 ├── scripts/
-│   └── railway.sh                    ← Token otomatik bulma + API wrapper
+│   ├── railway.sh                    ← API wrapper script
+│   └── railway-token.txt             ← Token (otomatik okunur)
 ├── platforms/
-│   └── railway.md                    ← Railway GraphQL API detayları ve hazır sorgular
+│   └── railway.md                    ← Railway GraphQL API detayları
 ├── templates/
-│   ├── railway.json                  ← Hazır Railway config şablonu
-│   └── .gitignore.template           ← Güvenli .gitignore şablonu
+│   └── railway.json                  ← Hazır Railway config şablonu
 └── checklists/
     └── guvenlik-kontrol.md           ← Pre-deploy güvenlik kontrol listesi
 ```
 
-## 📁 İlişkili Kaynaklar
-
-- `_knowledge/api-anahtarlari.md` — Railway Token burada (otomatik okunur)
-- `_knowledge/deploy-registry.md` — Deploy edilen projelerin ID kayıt defteri
-- `_skills/proje-paylasimi/SKILL.md` — Proje paylaşım güvenlik kuralları
-
 ---
 
-## 💡 Kullanıcıya Söylenecek Prompt Şablonu
-
-Deploy tamamlandığında kullanıcıya şu formatta rapor ver:
+## 💡 Deploy Tamamlandığında Kullanıcıya Rapor
 
 ```
 ✅ Production Deploy Tamamlandı!

@@ -23,6 +23,11 @@ Antigravity bir göreve başlamadan önce ilgili skill'i okuyarak nasıl davrana
 | 10 | `egitim-gorselleri` | Web temelli görselleştirmeler | — (bağımsız) |
 | 11 | `website-olusturucu` | Web sitesi oluşturma | — (bağımsız) |
 | 12 | `sifre-yonetici` | Merkezi şifre/token yönetimi ve dağıtımı | Tüm agent'lar |
+| 13 | `fatura-olusturucu` | Sosyal medya iş birlikleri için PDF invoice üretimi | 🤖 `yayinla-paylas` |
+| 14 | `otomatik-yedekleme` | Haftalık otomatik backup sistemi (cron) | — (bağımsız) |
+| 15 | `servis-izleyici` | Railway + Cron + Lokal proje sağlık kontrolü | Tüm agent'lar |
+| 16 | `reels-kapak` | AI ile Instagram Reels kapak görseli üretimi (Kie AI pipeline) | 🤖 `icerik-uretim` |
+| 17 | `telefon-formatlayici` | Telefon numarası formatlama ve doğrulama | — (bağımsız) |
 
 ---
 

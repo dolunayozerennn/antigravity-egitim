@@ -1,65 +1,63 @@
 #!/bin/bash
-# Railway GraphQL API + CLI Wrapper — Token'ı otomatik yükler
+# Railway GraphQL API Wrapper — Tam Otonom Deploy Desteği
 # 
-# BİRİNCİL YÖNTEM: GraphQL API (her zaman çalışır)
-# İKİNCİL YÖNTEM: CLI (varsa ve çalışıyorsa)
+# Bu script, Railway üzerindeki TÜM işlemleri API ile yapar.
+# Dashboard'a gitmeye ASLA gerek yoktur.
 #
 # Kullanım: ./railway.sh <komut> [argümanlar]
 #
-# API komutları (doğrudan GraphQL):
-#   ./railway.sh api-test              ← Token doğrulama
-#   ./railway.sh projects              ← Tüm projeleri listele
-#   ./railway.sh envs <project_id>     ← Environment'ları listele
-#   ./railway.sh vars <project_id> <env_id> <service_id>  ← Env var oku
-#   ./railway.sh deploy-status <project_id> <env_id> <service_id>  ← Deploy durumu
-#   ./railway.sh redeploy <service_id> <env_id>  ← Redeploy tetikle
-#   ./railway.sh logs <deployment_id>  ← Deploy logları
+# === PROJE & SERVİS OLUŞTURMA ===
+#   ./railway.sh create-project <ad> <aciklama>
+#   ./railway.sh create-service <project_id> <servis_adi> <github_repo> [branch]
+#   ./railway.sh connect-repo <service_id> <github_repo> [branch]
+#   ./railway.sh update-service <service_id> <env_id> <start_command>
 #
-# CLI komutları (CLI varsa):
-#   ./railway.sh cli <herhangi_cli_komutu>
+# === BİLGİ ALMA ===
+#   ./railway.sh api-test
+#   ./railway.sh projects
+#   ./railway.sh project-detail <project_id>
+#   ./railway.sh envs <project_id>
+#   ./railway.sh vars <project_id> <env_id> <service_id>
+#   ./railway.sh deploy-status <project_id> <env_id> <service_id>
+#   ./railway.sh logs <deployment_id> [limit]
+#
+# === İŞLEM ===
+#   ./railway.sh set-var <project_id> <env_id> <service_id> <key> <value>
+#   ./railway.sh set-vars <project_id> <env_id> <service_id> <json_vars>
+#   ./railway.sh redeploy <service_id> <env_id>
 
-SCRIPT_DIR="/Users/dolunayozeren/Desktop/Antigravity/_skills/production-deploy/scripts"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ANTIGRAVITY_ROOT="/Users/dolunayozeren/Desktop/Antigravity"
-KNOWLEDGE_FILE="$ANTIGRAVITY_ROOT/_knowledge/api-anahtarlari.md"
 
 # --- 1. Railway Token'ı bul ---
 find_token() {
-    # Öncelik 1: Environment variable olarak zaten set edilmiş mi?
+    # Öncelik 1: Environment variable
     if [ -n "$RAILWAY_TOKEN" ]; then
-        echo "✅ Token: Environment variable'dan alındı" >&2
         return 0
     fi
 
-    # Öncelik 2: Skill klasöründeki railway-token.txt dosyasından oku
+    # Öncelik 2: railway-token.txt
     local token_file="$SCRIPT_DIR/railway-token.txt"
     if [ -f "$token_file" ]; then
         RAILWAY_TOKEN=$(cat "$token_file" | tr -d '[:space:]')
         if [ -n "$RAILWAY_TOKEN" ] && [ "$RAILWAY_TOKEN" != "HENÜZ_KAYDEDİLMEDİ" ]; then
-            echo "✅ Token: railway-token.txt dosyasından alındı" >&2
             export RAILWAY_TOKEN
             return 0
         fi
         RAILWAY_TOKEN=""
     fi
 
-    # Öncelik 3: _knowledge/api-anahtarlari.md'den oku
-    if [ -f "$KNOWLEDGE_FILE" ]; then
-        RAILWAY_TOKEN=$(grep -A1 "### Railway" "$KNOWLEDGE_FILE" 2>/dev/null | grep "Token:" | sed 's/.*`\(.*\)`.*/\1/' | head -1)
-        if [ -n "$RAILWAY_TOKEN" ] && [ "$RAILWAY_TOKEN" != "HENÜZ_KAYDEDİLMEDİ" ]; then
-            echo "✅ Token: _knowledge/api-anahtarlari.md'den alındı" >&2
+    # Öncelik 3: master.env
+    local master_env="$ANTIGRAVITY_ROOT/_knowledge/credentials/master.env"
+    if [ -f "$master_env" ]; then
+        RAILWAY_TOKEN=$(grep "^RAILWAY_TOKEN=" "$master_env" 2>/dev/null | cut -d'=' -f2 | tr -d '[:space:]"'"'"'')
+        if [ -n "$RAILWAY_TOKEN" ]; then
             export RAILWAY_TOKEN
             return 0
         fi
-        RAILWAY_TOKEN=""
     fi
 
-    # Token bulunamadıysa hata ver
     echo "❌ Railway Token bulunamadı!" >&2
-    echo "" >&2
-    echo "Çözüm seçenekleri:" >&2
-    echo "  1. _knowledge/api-anahtarlari.md → Railway bölümüne token'ı yaz" >&2
-    echo "  2. export RAILWAY_TOKEN='senin-tokenin'" >&2
-    echo "  3. https://railway.app/account/tokens adresinden yeni token al" >&2
     return 1
 }
 
@@ -72,7 +70,7 @@ railway_api() {
         -d "{\"query\": \"$query\"}"
 }
 
-# JSON formatla (python3 varsa)
+# JSON formatla
 format_json() {
     python3 -m json.tool 2>/dev/null || cat
 }
@@ -82,8 +80,61 @@ find_token || exit 1
 
 # --- 4. Komut işleme ---
 case "$1" in
-    # === API KOMUTLARI (BİRİNCİL) ===
-    
+
+    # === PROJE & SERVİS OLUŞTURMA ===
+
+    create-project)
+        if [ -z "$2" ]; then
+            echo "❌ Kullanım: ./railway.sh create-project <ad> [aciklama]" >&2
+            exit 1
+        fi
+        local_name="$2"
+        local_desc="${3:-Antigravity deploy}"
+        echo "🚀 Railway projesi oluşturuluyor: $local_name" >&2
+        railway_api "mutation { projectCreate(input: { name: \\\"$local_name\\\", description: \\\"$local_desc\\\" }) { id name environments { edges { node { id name } } } } }" | format_json
+        ;;
+
+    create-service)
+        if [ -z "$4" ]; then
+            echo "❌ Kullanım: ./railway.sh create-service <project_id> <servis_adi> <github_repo> [branch]" >&2
+            echo "   Örnek: ./railway.sh create-service abc-123 my-bot dolunayozerennn/my-bot main" >&2
+            exit 1
+        fi
+        local_proj="$2"
+        local_svc="$3"
+        local_repo="$4"
+        local_branch="${5:-main}"
+        echo "🔗 Servis oluşturuluyor: $local_svc (repo: $local_repo)" >&2
+        railway_api "mutation { serviceCreate(input: { projectId: \\\"$local_proj\\\", name: \\\"$local_svc\\\", source: { repo: \\\"$local_repo\\\" }, branch: \\\"$local_branch\\\" }) { id name } }" | format_json
+        ;;
+
+    connect-repo)
+        if [ -z "$3" ]; then
+            echo "❌ Kullanım: ./railway.sh connect-repo <service_id> <github_repo> [branch]" >&2
+            echo "   Örnek: ./railway.sh connect-repo abc-123 dolunayozerennn/my-bot main" >&2
+            exit 1
+        fi
+        local_svc_id="$2"
+        local_repo="$3"
+        local_branch="${4:-main}"
+        echo "🔗 Repo bağlanıyor: $local_repo → servis $local_svc_id" >&2
+        railway_api "mutation { serviceConnect(id: \\\"$local_svc_id\\\", input: { repo: \\\"$local_repo\\\", branch: \\\"$local_branch\\\" }) { id } }" | format_json
+        ;;
+
+    update-service)
+        if [ -z "$4" ]; then
+            echo "❌ Kullanım: ./railway.sh update-service <service_id> <env_id> <start_command>" >&2
+            exit 1
+        fi
+        local_svc_id="$2"
+        local_env_id="$3"
+        local_cmd="$4"
+        echo "⚙️ Servis ayarları güncelleniyor..." >&2
+        railway_api "mutation { serviceInstanceUpdate(serviceId: \\\"$local_svc_id\\\", environmentId: \\\"$local_env_id\\\", input: { startCommand: \\\"$local_cmd\\\", restartPolicyType: ON_FAILURE, restartPolicyMaxRetries: 10 }) }" | format_json
+        ;;
+
+    # === BİLGİ ALMA ===
+
     api-test)
         echo "🔍 Railway API Token testi..."
         railway_api '{ projects { edges { node { id name } } } }' | format_json
@@ -91,7 +142,15 @@ case "$1" in
 
     projects)
         echo "📋 Railway Projeleri:" >&2
-        railway_api '{ projects { edges { node { id name services { edges { node { id name } } } } } } }' | format_json
+        railway_api '{ projects { edges { node { id name services { edges { node { id name } } } environments { edges { node { id name } } } } } } }' | format_json
+        ;;
+
+    project-detail)
+        if [ -z "$2" ]; then
+            echo "❌ Kullanım: ./railway.sh project-detail <project_id>" >&2
+            exit 1
+        fi
+        railway_api "{ project(id: \\\"$2\\\") { id name environments { edges { node { id name } } } services { edges { node { id name } } } } }" | format_json
         ;;
 
     envs)
@@ -110,14 +169,6 @@ case "$1" in
         railway_api "{ variables(projectId: \\\"$2\\\", environmentId: \\\"$3\\\", serviceId: \\\"$4\\\") }" | format_json
         ;;
 
-    set-var)
-        if [ -z "$6" ]; then
-            echo "❌ Kullanım: ./railway.sh set-var <project_id> <env_id> <service_id> <key> <value>" >&2
-            exit 1
-        fi
-        railway_api "mutation { variableCollectionUpsert(input: { projectId: \\\"$2\\\", environmentId: \\\"$3\\\", serviceId: \\\"$4\\\", variables: { $5: \\\"$6\\\" } }) }" | format_json
-        ;;
-
     deploy-status)
         if [ -z "$4" ]; then
             echo "❌ Kullanım: ./railway.sh deploy-status <project_id> <env_id> <service_id>" >&2
@@ -125,6 +176,25 @@ case "$1" in
         fi
         echo "📊 Son deployment'lar:" >&2
         railway_api "{ deployments(first: 5, input: { projectId: \\\"$2\\\", environmentId: \\\"$3\\\", serviceId: \\\"$4\\\" }) { edges { node { id status createdAt } } } }" | format_json
+        ;;
+
+    logs)
+        if [ -z "$2" ]; then
+            echo "❌ Kullanım: ./railway.sh logs <deployment_id> [limit]" >&2
+            exit 1
+        fi
+        local_limit="${3:-50}"
+        railway_api "{ deploymentLogs(deploymentId: \\\"$2\\\", limit: $local_limit) { message timestamp severity } }" | format_json
+        ;;
+
+    # === İŞLEMLER ===
+
+    set-var)
+        if [ -z "$6" ]; then
+            echo "❌ Kullanım: ./railway.sh set-var <project_id> <env_id> <service_id> <key> <value>" >&2
+            exit 1
+        fi
+        railway_api "mutation { variableCollectionUpsert(input: { projectId: \\\"$2\\\", environmentId: \\\"$3\\\", serviceId: \\\"$4\\\", variables: { $5: \\\"$6\\\" } }) }" | format_json
         ;;
 
     redeploy)
@@ -136,77 +206,34 @@ case "$1" in
         railway_api "mutation { serviceInstanceRedeploy(serviceId: \\\"$2\\\", environmentId: \\\"$3\\\") }" | format_json
         ;;
 
-    logs)
-        if [ -z "$2" ]; then
-            echo "❌ Kullanım: ./railway.sh logs <deployment_id> [limit]" >&2
-            exit 1
-        fi
-        local limit="${3:-50}"
-        railway_api "{ deploymentLogs(deploymentId: \\\"$2\\\", limit: $limit) { message timestamp severity } }" | format_json
-        ;;
-
-    # === CLI KOMUTLARI (İKİNCİL) ===
-    
-    cli)
-        shift  # 'cli' argümanını kaldır
-        # CLI binary'yi bul
-        RAILWAY_BIN=""
-        if command -v railway &>/dev/null; then
-            RAILWAY_BIN="railway"
-        else
-            KNOWN_LOCATIONS=(
-                "$ANTIGRAVITY_ROOT/Projeler/shorts-demo-otomasyonu/.railway-bin/railway"
-                "$ANTIGRAVITY_ROOT/_skills/production-deploy/scripts/railway-bin"
-                "/usr/local/bin/railway"
-                "$HOME/.railway/bin/railway"
-            )
-            for loc in "${KNOWN_LOCATIONS[@]}"; do
-                if [ -x "$loc" ]; then
-                    RAILWAY_BIN="$loc"
-                    break
-                fi
-            done
-        fi
-
-        if [ -z "$RAILWAY_BIN" ]; then
-            echo "❌ Railway CLI bulunamadı." >&2
-            echo "💡 CLI yerine API komutlarını kullan: ./railway.sh projects" >&2
-            echo "   CLI kurmak için: curl -fsSL https://railway.app/install.sh | sh" >&2
-            exit 1
-        fi
-
-        echo "🔧 CLI: $RAILWAY_BIN" >&2
-        "$RAILWAY_BIN" "$@"
-        ;;
-
     # === YARDIM ===
-    
+
     help|--help|-h|"")
-        echo "🚂 Railway API + CLI Wrapper"
+        echo "🚂 Railway GraphQL API Wrapper — Tam Otonom"
         echo ""
-        echo "📡 API Komutları (BİRİNCİL — her zaman çalışır):"
-        echo "  api-test                                  Token doğrulama"
-        echo "  projects                                  Tüm projeleri listele"
-        echo "  envs <project_id>                         Environment'ları listele"
-        echo "  vars <proj_id> <env_id> <svc_id>          Env variable oku"
-        echo "  set-var <proj_id> <env_id> <svc_id> K V   Env variable yaz"
-        echo "  deploy-status <proj_id> <env_id> <svc_id> Son deployment durumu"
-        echo "  redeploy <service_id> <env_id>            Redeploy tetikle"
-        echo "  logs <deployment_id> [limit]              Deploy logları"
+        echo "🆕 OLUŞTURMA:"
+        echo "  create-project <ad> [aciklama]                    Yeni proje oluştur"
+        echo "  create-service <proj_id> <ad> <repo> [branch]    GitHub'dan servis oluştur"
+        echo "  connect-repo <svc_id> <repo> [branch]            Mevcut servise repo bağla"
+        echo "  update-service <svc_id> <env_id> <start_cmd>     Servis ayarları güncelle"
         echo ""
-        echo "🔧 CLI Komutları (İKİNCİL — CLI kuruluysa):"
-        echo "  cli <komut> [args]                        Railway CLI komutunu çalıştır"
+        echo "📋 BİLGİ:"
+        echo "  api-test                                          Token doğrulama"
+        echo "  projects                                          Tüm projeleri listele"
+        echo "  project-detail <proj_id>                          Proje detay"
+        echo "  envs <proj_id>                                    Environment'lar"
+        echo "  vars <proj_id> <env_id> <svc_id>                 Env variables"
+        echo "  deploy-status <proj_id> <env_id> <svc_id>        Deploy durumu"
+        echo "  logs <deploy_id> [limit]                          Deploy logları"
         echo ""
-        echo "📋 Örnekler:"
-        echo "  ./railway.sh projects"
-        echo "  ./railway.sh deploy-status abc-123 def-456 ghi-789"
-        echo "  ./railway.sh redeploy ghi-789 def-456"
-        echo "  ./railway.sh cli up"
+        echo "⚡ İŞLEMLER:"
+        echo "  set-var <proj_id> <env_id> <svc_id> KEY VALUE    Env variable ekle"
+        echo "  redeploy <svc_id> <env_id>                        Redeploy tetikle"
         ;;
 
     *)
         echo "❌ Bilinmeyen komut: $1" >&2
-        echo "💡 ./railway.sh help komutunu kullanarak mevcut komutları gör" >&2
+        echo "💡 ./railway.sh help" >&2
         exit 1
         ;;
 esac

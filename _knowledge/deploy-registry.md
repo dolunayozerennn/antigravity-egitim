@@ -10,6 +10,23 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
+## ✅ Aktif Projeler
+
+### lead-pipeline (BİRLEŞİK CRON JOB) ✅
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `fc91edb9-5d93-413d-b9b7-75ae81033204`
+- **Service ID:** `b4a28784-6e03-473f-b8fa-c1021820d703` (Recreated to fix webhook & root path issue)
+- **Environment ID:** `69c5c773-b69a-4077-a7ff-7b29258a3ad1`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (mono-repo, Root Dir: `Projeler/Lead_Pipeline`)
+- **Lokal Klasör:** `Projeler/Lead_Pipeline/`
+- **Start Komutu:** `python main.py`
+- **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
+- **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
+- **Son Deploy:** 2026-03-23 (Webhook bug & root directory fixed. Son deployment SUCCESS)
+- **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
+
+---
+
 ### shorts-demo-bot
 - **Platform:** `railway`
 - **Railway Project ID:** `01bf8d6e-9eb4-4a42-aaa0-0103e6e56033`
@@ -33,16 +50,6 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python railway_scheduler.py`
 - **Son Deploy:** 2026-03-23 (fix: is_team_email domain regex bug fixed to preserve internal emails)
 - **Durum:** ✅ Aktif (v2.7: is_team_email fix, Railway Cron geçişi yapıldı, schedule: 0 7,11,15 * * 1-5)
-
----
-
-### tele-satis-crm ⛔ (KALDIRILDI)
-- **Platform:** `railway` → **SİLİNDİ**
-- **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6`
-- **Service ID:** `faba9665-7499-4ab7-9e8a-d2a26050733f` (silindi)
-- **GitHub Repo:** `dolunayozerennn/tele-satis-crm`
-- **Lokal Klasör:** `Projeler/Tele_Satis_CRM/` (arşiv)
-- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
 
 ---
 
@@ -70,27 +77,6 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-### servis-izleyici (health check)
-- **Platform:** `cron-local`
-- **LaunchAgent:** `com.antigravity.servis-izleyici`
-- **LogPath:** `_skills/servis-izleyici/logs/health_check.log`
-- **CronSchedule:** Saatlik (her 3600 saniyede bir)
-- **Lokal Klasör:** `_skills/servis-izleyici/`
-- **Start Komutu:** `python3 scripts/health_check.py`
-- **Durum:** ✅ Aktif — LaunchAgent ile saatlik çalışıyor
-
----
-
-### lead-notifier-bot ⛔ (KALDIRILDI)
-- **Platform:** `railway` → **SİLİNDİ**
-- **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6`
-- **Service ID:** `4d0cfb99-8b2a-4585-86b3-44cc4967bc59` (silindi)
-- **GitHub Repo:** `dolunayozerennn/lead-notifier-bot`
-- **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/` (arşiv)
-- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
-
----
-
 ### isbirligi-tahsilat-takip
 - **Platform:** `railway-cron`
 - **Railway Project ID:** `8f70b293-dc33-426a-95f7-19741d3ae03c`
@@ -114,16 +100,6 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python railway_scheduler.py`
 - **Son Deploy:** 2026-03-21 (fix: markalar.csv otomatik oluşturma — Railway deploy sonrası data kalıcılık sorunu çözüldü, deployment ID: 33f5b55d, smoke test ✅)
 - **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — CSV auto-init)
-
----
-
-### tele-satis-notifier ⛔ (KALDIRILDI)
-- **Platform:** `railway-cron` → **SİLİNDİ**
-- **Railway Project ID:** `0aea5336-444e-4d6b-8bb3-e47614651055`
-- **Service ID:** `ec68b31f-93fc-44da-8c3d-fe19a5e6eba7` (silindi)
-- **GitHub Repo:** `dolunayozerennn/tele-satis-notifier`
-- **Lokal Klasör:** `Projeler/Tele_Satis_Notifier/` (arşiv)
-- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
 
 ---
 
@@ -181,7 +157,6 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Env Vars:** GROQ_API_KEY, GEMINI_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64)
 
 ---
-
 ## 📌 Sadece Lokal Projeler (Deploy Yok)
 
 | Proje | Klasör | Platform | Not |
@@ -201,3 +176,45 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `_skills/servis-izleyici/`
 - **Start Komutu:** `python3 scripts/health_check.py`
 - **Durum:** ✅ Aktif — LaunchAgent ile saatlik çalışıyor
+
+---
+
+## 📦 Arşiv (Kaldırılmış Projeler)
+
+### tele-satis-crm ⛔ (KALDIRILDI)
+- **Platform:** `railway` → **SİLİNDİ**
+- **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6`
+- **Service ID:** `faba9665-7499-4ab7-9e8a-d2a26050733f` (silindi)
+- **GitHub Repo:** `dolunayozerennn/tele-satis-crm`
+- **Lokal Klasör:** `Projeler/Tele_Satis_CRM/` (arşiv)
+- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
+
+---
+
+### lead-notifier-bot ⛔ (KALDIRILDI)
+- **Platform:** `railway` → **SİLİNDİ**
+- **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6`
+- **Service ID:** `4d0cfb99-8b2a-4585-86b3-44cc4967bc59` (silindi)
+- **GitHub Repo:** `dolunayozerennn/lead-notifier-bot`
+- **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/` (arşiv)
+- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
+
+---
+
+### tele-satis-notifier ⛔ (KALDIRILDI)
+- **Platform:** `railway-cron` → **SİLİNDİ**
+- **Railway Project ID:** `0aea5336-444e-4d6b-8bb3-e47614651055`
+- **Service ID:** `ec68b31f-93fc-44da-8c3d-fe19a5e6eba7` (silindi)
+- **GitHub Repo:** `dolunayozerennn/tele-satis-notifier`
+- **Lokal Klasör:** `Projeler/Tele_Satis_Notifier/` (arşiv)
+- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
+
+---
+
+### dolunay-ai-website ⛔ (KALDIRILDI)
+- **Platform:** `railway` → **SİLİNDİ** (Netlify'a taşındı)
+- **Railway Project ID:** `58765514-d122-4653-99c5-e9958330e5a4`
+- **Service ID:** `af8d86d9-aa29-4e4b-bdca-70dd40f7c452` (silindi)
+- **GitHub Repo:** `dolunayozerennn/Dolunay_AI_Website`
+- **Lokal Klasör:** `Projeler/Dolunay_AI_Website/`
+- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Website zaten Netlify'da barınıyor, Railway'deki kopya gereksizdi.

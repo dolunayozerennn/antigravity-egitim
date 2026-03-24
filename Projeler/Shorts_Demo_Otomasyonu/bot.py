@@ -552,20 +552,66 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #  Ana Giriş Noktası
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════════════════════════
+#  Global Error Handler
+# ══════════════════════════════════════════════════════════════════════════════
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    """Telegram bot global error handler — bilinen geçici hataları bastır."""
+    error = context.error
+    error_name = type(error).__name__
+
+    # Conflict hatası: deploy sırasında eski/yeni instance çakışması — normal
+    if "Conflict" in error_name or "terminated by other getUpdates" in str(error):
+        logger.info(f"ℹ️ Geçici Conflict hatası (deploy geçişi): {error}")
+        return
+
+    # NetworkError / TimedOut: geçici ağ sorunları
+    if error_name in ("NetworkError", "TimedOut", "RetryAfter"):
+        logger.warning(f"⚠️ Geçici ağ hatası ({error_name}): {error}")
+        return
+
+    # Diğer hatalar
+    logger.error(f"❌ Bot hatası ({error_name}): {error}", exc_info=context.error)
+
+
 def main():
-    app = (
-        Application.builder()
-        .token(TELEGRAM_BOT_TOKEN)
-        .concurrent_updates(True)
-        .build()
-    )
-
-    app.add_handler(CommandHandler("start", cmd_start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
     logger.info("🤖 Bot başlatılıyor...")
-    app.run_polling(drop_pending_updates=True)
+    logger.info(f"   Python: {__import__('sys').version}")
+    logger.info(f"   Platform: {__import__('platform').system()}")
+    logger.info(f"   ADMIN_CHAT_ID: {ADMIN_CHAT_ID}")
+
+    try:
+        app = (
+            Application.builder()
+            .token(TELEGRAM_BOT_TOKEN)
+            .concurrent_updates(True)
+            .read_timeout(30)
+            .write_timeout(30)
+            .connect_timeout(30)
+            .pool_timeout(30)
+            .build()
+        )
+
+        app.add_handler(CommandHandler("start", cmd_start))
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+        app.add_error_handler(error_handler)
+
+        logger.info("✅ Handler'lar eklendi, polling başlatılıyor...")
+
+        # Railway container ortamında stop_signals=None kullan
+        # Railway kendi SIGTERM sinyalini gönderir, python-telegram-bot'un
+        # sinyal handler'ı ile çakışma yaşanabilir
+        app.run_polling(
+            drop_pending_updates=True,
+            allowed_updates=["message"],
+            stop_signals=None,
+        )
+    except Exception as e:
+        logger.critical(f"❌ Bot başlatma hatası: {e}", exc_info=True)
+        raise
 
 
 if __name__ == "__main__":
     main()
+

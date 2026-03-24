@@ -3,15 +3,12 @@ import sys
 from googleapiclient.http import MediaFileUpload
 
 # ── Merkezi Google Auth ──────────────────────────────────────────────────────
-# Antigravity merkezi token sistemi kullanılır.
-# Token: _knowledge/credentials/oauth/gmail-outreach-token.json
-_antigravity_root = os.path.join(os.path.expanduser("~/Desktop/Antigravity"))
-sys.path.insert(0, os.path.join(_antigravity_root, "_knowledge", "credentials", "oauth"))
+# Kök dizinde barınan google_auth.py üzerinden Token JSON okur (Railway Uyumlu)
 from google_auth import get_drive_service
-
 
 def authenticate_google_drive():
     """Merkezi google_auth modülü üzerinden Drive service döndür."""
+    # Railway'de env üzerinden okuyacak
     return get_drive_service("outreach")
 
 def _extract_folder_id(folder_url: str):

@@ -1,25 +1,15 @@
-# Railway Deployment Detayları
+# Railway GraphQL API — Tam Sorgu ve Mutation Referansı
 
-## Railway Nedir?
-Railway, GitHub repo'sundan otomatik deploy yapabilen bir PaaS (Platform as a Service) servisidir.
-Heroku'nun modern alternatifi olarak düşünülebilir.
+Bu dosya, Railway üzerinde yapılabilecek **tüm işlemler** için GraphQL sorgularını içerir.
+Tüm işlemler API üzerinden yapılır. **Dashboard'a gitmeye ASLA gerek yoktur.**
 
 ---
 
-## 🔧 Bağlantı Yöntemleri
-
-### Yöntem A: GraphQL API (BİRİNCİL — Her Zaman Çalışır)
-
-Railway's GraphQL API, token ile **her zaman güvenilir şekilde** çalışır.
-CLI'da yaşanan `Unauthorized` sorunları API'de yaşanmaz.
+## 🔌 Bağlantı Bilgileri
 
 **Endpoint:** `https://backboard.railway.app/graphql/v2`
 
-**Header'lar:**
-```
-Content-Type: application/json
-Authorization: Bearer RAILWAY_TOKEN
-```
+**Token:** `_skills/canli-yayina-al/scripts/railway-token.txt` dosyasından okunur.
 
 **Temel cURL şablonu:**
 ```bash
@@ -29,11 +19,11 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
   -d '{"query": "GRAPHQL_QUERY"}'
 ```
 
-### Hazır GraphQL Sorgu Kataloğu
+---
 
-#### 📋 Bilgi Alma Sorguları
+## 📋 BİLGİ ALMA SORGULARI (Query)
 
-**Tüm projeleri listele:**
+### 1. Tüm Projeleri Listele
 ```graphql
 {
   projects {
@@ -42,24 +32,26 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
         id
         name
         services { edges { node { id name } } }
+        environments { edges { node { id name } } }
       }
     }
   }
 }
 ```
 
-**Bir projenin environment'larını listele:**
+### 2. Tek Proje Detay
 ```graphql
 {
   project(id: "PROJE_ID") {
-    environments {
-      edges { node { id name } }
-    }
+    id
+    name
+    environments { edges { node { id name } } }
+    services { edges { node { id name } } }
   }
 }
 ```
 
-**Environment variable'ları oku:**
+### 3. Environment Variables Oku
 ```graphql
 {
   variables(
@@ -70,7 +62,7 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 }
 ```
 
-**Son deployment'ları kontrol et:**
+### 4. Son Deployment'ları Kontrol Et
 ```graphql
 {
   deployments(
@@ -88,7 +80,7 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 }
 ```
 
-**Deployment loglarını oku:**
+### 5. Deployment Loglarını Oku
 ```graphql
 {
   deploymentLogs(deploymentId: "DEPLOY_ID", limit: 50) {
@@ -99,9 +91,93 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 }
 ```
 
-#### ✏️ Değiştirme Mutation'ları
+---
 
-**Environment variable ekle/güncelle:**
+## ✏️ OLUŞTURMA & DEĞİŞTİRME MUTATION'LARI
+
+### 6. Yeni Proje Oluştur
+```graphql
+mutation {
+  projectCreate(input: {
+    name: "proje-adi"
+    description: "Proje açıklaması"
+  }) {
+    id
+    name
+    environments {
+      edges { node { id name } }
+    }
+  }
+}
+```
+> **Not:** Proje oluşturulduğunda otomatik olarak bir "production" environment gelir.
+> Response'dan `environments.edges[0].node.id` ile Environment ID'yi al.
+
+### 7. GitHub Repo'dan Servis Oluştur (YENİ DEPLOY İÇİN)
+```graphql
+mutation {
+  serviceCreate(input: {
+    projectId: "PROJE_ID"
+    name: "servis-adi"
+    source: { repo: "dolunayozerennn/repo-adi" }
+    branch: "main"
+  }) {
+    id
+    name
+  }
+}
+```
+> **⚠️ ÖNEMLİ:** Bu mutation Railway'in GitHub App bağlantısı üzerinden çalışır.
+> `source.repo` formatı `"owner/repo"` şeklindedir.
+> Dashboard'a gidip repo bağlamaya GEREK YOKTUR.
+> Servis oluşturulduğunda otomatik olarak ilk deploy başlar.
+
+### 8. Mevcut Servise GitHub Repo Bağla
+```graphql
+mutation {
+  serviceConnect(
+    id: "SERVIS_ID"
+    input: {
+      repo: "dolunayozerennn/repo-adi"
+      branch: "main"
+    }
+  ) {
+    id
+  }
+}
+```
+> Mevcut bir servisin repo'sunu değiştirmek veya yeni bağlamak için kullanılır.
+
+### 9. Servis Ayarlarını Güncelle (Start Command, Restart Policy)
+```graphql
+mutation {
+  serviceInstanceUpdate(
+    serviceId: "SERVIS_ID"
+    environmentId: "ENV_ID"
+    input: {
+      startCommand: "python main.py"
+      restartPolicyType: ON_FAILURE
+      restartPolicyMaxRetries: 10
+    }
+  )
+}
+```
+
+**Kullanılabilir tüm ayar alanları:**
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| `startCommand` | String | Başlatma komutu |
+| `buildCommand` | String | Build komutu |
+| `restartPolicyType` | Enum | `ON_FAILURE`, `ALWAYS`, `NEVER` |
+| `restartPolicyMaxRetries` | Int | Restart tekrar sayısı |
+| `cronSchedule` | String | Cron ifadesi (ör: `"0 */6 * * *"`) |
+| `healthcheckPath` | String | Health check URL path'i |
+| `region` | String | Deploy region'ı |
+| `numReplicas` | Int | Replica sayısı |
+| `rootDirectory` | String | Kök dizin (monorepo için) |
+| `sleepApplication` | Boolean | Uyku modu |
+
+### 10. Environment Variable Ekle/Güncelle
 ```graphql
 mutation {
   variableCollectionUpsert(input: {
@@ -111,12 +187,13 @@ mutation {
     variables: {
       KEY1: "VALUE1"
       KEY2: "VALUE2"
+      KEY3: "VALUE3"
     }
   })
 }
 ```
 
-**Redeploy tetikle:**
+### 11. Redeploy Tetikle
 ```graphql
 mutation {
   serviceInstanceRedeploy(
@@ -126,51 +203,67 @@ mutation {
 }
 ```
 
----
-
-### Yöntem B: CLI (OPSİYONEL — Güvenilirliği Düşük)
-
-⚠️ **DİKKAT:** Railway CLI, `RAILWAY_TOKEN` env variable'ı ile tüm komutları çalıştıramayabilir.
-Özellikle `link` ve `up` komutları `railway login` session'ı gerektirebilir.
-**CLI `Unauthorized` verirse → zaman kaybetme, direkt GraphQL API kullan.**
-
-```bash
-# Global CLI kurulumu (varsa):
-which railway
-
-# Token ile kullan:
-RAILWAY_TOKEN="token" railway <komut>
+### 12. Servis Adını/İkonunu Güncelle
+```graphql
+mutation {
+  serviceUpdate(
+    id: "SERVIS_ID"
+    input: {
+      name: "yeni-isim"
+      icon: "🚀"
+    }
+  ) {
+    id
+    name
+  }
+}
 ```
 
-**CLI Komutları (Sadece çalışırsa):**
-```bash
-railway init               # Yeni proje oluştur
-railway link               # Mevcut projeye bağlan
-railway up                 # Deploy et
-railway logs               # Logları gör
-railway logs --tail        # Canlı log takibi
-railway variables          # Env var'ları listele
-railway variables set K=V  # Env var ekle
-railway status             # Durum kontrolü
+### 13. Servis Sil
+```graphql
+mutation {
+  serviceDelete(id: "SERVIS_ID")
+}
+```
+
+### 14. Proje Sil
+```graphql
+mutation {
+  projectDelete(id: "PROJE_ID")
+}
 ```
 
 ---
 
-## Railway Token Alma
-1. https://railway.app/account/tokens adresine git
-2. "Create Token" tıkla
-3. Token'ı kopyala
-4. `_knowledge/api-anahtarlari.md` → Railway bölümüne kaydet (sadece bir kez)
+## 🔄 TAM DEPLOY AKIŞI (Query + Mutation Sırası)
 
-## Pricing
+Yeni bir projeyi sıfırdan deploy etmek için bu sırayı takip et:
+
+```
+1. projectCreate      → Proje ID + Environment ID al
+2. serviceCreate      → Servis ID al (GitHub repo bağlı)
+3. serviceInstanceUpdate → Start command + restart policy ayarla
+4. variableCollectionUpsert → Env variables ayarla
+5. (Otomatik deploy başlar — serviceCreate repo bağladığında)
+6. deployments query  → Deploy durumunu kontrol et
+7. deploymentLogs     → Log oku (hata varsa)
+```
+
+---
+
+## 💰 Pricing
+
 - **Trial:** $5 kredi (yeni hesaplar)
 - **Hobby:** $5/ay + kullanım bazlı
 - **Pro:** $20/ay
 - Bot'lar ve hafif servisler genellikle aylık $1-3 tutar
 
-## Önemli Notlar
-- Railway `Procfile` veya `railway.json` ile start komutu belirler
-- Python projeleri için `requirements.txt` gerekli
-- Node projeleri için `package.json` gerekli
-- Environment variables Railway dashboard'dan veya API'den yönetilir
-- `.env` dosyası Railway'de kullanılmaz — her şey env var olarak set edilir
+---
+
+## 📝 Önemli Notlar
+
+- Railway `railway.json` veya API ile start komutu belirler
+- Python → `requirements.txt` gerekli
+- Node → `package.json` gerekli
+- `.env` dosyası Railway'de KULLANILMAZ — tüm değerler env variable olarak set edilir
+- GitHub repo bağlandığında, her push otomatik deploy tetikler

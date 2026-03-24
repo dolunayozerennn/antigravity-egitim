@@ -1,14 +1,16 @@
 ---
 name: servis-izleyici
 description: |
-  Railway'de çalışan tüm servislerin sağlık durumunu kontrol eder. 
-  deploy-registry.md'deki projeleri okur, Railway GraphQL API ile 
-  deployment durumlarını sorgular ve sorun tespit ederse e-posta bildirimi gönderir.
+  Antigravity ekosistemindeki tüm projelerin sağlık durumunu kontrol eder ve
+  bilinen hataları otomatik düzeltir (self-healing).
+  Railway servisleri (deployment durumu + log tarama), cron/LaunchAgent sağlığı,
+  lokal proje envanteri ve eski LaunchAgent tespiti yapar.
+  Sorun tespit edilirse önce otomatik iyileştirme dener, başarısız olursa e-posta gönderir.
 ---
 
-# 🏥 Servis İzleyici Skill
+# 🏥 Servis İzleyici Skill — v3 (Self-Healing)
 
-Railway'de çalışan tüm projelerin 7/24 sağlık durumunu izler ve sorun varsa anında bildirim gönderir.
+Antigravity ekosistemindeki TÜM projelerin sağlık durumunu izler ve bilinen hataları **otomatik düzeltir**.
 
 ## Mimari
 
@@ -16,14 +18,54 @@ Railway'de çalışan tüm projelerin 7/24 sağlık durumunu izler ve sorun vars
 _skills/servis-izleyici/
 ├── SKILL.md                                      ← Bu dosya
 ├── scripts/
-│   ├── health_check.py                           ← Ana izleme scripti
+│   ├── health_check.py                           ← Ana izleme scripti (v3)
+│   ├── self_healer.py                            ← 🩺 Otomatik iyileştirme motoru
+│   ├── healing_playbook.json                     ← Bilinen hata kalıpları ve çözümleri
 │   └── setup_cron.sh                             ← Otomatik kurulum
-├── com.antigravity.servis-izleyici.plist          ← macOS LaunchAgent
+├── com.antigravity.servis-izleyici.plist          ← macOS LaunchAgent (auto-heal aktif)
 ├── logs/
 │   └── health_check.log                          ← (otomatik oluşur)
 └── templates/
-    └── alert_email.html                          ← E-posta şablonu
+    ├── alert_email.html                          ← Alarm e-posta şablonu
+    └── healing_report.html                       ← Self-heal rapor şablonu
 ```
+
+## Kontrol Katmanları
+
+| Katman | Ne Kontrol Eder? | Kaynak |
+|--------|-----------------|--------|
+| 🚂 Railway | Deployment durumu (SUCCESS/FAILED/CRASHED) + son 24 saat deployment logları | Railway GraphQL API |
+| ⏰ Cron | LaunchAgent yüklü mü?, çalışıyor mu?, log dosyasında hata var mı? | `launchctl` + log dosyası |
+| 📁 Lokal | Proje klasörü mevcut mu? | Dosya sistemi |
+| 🧹 Temizlik | Eski/bozuk plist dosyaları (yanlış yola işaret eden) | ~/Library/LaunchAgents/ taraması |
+
+## 🩺 Self-Healing (Otomatik İyileştirme)
+
+### Nasıl Çalışır?
+1. `health_check.py` sorun tespit eder
+2. `self_healer.py` sorunu `healing_playbook.json`'daki kalıplarla eşleştirir
+3. Eşleşme varsa → belirlenen aksiyonu otomatik uygular
+4. Raporu e-posta ile gönderir (düzeltilen + düzeltilemeyen ayrı gösterilir)
+
+### Playbook Kalıpları
+
+| Kalıp | Aksiyon | Güvenlik |
+|-------|---------|----------|
+| Railway CRASHED/FAILED | Otomatik redeploy | Max 2/saat, 5/gün |
+| SSL/Bağlantı hatası | Geçici — bekleme | Aksiyon almaz |
+| LaunchAgent NOT_LOADED | `launchctl load` | Max 3/saat |
+| LaunchAgent EXIT_ERROR | Unload + load | Max 3/saat |
+| OOMKilled | Redeploy | Max 1/saat |
+| Rate limit (429) | Geçici — bekleme | Aksiyon almaz |
+| OAuth invalid_grant | Sadece alarm | Manuel müdahale |
+| Bilinmeyen hata | Sadece alarm | Dokunmaz |
+
+### Güvenlik Sınırları
+- ⛔ **Rate limiting:** Saatte max 2 redeploy, günde max 5
+- ⏳ **Cooldown:** Aynı proje için 30dk bekleme
+- 🔒 **Sadece bilinen kalıplar:** Bilinmeyen hatalara dokunmaz
+- 📧 **Her durumda bilgilendirme:** Düzeltse de düzeltemese de rapor gönderir
+- ❌ **Asla kod yazmaz/push etmez**
 
 ## 🔑 Token Yönetimi
 
@@ -35,43 +77,39 @@ Token bilgileri şu kaynaklardan okunur (öncelik sırasına göre):
 
 > **Not:** macOS "Full Disk Access" kısıtlaması nedeniyle script doğrudan `master.env`'e erişemeyebilir. Bu durumda `setup_cron.sh` çalıştırarak tokenlar `/tmp/antigravity_env.json` Cache dosyasına aktarılır.
 
-## Kontrol Edilen Durumlar
-
-Script her çalıştığında şunları kontrol eder:
-
-| Durum | Sonuç |
-|-------|-------|
-| `SUCCESS` | ✅ Servis sağlıklı, log'a yaz |
-| `FAILED` | 🚨 E-posta gönder + log'a yaz |
-| `CRASHED` | 🚨 E-posta gönder + log'a yaz |
-| `REMOVED` | ⚠️ E-posta gönder + log'a yaz |
-| `BUILDING` / `DEPLOYING` | ⏳ Geçici durum, rapor et ama alarm verme |
-| `SLEEPING` | 😴 Beklenen (Railway free tier), alarm verme |
-| `API Hatası` | 🚨 API erişim sorunu, e-posta gönder |
-
 ## 🚀 Nasıl Çalıştırılır
 
-### İlk Kurulum (bir kez)
+### Genel Check-Up + Otomatik İyileştirme (ÖNERİLEN)
 ```bash
-bash ~/Desktop/Antigravity/_skills/servis-izleyici/scripts/setup_cron.sh
+python3 ~/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py --check-up --auto-heal
 ```
 
-### Manuel Çalıştırma
+### Genel Check-Up (sadece tespit, düzeltme yok)
+```bash
+python3 ~/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py --check-up
+```
+
+### Ne Yapacağını Göster (Dry Run)
+```bash
+python3 ~/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py --check-up --auto-heal --dry-run
+```
+
+### Hızlı Railway Kontrolü
 ```bash
 python3 ~/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py
 ```
 
-### Sadece Kontrol (E-posta Göndermeden)
+### Sadece Cron/LaunchAgent Kontrolü
 ```bash
-python3 ~/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py --dry-run
+python3 ~/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py --cron-only
 ```
 
 ### Belirli Bir Projeyi Kontrol
 ```bash
-python3 ~/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py --project shorts-demo-bot
+python3 ~/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py --project shorts-demo-bot --auto-heal
 ```
 
-### Otomatik Çalışma (LaunchAgent — Saatlik)
+### Otomatik Çalışma (LaunchAgent — Saatlik + Auto-Heal)
 ```bash
 # Durum kontrolü:
 launchctl list com.antigravity.servis-izleyici
@@ -87,26 +125,32 @@ launchctl load ~/Library/LaunchAgents/com.antigravity.servis-izleyici.plist
 
 | Durum | Ne Yapılmalı? |
 |-------|---------------|
-| `RAILWAY_TOKEN` geçersiz | `_knowledge/api-anahtarlari.md` dosyasındaki token'ı güncelle, `master.env`'i yenile |
-| Gmail SMTP hatası | App Password'ü kontrol et: Google Hesabı → Güvenlik → App Passwords |
-| `deploy-registry.md` parse hatası | Dosya formatının doğru olduğundan emin ol (her proje `###` başlığı altında) |
-| GraphQL rate limit | Script otomatik 2 saniye bekler, cron aralığını saatlikten daha sık yapma |
+| `RAILWAY_TOKEN` geçersiz | `master.env` dosyasındaki token'ı güncelle |
+| Gmail SMTP hatası | App Password'ü kontrol et |
+| `deploy-registry.md` parse hatası | Dosya formatının doğru olduğundan emin ol |
+| GraphQL rate limit | Script otomatik 1 sn bekler, cron aralığını saatlikten daha sık yapma |
+| LaunchAgent yüklenemiyor | `launchctl load ~/Library/LaunchAgents/<plist>` |
+| Playbook'ta eşleşme yok | Yeni kalıp ekle: `healing_playbook.json` |
 
-## 📊 Log Formatı
+## Playbook Genişletme
 
-Her çalışma sonrası `logs/health_check.log` dosyasına şu formatta yazılır:
+Yeni bir hata kalıbı eklemek için `scripts/healing_playbook.json` dosyasını düzenle:
 
-```
-[2026-03-11 16:30:00] ===== SAĞLIK KONTROLÜ BAŞLADI =====
-[2026-03-11 16:30:01] ✅ shorts-demo-bot: SUCCESS (son deploy: 2 saat önce)
-[2026-03-11 16:30:02] ✅ sweatcoin-email-automation: SUCCESS (son deploy: 12 saat önce)
-[2026-03-11 16:30:03] 🚨 tele-satis-crm: FAILED → E-posta gönderildi
-[2026-03-11 16:30:03] ===== SAĞLIK KONTROLÜ TAMAMLANDI (3/3 proje, 1 sorun) =====
+```json
+{
+  "id": "yeni_kalip",
+  "match": "regex_pattern",
+  "context": "railway_status|railway_log|launch_agent",
+  "action": "redeploy|reload_agent|restart_agent|ignore_transient|alert_only",
+  "description": "Açıklama",
+  "max_retries": 2,
+  "cooldown_minutes": 30
+}
 ```
 
 ## Workflow Entegrasyonu
 
-Bu skill `/durum-kontrol` workflow'u ile de çağrılabilir:
+Bu skill `/durum-kontrol` workflow'u ile çağrılır:
 ```
 _agents/workflows/durum-kontrol.md
 ```

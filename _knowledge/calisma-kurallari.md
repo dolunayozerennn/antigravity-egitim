@@ -28,21 +28,20 @@ Antigravity/
 ```
 
 ## Aktif Projeler
-*(Son güncelleme: 21 Mart 2026)*
+*(Son güncelleme: 23 Mart 2026)*
 
 | Proje | Açıklama | Durum |
 |---|---|---|
-| Tele_Satis_CRM | Sheets → Notion CRM senkronu | Railway 7/24 Worker |
-| Tele_Satis_Notifier | Zamanlı lead e-posta bildirimi | Railway 7/24 Worker |
-| Lead_Notifier_Bot | Sheets → Telegram/Email bildirim | Railway 7/24 Worker |
-| Dolunay_AI_Website | dolunay.ai kişisel web sitesi | Railway 7/24 Worker |
+| Lead_Pipeline | Birleşik CRM + bildirim pipeline | Railway Cron (10dk) |
+| Dolunay_AI_Website | dolunay.ai kişisel web sitesi | Netlify |
 | Shorts_Demo_Otomasyonu | Telegram video demo botu | Railway 7/24 Worker |
 | Swc_Email_Responder | Sweatcoin e-posta otomasyonu | Railway Cron (Pzt-Cum) |
 | Dolunay_Reels_Kapak | AI kapak görseli üretimi | Railway Cron (günde 3x) |
 | Isbirligi_Tahsilat_Takip | Tahsilat hatırlatma otomasyonu | Railway Cron (günde 1x) |
 | Akilli_Watchdog | LLM-destekli pipeline sağlık izleme | Railway Cron (günde 1x) |
 | Marka_Is_Birligi | Marka outreach + follow-up | Railway Cron (zamanlanmış) |
-| Servis_Izleyici | Health check (LaunchAgent) | Lokal Cron |
+| Blog_Yazici | YouTube → Blog pipeline | Lokal (geliştirme) |
+| Dolunay_YouTube_Kapak | YouTube thumbnail üretimi | Lokal (geliştirme) |
 | Dubai_Emlak_İçerik_Yazarı | İçerik üretim sistemi | Lokal (geliştirme) |
 | Emlak_Arazi_Drone_Çekim | Drone çekim analiz sistemi | Lokal (geliştirme) |
 

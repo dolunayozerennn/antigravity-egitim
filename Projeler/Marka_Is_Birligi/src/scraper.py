@@ -23,7 +23,7 @@ POLL_INTERVAL = 15  # saniye
 
 def get_apify_token():
     """Apify token'ını env var'dan veya bilgi dosyasından al."""
-    token = os.environ.get("APIFY_TOKEN")
+    token = os.environ.get("APIFY_API_KEY")
     if not token:
         token = os.environ.get("APIFY_BACKUP_TOKEN")
     if not token:
@@ -135,7 +135,7 @@ def scrape_reels(dry_run=False):
 
     token = get_apify_token()
     if not token:
-        raise ValueError("Apify token bulunamadı! APIFY_TOKEN env var ayarla.")
+        raise ValueError("Apify token bulunamadı! APIFY_API_KEY env var ayarla.")
 
     run_data = start_actor_run(urls, token)
     dataset_id = poll_run(run_data["id"], token)

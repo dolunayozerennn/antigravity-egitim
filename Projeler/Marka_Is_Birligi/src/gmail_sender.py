@@ -19,12 +19,12 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCOPES = ["https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/gmail.readonly"]
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "ozerendolunay@gmail.com")
+SCOPES = ["https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/gmail.modify"]
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "dolunay@dolunay.ai")
 
 # Credential dosya yolları
-CREDENTIALS_FILE = os.path.join(BASE_DIR, "..", "..", "_skills", "eposta-gonderim", "credentials.json")
-TOKEN_FILE = os.path.join(BASE_DIR, "..", "..", "_skills", "eposta-gonderim", "token.json")
+CREDENTIALS_FILE = os.path.join(BASE_DIR, "..", "..", "_knowledge", "credentials", "oauth", "gmail-dolunay-ai-credentials.json")
+TOKEN_FILE = os.path.join(BASE_DIR, "..", "..", "_knowledge", "credentials", "oauth", "gmail-dolunay-ai-token.json")
 
 
 def authenticate():
@@ -32,7 +32,7 @@ def authenticate():
     creds = None
 
     # Railway'de env var'dan token oku
-    token_json_str = os.environ.get("GOOGLE_MARKA_TOKEN_JSON")
+    token_json_str = os.environ.get("GOOGLE_DOLUNAY_AI_TOKEN_JSON")
     if token_json_str:
         try:
             # Base64 decode
@@ -55,7 +55,7 @@ def authenticate():
             if not os.path.exists(CREDENTIALS_FILE):
                 raise FileNotFoundError(
                     f"Credentials dosyası bulunamadı: {CREDENTIALS_FILE}\n"
-                    "Railway'de: GOOGLE_MARKA_TOKEN_JSON env var ayarlayın."
+                    "Railway'de: GOOGLE_DOLUNAY_AI_TOKEN_JSON env var ayarlayın."
                 )
             print("[GMAIL] Tarayıcıda Google hesabınızla giriş yapın...")
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)

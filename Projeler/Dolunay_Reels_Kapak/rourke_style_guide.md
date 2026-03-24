@@ -23,12 +23,17 @@ To create a design template that replicates the 'Rourke' style observed in these
 
 ### Subject & Character Flexibility
 - The AI should feel free to CHANGE the subject's clothing, physical pose, and body angle to perfectly match the context or theme of the video. The reference photo is primarily for facial identity.
+- **Clothing should match the video topic:**
+  - **Tech/Creative/Casual topics** → Streetwear, hoodie, t-shirt, casual wear
+  - **Business/Finance/Corporate topics** → Smart casual: dark blazer, turtleneck, dark button-down shirt
+  - **Motivational/Luxury/Premium topics** → Sleek, premium look (leather jacket, tailored dark outfit)
+- The clothing should always feel natural and context-appropriate — never generic stock-photo style.
 - Occasionally, the AI is encouraged to completely skip using the provided persona and generate a newly imagined character or subject if the topic demands it (e.g., historical figures, abstract concepts).
 
 ### Text Placement
 - **Primary Text Placement:**
-  - Positioned towards the top or bottom corners, ensuring it doesn’t cover the subject’s face or key elements.
-  - Text often aligns with the subject’s movement or line of sight for cohesion.
+  - Positioned towards the top or bottom corners, ensuring it doesn't cover the subject's face or key elements.
+  - Text often aligns with the subject's movement or line of sight for cohesion.
 
 - **Secondary Text Placement:**
   - Smaller, repeated text is used to fill spaces and create texture.
@@ -68,7 +73,7 @@ To create a design template that replicates the 'Rourke' style observed in these
 5. **Overall Execution:**
    - Maintain an energetic and modern feel, but keep it grounded.
    - Feel free to modify the subject's clothes and body angle. If the context requires, use a different character entirely.
-   - Use composition and text to guide viewers’ eyes naturally across the thumbnail.
+   - Use composition and text to guide viewers' eyes naturally across the thumbnail.
 
 By following these elements, you'll be able to replicate the 'Rourke' style effectively for your own content.
 

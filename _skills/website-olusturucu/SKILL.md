@@ -89,7 +89,7 @@ Read `references/conversion.md` for implementation details. Every page MUST incl
 
 ## Step 5: Deployment
 
-Read `references/deployment.md` for instructions on how to publish the site to GitHub and Vercel. Execute the deployment steps automatically if the user explicitly requests to publish or deploy the website.
+Read `references/deployment.md` for instructions on how to publish the site to GitHub and deploy via Netlify MCP. Execute the deployment steps automatically if the user explicitly requests to publish or deploy the website.
 
 ---
 

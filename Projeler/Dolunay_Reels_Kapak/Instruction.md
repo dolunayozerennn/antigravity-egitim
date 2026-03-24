@@ -97,6 +97,36 @@ Tüm kullanıcı feedback'leri ve kurallar `learnings.md` dosyasında tutulur.
 Bu dosya her değerlendirme prompt'unda referans olarak kullanılır.
 Yeni feedback geldiğinde bu dosya güncellenmelidir.
 
+## Konsept-Varyasyon Yaklaşımı (v3)
+
+### Yapı
+Her video için:
+1. **2-3 farklı konsept** belirlenir (farklı hook/angle/mesaj)
+2. Her konsept için **2 varyasyon** üretilir (farklı görsel tema)
+3. Toplamda minimum **4 kapak**, maksimum **6 kapak** üretilir
+
+### Adlandırma
+| Kod | Açıklama |
+|-----|----------|
+| 1A | Konsept 1, Varyasyon A |
+| 1B | Konsept 1, Varyasyon B |
+| 2A | Konsept 2, Varyasyon A |
+| 2B | Konsept 2, Varyasyon B |
+| 3A | Konsept 3, Varyasyon A *(opsiyonel)* |
+| 3B | Konsept 3, Varyasyon B *(opsiyonel)* |
+
+### Klasör Yapısı
+```
+outputs/
+  Video_Adi/
+    Konsept_1/
+      Kapak_1A.png
+      Kapak_1B.png
+    Konsept_2/
+      Kapak_2A.png
+      Kapak_2B.png
+```
+
 ## Teknik Notlar
 
 ### macOS Sandbox Sorunu

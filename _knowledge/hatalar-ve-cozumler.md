@@ -25,10 +25,10 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
   ```
 - **Tarih:** Şubat 2026
 
-### Kie AI — Eski API anahtarı
-- **Sorun:** `47b22662b68bd510479967aaf8d40a65` anahtarı bazı modellerde çalışmıyor olabilir
-- **Çözüm:** Yeni anahtar `97d226c568fea77abdeaedde37a6c6aa` kullan
-- **Tarih:** Şubat 2026
+### Kie AI — Eski API anahtarları (ÇÖZÜLDÜ)
+- **Sorun:** Eskiden birden fazla key dolaşıyordu (`47b22662...`, `97d226c568...`)
+- **Çözüm:** ✅ Tek aktif key: `0bf01128b0840e22108b95e484b09f76` — tüm dosyalar bununla güncellendi (Mart 2026)
+- **Tarih:** Mart 2026
 
 ### Video üretimi sonrası URL gelmeme
 - **Sorun:** `resultJson` alanı string olarak geliyor, JSON parse edilmeli
@@ -38,6 +38,15 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 ---
 
 ## Gmail / Outreach
+
+### Gmail MCP — Draft (Taslak) Oluşturma Aracı YOK (KRİTİK)
+- **Sorun:** Kullanıcı "maili drafta yaz" dediğinde `send_gmail_message` kullanıldı → mail placeholder içeriğiyle doğrudan gönderildi.
+- **Kök Neden:** Google Workspace MCP araçları arasında `create_draft` fonksiyonu bulunmuyor. Mevcut araçlar: `send_gmail_message` (gönderir), `search_gmail_messages` (arar), `get_gmail_message_content` (okur).
+- **Çözüm/Kural:**
+  1. Kullanıcı "drafta yaz" veya "taslak oluştur" dediğinde **ASLA `send_gmail_message` kullanma** — bu doğrudan gönderir!
+  2. Bunun yerine mail içeriğini Antigravity artifact'a yaz → kullanıcıya göster → kullanıcı kopyalayıp Gmail'de kendisi draft oluştursun.
+  3. Veya kullanıcıya "Gmail MCP'de draft aracı yok, doğrudan göndermemi ister misin?" diye sor.
+- **Tarih:** Mart 2026
 
 ### OAuth Token Hatası (`invalid_grant`)
 - **Sorun:** `token.json` süresi dolmuş veya bozulmuş
@@ -66,9 +75,103 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Çözüm:** Yanıtı göndermeden önce `escape_markdown()` ile temizle
 - **Tarih:** Şubat 2026
 
+### Telegram Conflict — Aynı anda iki bot instance (Railway)
+- **Sorun:** `telegram.error.Conflict: terminated by other getUpdates request` — Railway deploy sırasında eski container henüz durmadan yenisi başlıyor, iki polling çakışıyor
+- **Ek Sorun:** python-telegram-bot "No error handlers are registered" diye ERROR logluyor → self-healer bunu "unknown" sorun olarak algılıyor → sürekli yanlış alarm (false positive)
+- **Çözüm (3 katman):**
+  1. `bot.py` → `error_handler()` fonksiyonu eklendi: Conflict hatalarını INFO, ağ hatalarını WARNING olarak loglar. ERROR çıkmaz.
+  2. `healing_playbook.json` → `telegram_conflict` ve `telegram_no_error_handler` pattern'ları eklendi: `ignore_transient` olarak sınıflandırılır.
+  3. `health_check.py` → `FALSE_POSITIVE_PATTERNS` listesine eklendi: Log taramasında Conflict hataları artık hata sayılmaz.
+- **Kural:** Deploy sonrası oluşan Conflict hatası geçicidir, yeni instance çalışır çalışmaz kendi kendine düzelir. Ayrıca `run_polling(stop_signals=None)` kullanılmalıdır.
+- **Tarih:** Mart 2026
+
 ---
 
+## Google Sheets / API Bağlantı Kopmaları
+
+### SSL EOF Hatası — Geçici Ağ Kopması (Tekrarlayan Pattern)
+- **Sorun:** `EOF occurred in violation of protocol (_ssl.c)` — Railway container'larında uzun süre yaşayan bağlantı objeleri bayatlıyor. Google Sheets, Fal AI gibi servislerde tekrarlayan pattern.
+- **Kök neden:** `service` objesi bir kez oluşturulup sonsuza dek kullanılıyor. SSL bağlantısı kopunca retry yok, tüm döngü başarısız oluyor.
+- **Çözüm (Sürdürülebilir retry pattern):**
+  1. Hata mesajında geçici ağ anahtar kelimeleri ara: `eof`, `ssl`, `broken pipe`, `connection reset`, `timeout`, `connection aborted`
+  2. Eşleşirse: `service = None` → `authenticate()` → tekrar dene
+  3. Max 3 deneme, exponential backoff (2s, 4s)
+  4. Geçici değilse doğrudan raise et
+- **Uygulanan dosya:** `Tele_Satis_CRM/sheets_reader.py` → `get_all_rows()` metodu
+- **Kural:** Uzun süre çalışan servislerde (polling loop, webhook listener) dış API çağrılarına **mutlaka** retry + reconnect ekle
+- **Tarih:** Mart 2026
+
+---
+
+## Antigravity Chat — Tarayıcı Fallback Sorunu
+
+### GEMINI.md Boş → Agent Tarayıcıya Düşüyor (KRİTİK)
+- **Sorun:** Agent, Notion/Railway/GitHub gibi servislere erişirken MCP/API yerine `browser_subagent` kullanarak tarayıcı açıyordu. Kullanıcı "token'ın var" dediğinde düzeliyordu ama her seferinde hatırlatma gerekiyordu.
+- **Kök Neden:** `~/.gemini/GEMINI.md` dosyası **tamamen boştu** (0 byte). Bu dosya her konuşma başında okunur ve servis yönlendirme kurallarını içermesi gerekir. Boş olduğunda agent hangi araçla hangi servise bağlanacağını bilemiyor ve default olarak tarayıcıya düşüyor.
+- **Çözüm:** `GEMINI.md` dosyasına tam servis yönlendirme tablosu eklendi (GitHub → MCP, Notion → API, Railway → GraphQL, Google → MCP vb.). Bu tablo `user_global` kurallarındakiyle aynı ama ek bir güvenlik katmanı sağlıyor.
+- **Kural:** `GEMINI.md` dosyasının **asla boş bırakılmaması** gerekir. Periyodik olarak kontrol et.
+- **Tarih:** Mart 2026
+
+### Gmail OAuth Scope Uyumsuzluğu — `invalid_scope: Bad Request`
+- **Sorun:** `marka-is-birligi` projesinde `gmail_sender.py` → `SCOPES` listesi `gmail.readonly` istiyordu ama OAuth token `gmail.modify` scope'uyla oluşturulmuştu. Google OAuth kütüphanesi scope eşleşmediği için `invalid_scope: Bad Request` hatası verdi.
+- **Kök Neden:** Token oluşturulurken `gmail.modify` (okuma+yazma) scope'u verildi ama kod daha sonra `gmail.readonly` (sadece okuma) isteyecek şekilde değiştirildi. Token scope'ları ⊃ istenen scope'lar olsa bile, eşleşme kontrolü strict.
+- **Çözüm:** `gmail_sender.py` → SCOPES'ta `gmail.readonly` → `gmail.modify` olarak değiştirildi (token'daki scope ile eşleşecek şekilde).
+- **Kural:** OAuth token oluşturulduktan sonra koddaki SCOPES listesi DEĞİŞTİRİLMEMELİ. Değiştirilirse token yeniden oluşturulmalı.
+- **Tarih:** Mart 2026
+
+---
+
+## Gemini API
+
+### Gemini Model Deprecated — `404 models/gemini-1.5-pro-latest is not found`
+- **Sorun:** `dolunay-reels-kapak` projesinde `autonomous_cover_agent.py` ve `revision_engine.py` dosyalarında `gemini-1.5-pro-latest` model adı kullanılıyordu. Google bu modeli deprecate etti ve API 404 dönmeye başladı.
+- **Etki:** Kapak üretim pipeline'ı Gemini Vision değerlendirmesi yapamıyordu. Evaluation hep `score: 0` dönüyordu.
+- **Çözüm:** Tüm `gemini-1.5-pro-latest` referansları `gemini-2.0-flash` ile değiştirildi (6 yerde: 4x autonomous_cover_agent.py, 2x revision_engine.py).
+- **Kural:** Gemini model adları deprecate olabilir. Üretim kodunda `-latest` suffix'li model adı KULLANMA — spesifik versiyon kullan. Deprecation durumunda `gemini-2.0-flash` veya `gemini-2.5-pro` gibi güncel modellere geçiş yap.
+- **Tarih:** Mart 2026
+
 > *(Yeni hata karşılaşıldığında bu dosyaya ekle)*
+
+---
+
+## Kod-Repo Senkronizasyon Hataları
+
+### Config.DEDUP_WINDOW_DAYS AttributeError — Lokal ↔ Production Uyumsuzluğu (KRİTİK)
+- **Sorun:** `notion_writer.py` → `Config.DEDUP_WINDOW_DAYS` kullanıyordu ama `config.py`'da bu attribute henüz tanımlanmamıştı. Lokal'de güncellenmiş ama ayrı GitHub repo'suna (`dolunayozerennn/tele-satis-crm`) push edilmemişti. Railway eski commit (12a9d2b) üzerinden çalışıyordu.
+- **Etki:** 1 gün boyunca lead'ler Notion'a yazılamadı → ciddi maddi kayıp
+- **Kök Neden (3 katman):**
+  1. Lokal kod değiştirildi ama ayrı repo'ya push edilmedi
+  2. Deploy workflow'unda "push öncesi import testi" adımı yoktu → `AttributeError` deploy edilmeden yakalanamadı
+  3. Health check sadece deployment status'e bakıyordu → SUCCESS durumundaki runtime error'ları tespit edemiyordu
+- **Çözüm (3 katmanlı savunma eklendi):**
+  1. `/canli-yayina-al` workflow'una **zorunlu pre-push kod sağlık kontrolü** eklendi (import zinciri testi + unit test çalıştırma)
+  2. `/canli-yayina-al` workflow'una **zorunlu post-deploy smoke test** eklendi (log'lardan fatal error tarama)
+  3. `healing_playbook.json`'a `runtime_code_error` pattern'i eklendi (AttributeError, ImportError → alert_only, redeploy yapma)
+- **Kural:** Her push'tan önce `python3 -c "import modül"` ile tüm modüllerin import edilebilmesi doğrulanmalı. Her deploy sonrası loglar smoke test ile taranmalı.
+- **Tarih:** Mart 2026
+
+### MİMARİ DEÐİŞİKLİK — Native Mono-Repo Geçişi (Lokal ↔ GitHub ↔ Railway)
+- **Eski Sorun:** Tüm projeler lokal'de `antigravity-egitim` mono-repo'sunun içinde yaşıyor (`Projeler/XXX/`). Ama geçmişte Railway her proje için ayrı bir GitHub reposu izliyordu (`dolunayozerennn/tele-satis-crm` vb.). Bu yüzden `/tmp/` dizinine klonlayıp dosyaları `cp` ile kopyaladığımız tehlikeli bir senkronizasyon workaround'umuz vardı. Bu durum `AttributeError` gibi cross-repo bağımlılık çöküşlerine ve veri kayıplarına (silinen dosyaların production'da silinmemesi) yol açıyordu.
+- **Etki:** Güvenilmez deploys, git conflictleri ve çakışan history'ler.
+- **Kök Neden:** Sistemin "Mono-repo" geliştirme yapıp "Multi-repo" production beklemesi.
+- **ÇÖZÜM (YENİ MİMARİ): Native Mono-Repo Mimarisi**
+  1. **Artık hiçbir projeyi dışarı taşıyıp ayrı repoya push KESİNLİKLE YAPILMIYOR.** Tamamen iptal edildi.
+  2. Tüm projenin ana omurgası `dolunayozerennn/antigravity-egitim` adlı **tek bir GitHub reposudur**.
+  3. Yeni bir Railway projesi/servisi kurulduğunda veya güncellendiğinde, bu TEK repo (`dolunayozerennn/antigravity-egitim`) Railway'e bağlanır.
+  4. Railway üzerindeki ilgili servisin ayarlarından **"Root Directory"** parametresi ilgili proje klasörü (örn: `Projeler/Tele_Satis_CRM`) olarak ayarlanır.
+  5. Gereksiz trigger'ları (diğer projelerin de deploy edilmesini) engellemek için Watch Paths özelliğinde sadece o dizine izin verilir (`/Projeler/Tele_Satis_CRM/**`).
+- **Kural:** Herhangi bir proje için kod deploylanacaksa sadece `git push origin main` yapılır. Kopya `cp` scriptleri ASLA kullanılmaz.
+- **Tarih:** Mart 2026
+
+### macOS Sandbox EPERM & npm Cache Hataları (Lokal Build)
+- **Sorun:** Projede `npm run build` veya `npm install` denerken `npm error code EPERM` / `lstat` veya `operation not permitted` tarzı Terminal hataları ile karşılaşılıyor. Bağımlılıklar yüklenemiyor veya klasörler silinemiyor.
+- **Kök Neden:** macOS üzerindeki Cursor Sandbox ortamı veya iCloud kilitleri `.DS_Store`, `node_modules` vs. dosyalara donanımsal yetki kilitleri koyuyor. Bu sistem seviyesi bir kısıtlamadır; **koddaki veya paketteki bir bozukluk değildir**.
+- **Etki:** Bilgisiz bir LLM/Agent, uygulamanın çalışmadığını sanıp kodu downgrade etmeye teşebbüs edebilir veya Vite vb. eski mimarilere (rollback) dönmek için kod tabanını mahvedebilir.
+- **Çözüm / Kural:** 
+  1. Hata görüldüğünde koda (`package.json`, klasör yapılanması vb.) **KESİNLİKLE MÜDAHALE ETME**, package sürümleriyle veya import yollarıyla OYNAMA.
+  2. Mimariyi veya kodun stabilité durumunu, lokal build hatalarından değil sadece remote (Netlify vb.) Deployment Log'larından yorumla. Kod dışarıda çalışıyorsa sorun yoktur.
+  3. Silemediğin eski kilitli klasör kalıntılarına rastlarsan zorla silmek yerine `mv` komutuyla `_arsiv/` dizinine taşı.
+- **Tarih:** Mart 2026
 
 ---
 
@@ -105,4 +208,62 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 ### BASH_SOURCE Sandbox'ta Boş Dönüyor
 - **Sorun:** `bash script.sh` ile çalıştırılan script'lerde `${BASH_SOURCE[0]}` boş dönüyor. Bu da `SCRIPT_DIR` doğru hesaplanamıyor.
 - **Çözüm:** `BASH_SOURCE` yerine sabit yol (hardcoded path) kullan.
+- **Tarih:** Mart 2026
+
+### Path.parents IndexError — Railway Container Crash
+- **Sorun:** `pathlib.Path.parents[2]` Railway'de `IndexError: 2` fırlatıyor. `/app/shared/dosya.py` yolunun sadece 2 parent'i var (`/app/shared/`, `/app/`). `parents[2]` mevcut değil.
+- **Kök Neden:** Modül seviyesinde (top-level) `try-except` olmadan parent dizin aranıyordu. Lokal'de yol derin (`/Users/.../Projeler/Swc_Email_Responder/shared/`) olduğu için çalışıyordu, Railway'de kısa yol (`/app/shared/`) crash etti.
+- **Çözüm:** `parents[N]` yerine `[p for i, p in enumerate(Path.parents) if i < 4]` ile güvenli erişim kullan. IndexError riskini ortadan kaldırır.
+- **Kural:** Railway container'larında dosya yolu `/app/` altındadır. `Path.parents` index erişimlerinde **mutlaka** uzunluk kontrolü yap veya enumerate ile güvenli eriş.
+- **Tarih:** Mart 2026
+
+---
+
+## MCP Bağlantı Sorunları
+
+### GitHub MCP Server Bağlanmıyor — Docker Daemon + macOS Sandbox
+- **Sorun:** GitHub MCP, `mcp_config.json`'da Docker container olarak yapılandırılmıştı (`ghcr.io/github/github-mcp-server`). Docker Desktop kapalı olduğunda MCP asla başlatılamıyordu. Tüm `mcp_github-mcp-server_*` araçları devre dışı kalıyordu.
+- **Ek Sorun:** `~/.npm` klasöründe macOS'un `com.apple.provenance` extended attribute'u vardı. Bu, sandbox ortamından çalışan npm süreçlerinin yeni paket indirmesini engelliyordu (EPERM hatası).
+- **Çözüm (2 adım):**
+  1. Terminal'den `sudo chown -R $(whoami) ~/.npm && xattr -dr com.apple.provenance ~/.npm` çalıştırıldı
+  2. `mcp_config.json`'da GitHub MCP, Docker'dan npx tabanlıya geçirildi: `"command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"]`
+  3. Sandbox npm cache sorunu için `"npm_config_cache": "/tmp/npm-cache"` env değişkeni eklendi
+- **Kural:** MCP sunucularını mümkünse Docker yerine npx/uvx ile çalıştır — Docker Desktop bağımlılığını ortadan kaldırır.
+- **Tarih:** Mart 2026
+
+---
+
+## Railway — SMTP Port Engellemesi (KRİTİK)
+
+### `[Errno 101] Network is unreachable` — SMTP Email Gönderimi
+- **Sorun:** Railway container'larında `smtplib.SMTP_SSL("smtp.gmail.com", 465)` çağrısı `[Errno 101] Network is unreachable` hatası veriyor. Bu hata `Isbirligi_Tahsilat_Takip` ve `Akilli_Watchdog` projelerinde e-posta gönderimini haftalarca engelledi.
+- **Kök Neden:** Railway, abuse önleme nedeniyle SMTP portlarını (25, 465, 587) engeller. `smtplib` ile e-posta göndermek mümkün değil.
+- **Etki:** `Isbirligi_Tahsilat_Takip` 7+ gün boyunca 17 markaya ödeme hatırlatması gönderemedi. `Akilli_Watchdog` sağlık raporu e-postaları hiç ulaşmadı.
+- **Çözüm:** `smtplib` tamamen kaldırıldı → Gmail API (OAuth2) ile değiştirildi:
+  1. `GOOGLE_OUTREACH_TOKEN_JSON` env variable'ı Railway'e eklendi
+  2. `google.oauth2.credentials.Credentials.from_authorized_user_info()` ile token parse
+  3. `googleapiclient.discovery.build('gmail', 'v1')` ile service oluştur
+  4. `base64.urlsafe_b64encode()` ile email encode → `users().messages().send()` 
+- **Kural:** Railway'de **ASLA** `smtplib` kullanma. Email göndermek için **Gmail API (OAuth2)** kullan. `Lead_Notifier_Bot` referans implementasyon.
+- **Dikkat:** `variableUpsert` mutation'ı ile JSON env variable eklerken çift-escape sorunu olabilir. Token'ı her zaman doğrudan `json.dumps(token_string)` ile escape et, ek escape YAPMA.
+- **Tarih:** Mart 2026
+
+### markalar.csv Kalıcılık Sorunu — Railway Ephemeral Filesystem
+- **Sorun:** `Marka_Is_Birligi` projesinde `data/markalar.csv` dosyası `.gitignore`'da olduğu için Railway'e deploy edilmiyordu. Her deploy sonrası `[FOLLOWUP] markalar.csv bulunamadı!` hatası.
+- **Kök Neden:** Railway container'ları ephemeral (geçici) dosya sistemi kullanır. `.gitignore` ile hariç tutulan dosyalar deploy'dan sonra mevcut olmaz.
+- **Çözüm:** `ensure_csv_exists()` fonksiyonu eklendi — modül yüklendiğinde `data/` klasörü ve `markalar.csv` header-only olarak otomatik oluşturulur.
+- **Kural:** Railway'de runtime'da oluşturulan/güncellenen veri dosyaları **deploy sonrası kaybolur**. Ya otomatik oluşturma mekanizması ekle, ya da harici storage (Google Drive, DB) kullan.
+- **Tarih:** Mart 2026
+
+---
+
+## Servis İzleyici — Self-Healer
+
+### Cron Job'lar "unknown" Olarak Raporlanıyor
+- **Sorun:** `dolunay-reels-kapak` ve `revizyon-cron` servisleri Railway Cron Job'a geçirilmişti ama `deploy-registry.md`'deki platform bilgisi `railway` olarak kalmıştı. `health_check.py` sadece `platform == "railway"` olan servisleri kontrol ediyordu → `railway-cron` platformundaki servisler atlanıyordu → self-healer bunları "unknown" olarak raporluyordu.
+- **Kök Neden:** Railway Cron geçişi sırasında deploy-registry platformu güncellenmemiş + health_check.py filtresinde `railway-cron` eksikti.
+- **Çözüm (2 adım):**
+  1. `deploy-registry.md` → `dolunay-reels-kapak` ve `revizyon-cron` platformları `railway` → `railway-cron` olarak güncellendi
+  2. `health_check.py` → satır 681: `p.get("platform") == "railway"` → `p.get("platform") in ("railway", "railway-cron")` olarak genişletildi
+- **Kural:** Bir servisi Railway Cron Job'a taşırken **mutlaka** `deploy-registry.md`'deki platform bilgisini `railway-cron` olarak güncelle.
 - **Tarih:** Mart 2026

@@ -14,7 +14,7 @@ class InvoicePDF(FPDF):
         self.set_text_color(150, 150, 150)
         self.cell(0, 10, "Thank you for your business.", align="C")
 
-def generate_invoice(brand_name, company_name, company_email, company_address, amount, currency, output_dir):
+def generate_invoice(brand_name, company_name, company_email, company_address, amount, currency, output_dir, description_override=None):
     # Set dates
     today = datetime.now()
     issue_date = today.strftime('%d/%m/%Y')
@@ -126,7 +126,7 @@ def generate_invoice(brand_name, company_name, company_email, company_address, a
         # Table Row
         pdf.set_font("Roboto", "", 10)
         pdf.set_text_color(30, 30, 30)
-        description = f"{brand_name} collaboration with @dolunay_ozeren"
+        description = description_override if description_override else f"{brand_name} collaboration with @dolunay_ozeren"
         pdf.cell(100, 10, f"  {description}", border="B", new_x=XPos.RIGHT, new_y=YPos.TOP)
         pdf.cell(30, 10, f"{currency} {amount}", border="B", align="R", new_x=XPos.RIGHT, new_y=YPos.TOP)
         pdf.cell(20, 10, "1", border="B", align="C", new_x=XPos.RIGHT, new_y=YPos.TOP)
@@ -183,6 +183,7 @@ if __name__ == "__main__":
     parser.add_argument("--address", default="", help="Company address")
     parser.add_argument("--amount", required=True, help="Amount (e.g. 600)")
     parser.add_argument("--currency", default="$", help="Currency symbol (e.g. $ or TL)")
+    parser.add_argument("--description", default="", help="Custom description for the invoice line item")
     parser.add_argument("--output", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "uretilen-faturalar"), help="Output directory")
     
     args = parser.parse_args()
@@ -194,5 +195,6 @@ if __name__ == "__main__":
         args.address,
         args.amount,
         args.currency,
-        os.path.abspath(args.output)
+        os.path.abspath(args.output),
+        args.description or None
     )

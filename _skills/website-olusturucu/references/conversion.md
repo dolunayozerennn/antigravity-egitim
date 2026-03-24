@@ -264,8 +264,8 @@ When distributing these pages to SME clients:
 1. **WhatsApp number** — Always ask for the business WhatsApp number, not personal
 2. **Form backend** — Recommend Formspree (free tier: 50 submissions/month) or direct WhatsApp form submission for zero-cost setup
 3. **Hosting** — The output HTML file can be hosted on:
-   - Netlify (free, drag-and-drop deploy)
-   - Vercel (free)
+   - **Netlify (ÖNERİLEN — Antigravity MCP entegrasyonu ile tam otomatik deploy)**
+   - Vercel (free, alternatif)
    - Tiiny.host (simplest for non-technical users)
    - Any shared hosting via FTP
 4. **Domain** — The client should already have their domain; just point the DNS

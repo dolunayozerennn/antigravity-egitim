@@ -577,6 +577,218 @@
             font-weight: 700
         }
 
+        /* ===== DEPLOY PIPELINE ===== */
+        .deploy-section {
+            margin-top: 56px
+        }
+
+        .deploy-section h2 {
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: 900;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #10b981, #3b82f6, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent
+        }
+
+        .deploy-section .deploy-sub {
+            text-align: center;
+            color: var(--muted);
+            font-size: .95rem;
+            margin-bottom: 36px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto
+        }
+
+        .deploy-pipeline {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            gap: 0;
+            position: relative
+        }
+
+        .deploy-step {
+            flex: 1;
+            max-width: 320px;
+            padding: 32px 24px 28px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            position: relative;
+            text-align: center;
+            transition: transform .3s, box-shadow .3s
+        }
+
+        .deploy-step:hover {
+            transform: translateY(-4px)
+        }
+
+        .deploy-step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 20px 20px 0 0
+        }
+
+        .deploy-step.step-local {
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.06) 0%, var(--card) 40%)
+        }
+
+        .deploy-step.step-local::before {
+            background: linear-gradient(90deg, #10b981, #34d399)
+        }
+
+        .deploy-step.step-local:hover {
+            box-shadow: 0 6px 32px rgba(16, 185, 129, 0.1)
+        }
+
+        .deploy-step.step-github {
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.06) 0%, var(--card) 40%)
+        }
+
+        .deploy-step.step-github::before {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa)
+        }
+
+        .deploy-step.step-github:hover {
+            box-shadow: 0 6px 32px rgba(59, 130, 246, 0.1)
+        }
+
+        .deploy-step.step-railway {
+            background: linear-gradient(180deg, rgba(168, 85, 247, 0.06) 0%, var(--card) 40%)
+        }
+
+        .deploy-step.step-railway::before {
+            background: linear-gradient(90deg, #a855f7, #c084fc)
+        }
+
+        .deploy-step.step-railway:hover {
+            box-shadow: 0 6px 32px rgba(168, 85, 247, 0.1)
+        }
+
+        .deploy-step .step-num {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .85rem;
+            font-weight: 800;
+            margin-bottom: 14px
+        }
+
+        .step-local .step-num {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1.5px solid rgba(16, 185, 129, 0.3)
+        }
+
+        .step-github .step-num {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3b82f6;
+            border: 1.5px solid rgba(59, 130, 246, 0.3)
+        }
+
+        .step-railway .step-num {
+            background: rgba(168, 85, 247, 0.15);
+            color: #a855f7;
+            border: 1.5px solid rgba(168, 85, 247, 0.3)
+        }
+
+        .deploy-step .step-emoji {
+            font-size: 2.4rem;
+            display: block;
+            margin-bottom: 12px
+        }
+
+        .deploy-step h4 {
+            font-size: 1.05rem;
+            font-weight: 800;
+            margin-bottom: 4px
+        }
+
+        .step-local h4 {
+            color: #10b981
+        }
+
+        .step-github h4 {
+            color: #3b82f6
+        }
+
+        .step-railway h4 {
+            color: #a855f7
+        }
+
+        .deploy-step .step-tagline {
+            font-size: .82rem;
+            color: var(--muted);
+            margin-bottom: 14px;
+            line-height: 1.5
+        }
+
+        .deploy-step .step-detail {
+            font-size: .78rem;
+            color: var(--muted);
+            line-height: 1.5;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            text-align: left
+        }
+
+        .deploy-step .step-detail strong {
+            color: var(--text)
+        }
+
+        /* Pipeline connector arrows */
+        .deploy-connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            flex-shrink: 0;
+            position: relative
+        }
+
+        .deploy-connector .conn-arrow {
+            font-size: 1.6rem;
+            font-weight: 300;
+            animation: arrowPulse 1.8s ease-in-out infinite
+        }
+
+        .deploy-connector .conn-label {
+            font-size: .6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap
+        }
+
+        .conn-green {
+            color: #10b981
+        }
+
+        .conn-blue {
+            color: #3b82f6
+        }
+
+        .conn-purple {
+            color: #a855f7
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { opacity: .5; transform: translateX(0) }
+            50% { opacity: 1; transform: translateX(4px) }
+        }
+
         /* Animations */
         @keyframes fadeInUp {
             from {
@@ -635,6 +847,10 @@
             animation-delay: 1s
         }
 
+        .delay-11 {
+            animation-delay: 1.1s
+        }
+
         @media(max-width:850px) {
             .twin-layout {
                 grid-template-columns: 1fr
@@ -650,6 +866,33 @@
 
             .flow-arrow {
                 transform: rotate(90deg)
+            }
+
+            .deploy-pipeline {
+                flex-direction: column;
+                align-items: center;
+                gap: 0
+            }
+
+            .deploy-step {
+                max-width: 100%
+            }
+
+            .deploy-connector {
+                width: auto;
+                height: 48px;
+                flex-direction: row;
+                gap: 6px
+            }
+
+            .deploy-connector .conn-arrow {
+                transform: rotate(90deg);
+                animation: arrowPulseMobile 1.8s ease-in-out infinite
+            }
+
+            @keyframes arrowPulseMobile {
+                0%, 100% { opacity: .5; transform: rotate(90deg) translateX(0) }
+                50% { opacity: 1; transform: rotate(90deg) translateX(4px) }
             }
         }
     </style>
@@ -866,8 +1109,63 @@
             </div>
         </div>
 
+        <!-- ==================== DEPLOY PIPELINE ==================== -->
+        <div class="deploy-section animate delay-9">
+            <h2>Yayınlama Süreci — 3 Adım</h2>
+            <p class="deploy-sub">Projeyi yayına almak istediğinde süreç şu 3 adımdan geçer:</p>
+
+            <div class="deploy-pipeline">
+
+                <!-- STEP 1: LOCAL -->
+                <div class="deploy-step step-local animate delay-9">
+                    <div class="step-num">1</div>
+                    <div class="step-emoji">💻</div>
+                    <h4>Proje Dosyaları</h4>
+                    <p class="step-tagline">Antigravity ile oluşturduğun proje.</p>
+                    <div class="step-detail">
+                        Kodlar <strong>senin bilgisayarında</strong> duruyor.
+                    </div>
+                </div>
+
+                <!-- ARROW 1→2 -->
+                <div class="deploy-connector">
+                    <span class="conn-label conn-blue">yükle</span>
+                    <span class="conn-arrow conn-blue">→</span>
+                </div>
+
+                <!-- STEP 2: GITHUB -->
+                <div class="deploy-step step-github animate delay-10">
+                    <div class="step-num">2</div>
+                    <div class="step-emoji">🐙</div>
+                    <h4>GitHub</h4>
+                    <p class="step-tagline">Kodların bulutta saklanıyor.</p>
+                    <div class="step-detail">
+                        Kodların için <strong>buluttaki depo</strong>. Google Drive gibi ama kodlar için.
+                    </div>
+                </div>
+
+                <!-- ARROW 2→3 -->
+                <div class="deploy-connector">
+                    <span class="conn-label conn-purple">çalıştır</span>
+                    <span class="conn-arrow conn-purple">→</span>
+                </div>
+
+                <!-- STEP 3: RAILWAY -->
+                <div class="deploy-step step-railway animate delay-11">
+                    <div class="step-num">3</div>
+                    <div class="step-emoji">🚂</div>
+                    <h4>Railway</h4>
+                    <p class="step-tagline">Kodu 7/24 çalıştıran sunucu.</p>
+                    <div class="step-detail">
+                        GitHub'daki kodu alıp <strong>sürekli ayakta tutuyor</strong>.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         <!-- ==================== BOTTOM CTA ==================== -->
-        <div class="bottom-cta animate delay-9">
+        <div class="bottom-cta animate delay-11">
             <h3>Hatırlatma 🎯</h3>
             <p>
                 <span class="hl-green">Test ortamı</span> = varsayılan durumun. Çoğu proje burada rahatlıkla yürütülür.

@@ -4,17 +4,17 @@ import base64
 import requests
 import json
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
-load_dotenv()
+load_dotenv("/Users/dolunayozeren/Desktop/Antigravity/_knowledge/credentials/master.env")
 
 KIE_API_KEY = os.getenv("KIE_API_KEY")
 IMGBB_API_KEY = os.getenv("IMGBB_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 try:
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=GEMINI_API_KEY)
+    client = True
 except Exception as e:
     print(f"Warning: Failed to initialize Gemini Client: {e}")
     client = None
@@ -39,7 +39,7 @@ def upload_to_imgbb(image_path: str) -> str:
         print(f"ImgBB upload failed: {response.text}")
         return None
 
-def generate_cover_with_nanobanana(image_url: str, prompt: str) -> str:
+def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: list = None) -> str:
     print("Sending generation request to Nano Banana Pro...")
     
     create_url = "https://api.kie.ai/api/v1/jobs/createTask"
@@ -47,11 +47,21 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str) -> str:
         "Authorization": f"Bearer {KIE_API_KEY}",
         "Content-Type": "application/json"
     }
+    
+    # Build image_input list: primary ref + up to 2 extra refs for stronger face identity
+    image_inputs = [image_url]
+    if extra_ref_urls:
+        for ref_url in extra_ref_urls[:2]:  # Max 3 total (1 primary + 2 extra)
+            if ref_url and ref_url != image_url:
+                image_inputs.append(ref_url)
+    
+    print(f"  Using {len(image_inputs)} reference image(s) for face identity locking.")
+    
     payload = {
         "model": "nano-banana-pro",
         "input": {
             "prompt": prompt,
-            "image_input": [image_url],
+            "image_input": image_inputs,
             "aspect_ratio": "9:16"
         }
     }
@@ -170,14 +180,13 @@ def generate_cover_text_and_scene(video_name: str, script_text: str) -> dict:
     }}
     """
     try:
-        response = client.models.generate_content(
-            model="gemini-2.5-pro",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json"
-            )
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        response = model.generate_content(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
         )
         result = json.loads(response.text)
+        if isinstance(result, list): result = result[0] if len(result) > 0 else {}
         cover_text = result.get('cover_text', '')
         
         # Safety check: Reject if the cover text looks like the video name
@@ -190,12 +199,13 @@ def generate_cover_text_and_scene(video_name: str, script_text: str) -> dict:
             Generate a COMPLETELY DIFFERENT cover text that focuses on the VIDEO'S VALUE PROPOSITION from the script.
             Script: \"{script_text[:500]}\"
             Return JSON: {{"cover_text": "...", "scene_description": "..."}}"""
-            retry_response = client.models.generate_content(
-                model="gemini-2.5-pro",
-                contents=retry_prompt,
-                config=types.GenerateContentConfig(response_mime_type="application/json")
+            model = genai.GenerativeModel("gemini-2.0-flash")
+            retry_response = model.generate_content(
+                retry_prompt,
+                generation_config={"response_mime_type": "application/json"}
             )
             result = json.loads(retry_response.text)
+            if isinstance(result, list): result = result[0] if len(result) > 0 else {}
             cover_text = result.get('cover_text', '')
         
         print(f"Generated Text: {cover_text}")
@@ -204,6 +214,95 @@ def generate_cover_text_and_scene(video_name: str, script_text: str) -> dict:
     except Exception as e:
         print(f"Error generating cover text+scene: {e}")
         return {"cover_text": "BUNU BİLMELİSİN", "scene_description": "A cinematic close-up of a person with a dramatic, knowing expression."}
+
+
+def generate_three_themes(video_name: str, script_text: str) -> list:
+    """
+    Gemini ile bir video scripti için 3 FARKLI yaratıcı tema üretir.
+    Her tema: {'theme_name', 'cover_text', 'scene_description'}
+    Kullanım: 3 tema × 2 varyasyon = 6 kapak.
+    """
+    print(f"🧠 Generating 3 themes via Gemini (Video: {video_name})...")
+    if not client or not script_text:
+        print("WARNING: No Gemini client or no script. Using generic fallback themes.")
+        return [
+            {"theme_name": "fallback1", "cover_text": "BUNU İZLE", "scene_description": "A dramatic cinematic portrait with intense lighting."},
+            {"theme_name": "fallback2", "cover_text": "İNANILMAZ", "scene_description": "A mysterious moody scene with neon reflections."},
+            {"theme_name": "fallback3", "cover_text": "HERKES ŞAŞIRDI", "scene_description": "An empowering dynamic shot with dramatic perspective."},
+        ]
+
+    prompt = f"""
+    You are an expert Turkish social media strategist for short-form videos (Reels/TikTok/Shorts).
+    
+    IMPORTANT: The video's internal tracking name '{video_name}' is just an identifier—ignore it for text creation.
+    
+    Here is the actual video script:
+    \"\"\"
+    {script_text}
+    \"\"\"
+    
+    Task: Based ONLY on the script content, create exactly 3 COMPLETELY DIFFERENT creative theme directions.
+    Each theme should have a unique angle, emotion, and visual concept.
+    
+    For each theme, provide:
+    1. **theme_name**: A short internal label (e.g., "shock", "mystery", "power")
+    2. **cover_text**: A punchy, 2-4 word Turkish clickbait hook. STRICT RULES:
+       - Turkish ONLY. NO English words.
+       - NOT the video/tool name.
+       - ALL CAPS, max 4 words.
+       - Examples: "ANTRENÖRÜNÜ KOV", "AJANSA PARA VERME", "KOMİSYONA SON"
+    3. **scene_description**: A creative, cinematic visual scene (in English) that DIRECTLY illustrates the cover_text.
+       - AVOID cliché "person at computer" scenes.
+       - Use dramatic metaphors, unexpected visuals, movie-poster quality.
+       - Must be SPECIFIC and actionable.
+       - CRITICAL: The scene MUST be SIMPLE and CLEAN with maximum 2-3 main visual elements.
+         These covers will be viewed as tiny ~150px thumbnails on Instagram grid.
+         Too many background elements create visual clutter. Think BOLD and SIMPLE, not detailed and complex.
+       - GOOD example: man + giant robot shadow on wall (2 elements, clean)
+       - BAD example: man surrounded by 7 characters in different costumes (too many elements, cluttered)
+    
+    The 3 themes MUST be meaningfully different from each other:
+    - Theme 1: Focus on SHOCK / PROVOCATIVE angle
+    - Theme 2: Focus on CURIOSITY / MYSTERY angle  
+    - Theme 3: Focus on EMPOWERMENT / BENEFIT angle
+    
+    Return EXACTLY this JSON array:
+    [
+        {{
+            "theme_name": "...",
+            "cover_text": "...",
+            "scene_description": "..."
+        }},
+        {{
+            "theme_name": "...",
+            "cover_text": "...",
+            "scene_description": "..."
+        }},
+        {{
+            "theme_name": "...",
+            "cover_text": "...",
+            "scene_description": "..."
+        }}
+    ]
+    """
+    try:
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        response = model.generate_content(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+        raw = response.text.replace("```json", "").replace("```", "").strip()
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            return parsed[:3]
+        return [parsed]
+    except Exception as e:
+        print(f"Error generating themes: {e}")
+        return [
+            {"theme_name": "fallback1", "cover_text": "BUNU İZLE", "scene_description": "A dramatic cinematic portrait."},
+            {"theme_name": "fallback2", "cover_text": "İNANILMAZ", "scene_description": "A mysterious moody scene."},
+            {"theme_name": "fallback3", "cover_text": "HERKES ŞAŞIRDI", "scene_description": "An empowering dynamic shot."},
+        ]
 
 
 # Keep backward compatibility
@@ -268,6 +367,13 @@ def evaluate_image_with_vision(image_url: str, style_guide: str, expected_text: 
         - Creative: Dramatic metaphors, real-life scale elements, unexpected perspectives. BONUS.
     11. **Overall Aesthetic**: Cinematic, moody, professional look as per Rourke style guide.
     12. **Face Identity**: Does the person look consistent with the reference photo?
+    13. **Background Simplicity (GRID TEST)**: Does the background have maximum 2-3 main visual elements?
+        - Imagine this image shrunk to 150x150 pixels on Instagram grid. Is it still clean and readable?
+        - Too many characters, objects, or details in background → PENALTY (score max 5).
+        - When in doubt, simpler is better.
+    14. **Overlay Text vs In-Scene Text**: Does the image have a large, bold OVERLAY text?
+        - Text only on a paper, screen, or other in-scene object is NOT sufficient.
+        - The text must be a prominent overlay that reads at thumbnail size → score max 3 if missing.
     
     Provide your evaluation in JSON format:
     {{
@@ -280,23 +386,24 @@ def evaluate_image_with_vision(image_url: str, style_guide: str, expected_text: 
         "text_large_enough": <true/false>,
         "visual_text_consistent": <true/false>,
         "face_matches_reference": <true/false>,
+        "background_too_cluttered": <true/false>,
+        "has_overlay_text": <true/false>,
         "improved_prompt": "<if score < 8, a new detailed prompt fixing all issues>"
     }}
     """
     
     try:
-         response = client.models.generate_content(
-             model="gemini-2.5-pro",
-             contents=[
-                 types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"),
+         model = genai.GenerativeModel("gemini-2.0-flash")
+         response = model.generate_content(
+             [
+                 {"mime_type": "image/jpeg", "data": img_bytes},
                  system_prompt + "\n\n" + user_prompt
              ],
-             config=types.GenerateContentConfig(
-                 response_mime_type="application/json"
-             )
+             generation_config={"response_mime_type": "application/json"}
          )
          result = response.text
          evaluation = json.loads(result)
+         if isinstance(evaluation, list): evaluation = evaluation[0] if len(evaluation) > 0 else {}
          
          # Enforce hard rules
          if not evaluation.get("text_present", True):
@@ -311,6 +418,12 @@ def evaluate_image_with_vision(image_url: str, style_guide: str, expected_text: 
          if not evaluation.get("text_in_safe_zone", True):
              evaluation["score"] = min(evaluation.get("score", 0), 3)
              evaluation["critique"] = f"CRITICAL: Text outside 4:5 safe zone. {evaluation.get('critique', '')}"
+         if evaluation.get("background_too_cluttered", False):
+             evaluation["score"] = min(evaluation.get("score", 0), 5)
+             evaluation["critique"] = f"GRID CLUTTER: Too many background elements for Instagram grid thumbnail. {evaluation.get('critique', '')}"
+         if not evaluation.get("has_overlay_text", True):
+             evaluation["score"] = min(evaluation.get("score", 0), 3)
+             evaluation["critique"] = f"CRITICAL: No overlay text — in-scene text only is not sufficient. {evaluation.get('critique', '')}"
              
          return evaluation
     except Exception as e:
@@ -318,7 +431,7 @@ def evaluate_image_with_vision(image_url: str, style_guide: str, expected_text: 
          return {"score": 0, "critique": "Failed to parse evaluation", "improved_prompt": ""}
 
 
-def run_autonomous_generation(local_person_image_path: str, video_topic: str, main_text: str, output_path: str, max_retries: int = 2, variant_index: int = 1, script_text: str = "", scene_description: str = ""):
+def run_autonomous_generation(local_person_image_path: str, video_topic: str, main_text: str, output_path: str, max_retries: int = 2, variant_index: int = 1, script_text: str = "", scene_description: str = "", extra_cutout_paths: list = None):
     # Load style guide
     with open("rourke_style_guide.md", "r") as f:
          style_guide = f.read()
@@ -335,11 +448,21 @@ def run_autonomous_generation(local_person_image_path: str, video_topic: str, ma
     if not person_image_url:
         print("Aborting because ImgBB upload failed.")
         return False
+    
+    # 1b. Upload extra reference cutouts for stronger face identity locking
+    extra_ref_urls = []
+    if extra_cutout_paths:
+        for extra_path in extra_cutout_paths[:2]:  # Max 2 extra
+            if extra_path and os.path.exists(extra_path) and extra_path != local_person_image_path:
+                extra_url = upload_to_imgbb(extra_path)
+                if extra_url:
+                    extra_ref_urls.append(extra_url)
+        print(f"Uploaded {len(extra_ref_urls)} extra reference(s) for face identity reinforcement.")
         
     # Variant-specific instructions for visual diversity
     variant_instruction = ""
     if variant_index == 1:
-        variant_instruction = "A candid, unposed, in-the-moment cinematic shot. The subject should be engaged in an action related to the topic, wearing streetwear or a simple t-shirt/hoodie. Avoid looking directly at the camera. Use dramatic, single-source lighting (like screen glow, a campfire, or streetlamp). CLOSE-UP or MEDIUM SHOT (chest/waist up). Do NOT use a full-body wide shot."
+        variant_instruction = "A candid, unposed, in-the-moment cinematic shot. The subject should be engaged in an action related to the topic. Avoid looking directly at the camera. Use dramatic, single-source lighting (like screen glow, a campfire, or streetlamp). CLOSE-UP or MEDIUM SHOT (chest/waist up). Do NOT use a full-body wide shot."
     elif variant_index == 2:
         variant_instruction = "A selfie perspective or close-up environmental portrait. The subject is partially silhouette or illuminated by strong rim lighting (like sunset or neon signs behind them). Focus on a moody, contemplative atmosphere. Do not make it look like a corporate stock photo. MEDIUM SHOT (waist up). Do NOT use a full-body wide shot."
     else:
@@ -351,8 +474,15 @@ def run_autonomous_generation(local_person_image_path: str, video_topic: str, ma
         scene_context = f"The scene MUST visually match this description: {scene_description}. The visual action should directly reinforce the cover text '{main_text}'."
 
     current_prompt = (
+        f"CRITICAL FACE IDENTITY INSTRUCTION: The person in this image MUST have the EXACT SAME face, facial features, "
+        f"and identity as shown in the reference image(s). This is the MOST IMPORTANT requirement. "
+        f"The person's face shape, eyes, nose, mouth, jawline, skin tone, facial hair, and hair style must ALL match "
+        f"the reference photo EXACTLY. Do NOT generate a generic or different person. "
+        f"If in doubt, prioritize face accuracy over everything else. "
+        f"\n\n"
         f"A cinematic, highly authentic, and moody vertical photo for a social media cover (Instagram Reels). "
-        f"The subject must match the facial identity from the image reference. The subject MUST be wearing casual, everyday clothing (t-shirt, hoodie, streetwear). NO business suits. "
+        f"The subject must match the facial identity from the image reference — same person, same face, no substitutions. "
+        f"Choose the subject's clothing to match the video topic: for tech/casual/creative topics use streetwear, hoodie, or t-shirt; for business/finance/corporate topics use a smart casual outfit like a dark blazer, turtleneck, or dark button-down shirt; for motivational/luxury topics use a sleek, premium look. The clothing should feel natural and context-appropriate, never generic stock-photo style. "
         f"DO NOT make the subject look like a generic stock photo model. "
         f"{scene_context} "
         f"The video topic is: '{video_topic}'. "
@@ -360,13 +490,22 @@ def run_autonomous_generation(local_person_image_path: str, video_topic: str, ma
         f"Vibe: Candid, unposed, in-the-moment. Not looking directly at the camera smiling. Shot on 35mm film, grainy, realistic texture. "
         f"Colors: Cinematic grading, cool shadows with warm highlights. "
         f"\n\n"
+        f"BACKGROUND SIMPLICITY (CRITICAL — INSTAGRAM GRID RULE): "
+        f"The background must be SIMPLE and CLEAN with maximum 2-3 main visual elements total (including the person). "
+        f"This cover will be viewed as a tiny ~150px thumbnail on an Instagram profile grid alongside many other covers. "
+        f"Too many background elements create visual clutter and make the grid look messy. "
+        f"If background elements exist, apply depth-of-field blur/bokeh so the person stays sharp. "
+        f"Think BOLD and SIMPLE, not detailed and complex. Reference: 'ÜCRETSİZ MİLYON İZLEN' cover — dark background, one person, huge text. "
+        f"\n\n"
         f"TEXT INSTRUCTIONS (EXTREMELY IMPORTANT - FOLLOW EXACTLY): "
         f"The text MUST EXACTLY read: '{main_text}'. "
         f"The text language is TURKISH. Do NOT include any English words in the rendered text. "
         f"Write the text ONLY ONCE. Do NOT repeat or duplicate the text under any circumstances. "
         f"Text placement: Place the text in the VERTICAL CENTER or SLIGHTLY BELOW CENTER of the image. "
         f"The text MUST be within the Instagram 4:5 safe zone — do NOT place text in the top 15% or bottom 15% of the image. "
-        f"Text size: The text MUST be VERY LARGE — occupying at least 60-80% of the image width. "
+        f"Text size: The text MUST be EXTREMELY LARGE — at the scale of a MOVIE POSTER TITLE or BILLBOARD. "
+        f"Each line of text must cover 75-80% of the image width. Think BILLBOARD, not book cover. "
+        f"The text must be the DOMINANT visual element — readable even at 150px thumbnail size. "
         f"If the text has more than 7 characters total, split it into 2 lines for maximum readability. "
         f"Font: Bold, modern sans-serif, all-caps. High contrast with background (white text with dark shadow, or bright yellow). "
         f"\n\n"
@@ -382,7 +521,7 @@ def run_autonomous_generation(local_person_image_path: str, video_topic: str, ma
         print(f"Using Prompt (first 500 chars): {current_prompt[:500]}...\n")
         
         # 2. Generate Image
-        generated_image_url = generate_cover_with_nanobanana(person_image_url, current_prompt)
+        generated_image_url = generate_cover_with_nanobanana(person_image_url, current_prompt, extra_ref_urls=extra_ref_urls)
         
         if not generated_image_url:
             print("Generation failed. Skipping evaluation.")

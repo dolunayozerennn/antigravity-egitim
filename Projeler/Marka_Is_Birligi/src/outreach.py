@@ -17,14 +17,41 @@ MARKALAR_CSV = os.path.join(BASE_DIR, "data", "markalar.csv")
 # CSV sütunları
 CSV_FIELDNAMES = [
     "lead_id", "marka_adi", "instagram_handle", "website", "email",
-    "email_kaynagi", "sirket_aciklamasi", "mention_sayisi", "is_collab",
+    "email_kaynagi", "email_status", "email_contact_name", "email_contact_title",
+    "sirket_aciklamasi", "mention_sayisi", "is_collab",
     "kaynak_profiller", "outreach_status", "outreach_date",
     "outreach_message_id", "outreach_thread_id", "outreach_subject",
     "followup_status", "followup_date", "followup_message_id",
+    "followup2_status", "followup2_date", "followup2_message_id",
     "notlar", "kesfedilme_tarihi",
 ]
 
+DAILY_SEND_LIMIT = 20  # Günlük max email gönderim limiti
+
 TR_TZ = timezone(timedelta(hours=3))
+
+
+def ensure_csv_exists():
+    """data/ klasörünü ve markalar.csv'yi otomatik oluşturur.
+    
+    Railway'de her deploy sonrası dosya sistemi sıfırlanır.
+    Bu fonksiyon CSV yoksa boş header ile oluşturur,
+    böylece pipeline graceful çalışmaya devam eder.
+    """
+    data_dir = os.path.dirname(MARKALAR_CSV)
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir, exist_ok=True)
+        print(f"[OUTREACH] 📁 data/ klasörü oluşturuldu: {data_dir}")
+    
+    if not os.path.exists(MARKALAR_CSV):
+        with open(MARKALAR_CSV, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES)
+            writer.writeheader()
+        print(f"[OUTREACH] 📄 Boş markalar.csv oluşturuldu (header only)")
+
+
+# Modül yüklendiğinde otomatik çalıştır
+ensure_csv_exists()
 
 
 def _next_lead_id():
@@ -65,23 +92,31 @@ def add_brands_to_csv(enriched_brands):
     new_rows = []
 
     for brand in enriched_brands:
-        email = brand.get("best_email", brand.get("general_email", ""))
-        if not email:
-            continue
+        email = brand.get("best_email", "")
+        email_status = brand.get("email_status", "not_found")
 
         lead_id = _next_lead_id()
+        # Email durumuna göre outreach status belirle
+        if email and email_status == "verified":
+            outreach_status = "New"
+        else:
+            outreach_status = "No_Email"
+
         row = {
             "lead_id": lead_id,
             "marka_adi": brand.get("marka_adi", ""),
             "instagram_handle": brand.get("instagram_handle", ""),
             "website": brand.get("website", ""),
             "email": email,
-            "email_kaynagi": "hunter" if brand.get("personal_emails") else "scrape",
+            "email_kaynagi": brand.get("email_source", ""),
+            "email_status": email_status,
+            "email_contact_name": brand.get("email_contact_name", ""),
+            "email_contact_title": brand.get("email_contact_title", ""),
             "sirket_aciklamasi": brand.get("sirket_aciklamasi", ""),
             "mention_sayisi": brand.get("mention_sayisi", 0),
             "is_collab": "Evet" if brand.get("is_collab") else "Hayır",
             "kaynak_profiller": ", ".join(brand.get("kaynak_profiller", [])),
-            "outreach_status": "New",
+            "outreach_status": outreach_status,
             "outreach_date": "",
             "outreach_message_id": "",
             "outreach_thread_id": "",
@@ -89,7 +124,10 @@ def add_brands_to_csv(enriched_brands):
             "followup_status": "",
             "followup_date": "",
             "followup_message_id": "",
-            "notlar": "",
+            "followup2_status": "",
+            "followup2_date": "",
+            "followup2_message_id": "",
+            "notlar": f"Email bulunamadı ({email_status})" if not email else "",
             "kesfedilme_tarihi": now,
         }
         new_rows.append(row)
@@ -146,19 +184,27 @@ def send_outreach_emails(dry_run=False):
 
     if not pending:
         print("[OUTREACH] Gönderilecek yeni marka yok.")
-        return {"sent": 0, "failed": 0, "skipped": 0}
+        return {"sent": 0, "failed": 0, "skipped": 0, "queued": 0}
+
+    # Günlük gönderim limiti uygula
+    if len(pending) > DAILY_SEND_LIMIT:
+        queued_count = len(pending) - DAILY_SEND_LIMIT
+        print(f"  ⚠️ {len(pending)} marka var ama günlük limit {DAILY_SEND_LIMIT}. {queued_count} marka 'Queued' olarak bekletiliyor.")
+        pending = pending[:DAILY_SEND_LIMIT]
+    else:
+        queued_count = 0
 
     print(f"\n{'='*60}")
-    print(f"📧 {len(pending)} markaya outreach gönderiliyor...")
+    print(f"📧 {len(pending)} markaya outreach gönderiliyor (limit: {DAILY_SEND_LIMIT}/gün)...")
     print(f"{'='*60}")
 
     if dry_run:
         for p in pending:
             print(f"  [DRY-RUN] {p['marka_adi']} → {p['email']}")
-        return {"sent": 0, "failed": 0, "skipped": len(pending)}
+        return {"sent": 0, "failed": 0, "skipped": len(pending), "queued": queued_count}
 
     service = get_service()
-    stats = {"sent": 0, "failed": 0, "skipped": 0}
+    stats = {"sent": 0, "failed": 0, "skipped": 0, "queued": queued_count}
     now = datetime.now(TR_TZ).strftime("%Y-%m-%d %H:%M")
 
     for brand_row in pending:

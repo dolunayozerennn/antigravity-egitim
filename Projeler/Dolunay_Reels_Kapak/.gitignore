@@ -12,6 +12,13 @@ __pycache__/
 # Outputs (kullanıcının kendi kişisel görselleri)
 outputs/
 ham-dolunay-fotolari/
+feedback/begendigim/
+feedback/begenmediklerim/
+
+# Assets kalıcı olarak Git'te tutulmalı
+!assets/
+!assets/cutouts/
+!assets/cutouts/*
 
 # macOS
 .DS_Store
@@ -19,3 +26,5 @@ ham-dolunay-fotolari/
 # Logs
 run.log
 *.log
+cutout_temp.png
+.myenv/

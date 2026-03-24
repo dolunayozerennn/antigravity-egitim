@@ -8,6 +8,7 @@ email metinleri üretir.
 
 import json
 import os
+import re
 import requests
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,6 +28,49 @@ DOLUNAY_PROFILE = {
         {"brand": "Aithor", "views": "2M", "url": "https://www.instagram.com/reel/DKHLswaK4Tj/"},
     ],
 }
+
+# ── Profesyonel Email Signature ────────────────────────────────────────────
+EMAIL_SIGNATURE_TEXT = """
+—
+Dolunay Özeren
+AI Content Creator | 100M+ Organic Views
+📧 dolunay@dolunay.ai
+🌐 dolunay.ai
+📸 instagram.com/dolunay_ozeren
+▶️ youtube.com/@dolunayozeren
+🎵 tiktok.com/@dolunayozeren
+"""
+
+EMAIL_SIGNATURE_HTML = """
+<br><br>
+<table cellpadding="0" cellspacing="0" style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #555555; border-top: 2px solid #7c3aed; padding-top: 12px; margin-top: 20px;">
+  <tr>
+    <td style="padding-bottom: 8px;">
+      <strong style="font-size: 15px; color: #1a1a1a;">Dolunay Özeren</strong><br>
+      <span style="color: #7c3aed; font-size: 12px;">AI Content Creator | 100M+ Organic Views</span>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding-bottom: 6px; font-size: 12px; color: #888;">
+      📧 <a href="mailto:dolunay@dolunay.ai" style="color: #7c3aed; text-decoration: none;">dolunay@dolunay.ai</a>
+      &nbsp;·&nbsp;
+      🌐 <a href="https://dolunay.ai" style="color: #7c3aed; text-decoration: none;">dolunay.ai</a>
+    </td>
+  </tr>
+  <tr>
+    <td style="font-size: 12px;">
+      <a href="https://instagram.com/dolunay_ozeren" style="color: #E1306C; text-decoration: none; margin-right: 8px;">Instagram</a>
+      <a href="https://youtube.com/@dolunayozeren" style="color: #FF0000; text-decoration: none; margin-right: 8px;">YouTube</a>
+      <a href="https://tiktok.com/@dolunayozeren" style="color: #00f2ea; text-decoration: none; margin-right: 8px;">TikTok</a>
+      <a href="https://linkedin.com/in/dolunayozeren" style="color: #0077B5; text-decoration: none;">LinkedIn</a>
+    </td>
+  </tr>
+</table>
+"""
+
+# Fallback kullanım istatistikleri
+_fallback_count = 0
+_total_generated = 0
 
 
 def _get_openai_key():
@@ -136,19 +180,59 @@ Dolunay's profile:
 
 Write a personalized email that references what {brand_name} does specifically."""
 
+    global _total_generated, _fallback_count
+    _total_generated += 1
+
     result = _call_openai(prompt, OUTREACH_SYSTEM_PROMPT)
     
     if result:
-        try:
-            # JSON parse
-            parsed = json.loads(result)
+        parsed = _safe_parse_json(result)
+        if parsed and "subject" in parsed:
+            # Signature ekle
+            parsed = _append_signature(parsed)
             return parsed
-        except json.JSONDecodeError:
-            # JSON parse başarısız — raw text olarak kullan
-            pass
 
     # Fallback template
+    _fallback_count += 1
+    print(f"  ⚠️ GPT parse başarısız, fallback kullanılıyor ({_fallback_count}/{_total_generated} toplam fallback)")
     return _fallback_outreach(brand_name, handle)
+
+
+def _safe_parse_json(text):
+    """GPT çıktısından JSON parse etmeyi dener, regex fallback ile."""
+    # 1. Direk parse
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # 2. ```json ... ``` bloğunu çıkar
+    match = re.search(r'```(?:json)?\s*\n?(\{.*?\})\s*```', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # 3. İlk { ... } bloğunu bul
+    match = re.search(r'(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    return None
+
+
+def _append_signature(email_dict):
+    """Email dict'ine profesyonel signature ekler."""
+    if "body_text" in email_dict:
+        # "Best, Dolunay" gibi kapatışları temizle ve signature ekle
+        email_dict["body_text"] = email_dict["body_text"].rstrip() + EMAIL_SIGNATURE_TEXT
+    if "body_html" in email_dict:
+        email_dict["body_html"] = email_dict["body_html"].rstrip() + EMAIL_SIGNATURE_HTML
+    return email_dict
 
 
 def _fallback_outreach(brand_name, handle):
@@ -164,29 +248,17 @@ def _fallback_outreach(brand_name, handle):
 
 I'm Dolunay, a content creator focused on AI, tech, and digital tools. My content has reached over 100 million organic views in Turkey.
 
-My profiles:
-- Instagram: {DOLUNAY_PROFILE['instagram']}
-- TikTok: {DOLUNAY_PROFILE['tiktok']}
-- YouTube: {DOLUNAY_PROFILE['youtube']}
-
 Recent results:
 {results}
 
 I've been following @{handle} and I have a viral campaign idea that could make {brand_name} stand out in the Turkish market.
 
 If you're interested, just reply and I'll share the concept.
-
-Best,
-Dolunay"""
+{EMAIL_SIGNATURE_TEXT}"""
 
     body_html = f"""<p>Hi {brand_name} team,</p>
 
 <p>I'm <strong>Dolunay</strong>, a content creator focused on AI, tech, and digital tools. My content has reached over <strong>100 million organic views</strong> in Turkey.</p>
-
-<p>My profiles:<br>
-• <a href="{DOLUNAY_PROFILE['instagram']}">Instagram</a> | 
-<a href="{DOLUNAY_PROFILE['tiktok']}">TikTok</a> | 
-<a href="{DOLUNAY_PROFILE['youtube']}">YouTube</a></p>
 
 <p>Recent results:</p>
 <ul>
@@ -196,8 +268,7 @@ Dolunay"""
 <p>I've been following @{handle} and I have a viral campaign idea that could make <strong>{brand_name}</strong> stand out in the Turkish market.</p>
 
 <p>If you're interested, just reply and I'll share the concept.</p>
-
-<p>Best,<br>Dolunay</p>"""
+{EMAIL_SIGNATURE_HTML}"""
 
     return {"subject": subject, "body_text": body_text, "body_html": body_html}
 
@@ -261,11 +332,10 @@ Write a short, specific follow-up that gives them a reason to reply NOW."""
     result = _call_openai(prompt, FOLLOWUP_SYSTEM_PROMPT)
 
     if result:
-        try:
-            parsed = json.loads(result)
+        parsed = _safe_parse_json(result)
+        if parsed and "body_text" in parsed:
+            parsed = _append_signature(parsed)
             return parsed
-        except json.JSONDecodeError:
-            pass
 
     # Fallback follow-up
     return _fallback_followup(brand_name)
@@ -278,17 +348,14 @@ def _fallback_followup(brand_name):
 Quick follow-up on my previous email — I just wrapped up a successful campaign with Syntx that generated great engagement from the Turkish AI community.
 
 I'd love to create something similar for {brand_name}. Would you be open to a quick chat this week?
-
-Best,
-Dolunay"""
+{EMAIL_SIGNATURE_TEXT}"""
 
     body_html = f"""<p>Hi again,</p>
 
 <p>Quick follow-up on my previous email — I just wrapped up a successful campaign with <strong>Syntx</strong> that generated great engagement from the Turkish AI community.</p>
 
 <p>I'd love to create something similar for <strong>{brand_name}</strong>. Would you be open to a quick chat this week?</p>
-
-<p>Best,<br>Dolunay</p>"""
+{EMAIL_SIGNATURE_HTML}"""
 
     return {"body_text": body_text, "body_html": body_html}
 
@@ -310,7 +377,7 @@ def research_brand_for_followup(brand_info, apify_token=None):
     context = {"recent_posts": [], "website_summary": ""}
 
     if not apify_token:
-        apify_token = os.environ.get("APIFY_TOKEN")
+        apify_token = os.environ.get("APIFY_API_KEY")
 
     # 1. Son Instagram paylaşımlarını çek
     if handle and apify_token:
