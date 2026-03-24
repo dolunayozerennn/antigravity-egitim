@@ -98,12 +98,8 @@ Ham Veri:
 
     except Exception as e:
         logger.error(f"❌ LLM Bulk Veri temizleme hatası: {e}")
-        # Sistem çökmesin diye raw formata dön
-        fallback_list = []
-        for raw_row in raw_data_list:
-            fallback_list.append({
-                "clean_name": "", "clean_phone": "", "clean_email": "",
-                "clean_budget": "", "clean_timing": "", "raw": raw_row
-            })
-        return fallback_list
-
+        # ⚠️ GÜVENLIK: LLM çalışmazsa BOŞ DÖNDER — aksi halde boş alanlarla
+        # duplikasyon kontrolü çalışmaz ve her 10 dakikada aynı lead'ler
+        # "İsimsiz Lead" olarak Notion'a tekrar tekrar eklenir (spam loop).
+        logger.error("🚨 LLM Parsing tamamen başarısız! Hiçbir lead işlenmeyecek. GROQ_API_KEY kontrol edin!")
+        return []

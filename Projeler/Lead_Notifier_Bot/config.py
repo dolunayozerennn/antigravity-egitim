@@ -24,9 +24,9 @@ class Config:
             {"name": name.strip()} for name in _sheet_tabs_env.split(",") if name.strip()
         ]
     else:
-        # Default: "Sayfa1" (Genelde ilk tab)
+        # Default: "Sheet1" (Genelde ilk tab)
         SHEET_TABS = [
-            {"name": "Sayfa1"}
+            {"name": "Sheet1"}
         ]
 
     # Polling (dakika olarak değil, saniye olarak)
@@ -34,8 +34,7 @@ class Config:
 
     # Bildirim E-posta Ayarları
     NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "savasgocgen@gmail.com")
-    SMTP_USER = os.environ.get("SMTP_USER", "")  # Gmail adresi (Gönderen)
-    SMTP_APP_PASSWORD = os.environ.get("SMTP_APP_PASSWORD", "")  # Gmail App Password
+    SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "ozerendolunay@gmail.com")
 
     # Telegram Bot Ayarları
     TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8512953517:AAG_9RiEuLLvyvQV3385xNxiCR4dBNTtD4Y")
