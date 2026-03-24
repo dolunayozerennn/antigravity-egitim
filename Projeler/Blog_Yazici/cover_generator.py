@@ -173,7 +173,8 @@ def upload_to_imgbb(image_path: str) -> str:
 
     resp = requests.post(
         "https://api.imgbb.com/1/upload",
-        data={"key": IMGBB_API_KEY, "image": encoded}
+        data={"key": IMGBB_API_KEY, "image": encoded},
+        timeout=30
     )
     if resp.status_code == 200:
         url = resp.json()["data"]["url"]
@@ -217,7 +218,7 @@ def generate_landscape_cover(reference_url: str, blog_title: str) -> str:
     }
 
     print(f"  🎨 Kie AI'a gönderiliyor (Nano Banana 2, 16:9)...")
-    resp = requests.post("https://api.kie.ai/api/v1/jobs/createTask", headers=headers, json=payload)
+    resp = requests.post("https://api.kie.ai/api/v1/jobs/createTask", headers=headers, json=payload, timeout=30)
     if resp.status_code != 200:
         print(f"  ❌ Task oluşturulamadı: {resp.text[:200]}")
         return None
@@ -239,7 +240,7 @@ def generate_landscape_cover(reference_url: str, blog_title: str) -> str:
         elapsed += 10
 
         try:
-            poll_resp = requests.get(poll_url, headers=headers)
+            poll_resp = requests.get(poll_url, headers=headers, timeout=30)
             if poll_resp.status_code != 200:
                 continue
 

@@ -62,6 +62,7 @@ class GitHubPublisher:
         resp = requests.get(
             f"{self.api_base}/git/ref/heads/{GITHUB_BRANCH}",
             headers=self.headers,
+            timeout=30,
         )
         resp.raise_for_status()
         return resp.json()["object"]["sha"]
@@ -71,6 +72,7 @@ class GitHubPublisher:
         resp = requests.get(
             f"{self.api_base}/git/commits/{commit_sha}",
             headers=self.headers,
+            timeout=30,
         )
         resp.raise_for_status()
         return resp.json()["tree"]["sha"]
@@ -81,6 +83,7 @@ class GitHubPublisher:
             f"{self.api_base}/git/blobs",
             headers=self.headers,
             json={"content": content, "encoding": encoding},
+            timeout=30,
         )
         resp.raise_for_status()
         return resp.json()["sha"]
@@ -91,6 +94,7 @@ class GitHubPublisher:
             f"{self.api_base}/git/trees",
             headers=self.headers,
             json={"base_tree": base_tree_sha, "tree": tree_items},
+            timeout=30,
         )
         resp.raise_for_status()
         return resp.json()["sha"]
@@ -105,6 +109,7 @@ class GitHubPublisher:
                 "tree": tree_sha,
                 "parents": [parent_sha],
             },
+            timeout=30,
         )
         resp.raise_for_status()
         return resp.json()["sha"]
@@ -115,6 +120,7 @@ class GitHubPublisher:
             f"{self.api_base}/git/refs/heads/{GITHUB_BRANCH}",
             headers=self.headers,
             json={"sha": commit_sha},
+            timeout=30,
         )
         resp.raise_for_status()
         return True

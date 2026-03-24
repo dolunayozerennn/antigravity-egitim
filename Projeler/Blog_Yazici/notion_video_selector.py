@@ -108,7 +108,7 @@ class NotionClient:
         all_results = []
         has_more = True
         while has_more:
-            resp = requests.post(url, headers=self.headers, json=payload)
+            resp = requests.post(url, headers=self.headers, json=payload, timeout=30)
             if resp.status_code != 200:
                 log.error(f"Notion API hatası: {resp.status_code} — {resp.text[:300]}")
                 return all_results
