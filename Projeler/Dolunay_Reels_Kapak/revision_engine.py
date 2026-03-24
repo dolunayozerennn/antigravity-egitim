@@ -31,10 +31,11 @@ from autonomous_cover_agent import (
 )
 from drive_service import upload_cover_to_drive
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
 
 try:
-    genai.configure(api_key=GEMINI_API_KEY)
+    client = genai.Client(api_key=GEMINI_API_KEY)
     _gemini_ready = True
 except Exception as e:
     print(f"Warning: Failed to initialize Gemini: {e}")
@@ -99,10 +100,11 @@ def analyze_existing_cover(image_path: str) -> str:
         Be VERY SPECIFIC — I will use this description to recreate the same image with only small changes.
         Return as a structured description, not JSON."""
         
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(
-            [
-                {"mime_type": "image/png", "data": img_bytes},
+        image_part = genai_types.Part.from_bytes(data=img_bytes, mime_type="image/png")
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[
+                image_part,
                 prompt
             ]
         )
@@ -162,8 +164,10 @@ IMPORTANT RULES:
 
 Return ONLY the prompt text, nothing else."""
 
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(meta_prompt)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=meta_prompt
+        )
         
         prompt = response.text.strip()
         

@@ -4,10 +4,8 @@
 | Alan | Değer |
 |------|-------|
 | **Platform** | railway-cron |
-| **Start Command 1** | `python worker.py` (Kapak üretimi) |
-| **Start Command 2** | `python revision_cron_worker.py` (Revizyon kontrolü) |
-| **Cron 1** | `0 6,12,18 * * *` |
-| **Cron 2** | `0 7,10,13,16,19 * * *` |
+| **Start Command** | `python unified_worker.py` (Kapak üretimi + Revizyon) |
+| **Cron** | `0 6,14,22 * * *` (Günde 3 kez) |
 | **Root Directory** | `Projeler/Dolunay_Reels_Kapak` |
 | **GitHub Repo** | `dolunayozerennn/antigravity-egitim` (mono-repo) |
 
@@ -20,10 +18,10 @@
 | `OPENAI_API_KEY` | master.env | Revizyon değerlendirmesi için |
 
 ## Dosya Yapısı (kısa)
-- `worker.py` → Yeni kapak üretimi tetikleyici (Cron)
-- `revision_cron_worker.py` → YouTube/Reels DB'den feedback kontrol eden cron
-- `autonomous_cover_agent.py` → Kie Workflow tetikleme ana motoru
-- `revision_engine.py` → Verilen feedback'leri algılayıp yeni prompt üretir
+- `unified_worker.py` → Konsolide edilmiş ana cron (Kapak üretimi + Revizyon)
+- `check_revisions_job.py` → Revizyon işlerini yöneten modül
+- `autonomous_cover_agent.py` → Kie Workflow tetikleme ana motoru (Timeout vs eklendi)
+- `revision_engine.py` → Feedback'leri algılayıp yeni prompt üretir (google-generativeai SDK)
 - `notion_service.py` → Notion'dan meta dataları çeker
 - `composition_engine.py` → Multi-theme kapak varyasyonlarını yönetir.
 
@@ -32,5 +30,5 @@
 - Tüm Drive ve Notion JSON tokenları env var üstünden çekilir.
 
 ## Son Doğrulama
-- **Tarih:** 2026-03-23
-- **Durum:** ✅ Çalışıyor
+- **Tarih:** 2026-03-24
+- **Durum:** ✅ Stabilized & Fully Operational (7/7 bug fix, dependencies optimized, timeouts added)

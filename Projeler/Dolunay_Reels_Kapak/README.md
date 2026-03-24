@@ -82,15 +82,16 @@ Aşağıdaki dosyalar ana pipeline'ın parçası **değildir**. Ad-hoc kullanım
 ## 🏗️ Deployment
 
 - **Platform:** Railway (Native Cron Job)
-- **GitHub Repo:** `dolunayozerennn/dolunay-reels-kapak`
-- **Servis 1 (Ana Kapak Üretimi):** `python worker.py` (Zamanlama: `0 6,12,18 * * *` — Günde 3 kere)
-- **Servis 2 (Revizyon Kontrolü):** `python revision_cron_worker.py` (Zamanlama: `0 7,10,13,16,19 * * *` — Günde 5 kere)
-- **Restart Policy:** `NEVER` (Sistem tamamen durmalı, işlemi biten cron kapanmalıdır)
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (mono-repo)
+- **Servis (Unified Worker):** `python unified_worker.py` (Kapak ve Revizyon bir arada)
+- **Zamanlama:** `0 6,14,22 * * *` — Günde 3 kere (Maliyet optimizasyonu)
+- **Restart Policy:** `NEVER` (İşlemi biten cron başarı/hata kodu ile kapanır)
 
-*Önceki `while True` döngüsü bazlı 7/24 çalışan model maliyet optimizasyonu adına Railway'in Cron Job mimarisine geçirilmiştir.*
+*Önceki 8 kez çalışan multi-cron model maliyet optimizasyonu adına Railway'in Cron Job mimarisinde tekil bir script (unified_worker) altında birleştirilmiştir.*
 
 ## 📋 Versiyon Geçmişi
 
 - **v1:** Tek tema, 3 varyasyon
 - **v2:** Autonomous agent + Drive entegrasyonu
-- **v3 (Güncel):** Multi-theme (3 tema × 2 varyasyon), revision engine, batch processing
+- **v3:** Multi-theme (3 tema × 2 varyasyon), revision engine, batch processing
+- **v4 (Güncel):** Unified worker (cron), production-grade error handling, timeouts & cost optimization

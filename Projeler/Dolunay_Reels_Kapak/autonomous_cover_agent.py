@@ -4,7 +4,8 @@ import base64
 import requests
 import json
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
 
 load_dotenv()
 # master.env sadece lokal ortamda mevcut, Railway'de env variables direkt set edilir
@@ -17,8 +18,7 @@ IMGBB_API_KEY = os.getenv("IMGBB_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 try:
-    genai.configure(api_key=GEMINI_API_KEY)
-    client = True
+    client = genai.Client(api_key=GEMINI_API_KEY)
 except Exception as e:
     print(f"Warning: Failed to initialize Gemini Client: {e}")
     client = None
@@ -192,10 +192,10 @@ def generate_cover_text_and_scene(video_name: str, script_text: str) -> dict:
     }}
     """
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config={"response_mime_type": "application/json"}
         )
         result = json.loads(response.text)
         if isinstance(result, list): result = result[0] if len(result) > 0 else {}
@@ -211,10 +211,10 @@ def generate_cover_text_and_scene(video_name: str, script_text: str) -> dict:
             Generate a COMPLETELY DIFFERENT cover text that focuses on the VIDEO'S VALUE PROPOSITION from the script.
             Script: \"{script_text[:500]}\"
             Return JSON: {{"cover_text": "...", "scene_description": "..."}}"""
-            model = genai.GenerativeModel("gemini-2.0-flash")
-            retry_response = model.generate_content(
-                retry_prompt,
-                generation_config={"response_mime_type": "application/json"}
+            retry_response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=retry_prompt,
+                config={"response_mime_type": "application/json"}
             )
             result = json.loads(retry_response.text)
             if isinstance(result, list): result = result[0] if len(result) > 0 else {}
@@ -298,10 +298,10 @@ def generate_three_themes(video_name: str, script_text: str) -> list:
     ]
     """
     try:
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config={"response_mime_type": "application/json"}
         )
         raw = response.text.replace("```json", "").replace("```", "").strip()
         parsed = json.loads(raw)
@@ -405,13 +405,14 @@ def evaluate_image_with_vision(image_url: str, style_guide: str, expected_text: 
     """
     
     try:
-         model = genai.GenerativeModel("gemini-2.0-flash")
-         response = model.generate_content(
-             [
-                 {"mime_type": "image/jpeg", "data": img_bytes},
+         image_part = genai_types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg")
+         response = client.models.generate_content(
+             model="gemini-2.0-flash",
+             contents=[
+                 image_part,
                  system_prompt + "\n\n" + user_prompt
              ],
-             generation_config={"response_mime_type": "application/json"}
+             config={"response_mime_type": "application/json"}
          )
          result = response.text
          evaluation = json.loads(result)
