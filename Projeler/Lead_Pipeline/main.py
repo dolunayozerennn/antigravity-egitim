@@ -36,10 +36,9 @@ logging.basicConfig(
 logger = logging.getLogger("lead_pipeline")
 
 
-def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter) -> list[dict]:
+def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
     """
     CRM Pipeline: Sheets → Temizle → Notion'a yaz.
-    Returns: Oluşturulan yeni lead'lerin raw data listesi (bildirim için).
     """
     logger.info("═══ CRM Pipeline başlatılıyor ═══")
 
@@ -83,7 +82,6 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter) -> list[dic
         existing_phones, existing_emails, existing_names = set(), set(), set()
 
     # Lead'leri Notion'a ekle
-    created_leads = []
     stats = {"created": 0, "skipped": 0, "error": 0}
 
     for cleaned in cleaned_leads:
@@ -110,7 +108,6 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter) -> list[dic
             stats[action] = stats.get(action, 0) + 1
 
             if action == "created":
-                created_leads.append(cleaned["raw"])
                 # Yeni numaraları/emailleri cache'e ekle (sonraki dup kontrolü için)
                 if cleaned["clean_phone"]:
                     existing_phones.add(cleaned["clean_phone"])
@@ -127,26 +124,16 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter) -> list[dic
     )
 
     crm_reader.confirm_processed()
-    return created_leads
 
 
-def run_notifier_pipeline(notifier_reader: SheetsReader, crm_created_leads: list[dict]):
+def run_notifier_pipeline(notifier_reader: SheetsReader):
     """
     Notifier Pipeline: Sheets → Bildirim gönder.
-    + CRM'den yeni oluşturulan lead'ler için de bildirim gönderir.
+    Sadece Notifier tablosundaki lead'leri bildirir.
     """
     logger.info("═══ Notifier Pipeline başlatılıyor ═══")
 
-    # 1. CRM'den oluşturulan lead'ler için bildirim
-    if crm_created_leads:
-        logger.info(f"📣 CRM'den {len(crm_created_leads)} yeni lead için bildirim gönderiliyor...")
-        for lead_data in crm_created_leads:
-            try:
-                process_and_notify(lead_data)
-            except Exception as e:
-                logger.error(f"❌ CRM lead bildirimi hatası: {e}")
-
-    # 2. Notifier Sheets'ten yeni lead'leri oku ve bildir
+    # Notifier Sheets'ten yeni lead'leri oku ve bildir
     try:
         new_rows = notifier_reader.poll_all_tabs()
     except Exception as e:
@@ -217,10 +204,10 @@ def main():
     # Pipeline çalıştır
     try:
         # Adım 1: CRM Pipeline (Sheets → Notion)
-        crm_created_leads = run_crm_pipeline(crm_reader, notion)
+        run_crm_pipeline(crm_reader, notion)
 
         # Adım 2: Notifier Pipeline (Sheets → Telegram + Email)
-        run_notifier_pipeline(notifier_reader, crm_created_leads)
+        run_notifier_pipeline(notifier_reader)
 
     except Exception as e:
         logger.error(f"❌ Pipeline hatası: {e}", exc_info=True)
