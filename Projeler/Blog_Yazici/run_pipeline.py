@@ -18,6 +18,7 @@ import sys
 import subprocess
 import argparse
 import json
+import requests
 from pathlib import Path
 from datetime import datetime
 
@@ -73,9 +74,46 @@ def find_best_video(download_dir: str):
     return best[0]
 
 
+def update_notion_status(page_id: str, new_status: str = "Blog Yazıldı"):
+    """Blog yayınlandıktan sonra Notion'daki video status'ünü güncelle.
+    
+    Bu sayede notion_video_selector.py bir sonraki çalıştırmada
+    bu videoyu tekrar seçmez (Status != 'Yayınlandı').
+    """
+    try:
+        if str(SCRIPT_DIR) not in sys.path:
+            sys.path.insert(0, str(SCRIPT_DIR))
+        from env_loader import get_env
+        token = get_env("NOTION_SOCIAL_TOKEN")
+        if not token:
+            print("  ⚠️ NOTION_SOCIAL_TOKEN bulunamadı — status güncellenemedi")
+            return False
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json",
+        }
+        resp = requests.patch(
+            f"https://api.notion.com/v1/pages/{page_id}",
+            headers=headers,
+            json={"properties": {"Status": {"select": {"name": new_status}}}},
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            print(f"  ✅ Notion status güncellendi: '{new_status}'")
+            return True
+        else:
+            print(f"  ⚠️ Notion status güncellenemedi ({resp.status_code}): {resp.text[:200]}")
+            return False
+    except Exception as e:
+        print(f"  ⚠️ Notion status update hatası: {e}")
+        return False
+
+
 def mark_as_processed(video_info: dict, blog_path: str):
-    """Video'yu processed listesine ekle."""
-    processed_path = SCRIPT_DIR / "processed_videos.json"
+    """Video'yu processed listesine ekle (ikincil güvenlik — Notion status asıl korumadır)."""
+    processed_path = Path("/tmp") / "processed_videos.json"
     try:
         if processed_path.exists():
             data = json.loads(processed_path.read_text(encoding="utf-8"))
@@ -296,6 +334,9 @@ def run_from_notion(args):
         print(f"  URL         : https://dolunay.ai/blog/{slug}")
     print(f"  Klasör      : {video_dir}")
     mark_as_processed(video_info, format_result['mdx_path'])
+
+    # Notion status'ünü güncelle — aynı videonun tekrar bloglanmasını önle
+    update_notion_status(video_info["page_id"], "Blog Yazıldı")
 
 
 # ══════════════════════════════════════════════════════════════

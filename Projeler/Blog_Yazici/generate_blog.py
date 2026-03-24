@@ -102,7 +102,7 @@ SADECE blog yazısını ver, başka bir şey ekleme. Markdown formatında yaz.""
     url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
     
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response = requests.post(url, headers=headers, json=payload, timeout=120)
         response.raise_for_status()
         result = response.json()
         
