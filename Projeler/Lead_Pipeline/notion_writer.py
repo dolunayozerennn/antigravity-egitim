@@ -167,10 +167,19 @@ class NotionWriter:
         return False, ""
 
     def create_lead(self, cleaned_data: dict) -> dict:
+        # ── SON SAVUNMA HATTI: İsim boşsa ASLA Notion'a yazma ──
+        name = (cleaned_data.get("clean_name") or "").strip()
+        if not name:
+            logger.error(
+                "🚫 create_lead REDDEDILDI: İsim boş. Notion'a 'İsimsiz Lead' yazılmayacak! "
+                f"Raw: {cleaned_data.get('raw', {})}"
+            )
+            return {"id": None, "error": "İsim boş — yazım reddedildi"}
+
         url = f"{NOTION_API_URL}/pages"
 
         properties = {
-            "İsim": {"title": [{"text": {"content": cleaned_data["clean_name"] or "İsimsiz Lead"}}]},
+            "İsim": {"title": [{"text": {"content": name}}]},
             "Durum": {"status": {"name": "Aranacak"}},
             "Komisyon": {"select": {"name": "Ödenmedi"}},
         }

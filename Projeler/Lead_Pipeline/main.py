@@ -68,6 +68,39 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
         crm_reader.confirm_processed()
         return []
 
+    # ── İSİM + İLETİŞİM VALİDASYONU ──────────────────────────
+    # İsmi boş olan veya hiç iletişim bilgisi olmayan lead'leri filtrele.
+    # Bu kontrol olmazsa "İsimsiz Lead" olarak Notion'a spam eklenir.
+    valid_leads = []
+    skipped_empty = 0
+    for lead in cleaned_leads:
+        has_name = bool(lead.get("clean_name", "").strip())
+        has_phone = bool(lead.get("clean_phone", "").strip())
+        has_email = bool(lead.get("clean_email", "").strip())
+
+        if not has_name and not has_phone and not has_email:
+            skipped_empty += 1
+            continue
+        if not has_name:
+            # İsim yok ama telefon/email var — yine de atla,
+            # çünkü CRM'de isimsiz kayıt istemiyoruz.
+            skipped_empty += 1
+            logger.warning(
+                f"⚠️ İsim boş — lead atlandı. Tel: {lead.get('clean_phone')}, "
+                f"Email: {lead.get('clean_email')}"
+            )
+            continue
+        valid_leads.append(lead)
+
+    if skipped_empty:
+        logger.info(f"🚫 {skipped_empty} lead isim/iletişim eksikliği nedeniyle atlandı")
+
+    cleaned_leads = valid_leads
+    if not cleaned_leads:
+        logger.info("📭 CRM: Validasyondan geçen lead kalmadı")
+        crm_reader.confirm_processed()
+        return []
+
     # Toplu (bulk) duplikasyon kontrolü — API çağrılarını azaltır
     try:
         existing_phones, existing_emails, existing_names = notion.bulk_check_duplicates(cleaned_leads)
@@ -189,7 +222,7 @@ def main():
         spreadsheet_id=Config.CRM_SPREADSHEET_ID,
         sheet_tabs=Config.CRM_SHEET_TABS,
         reader_name="crm",
-        use_state_tab=False
+        use_state_tab=True
     )
 
     notifier_reader = SheetsReader(
