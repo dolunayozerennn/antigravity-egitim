@@ -29,6 +29,7 @@ Aşağıdaki yapılandırmalar `master.env` dosyasından veya canlı ortamda ise
 2. Botun lokal ortamda hatasız çalışıp çalışmadığını tek bir deneme döngüsü ile doğrulamak için `python main.py --once` çalıştırın.
 3. Bot 5 dakikada bir veri tarar otonom moda almak için: `python main.py` yazın.
 
+**☁️ Railway Deploy Notu:** 
 Projenin deployment'ı `antigravity-egitim` (ana repo) üzerinden sağlanır. Railway üzerinde Root Directory olarak `Projeler/Lead_Notifier_Bot` seçilmiştir ve `python main.py` start komutuyla 7/24 çalışmaktadır. Herhangi kod güncellemesi atıldığında `/canli-yayina-al` veya sadece commit sayesinde otonom deploy tetiklenir.
 
 ## 🛡️ Stabilizasyon ve Hata Giderme (2026-03-25)
