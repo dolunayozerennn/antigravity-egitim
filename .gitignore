@@ -126,3 +126,6 @@ _skills/fatura-olusturucu/*.ttf
 
 # Lead Pipeline state files
 Projeler/Lead_Pipeline/.state_*.json
+
+# Lead Notifier state files
+Projeler/Lead_Notifier_Bot/.last_row_counts.json

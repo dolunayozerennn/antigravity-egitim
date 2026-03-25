@@ -60,6 +60,7 @@ def run_cycle(reader: SheetsReader) -> dict:
     logger.info(f"📥 {len(new_rows)} yeni satır bulundu, bildiriliyor...")
 
     # 2. Her yeni satır için bildirim yolla
+    have_errors = False
     for row in new_rows:
         try:
             process_and_notify(row)
@@ -67,9 +68,15 @@ def run_cycle(reader: SheetsReader) -> dict:
         except Exception as e:
             logger.error(f"❌ Lead işlenirken/bildirilirken hata oldu: {e}")
             stats["errors"] += 1
+            have_errors = True
 
-    # Hepsi başarı ile bildirilince durumu kalıcı yap
-    reader.confirm_processed()
+    # Eger hata yoksa durumu kalici yap, hata varsa duplicate goze alip rollback yap
+    if not have_errors:
+        reader.confirm_processed()
+    else:
+        logger.warning("⚠️ Hatalı satırlar olduğu için durumu kaydetmiyoruz (Duplicate gönderim olabilir).")
+        reader.rollback_pending()
+
     return stats
 
 def main():

@@ -35,10 +35,12 @@ class Config:
     # Bildirim E-posta Ayarları
     NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "savasgocgen@gmail.com")
     SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "ozerendolunay@gmail.com")
+    SMTP_USER = os.environ.get("SMTP_USER", "ozerendolunay@gmail.com")
+    SMTP_APP_PASSWORD = os.environ.get("SMTP_APP_PASSWORD", "")
 
     # Telegram Bot Ayarları
-    TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8512953517:AAG_9RiEuLLvyvQV3385xNxiCR4dBNTtD4Y")
-    TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+    TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "847006455")
 
     # Google Auth — Production: Service Account, Lokal: OAuth2
     GOOGLE_SERVICE_ACCOUNT_JSON = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
@@ -53,16 +55,10 @@ class Config:
             
         if not cls.TELEGRAM_CHAT_ID:
             logger.warning("TELEGRAM_CHAT_ID tanımlı değil. /get_chat_id.py kullanarak CHAT_ID'nizi alın ve .env dosyasına ekleyin.")
-            # Hata fırlatma, çünkü belki sadece email gitmesi istenir
 
-        if not cls.GOOGLE_SERVICE_ACCOUNT_JSON:
-            # Lokal geliştirmede credentials.json olabilir
-            creds_path = os.path.join(os.path.dirname(__file__), "credentials.json")
-            if not os.path.exists(creds_path):
-                errors.append(
-                    "GOOGLE_SERVICE_ACCOUNT_JSON env variable'ı veya credentials.json dosyası bulunamadı"
-                )
-
+        # GOOGLE_SERVICE_ACCOUNT_JSON opsiyonel, sheets_reader merkezi oath kullanabilir veya
+        # /_knowledge/credentials/google-service-account.json okuyabiliriz.
+        
         if errors:
             for err in errors:
                 logger.error(f"❌ Config hatası: {err}")
@@ -80,4 +76,14 @@ class Config:
             except json.JSONDecodeError:
                 logger.error("GOOGLE_SERVICE_ACCOUNT_JSON parse edilemedi")
                 return None
+                
+        # Eğer env variable'da yoksa, merkezi dosyadan oku (Railway/Lokal uyumluluğu için)
+        sa_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "_knowledge", "credentials", "google-service-account.json"))
+        if os.path.exists(sa_path):
+            try:
+                with open(sa_path, "r") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Merkezi Service Account dosyası okunamadı: {e}")
+                
         return None
