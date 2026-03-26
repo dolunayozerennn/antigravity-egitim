@@ -60,22 +60,20 @@ def run_cycle(reader: SheetsReader) -> dict:
     logger.info(f"📥 {len(new_rows)} yeni satır bulundu, bildiriliyor...")
 
     # 2. Her yeni satır için bildirim yolla
-    have_errors = False
     for row in new_rows:
         try:
-            process_and_notify(row)
-            stats["notified"] += 1
+            result = process_and_notify(row)
+            if result.get("telegram") or result.get("email"):
+                stats["notified"] += 1
+            else:
+                stats["errors"] += 1
         except Exception as e:
             logger.error(f"❌ Lead işlenirken/bildirilirken hata oldu: {e}")
             stats["errors"] += 1
-            have_errors = True
 
-    # Eger hata yoksa durumu kalici yap, hata varsa duplicate goze alip rollback yap
-    if not have_errors:
-        reader.confirm_processed()
-    else:
-        logger.warning("⚠️ Hatalı satırlar olduğu için durumu kaydetmiyoruz (Duplicate gönderim olabilir).")
-        reader.rollback_pending()
+    # İşlem tamamlandığında her zaman confirm_processed diyoruz,
+    # Hata olsa bile rollback yapmıyoruz ki Telegram spam'e dönmesin.
+    reader.confirm_processed()
 
     return stats
 

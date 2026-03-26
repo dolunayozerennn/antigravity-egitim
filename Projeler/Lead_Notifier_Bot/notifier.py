@@ -68,11 +68,11 @@ def build_message_text(lead_data: dict) -> str:
     
     return "\n".join(lines)
 
-def send_telegram_notification(msg_text: str):
+def send_telegram_notification(msg_text: str) -> bool:
     """Telegram API üzerinden mesaj gönderir."""
     if not Config.TELEGRAM_BOT_TOKEN or not Config.TELEGRAM_CHAT_ID:
         logger.warning("⚠️ Telegram bildirimleri kapalı (Token veya Chat ID eksik).")
-        return
+        return False
 
     url = f"https://api.telegram.org/bot{Config.TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
@@ -84,21 +84,22 @@ def send_telegram_notification(msg_text: str):
         response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
         logger.info("✅ Telegram bildirimi gönderildi.")
+        return True
     except Exception as e:
         logger.error(f"❌ Telegram bildirimi gönderilirken hata oluştu: {e}")
-        raise
+        return False
 
-def send_email_notification(msg_text: str):
+def send_email_notification(msg_text: str) -> bool:
     """Gmail API kullanarak E-Posta bildirimi gönderir."""
     if not Config.NOTIFY_EMAIL:
         logger.warning("⚠️ E-Posta bildirimleri kapalı (Notify Email eksik).")
-        return
+        return False
 
     try:
         service = _get_gmail_service()
     except Exception as e:
         logger.error(f"❌ Gmail API bağlantısı kurulamadı: {e}")
-        raise
+        return False
 
     msg = MIMEMultipart()
     msg['From'] = f"Lead Notifier <{Config.SENDER_EMAIL}>"
@@ -111,14 +112,26 @@ def send_email_notification(msg_text: str):
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
         result = service.users().messages().send(userId="me", body={"raw": raw}).execute()
         logger.info(f"✅ E-Posta bildirimi gönderildi -> {Config.NOTIFY_EMAIL} | Message ID: {result.get('id', '?')}")
+        return True
     except Exception as e:
         logger.error(f"❌ E-Posta bildirimi gönderilirken hata oluştu: {e}")
-        raise
+        return False
 
-def process_and_notify(lead_data: dict):
+def process_and_notify(lead_data: dict) -> dict:
     """Her yeni lead için hem Telegram hem de E-posta üzerinden bildirim yollar."""
     msg_text = build_message_text(lead_data)
     
     # Her ikisini de parallel (veya ardışık) çalıştır
-    send_telegram_notification(msg_text)
-    send_email_notification(msg_text)
+    telegram_ok = send_telegram_notification(msg_text)
+    email_ok = send_email_notification(msg_text)
+    
+    if not telegram_ok and not email_ok:
+        logger.error("❌ Hiçbir bildirim gönderilemedi!")
+    elif not telegram_ok:
+        logger.warning("⚠️ Telegram gönderilemedi ama E-posta başarıyla gönderildi.")
+    elif not email_ok:
+        logger.warning("⚠️ Telegram gönderildi ama E-posta gönderilemedi.")
+    else:
+        logger.info("✅ Hem Telegram hem E-posta başarıyla gönderildi!")
+        
+    return {"telegram": telegram_ok, "email": email_ok}
