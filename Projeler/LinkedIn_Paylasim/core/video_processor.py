@@ -41,7 +41,8 @@ class VideoProcessor:
 
         try:
             logging.info(f"Stripping metadata and ensuring 1080p output...")
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            # Added timeout=600 (10 minutes) to prevent FFmpeg from hanging indefinitely on corrupted files
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=600)
             if result.returncode == 0 and os.path.exists(output_path):
                 file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
                 logging.info(f"Metadata stripping successful -> {output_path} ({file_size_mb:.1f} MB)")
@@ -49,6 +50,9 @@ class VideoProcessor:
             else:
                 logging.error(f"FFmpeg failed with exit code {result.returncode}.\nSTDERR: {result.stderr[:500]}")
                 return None
+        except subprocess.TimeoutExpired:
+            logging.error("FFmpeg processing timed out after 10 minutes (file might be corrupted or too large).")
+            return None
         except Exception as e:
             logging.error(f"Failed to execute FFmpeg command: {e}", exc_info=True)
             return None
