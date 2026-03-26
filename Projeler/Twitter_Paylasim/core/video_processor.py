@@ -39,7 +39,7 @@ class VideoProcessor:
 
         try:
             logging.info(f"Stripping metadata with command: {' '.join(cmd)}")
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=120)
             if result.returncode == 0 and os.path.exists(output_path):
                 logging.info(f"Metadata stripping successful -> {output_path}")
                 return output_path

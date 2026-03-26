@@ -88,19 +88,21 @@ def job():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    logging.info("Twitter_Paylasim service started. Entering idle schedule mode.")
-    logging.info("Ensure the TZ env variable is set to 'Europe/Istanbul' on Railway for accurate timings.")
     
-    # Run at specific Turkey hours (11, 14, 17). 
-    # If the docker container has TZ=Europe/Istanbul, this maps perfectly.
-    schedule.every().day.at("11:00").do(job)
-    schedule.every().day.at("14:00").do(job)
-    schedule.every().day.at("17:00").do(job)
+    import os
+    mode = os.environ.get("RUN_MODE", "cron").lower()
     
-    # You can uncomment this to test immediately upon start:
-    # logging.info("Executing immediate initial run...")
-    # job()
-    
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+    if mode == "schedule":
+        # Lokal geliştirme veya sürekli çalışan mod
+        logging.info("Twitter_Paylasim started in SCHEDULE mode (local dev).")
+        schedule.every().day.at("11:00").do(job)
+        schedule.every().day.at("14:00").do(job)
+        schedule.every().day.at("17:00").do(job)
+        while True:
+            schedule.run_pending()
+            time.sleep(60)
+    else:
+        # Railway Cron modu: container açılır, job çalışır, container kapanır.
+        logging.info("Twitter_Paylasim started in CRON mode. Running job once and exiting.")
+        job()
+        logging.info("Job finished. Container will now exit.")
