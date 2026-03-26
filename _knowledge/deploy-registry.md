@@ -12,6 +12,32 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ## ✅ Aktif Projeler
 
+
+### lead-notifier-bot
+- **Platform:** `railway`
+- **Railway Project ID:** `6b5e029b-0235-4c6b-8b8d-b6dd4d4bb4e0`
+- **Service ID:** `27b72627-31ca-4ad0-b07d-91f9a1ee754c`
+- **Environment ID:** `be1c9122-1859-407e-8b05-81e54ab36535`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Lead_Notifier_Bot`)
+- **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/`
+- **Start Komutu:** `python main.py`
+- **Son Deploy:** 2026-03-24 (bağımsız deploy, otonom stabilizasyon)
+- **Durum:** ✅ Aktif (Build SUCCESS, Polling: her 5 dk)
+
+---
+### dolunay-youtube-kapak
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `586a7bf6-1787-4d3a-af13-1e1730ee5a15`
+- **Service ID:** `b15ae2ea-87b0-4818-bb6c-c8f7458817e3`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (mono-repo, Root Dir: `Projeler/Dolunay_YouTube_Kapak`)
+- **Lokal Klasör:** `Projeler/Dolunay_YouTube_Kapak/`
+- **Start Komutu:** `python main.py`
+- **Cron Schedule:** `0 10 * * *` (Günlük, UTC 10:00)
+- **Son Deploy:** 2026-03-24 (initial deploy: API ile Kurulum)
+- **Durum:** ✅ Aktif (YouTube kapak üretimi agent)
+
+---
+
 ### lead-pipeline (BİRLEŞİK CRON JOB) ✅
 - **Platform:** `railway-cron`
 - **Railway Project ID:** `fc91edb9-5d93-413d-b9b7-75ae81033204`
@@ -93,8 +119,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/marka-is-birligi`
 - **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-03-21 (fix: markalar.csv otomatik oluşturma — Railway deploy sonrası data kalıcılık sorunu çözüldü, deployment ID: 33f5b55d, smoke test ✅)
-- **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — CSV auto-init)
+- **Son Deploy:** 2026-03-26 (feat: çalışma sıklığı haftada 2 güne (Pzt/Çarş) çıkarıldı, mail tıkanıklığı cron ile çözüldü)
+- **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — CSV auto-init + IG/YT Scraping, Haftalık 2 kez pipeline)
 
 ---
 
@@ -131,7 +157,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
 - **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
-- **Son Deploy:** 2026-03-24 (fix: cronSchedule railway.json'a eklendi — Railway service instance'da 0 0 1 1 * olarak kalmıştı, */10 * * * * olarak düzeltildi)
+- **Son Deploy:** 2026-03-25 (KRİTİK BUGFIX: İsimsiz Lead spam loop düzeltildi — 5.132 çöp kayıt temizlendi)
 - **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
 - **⚠️ Telegram Notu:** TELEGRAM_CHAT_ID=847006455 (Savaş) "chat not found" hatası. Savaş bot'a /start göndermeli.
 
