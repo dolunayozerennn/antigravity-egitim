@@ -119,7 +119,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/marka-is-birligi`
 - **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-03-26 (feat: çalışma sıklığı haftada 2 güne (Pzt/Çarş) çıkarıldı, mail tıkanıklığı cron ile çözüldü)
+- **Son Deploy:** 2026-03-26 (feat: AI İşlem Logları Notch DB üzerinden uçtan uca loglama altyapısı eklendi)
 - **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — CSV auto-init + IG/YT Scraping, Haftalık 2 kez pipeline)
 
 ---
@@ -132,7 +132,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/akilli-watchdog`
 - **Lokal Klasör:** `Projeler/Akilli_Watchdog/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-21 (migration: Railway Cron Job olarak ayarlandı, deployment ID: bd8b7883)
+- **Son Deploy:** 2026-03-26 (feat: iş metrikleri genişletildi, Marka İş Birliği listeye eklendi. `expected_daily_activity` flag'ı geldi.)
 - **Durum:** ✅ Aktif (Günde 1 kez çalışır — UTC 00:00. Sürekli uyanık kalmadığından fatura optmizasyonu yapıldı.)
 
 ---
