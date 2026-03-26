@@ -9,7 +9,7 @@ WORKDIR /app
 
 # Force cache invalidation when requirements change
 COPY requirements.txt .
-RUN echo "CACHE_BUST_20260326_v3" && pip install --no-cache-dir -r requirements.txt
+RUN echo "CACHE_BUST_20260326_v4_opencv_fix" && pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
