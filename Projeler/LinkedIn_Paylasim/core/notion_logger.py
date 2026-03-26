@@ -1,6 +1,8 @@
 import requests
 import logging
 from datetime import datetime, timezone
+import time
+import os
 
 from config import settings
 
@@ -25,6 +27,16 @@ class NotionLogger:
         Check if the given video_id has already been processed (posted or filtered).
         Returns True if already handled.
         """
+        # Check local fallback file first
+        try:
+            if os.path.exists("/tmp/linkedin_posted_fallback.txt"):
+                with open("/tmp/linkedin_posted_fallback.txt", "r") as f:
+                    if video_id in f.read():
+                        logging.info(f"Video {video_id} found in local fallback cache.")
+                        return True
+        except Exception:
+            pass
+
         try:
             url = f"https://api.notion.com/v1/databases/{self.db_id}/query"
             payload = {
@@ -63,54 +75,67 @@ class NotionLogger:
             return True
 
         now_iso = datetime.now(timezone.utc).isoformat()
+        
+        url = "https://api.notion.com/v1/pages"
+        properties = {
+            "Video ID": {
+                "title": [
+                    {"text": {"content": video_id}}
+                ]
+            },
+            "Status": {
+                "select": {"name": status}
+            },
+            "Platform": {
+                "select": {"name": "LinkedIn"}
+            },
+            "TikTok URL": {
+                "url": tiktok_url if tiktok_url else None
+            },
+            "Paylaşım Tarihi": {
+                "date": {"start": now_iso}
+            },
+        }
 
+        # Optional fields
+        if linkedin_url:
+            properties["LinkedIn URL"] = {"url": linkedin_url}
+
+        if filter_decision:
+            properties["Filter Kararı"] = {"select": {"name": filter_decision}}
+
+        if filter_reason:
+            properties["Filter Sebebi"] = {
+                "rich_text": [{"text": {"content": filter_reason[:2000]}}]
+            }
+
+        if adapted_caption:
+            properties["LinkedIn Caption"] = {
+                "rich_text": [{"text": {"content": adapted_caption[:2000]}}]
+            }
+
+        payload = {
+            "parent": {"database_id": self.db_id},
+            "properties": properties
+        }
+
+        # Retry logic for resilience
+        for attempt in range(3):
+            try:
+                resp = requests.post(url, headers=self.headers, json=payload, timeout=10)
+                resp.raise_for_status()
+                logging.info(f"Successfully logged Video ID {video_id} to Notion with status {status}.")
+                return True
+            except Exception as e:
+                logging.error(f"Error logging video {video_id} to Notion (attempt {attempt+1}/3): {e}", exc_info=True)
+                time.sleep(5)
+        
+        # Fallback cache if all retries fail
         try:
-            url = "https://api.notion.com/v1/pages"
-            properties = {
-                "Video ID": {
-                    "title": [
-                        {"text": {"content": video_id}}
-                    ]
-                },
-                "Status": {
-                    "select": {"name": status}
-                },
-                "Platform": {
-                    "select": {"name": "LinkedIn"}
-                },
-                "TikTok URL": {
-                    "url": tiktok_url if tiktok_url else None
-                },
-                "Paylaşım Tarihi": {
-                    "date": {"start": now_iso}
-                },
-            }
-
-            # Optional fields
-            if linkedin_url:
-                properties["LinkedIn URL"] = {"url": linkedin_url}
-
-            if filter_decision:
-                properties["Filter Kararı"] = {"select": {"name": filter_decision}}
-
-            if filter_reason:
-                properties["Filter Sebebi"] = {
-                    "rich_text": [{"text": {"content": filter_reason[:2000]}}]
-                }
-
-            if adapted_caption:
-                properties["LinkedIn Caption"] = {
-                    "rich_text": [{"text": {"content": adapted_caption[:2000]}}]
-                }
-
-            payload = {
-                "parent": {"database_id": self.db_id},
-                "properties": properties
-            }
-            resp = requests.post(url, headers=self.headers, json=payload, timeout=10)
-            resp.raise_for_status()
-            logging.info(f"Successfully logged Video ID {video_id} to Notion with status {status}.")
-            return True
+            with open("/tmp/linkedin_posted_fallback.txt", "a") as f:
+                f.write(f"{video_id}\\n")
+            logging.warning(f"Failed to log to Notion. Video {video_id} added to local fallback cache to prevent duplication.")
         except Exception as e:
-            logging.error(f"Error logging video {video_id} to Notion: {e}", exc_info=True)
-            return False
+            logging.error(f"Failed to write to local fallback cache: {e}")
+            
+        return False
