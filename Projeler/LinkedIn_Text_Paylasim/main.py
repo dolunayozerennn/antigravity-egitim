@@ -190,21 +190,33 @@ def run_weekly_tip():
 
 if __name__ == "__main__":
     setup_logging()
-    logging.info("LinkedIn_Text_Paylasim service başlatıldı.")
-    logging.info("Zamanlama: Pazartesi 08:00 (AI Haberleri) + Perşembe 08:00 (AI Tavsiyesi)")
-    logging.info("Timezone: Europe/Istanbul (Railway'de TZ env var ayarlanmalı)")
 
-    # n8n'deki Schedule Trigger'lar:
-    # Workflow 1: triggerAtDay=1 (Pazartesi), triggerAtHour=5 (UTC) → 08:00 Istanbul
-    # Workflow 2: triggerAtDay=4 (Perşembe), triggerAtHour=5 (UTC) → 08:00 Istanbul
-    schedule.every().monday.at("08:00").do(run_weekly_news)
-    schedule.every().thursday.at("08:00").do(run_weekly_tip)
+    import os
+    from datetime import datetime
+    mode = os.environ.get("RUN_MODE", "cron").lower()
 
-    # Uncomment to test immediately:
-    # logging.info("Test: Immediate run...")
-    # run_weekly_news()
-    # run_weekly_tip()
+    if mode == "schedule":
+        # Lokal geliştirme veya sürekli çalışan mod
+        logging.info("LinkedIn_Text_Paylasim started in SCHEDULE mode (local dev).")
+        logging.info("Zamanlama: Pazartesi 08:00 (AI Haberleri) + Perşembe 08:00 (AI Tavsiyesi)")
+        schedule.every().monday.at("08:00").do(run_weekly_news)
+        schedule.every().thursday.at("08:00").do(run_weekly_tip)
+        while True:
+            schedule.run_pending()
+            time.sleep(60)
+    else:
+        # Railway Cron modu: container açılır, gün kontrolü yapar, ilgili job çalışır, exit.
+        # Cron: 0 5 * * 1,4 (UTC 05:00 Pazartesi+Perşembe = TR 08:00)
+        today = datetime.utcnow().weekday()  # 0=Monday, 3=Thursday
+        logging.info(f"LinkedIn_Text_Paylasim started in CRON mode. Today is weekday={today}")
 
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+        if today == 0:  # Monday
+            logging.info("Bugün Pazartesi — Haftalık AI Haberleri workflow'u çalıştırılıyor...")
+            run_weekly_news()
+        elif today == 3:  # Thursday
+            logging.info("Bugün Perşembe — Haftalık AI Tavsiyesi workflow'u çalıştırılıyor...")
+            run_weekly_tip()
+        else:
+            logging.info(f"Bugün ne Pazartesi ne Perşembe (weekday={today}). Atlanıyor.")
+
+        logging.info("Job finished. Container will now exit.")

@@ -149,17 +149,20 @@ def job():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    logging.info("LinkedIn_Video_Paylasim service started. Entering idle schedule mode.")
-    logging.info("Ensure the TZ env variable is set to 'Europe/Istanbul' on Railway for accurate timings.")
 
-    # LinkedIn is more professional — post once daily at 13:00 Turkey time
-    # Peak LinkedIn engagement: weekdays 10:00-14:00
-    schedule.every().day.at("13:00").do(job)
+    import os
+    mode = os.environ.get("RUN_MODE", "cron").lower()
 
-    # Uncomment to test immediately upon start:
-    # logging.info("Executing immediate initial run...")
-    # job()
-
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+    if mode == "schedule":
+        # Lokal geliştirme veya sürekli çalışan mod
+        logging.info("LinkedIn_Video_Paylasim started in SCHEDULE mode (local dev).")
+        logging.info("Ensure the TZ env variable is set to 'Europe/Istanbul' on Railway for accurate timings.")
+        schedule.every().day.at("13:00").do(job)
+        while True:
+            schedule.run_pending()
+            time.sleep(60)
+    else:
+        # Railway Cron modu: container açılır, job çalışır, container kapanır.
+        logging.info("LinkedIn_Video_Paylasim started in CRON mode. Running job once and exiting.")
+        job()
+        logging.info("Job finished. Container will now exit.")
