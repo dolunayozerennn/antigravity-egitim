@@ -29,6 +29,9 @@ from datetime import datetime, timezone, timedelta
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
+from ops_logger import get_ops_logger
+ops = get_ops_logger("Marka_Is_Birligi", "Scheduler")
+
 # ── Timezone ─────────────────────────────────────────────────────────────
 TR_OFFSET = timedelta(hours=3)
 
@@ -118,6 +121,8 @@ def run_weekly_pipeline():
         print(f"\n✅ Pipeline tamamlandı: {tr_now().strftime('%H:%M:%S')} (TR)")
         _service_status["last_job_run"] = tr_now().isoformat()
         _service_status["last_job_result"] = "pipeline_success"
+        ops_pipe = get_ops_logger("Marka_Is_Birligi", "Outreach")
+        ops_pipe.success("Haftalık Pipeline tamamlandı")
     except Exception as e:
         print(f"❌ Pipeline hatası: {e}")
         import traceback
@@ -125,6 +130,8 @@ def run_weekly_pipeline():
         _service_status["last_job_run"] = tr_now().isoformat()
         _service_status["last_job_result"] = f"pipeline_error: {str(e)[:200]}"
         _service_status["total_errors"] += 1
+        ops_pipe = get_ops_logger("Marka_Is_Birligi", "Outreach")
+        ops_pipe.error("Haftalık Pipeline çöktü", exception=e)
 
 
 def run_followup_check():
@@ -159,6 +166,8 @@ def run_followup_check():
         print(f"\n✅ Follow-up tamamlandı: {tr_now().strftime('%H:%M:%S')} (TR)")
         _service_status["last_job_run"] = tr_now().isoformat()
         _service_status["last_job_result"] = f"followup_success: {stats}"
+        ops_fu = get_ops_logger("Marka_Is_Birligi", "Follow-Up")
+        ops_fu.success("Follow-up tamamlandı", str(stats))
     except Exception as e:
         print(f"❌ Follow-up hatası: {e}")
         import traceback
@@ -166,6 +175,8 @@ def run_followup_check():
         _service_status["last_job_run"] = tr_now().isoformat()
         _service_status["last_job_result"] = f"followup_error: {str(e)[:200]}"
         _service_status["total_errors"] += 1
+        ops_fu = get_ops_logger("Marka_Is_Birligi", "Follow-Up")
+        ops_fu.error("Follow-up çöktü", exception=e)
 
 
 def run_weekly_report_job():
@@ -187,6 +198,7 @@ def run_weekly_report_job():
         print(f"\n✅ Rapor tamamlandı: {tr_now().strftime('%H:%M:%S')} (TR)")
         _service_status["last_job_run"] = tr_now().isoformat()
         _service_status["last_job_result"] = "report_success"
+        get_ops_logger("Marka_Is_Birligi", "Pipeline").success("Haftalık rapor gönderildi")
     except Exception as e:
         print(f"❌ Rapor hatası: {e}")
         import traceback
@@ -194,6 +206,7 @@ def run_weekly_report_job():
         _service_status["last_job_run"] = tr_now().isoformat()
         _service_status["last_job_result"] = f"report_error: {str(e)[:200]}"
         _service_status["total_errors"] += 1
+        get_ops_logger("Marka_Is_Birligi", "Pipeline").error("Haftalık rapor hatası", exception=e)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -228,6 +241,7 @@ def main():
         print("➡️ Bugün planlanmış bir görev bulunmuyor.")
 
     print("\n👋 İşlem tamamlandı, çıkılıyor.")
+    ops.wait_for_logs()
     sys.exit(0)
 
 if __name__ == "__main__":

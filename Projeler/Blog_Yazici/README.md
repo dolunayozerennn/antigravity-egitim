@@ -2,7 +2,7 @@
 
 > **Proje Konumu:** `Antigravity/Projeler/Blog_Yazici/`  
 > **Durum:** 🟢 Production (Railway'de yayında)  
-> **Son Güncelleme:** 2026-03-25
+> **Son Güncelleme:** 2026-03-26
 
 ---
 
@@ -21,7 +21,11 @@ Notion "Yayınlandı" Videoları
   → Dinamik Annotation (annotate_v3.py — 2x supersampling, auto-highlight)
   → Self-Review ve Auto-Fix (Groq Vision)
   → Blog Metni Üretimi (generate_blog.py — Gemini 2.5 Pro)
+  → Kapak Görseli Üretimi (cover_generator.py — Apify Flux)
+  → Netlify & GitHub Deploy (blog_publisher.py)
   → Yayına Hazır Blog Yazısı
+
+* Not: Bu sürecin tüm adımları ve hataları `notion_logger.py` ile asenkron olarak "Sosyal Medya İşbirlikleri" altındaki **Blog_Yazici Logs** veritabanına loglanır.
 ```
 
 ---
@@ -37,8 +41,11 @@ Blog_Yazici/
 ├── script_extractor.py           ← Notion caption → script.txt
 ├── extract_frames.py             ← Adım 1: Video → Frame çıkarma (OpenCV)
 ├── vision_analyzer.py            ← Adım 2: Frame analizi (Groq Llama 4 Scout)
-├── annotate_v3.py                ← Adım 3: Annotation (dinamik + hardcoded mod)
+├── annotate_v3.py                ← Adım 3: Annotation (dinamik/hardcoded)
 ├── generate_blog.py              ← Adım 4: Blog metni üretimi (Gemini 2.5 Pro)
+├── cover_generator.py            ← Adım 5: 16:9 Kapak görseli üretimi (Apify Flux)
+├── blog_publisher.py             ← Adım 6: MDX ve görselleri GitHub'a pushlar (Netlify)
+├── notion_logger.py              ← 📊 Pipeline adımlarını Notion DB'ye asenkron loglar
 ├── video_assessment_report.json  ← Notion video değerlendirme raporu
 ├── processed_videos.json         ← İşlenmiş video takibi
 ├── env/                          ← Python sanal ortam
@@ -93,7 +100,8 @@ python3 run_pipeline.py typeless5
 
 | Servis | Kaynak | Kullanım |
 |--------|--------|----------|
-| Notion | `master.env` → `NOTION_SOCIAL_TOKEN` | Video listesi çekme |
+| Notion | `master.env` → `NOTION_SOCIAL_TOKEN` | Video listesi çekme ve Log Yazma |
+| Notion DB | `master.env` → `NOTION_DB_BLOG_LOGS` | Logların yazılacağı veritabanı ID'si |
 | Groq | `master.env` → `GROQ_API_KEY` | Vision analizi + Self-Review |
 | Gemini | `master.env` → `GEMINI_API_KEY` | Blog metni üretimi |
 | Drive SA | `google-service-account.json` | Ekran kaydı indirme |
@@ -118,15 +126,14 @@ python3 run_pipeline.py typeless5
 - [x] **Production Stabilizasyonu (24 Mart)** — Tüm HTTP isteklerine (Kie AI, ImgBB, Notion, GitHub) timeout eklendi, Railway'de sonsuz bekleme riski çözüldü
 - [x] **Otonom Deployment** — Dockerize edildi, Railway CronJob olarak ayarlandı
 - [x] **Notion Status Geri Yazma (25 Mart)** — İşlenen videoların Notion statüsü "Blog Yazıldı" olarak kilitlenir (sonsuz döngü önleme)
+- [x] **Blog Publisher (25 Mart)** — `blog_publisher.py` ile GitHub API kullanılarak MDX ve görseller tek commit ile push edilir, Netlify tetiklenir.
+- [x] **Notion Logger (26 Mart)** — Pipeline adımları ve traceback içeren hata logları anlık ve asenkron olarak Notion log veritabanına yazılır.
 
 ---
 
 ## ⏳ Yapılması Gerekenler
 
-### Öncelik 1: Blog Yayın Mekanizması
-- Dolunay_AI_Website'e blog altyapısı kur (MDX entegrasyonu)
-
-### Öncelik 2: Kalite İyileştirmeleri
+### Öncelik 1: Kalite İyileştirmeleri
 - Multi-video merge (tek video yerine tüm ekran kayıtlarını birleştir)
 
 ---
@@ -158,3 +165,4 @@ python3 run_pipeline.py typeless5
 | 2026-03-22 | **Multi-Video Pipeline v2.0:** drive_downloader.py, script_extractor.py, dinamik annotation modu, --from-notion flag |
 | 2026-03-24 | **Production Stabilizasyonu:** Tüm API çağrılarına timeout eklendi, Dockerize edildi, Railway'de cron job olarak devreye alındı |
 | 2026-03-25 | **Kritik Bugfix:** `opencv-python-headless` bağımlılığı eklendi, Notion status update eklendi, processed_videos.json uyumsuzluğu giderildi, Gemini timeout artırıldı |
+| 2026-03-26 | **Notion Logger & Blog Publisher:** Hata takip sistemi için `notion_logger.py` eklendi. GitHub Push otomasyonu yapıldı. |

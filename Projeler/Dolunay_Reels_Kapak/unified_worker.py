@@ -14,6 +14,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from ops_logger import get_ops_logger
+ops = get_ops_logger("Dolunay_Reels_Kapak", "Worker")
+
 
 def main():
     start = datetime.datetime.utcnow()
@@ -31,6 +34,7 @@ def main():
     except Exception as e:
         print(f"❌ Kapak üretimi hatası: {e}", file=sys.stderr)
         errors += 1
+        ops.error("Kapak üretimi hatası", exception=e)
 
     # ── Adım 2: Revizyon kontrolü ──
     print("\n🔄 [2/2] Revizyon kontrolü başlıyor...")
@@ -40,6 +44,7 @@ def main():
     except Exception as e:
         print(f"❌ Revizyon kontrolü hatası: {e}", file=sys.stderr)
         errors += 1
+        ops.error("Revizyon kontrolü hatası", exception=e)
 
     # ── Özet ──
     elapsed = (datetime.datetime.utcnow() - start).total_seconds()
@@ -51,6 +56,13 @@ def main():
     else:
         print(f"❌ Unified Worker tamamlandı (tüm adımlar hatalı) — {elapsed:.1f} saniye")
     print(f"{'='*60}")
+
+    # Notion'a özet log
+    if errors == 0:
+        ops.success("Unified Worker tamamlandı", f"{elapsed:.1f}s sürdü")
+    else:
+        ops.warning("Unified Worker tamamlandı (hatalarla)", f"{errors} adımda hata, {elapsed:.1f}s sürdü")
+    ops.wait_for_logs()
 
     return errors
 

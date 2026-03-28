@@ -106,8 +106,9 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/akilli-watchdog`
 - **Lokal Klasör:** `Projeler/Akilli_Watchdog/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-21 (migration: Railway Cron Job olarak ayarlandı, deployment ID: bd8b7883)
-- **Durum:** ✅ Aktif (Günde 1 kez çalışır — UTC 00:00. Sürekli uyanık kalmadığından fatura optmizasyonu yapıldı.)
+- **Son Deploy:** 2026-03-27 (v3.0: Token freshness kontrolü + Railway deployment probe + 9 servis izleme)
+- **Durum:** ✅ Aktif (Günde 1 kez çalışır — UTC 00:00. Token expire takibi + Railway health check eklendi.)
+- **Env Vars:** GROQ_API_KEY, NOTION_API_TOKEN, NOTION_SOCIAL_TOKEN, GOOGLE_OUTREACH_TOKEN_JSON, GOOGLE_SERVICE_ACCOUNT_JSON, RAILWAY_TOKEN
 
 ---
 
@@ -121,19 +122,48 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-### lead-pipeline (BİRLEŞİK CRON JOB) ✅
+### linkedin-video-cron
 - **Platform:** `railway-cron`
-- **Railway Project ID:** `fc91edb9-5d93-413d-b9b7-75ae81033204`
-- **Service ID:** `b4a28784-6e03-473f-b8fa-c1021820d703` (Recreated to fix webhook & root path issue)
-- **Environment ID:** `69c5c773-b69a-4077-a7ff-7b29258a3ad1`
-- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (mono-repo, Root Dir: `Projeler/Lead_Pipeline`)
-- **Lokal Klasör:** `Projeler/Lead_Pipeline/`
+- **Railway Project ID:** `59d79d0c-bd8c-46af-80e1-1b64ade41304`
+- **Service ID:** `8e486d77-c5b1-4f70-9f29-55c8b59398f9`
+- **Environment ID:** `d4f9b81a-8e72-432b-b64c-089ead41f636`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/LinkedIn_Video_Paylasim`)
+- **Lokal Klasör:** `Projeler/LinkedIn_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
-- **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
-- **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
-- **Son Deploy:** 2026-03-24 (fix: cronSchedule railway.json'a eklendi — Railway service instance'da 0 0 1 1 * olarak kalmıştı, */10 * * * * olarak düzeltildi)
-- **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
-- **⚠️ Telegram Notu:** TELEGRAM_CHAT_ID=847006455 (Savaş) "chat not found" hatası. Savaş bot'a /start göndermeli.
+- **Cron Schedule:** `0 10 * * *` (Günlük, UTC 10:00 = TR 13:00)
+- **Son Deploy:** 2026-03-27 (initial deploy: schedule→cron dönüşümü, Railway CronJob olarak kuruldu)
+- **Durum:** ✅ Aktif (TikTok→LinkedIn video pipeline, günde 1 kez)
+- **Env Vars:** LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
+
+---
+
+### linkedin-text-cron
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `5465753a-2653-400a-ae3a-d4593de9c40e`
+- **Service ID:** `c1b095f4-700b-4302-ac30-efe537d5935c`
+- **Environment ID:** `2a4e2f58-b0db-4a90-9ab1-689f1f403363`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/LinkedIn_Text_Paylasim`)
+- **Lokal Klasör:** `Projeler/LinkedIn_Text_Paylasim/`
+- **Start Komutu:** `python main.py`
+- **Cron Schedule:** `0 5 * * 1,4` (Haftada 2, UTC 05:00 Pazartesi+Perşembe = TR 08:00)
+- **Son Deploy:** 2026-03-27 (initial deploy: n8n→Python migration, schedule→cron dönüşümü)
+- **Durum:** ✅ Aktif (Haftalık AI Haberleri + AI Tavsiyesi LinkedIn postu)
+- **Env Vars:** PERPLEXITY_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
+
+---
+
+### twitter-video-cron
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `24c3d0d1-58e7-4213-826b-c7e2d1c45a30`
+- **Service ID:** `55f76475-5b45-4050-93f7-723110ab470e`
+- **Environment ID:** `1e5cfad2-c76d-4ca1-a1a5-c839a2cfdb1d`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Twitter_Video_Paylasim`)
+- **Lokal Klasör:** `Projeler/Twitter_Video_Paylasim/`
+- **Start Komutu:** `python main.py`
+- **Cron Schedule:** `0 8,11,14 * * *` (Günde 3 kez, UTC 08/11/14 = TR 11/14/17)
+- **Son Deploy:** 2026-03-27 (initial deploy: Railway CronJob olarak kuruldu)
+- **Durum:** ✅ Aktif (TikTok→X/Twitter video pipeline, günde 3 kez)
+- **Env Vars:** NOTION_TOKEN, NOTION_TWITTER_DB_ID, X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
 
 ---
 
@@ -152,12 +182,13 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Env Vars:** GROQ_API_KEY, GEMINI_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64), GITHUB_TOKEN
 
 ---
-## 📌 Sadece Lokal Projeler (Deploy Yok)
+## 📌 Askıda / Geliştirme Aşamasındaki Projeler (Deploy Yok)
 
-| Proje | Klasör | Platform | Not |
-|-------|--------|----------|-----|
-| Dubai Emlak İçerik | `Projeler/Dubai_Emlak_İçerik_Yazarı/` | `local-only` | Geliştirme aşamasında |
-| Emlak Arazi Drone | `Projeler/Emlak_Arazi_Drone_Çekim/` | `local-only` | Geliştirme aşamasında |
+| Proje | Klasör | Platform | Son Değişiklik | Durum | Not |
+|-------|--------|----------|----------------|-------|-----|
+| Dubai Emlak İçerik | `Projeler/Dubai_Emlak_İçerik_Yazarı/` | `local-only` | 2026-03-09 | ⏸️ Askıda | Script koleksiyonu (transcript, currency, calculator). Deploy planı yok, geliştirme aşamasında |
+| Emlak Arazi Drone | `Projeler/Emlak_Arazi_Drone_Çekim/` | `local-only` | 2026-03-14 | ⏸️ Askıda | Kie AI + Unsplash tabanlı video üretimi. Lokal çalıştırılabilir ama deploy edilmemiş |
+| YouTube Kapak | `Projeler/Dolunay_YouTube_Kapak/` | `local-only` | 2026-03-24 | ⏸️ Askıda | Autonomous YouTube thumbnail agent. railway.json yok, deploy planı yok. Lokal çalıştırılabilir |
 
 ---
 

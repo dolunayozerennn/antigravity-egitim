@@ -53,6 +53,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+from ops_logger import get_ops_logger
+ops = get_ops_logger("Shorts_Demo_Otomasyonu", "Bot")
+
 openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 # ── Knowledge Base yükle ────────────────────────────────────────────────────
@@ -541,9 +544,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Hakkı sadece video BAŞARILI teslim edildiyse düş
         if delivered:
             save_used_user(chat_id)
+            ops.success("Video teslim edildi", f"chat_id={chat_id}, prompt={prompt[:80]}")
     except Exception as e:
         logger.error(f"Pipeline hatası: {e}", exc_info=True)
         await context.bot.send_message(chat_id=chat_id, text="❌ Bir hata oluştu.")
+        ops.error("Video pipeline çöktü", exception=e, message=f"chat_id={chat_id}")
     finally:
         active_generations.discard(chat_id)
 
@@ -609,6 +614,8 @@ def main():
         )
     except Exception as e:
         logger.critical(f"❌ Bot başlatma hatası: {e}", exc_info=True)
+        ops.error("Bot başlatılamadı", exception=e)
+        ops.wait_for_logs()
         raise
 
 

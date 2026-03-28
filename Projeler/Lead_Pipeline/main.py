@@ -24,6 +24,7 @@ from sheets_reader import SheetsReader
 from data_cleaner import clean_leads_bulk
 from notion_writer import NotionWriter
 from notifier import process_and_notify
+from ops_logger import get_ops_logger
 
 # ── LOGGING ──────────────────────────────────────────────────
 
@@ -150,11 +151,21 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
             logger.error(f"❌ Notion yazım hatası ({cleaned['clean_name']}): {e}")
             stats["error"] += 1
 
-    logger.info(
-        f"📋 CRM Sonuç: ✅ {stats['created']} oluşturuldu | "
+    summary_msg = (
+        f"✅ {stats['created']} oluşturuldu | "
         f"🔁 {stats['skipped']} duplike | "
         f"❌ {stats['error']} hata"
     )
+    logger.info(f"📋 CRM Sonuç: {summary_msg}")
+
+    # Notion ops log
+    ops = get_ops_logger("Lead_Pipeline", "CRM")
+    if stats['error'] > 0:
+        ops.warning("CRM Pipeline tamamlandı (hatalarla)", summary_msg)
+    elif stats['created'] > 0:
+        ops.success("CRM Pipeline tamamlandı", summary_msg)
+    else:
+        ops.info("CRM Pipeline tamamlandı", summary_msg)
 
     crm_reader.confirm_processed()
 
@@ -196,11 +207,21 @@ def run_notifier_pipeline(notifier_reader: SheetsReader):
             logger.error(f"❌ Bildirim hatası: {e}")
             notify_stats["failed"] += 1
 
-    logger.info(
-        f"📣 Notifier Sonuç: ✅ {notify_stats['success']} tam | "
+    notify_msg = (
+        f"✅ {notify_stats['success']} tam | "
         f"⚠️ {notify_stats['partial']} kısmi | "
         f"❌ {notify_stats['failed']} başarısız"
     )
+    logger.info(f"📣 Notifier Sonuç: {notify_msg}")
+
+    # Notion ops log
+    ops = get_ops_logger("Lead_Pipeline", "Notifier")
+    if notify_stats['failed'] > 0:
+        ops.warning("Notifier Pipeline tamamlandı (hatalarla)", notify_msg)
+    elif notify_stats['success'] > 0:
+        ops.success("Notifier Pipeline tamamlandı", notify_msg)
+    else:
+        ops.info("Notifier Pipeline tamamlandı", notify_msg)
 
     notifier_reader.confirm_processed()
 
@@ -244,11 +265,16 @@ def main():
 
     except Exception as e:
         logger.error(f"❌ Pipeline hatası: {e}", exc_info=True)
+        get_ops_logger("Lead_Pipeline", "Pipeline").error("Pipeline çöktü", exception=e)
+        get_ops_logger("Lead_Pipeline", "Pipeline").wait_for_logs()
         sys.exit(1)
 
     elapsed = time.time() - start_time
     logger.info(f"✅ Lead Pipeline tamamlandı — {elapsed:.1f}s sürdü")
     logger.info("=" * 60)
+
+    # Tüm ops loglarının Notion'a yazılmasını bekle
+    get_ops_logger("Lead_Pipeline", "Pipeline").wait_for_logs()
 
 
 if __name__ == "__main__":
