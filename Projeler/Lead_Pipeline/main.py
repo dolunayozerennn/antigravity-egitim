@@ -65,8 +65,8 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
         cleaned_leads = []
 
     if not cleaned_leads:
-        logger.warning("⚠️ CRM: Temizlenebilir lead bulunamadı")
-        crm_reader.confirm_processed()
+        logger.warning("⚠️ CRM: Temizlenebilir lead bulunamadı — state GÜNCELLENMEDİ (sonraki çalışmada tekrar denenecek)")
+        crm_reader.rollback_pending()
         return []
 
     # ── İSİM + İLETİŞİM VALİDASYONU ──────────────────────────
@@ -98,7 +98,7 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
 
     cleaned_leads = valid_leads
     if not cleaned_leads:
-        logger.info("📭 CRM: Validasyondan geçen lead kalmadı")
+        logger.info("📭 CRM: Validasyondan geçen lead kalmadı — tümü filtrelendi, state güncelleniyor")
         crm_reader.confirm_processed()
         return []
 
