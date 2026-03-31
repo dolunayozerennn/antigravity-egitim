@@ -1,0 +1,17 @@
+# Ortam değişkenleri (hassas bilgiler)
+.env
+*.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Sistem
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

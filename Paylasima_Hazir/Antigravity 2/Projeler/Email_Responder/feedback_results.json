@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "description": "Email Responder — Feedback Analiz Sonuçları (Örnek)",
+    "note": "Gerçek veriler gizlilik nedeniyle kaldırılmıştır. Bu dosya, feedback engine'in ürettiği çıktının formatını göstermek amacıyla örnek verilerle doldurulmuştur."
+  },
+  "feedback_summary": {
+    "total_analyzed": 0,
+    "positive": 0,
+    "negative": 0,
+    "neutral": 0
+  },
+  "patterns_learned": [
+    "Örnek pattern 1: Influencer'ların sıklıkla sorduğu ücret/fiyat soruları",
+    "Örnek pattern 2: Platform-specific içerik formatı tercihleri",
+    "Örnek pattern 3: Yanıt süresi beklentileri"
+  ],
+  "sample_result": {
+    "creator": "ornek_influencer",
+    "email": "ornek@email.com",
+    "sentiment": "positive",
+    "key_topics": ["fiyat", "içerik türü", "zamanlama"],
+    "response_quality_score": 0.85
+  }
+}

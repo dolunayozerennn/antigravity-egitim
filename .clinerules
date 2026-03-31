@@ -1,0 +1,27 @@
+# Antigravity — Global AI Kuralları (Tüm Modeller)
+
+> **Bu dosya Claude, Gemini veya herhangi bir model kullanılırken okunur.**
+> Model bağımsız tek kaynak: `_knowledge/calisma-kurallari.md`
+
+## ZORUNLU İLK ADIM
+
+Herhangi bir kod yazmadan, dosya silmeden veya işlem yapmadan ÖNCE aşağıdaki dosyaları **MUTLAKA** `view_file` ile oku:
+
+1. `~/Desktop/Antigravity/_knowledge/bekleyen-gorevler.md` → Yarım kalan görevler
+2. `~/Desktop/Antigravity/_knowledge/calisma-kurallari.md` → Tüm çalışma kuralları
+
+## KRİTİK KURALLAR (ÖZET)
+
+- **Self-Review:** "Yaptım" deme, hedefi oku ve "Doğruladım" de
+- **Minimal Müdahale:** Sadece kırılan yeri düzelt, çalışan koda dokunma
+- **Regression Önlemi:** Değişiklik öncesi etki analizi yap
+- **Context Window:** Büyük görevlerde parçalama öner, yarım kalan işleri `bekleyen-gorevler.md`'ye yaz
+- **MCP/API Önceliği:** GitHub, Notion, Google servisleri için tarayıcı AÇMA — MCP araçlarını kullan
+- **Mimar Modu:** Kullanıcı onaylamadan kod değiştirme
+- **Enterprise Stabilizasyon Doktrini:**
+  - Tüm paket versiyonlarını **KİLİTLE** (`requirements.txt`).
+  - Hataları `print` ile yutma, traceback ile **LOGLA**.
+  - Token/Ortam eksikse script 1. saniyede **ÇÖKSÜN** (Fail-Fast).
+  - Riskli/Toplu veri işlemi öncesi **YEDEKLE** (Snapshot).
+
+Tüm detaylar: `_knowledge/calisma-kurallari.md`

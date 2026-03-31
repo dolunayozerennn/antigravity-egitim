@@ -1,0 +1,37 @@
+============================================================
+ANNOTATION v3 — Supersampled, harmonious, blog-ready
+============================================================
+  ✅ Adım 1: Orijinal Sözleşmeyi Açın → step_01_Orijinal_Sözleşmeyi_Açın.jpg (900x677)
+  ✅ Adım 2: Metni Seçin ve Typeless'ı Başlatın → step_02_Metni_Seçin_ve_Typelessı_Başlatın.jpg (900x698)
+  ✅ Adım 3: AI İşliyor — Thinking → step_03_AI_İşliyor_-_Thinking.jpg (900x421)
+  ✅ Adım 4: Sonuç: Sözleşme Özetlendi → step_04_Sonuç_Sözleşme_Özetlendi.jpg (900x449)
+  ✅ Adım 5: İkinci Komut Verin → step_05_İkinci_Komut_Verin.jpg (900x493)
+  ✅ Adım 6: Final: Profesyonel Sözleşme → step_06_Final_Profesyonel_Sözleşme.jpg (900x676)
+
+============================================================
+Toplam 6 annotation oluşturuldu
+Tüm görseller: 900px genişliğinde (tutarlı)
+Supersampling: 2x → anti-aliased, keskin metin
+Dizin: /Users/KULLANICI_ADI/Desktop/Antigravity/Projeler/Blog_Yazici/typeless5/annotated_v3
+
+============================================================
+🔍 AI VISION SELF-REVIEW BAŞLIYOR (Groq)
+============================================================
+  🧐 İnceleniyor: Adım 1 - step_01_Orijinal_Sözleşmeyi_Açın.jpg
+    ✅ Kusursuz: Görsel testten geçti.
+  🧐 İnceleniyor: Adım 2 - step_02_Metni_Seçin_ve_Typelessı_Başlatın.jpg
+    ❌ Hata Bulundu: Eklenen çerçeve ve metin balonu (callout) orijinal metnin üzerini kapatıyor.
+    💡 Öneri: Çerçeve ve metin balonu (callout) biraz daha aşağıya taşınmalı.
+  🧐 İnceleniyor: Adım 3 - step_03_AI_İşliyor_-_Thinking.jpg
+    ❌ Hata Bulundu: Ok, metin balonu (Thinking) ve çerçeve (inking kelimesinin altı çizili) orijinal metnin üzerini kapatıyor.
+    💡 Öneri: Ok ve metin balonu sola veya sağa 10-15 piksel öteye taşınmalı
+  🧐 İnceleniyor: Adım 4 - step_04_Sonuç_Sözleşme_Özetlendi.jpg
+    ❌ Hata Bulundu: Eklenen çerçeve ve oklar, orijinal metinlerin üzerini kapatıyor. 'Hizmet Sözleşmesi Özeti' başlığını taşıyan çerçeve, altında bulunan 'Taraflar ve Konu:' metninin üzerini kapatıyor. Ayrıca, en solda bulunan yeşil 'Madde 4' etiketli ok, metinleri zor okunur hale getiriyor.
+    💡 Öneri: Çerçeve Y ekseninde 10-15 piksel aşağıya taşınmalı, ok ise metinleri kapatmayacak şekilde konumlandırılmalı veya okunmadığı durumlarda kaldırılmalı.
+  🧐 İnceleniyor: Adım 5 - step_05_İkinci_Komut_Verin.jpg
+    ❌ Hata Bulundu: Bir adet ok metnin üzerini kapatıyor.
+    💡 Öneri: Sağdaki ikinci mavi çerçevenin sol tarafına ok yerleştirilmeli ve/veya ok metinden yukarıya doğru çıkarılmalı.
+  🧐 İnceleniyor: Adım 6 - step_06_Final_Profesyonel_Sözleşme.jpg
+    ✅ Kusursuz: Görsel testten geçti.
+
+  ⚠️ 4 adet sorun tespit edildi. Yukarıdaki öneriler doğrultusunda annotate_v3.py 'ANNOTATIONS' bloğunu güncelleyebilirsiniz.

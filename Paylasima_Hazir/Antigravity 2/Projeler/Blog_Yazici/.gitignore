@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+typeless5/frames/
+typeless5/annotated_v3/
+*.jpg
+*.json

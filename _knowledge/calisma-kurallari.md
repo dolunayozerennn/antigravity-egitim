@@ -1,7 +1,7 @@
 # Çalışma Kuralları ve Tercihler
 
 Bu dosya, Antigravity ile çalışırken birikmesi gereken kişisel tercihlerini ve kuralları içerir.
-**Son güncelleme:** 17 Mart 2026
+**Son güncelleme:** 29 Mart 2026
 
 ---
 
@@ -103,6 +103,33 @@ Kullanıcı yeni bir token verdiğinde:
 **Yeni Workspace DB'leri:**
 - Dolunay Reels DB: `27b95514-0a32-8385-89eb-813222d532a2`
 - Dolunay YouTube DB: `5bb95514-0a32-821f-98cc-81605e4a971f`
+
+### ⚠️ Notion MCP Erişim Kuralı (ZORUNLU — Mart 2026+)
+
+> **Notion MCP (`notion-mcp-server`) sadece "antigravity" entegrasyonuyla paylaşılmış sayfalara erişebilir.**
+
+**Notion'a erişimde 404 alındığında:**
+1. Önce `API-get-self` ile bağlantı sağlığını doğrula
+2. `API-post-search` ile sayfayı ada göre arat
+3. Sonuç boşsa → kullanıcıya "Bu sayfayı Notion'da antigravity entegrasyonuyla paylaşman gerekiyor" de
+4. Detaylı adımlar: `_knowledge/hatalar-ve-cozumler.md` → "Notion MCP — Sayfa/Veritabanı 404 Hatası"
+
+**Yeni bir Notion sayfasına ilk erişimde:**
+- Doğrudan ID ile erişmeye çalışma → önce `API-post-search` ile var mı kontrol et
+- Yoksa paylaşım eksik demektir → kullanıcıyı bilgilendir
+
+**MCP'nin görebildiği veritabanları (doğrulanmış envanter):**
+
+| Veritabanı | ID | Workspace |
+|---|---|---|
+| AI Factory Satış Leads | `31226924-bb82-800e-9ada-d6f16399eba0` | Ana (MCP erişilebilir ✅) |
+| Dolunay Reels | `6567657a-241c-48b0-8ee4-6a0d6836f34a` | Ana (MCP erişilebilir ✅) |
+| Dolunay YouTube | `23d26924-bb82-8059-a439-d012a877e9c1` | Ana (MCP erişilebilir ✅) |
+| Antigravity Operations Log | `33095514-0a32-81b4-858a-ff81a77b6d48` | Ana (MCP erişilebilir ✅) |
+| Dolunay Reels DB (Sosyal) | `27b95514-0a32-8385-89eb-813222d532a2` | Sosyal (❌ MCP göremez, `NOTION_SOCIAL_TOKEN` kullan) |
+| Dolunay YouTube DB (Sosyal) | `5bb95514-0a32-821f-98cc-81605e4a971f` | Sosyal (❌ MCP göremez, `NOTION_SOCIAL_TOKEN` kullan) |
+
+> **Bu tablo güncellenmeli:** Yeni bir Notion DB oluşturulduğunda veya paylaşıldığında buraya ekle.
 
 ## 🌐 Dolunay_AI_Website — i18n Zorunlu Kurallar (Mart 2026+)
 

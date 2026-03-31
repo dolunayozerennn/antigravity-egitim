@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Sunucusu Nedir? — Çevirmen Metaforu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --bg: #080c1a;
+            --card: #111827;
+            --border: rgba(148, 163, 184, 0.12);
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --green: #10b981;
+            --green-glow: rgba(16, 185, 129, 0.15);
+            --purple: #a855f7;
+            --blue: #3b82f6;
+            --amber: #f59e0b;
+            --cyan: #06b6d4;
+            --red: #ef4444;
+            --pink: #ec4899;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden
+        }
+
+        /* Ambient glow */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.06), transparent 60%);
+            pointer-events: none;
+            z-index: 0
+        }
+
+        /* ========== HERO ========== */
+        .hero {
+            text-align: center;
+            padding: 50px 20px 20px;
+            position: relative;
+            z-index: 1
+        }
+
+        .hero-chip {
+            display: inline-block;
+            padding: 0.5rem 1.2rem;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--green);
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.4rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, #10b981, #34d399, #06b6d4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            margin-bottom: 14px
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--muted);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7
+        }
+
+        .hero p strong {
+            color: var(--text);
+        }
+
+        /* ========== KEY INSIGHT ========== */
+        .key-insight {
+            max-width: 900px;
+            margin: 28px auto 0;
+            padding: 22px 28px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.06));
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .key-insight .icon-bulb {
+            font-size: 2rem;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .key-insight p {
+            font-size: .95rem;
+            color: var(--text);
+            line-height: 1.7
+        }
+
+        .key-insight .hl {
+            color: var(--green);
+            font-weight: 700
+        }
+
+        /* ========== CONTAINER ========== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ========== PROBLEM SECTION ========== */
+        .problem-section {
+            margin-top: 48px;
+        }
+
+        .section-heading {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .section-heading h2 {
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .section-heading p {
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        /* Before/After Comparison */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 0;
+            align-items: stretch;
+            margin-top: 24px;
+        }
+
+        .comparison-card {
+            border-radius: 24px;
+            padding: 32px 28px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .comparison-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .comparison-card.without {
+            background: linear-gradient(180deg, rgba(239, 68, 68, 0.06) 0%, var(--card) 30%);
+        }
+
+        .comparison-card.without::before {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+
+        .comparison-card.with {
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.06) 0%, var(--card) 30%);
+        }
+
+        .comparison-card.with::before {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .comparison-card .card-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: .78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 20px;
+        }
+
+        .comparison-card.without .card-tag {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+
+        .comparison-card.with .card-tag {
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .scenario-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .scenario-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            margin-bottom: 10px;
+        }
+
+        .scenario-step .step-emoji {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            line-height: 1;
+            margin-top: 2px;
+        }
+
+        .scenario-step .step-text {
+            font-size: .9rem;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .scenario-step .step-text strong {
+            color: var(--text);
+        }
+
+        .scenario-result {
+            margin-top: 16px;
+            padding: 14px 18px;
+            border-radius: 14px;
+            font-size: .95rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-card.without .scenario-result {
+            background: rgba(239, 68, 68, 0.08);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.15);
+        }
+
+        .comparison-card.with .scenario-result {
+            background: rgba(16, 185, 129, 0.08);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+
+        /* VS divider */
+        .vs-divider {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 16px;
+        }
+
+        .vs-line {
+            width: 2px;
+            flex: 1;
+            background: linear-gradient(180deg, transparent, rgba(148, 163, 184, 0.2), transparent);
+        }
+
+        .vs-badge {
+            padding: 10px 14px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            font-size: .85rem;
+            font-weight: 900;
+            color: var(--muted);
+        }
+
+        /* ========== HOW IT WORKS — Visual Flow ========== */
+        .flow-section {
+            margin-top: 60px;
+        }
+
+        .flow-visual {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            justify-content: center;
+            margin-top: 32px;
+        }
+
+        .flow-entity {
+            flex: 1;
+            max-width: 320px;
+            padding: 28px 24px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            transition: transform .3s;
+        }
+
+        .flow-entity:hover {
+            transform: translateY(-4px);
+        }
+
+        .flow-entity .entity-icon {
+            font-size: 3.5rem;
+            line-height: 1;
+        }
+
+        .flow-entity h3 {
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+
+        .flow-entity .entity-role {
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--muted);
+            padding: 4px 14px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+        }
+
+        .flow-entity .entity-desc {
+            font-size: .88rem;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .flow-entity.ai {
+            border-color: rgba(168, 85, 247, 0.25);
+            background: linear-gradient(180deg, rgba(168, 85, 247, 0.06) 0%, var(--card) 30%);
+        }
+
+        .flow-entity.ai h3 {
+            color: var(--purple);
+        }
+
+        .flow-entity.mcp {
+            border-color: rgba(16, 185, 129, 0.3);
+            background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, var(--card) 30%);
+            transform: scale(1.04);
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.06);
+        }
+
+        .flow-entity.mcp:hover {
+            transform: scale(1.07) translateY(-4px);
+        }
+
+        .flow-entity.mcp h3 {
+            color: var(--green);
+        }
+
+        .flow-entity.world {
+            border-color: rgba(59, 130, 246, 0.25);
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.06) 0%, var(--card) 30%);
+        }
+
+        .flow-entity.world h3 {
+            color: var(--blue);
+        }
+
+        /* Arrows between entities */
+        .flow-arrow-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+            gap: 6px;
+        }
+
+        .flow-arrow-label {
+            font-size: .7rem;
+            font-weight: 700;
+            color: var(--green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+        }
+
+        .flow-arrow-icon {
+            font-size: 1.8rem;
+            color: var(--green);
+            animation: arrowPulse 2s infinite;
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { opacity: .4; transform: translateX(0); }
+            50% { opacity: 1; transform: translateX(3px); }
+        }
+
+        /* ========== REAL EXAMPLES ========== */
+        .examples-section {
+            margin-top: 60px;
+        }
+
+        .example-scenario {
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            padding: 32px;
+            margin-bottom: 20px;
+            transition: transform .3s;
+        }
+
+        .example-scenario:hover {
+            transform: translateY(-3px);
+        }
+
+        .example-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .example-header .ex-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            flex-shrink: 0;
+        }
+
+        .example-header .ex-icon.github {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .example-header .ex-icon.google {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .example-header .ex-icon.web {
+            background: rgba(6, 182, 212, 0.1);
+        }
+
+        .example-header h4 {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .example-header .ex-subtitle {
+            font-size: .85rem;
+            color: var(--muted);
+        }
+
+        /* Conversation Flow */
+        .conversation {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .msg {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+            font-weight: 800;
+        }
+
+        .msg-avatar.user {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--amber);
+        }
+
+        .msg-avatar.mcp {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--green);
+        }
+
+        .msg-avatar.tool {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--blue);
+        }
+
+        .msg-bubble {
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: .88rem;
+            line-height: 1.5;
+            max-width: 80%;
+        }
+
+        .msg-bubble.user-bubble {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            color: var(--text);
+        }
+
+        .msg-bubble.mcp-bubble {
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            color: var(--text);
+        }
+
+        .msg-bubble.tool-bubble {
+            background: rgba(59, 130, 246, 0.06);
+            border: 1px solid rgba(59, 130, 246, 0.12);
+            color: var(--muted);
+            font-size: .82rem;
+        }
+
+        .msg-bubble .hl-green {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .msg-bubble .hl-blue {
+            color: var(--blue);
+            font-weight: 700;
+        }
+
+        .msg-bubble .hl-amber {
+            color: var(--amber);
+            font-weight: 700;
+        }
+
+        /* ========== CONNECTED MCP LIST ========== */
+        .mcp-list-section {
+            margin-top: 60px;
+        }
+
+        .mcp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .mcp-item {
+            padding: 22px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            transition: all .3s;
+        }
+
+        .mcp-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(148, 163, 184, 0.25);
+            transform: translateY(-3px);
+        }
+
+        .mcp-item .mcp-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .mcp-item h5 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .mcp-item p {
+            font-size: .82rem;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        .mcp-item .mcp-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .mcp-item .tool-tag {
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-size: .7rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--muted);
+        }
+
+        /* MCP icon colors */
+        .mcp-icon.github {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .mcp-icon.google {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .mcp-icon.filesystem {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .mcp-icon.db {
+            background: rgba(6, 182, 212, 0.1);
+        }
+
+        /* ========== BOTTOM NOTE ========== */
+        .bottom-note {
+            max-width: 900px;
+            margin: 60px auto 60px;
+            padding: 36px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.04), rgba(168, 85, 247, 0.04), rgba(59, 130, 246, 0.04));
+            border: 1px solid var(--border);
+            text-align: center;
+            position: relative;
+            z-index: 1
+        }
+
+        .bottom-note h3 {
+            font-size: 1.7rem;
+            font-weight: 900;
+            margin-bottom: 14px
+        }
+
+        .bottom-note p {
+            color: var(--muted);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+            font-size: 1.05rem
+        }
+
+        .bottom-note .hl-green {
+            color: var(--green);
+            font-weight: 700
+        }
+
+        .bottom-note .hl-purple {
+            color: var(--purple);
+            font-weight: 700
+        }
+
+        .bottom-note .hl-blue {
+            color: var(--blue);
+            font-weight: 700
+        }
+
+        /* ========== ANIMATIONS ========== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .animate {
+            animation: fadeInUp .6s ease forwards;
+            opacity: 0
+        }
+
+        .delay-1 { animation-delay: .1s }
+        .delay-2 { animation-delay: .2s }
+        .delay-3 { animation-delay: .3s }
+        .delay-4 { animation-delay: .4s }
+        .delay-5 { animation-delay: .5s }
+        .delay-6 { animation-delay: .6s }
+        .delay-7 { animation-delay: .7s }
+        .delay-8 { animation-delay: .8s }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 900px) {
+            .comparison {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .vs-divider {
+                flex-direction: row;
+                padding: 16px 0;
+            }
+
+            .vs-line {
+                width: auto;
+                height: 2px;
+                flex: 1;
+            }
+
+            .flow-visual {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .flow-entity {
+                max-width: 100%;
+            }
+
+            .flow-entity.mcp {
+                transform: scale(1);
+            }
+
+            .flow-arrow-container {
+                padding: 8px 0;
+            }
+
+            .flow-arrow-label {
+                writing-mode: horizontal-tb;
+                transform: none;
+            }
+
+            .flow-arrow-icon {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ==================== HERO ==================== -->
+    <div class="hero animate">
+        <div class="hero-chip">Antigravity Eğitim Görseli</div>
+        <h1>MCP Sunucusu Nedir?</h1>
+        <p>
+            Yapay zeka <strong>çok zekidir</strong> ama <strong>elleri yoktur</strong>.
+            MCP sunucusu ona <strong>el ve araç verir</strong> — böylece dış dünyada iş yapabilir.
+        </p>
+    </div>
+
+    <!-- ==================== KEY INSIGHT ==================== -->
+    <div class="key-insight animate delay-1">
+        <div class="icon-bulb">💡</div>
+        <p>
+            Düşün: Çok zeki bir <span class="hl">yabancı mühendis</span> Türkiye'ye geldi.
+            Her şeyi bilir ama <span class="hl">Türkçe konuşamaz</span>.
+            Ne yaparsın? Ona bir <span class="hl">çevirmen</span> tutarsın.
+            Çevirmen, mühendisin isteklerini anlayıp yerel dünyada uygular.
+            <br><br>
+            İşte <strong>MCP sunucusu</strong> = <span class="hl">Yapay zekanın çevirmeni</span>.
+        </p>
+    </div>
+
+    <div class="container">
+
+        <!-- ==================== PROBLEM: BEFORE / AFTER ==================== -->
+        <div class="problem-section animate delay-2">
+            <div class="section-heading">
+                <h2>MCP Olmazsa Ne Olur?</h2>
+                <p>Aynı görevi MCP'siz ve MCP'li yapmayı karşılaştıralım.</p>
+            </div>
+
+            <div class="comparison">
+
+                <!-- WITHOUT MCP -->
+                <div class="comparison-card without animate delay-3">
+                    <div class="card-tag">❌ MCP Olmadan</div>
+                    <div class="scenario-title">
+                        <span>📋</span> "GitHub'daki hataları listele"
+                    </div>
+
+                    <div class="scenario-step">
+                        <span class="step-emoji">🧠</span>
+                        <div class="step-text">AI düşünür: <strong>"GitHub'a bakmam lazım"</strong></div>
+                    </div>
+                    <div class="scenario-step">
+                        <span class="step-emoji">🚫</span>
+                        <div class="step-text">Ama GitHub'a <strong>bağlanamaz</strong>. Eli yok, göremez.</div>
+                    </div>
+                    <div class="scenario-step">
+                        <span class="step-emoji">🙋</span>
+                        <div class="step-text">Sana döner: <strong>"Lütfen sen GitHub'ı aç, kopyala, yapıştır."</strong></div>
+                    </div>
+                    <div class="scenario-step">
+                        <span class="step-emoji">😩</span>
+                        <div class="step-text"><strong>Sen</strong> aç-kopyala-yapıştır yap. AI yardımcı olamadı.</div>
+                    </div>
+
+                    <div class="scenario-result">
+                        <span>⏱️</span> Sonuç: 10 dakika, senin emeğin
+                    </div>
+                </div>
+
+                <!-- VS -->
+                <div class="vs-divider">
+                    <div class="vs-line"></div>
+                    <div class="vs-badge">VS</div>
+                    <div class="vs-line"></div>
+                </div>
+
+                <!-- WITH MCP -->
+                <div class="comparison-card with animate delay-3">
+                    <div class="card-tag">✅ MCP ile</div>
+                    <div class="scenario-title">
+                        <span>📋</span> "GitHub'daki hataları listele"
+                    </div>
+
+                    <div class="scenario-step">
+                        <span class="step-emoji">🧠</span>
+                        <div class="step-text">AI düşünür: <strong>"GitHub MCP'yi kullanayım"</strong></div>
+                    </div>
+                    <div class="scenario-step">
+                        <span class="step-emoji">🔌</span>
+                        <div class="step-text">MCP sunucusu <strong>GitHub'a bağlanır</strong> ve issue'ları çeker.</div>
+                    </div>
+                    <div class="scenario-step">
+                        <span class="step-emoji">📊</span>
+                        <div class="step-text">AI sonuçları anlar, <strong>sana özetler</strong> ve çözüm önerir.</div>
+                    </div>
+                    <div class="scenario-step">
+                        <span class="step-emoji">✨</span>
+                        <div class="step-text">Sen sadece <strong>"listeyi göster"</strong> dedin. Gerisi otomatik.</div>
+                    </div>
+
+                    <div class="scenario-result">
+                        <span>⚡</span> Sonuç: 5 saniye, sıfır çaba
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==================== HOW IT WORKS — 3-Entity Flow ==================== -->
+        <div class="flow-section animate delay-4">
+            <div class="section-heading">
+                <h2>Nasıl Çalışır?</h2>
+                <p>3 parçası var. Hepsi bu kadar.</p>
+            </div>
+
+            <div class="flow-visual">
+
+                <!-- Entity: AI -->
+                <div class="flow-entity ai">
+                    <div class="entity-icon">🧠</div>
+                    <h3>Yapay Zeka</h3>
+                    <div class="entity-role">Düşünen Kişi</div>
+                    <div class="entity-desc">
+                        Çok zeki. Plan yapar, analiz eder.
+                        Ama <strong>dışarıya el uzatamaz</strong>.
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="flow-arrow-container">
+                    <div class="flow-arrow-label">İstek</div>
+                    <div class="flow-arrow-icon">⟶</div>
+                    <div class="flow-arrow-icon" style="animation-delay: .5s;">⟵</div>
+                    <div class="flow-arrow-label">Cevap</div>
+                </div>
+
+                <!-- Entity: MCP -->
+                <div class="flow-entity mcp">
+                    <div class="entity-icon">🔌</div>
+                    <h3>MCP Sunucusu</h3>
+                    <div class="entity-role">Çevirmen / Köprü</div>
+                    <div class="entity-desc">
+                        AI'ın isteklerini alır,
+                        <strong>dış dünyada uygular</strong>,
+                        sonucu geri getirir.
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="flow-arrow-container">
+                    <div class="flow-arrow-label">Eylem</div>
+                    <div class="flow-arrow-icon">⟶</div>
+                    <div class="flow-arrow-icon" style="animation-delay: .5s;">⟵</div>
+                    <div class="flow-arrow-label">Veri</div>
+                </div>
+
+                <!-- Entity: World -->
+                <div class="flow-entity world">
+                    <div class="entity-icon">🌍</div>
+                    <h3>Dış Dünya</h3>
+                    <div class="entity-role">Gerçek Araçlar</div>
+                    <div class="entity-desc">
+                        GitHub, Gmail, dosyalar,
+                        veritabanları, web siteleri…
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==================== LIVE EXAMPLES — Conversation Style ==================== -->
+        <div class="examples-section animate delay-5">
+            <div class="section-heading">
+                <h2>Gerçek Hayattan 3 Örnek</h2>
+                <p>MCP sunucusu arka planda neler yapıyor? İşte tam görebilmen için senaryo bazlı örnekler.</p>
+            </div>
+
+            <!-- Example 1: GitHub -->
+            <div class="example-scenario animate delay-5">
+                <div class="example-header">
+                    <div class="ex-icon github">🐙</div>
+                    <div>
+                        <h4>GitHub MCP Sunucusu</h4>
+                        <div class="ex-subtitle">AI'ın kod deposuna erişimini sağlar</div>
+                    </div>
+                </div>
+                <div class="conversation">
+                    <div class="msg">
+                        <div class="msg-avatar user">👤</div>
+                        <div class="msg-bubble user-bubble">
+                            "Projemizdeki <span class="hl-amber">açık hataları</span> listele ve en acil olanı düzelt"
+                        </div>
+                    </div>
+                    <div class="msg">
+                        <div class="msg-avatar mcp">🔌</div>
+                        <div class="msg-bubble mcp-bubble">
+                            <span class="hl-green">GitHub MCP</span> devreye giriyor →
+                            <em>list_issues</em> ve <em>create_pull_request</em> araçlarını kullanıyor
+                        </div>
+                    </div>
+                    <div class="msg">
+                        <div class="msg-avatar tool">📦</div>
+                        <div class="msg-bubble tool-bubble">
+                            GitHub'dan 5 açık issue çekildi. #42 kritik → AI düzeltme kodu yazdı → PR açıldı.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Example 2: Google Workspace -->
+            <div class="example-scenario animate delay-6">
+                <div class="example-header">
+                    <div class="ex-icon google">📧</div>
+                    <div>
+                        <h4>Google Workspace MCP Sunucusu</h4>
+                        <div class="ex-subtitle">AI'ın Gmail, Calendar, Drive'a erişimini sağlar</div>
+                    </div>
+                </div>
+                <div class="conversation">
+                    <div class="msg">
+                        <div class="msg-avatar user">👤</div>
+                        <div class="msg-bubble user-bubble">
+                            "Bugünkü <span class="hl-amber">toplantılarımı</span> göster ve dünkü e-postalardan özetler çıkar"
+                        </div>
+                    </div>
+                    <div class="msg">
+                        <div class="msg-avatar mcp">🔌</div>
+                        <div class="msg-bubble mcp-bubble">
+                            <span class="hl-green">Google MCP</span> devreye giriyor →
+                            <em>get_events</em> (takvim) ve <em>search_gmail</em> (e-posta) araçlarını kullanıyor
+                        </div>
+                    </div>
+                    <div class="msg">
+                        <div class="msg-avatar tool">📦</div>
+                        <div class="msg-bubble tool-bubble">
+                            3 toplantı bulundu (14:00, 16:00, 18:30). 12 e-posta okundu → Özet oluşturuldu.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Example 3: Web Search -->
+            <div class="example-scenario animate delay-7">
+                <div class="example-header">
+                    <div class="ex-icon web">🌐</div>
+                    <div>
+                        <h4>Web Araştırma</h4>
+                        <div class="ex-subtitle">AI'ın internette arama yapmasını sağlar</div>
+                    </div>
+                </div>
+                <div class="conversation">
+                    <div class="msg">
+                        <div class="msg-avatar user">👤</div>
+                        <div class="msg-bubble user-bubble">
+                            "Dubai'de <span class="hl-amber">en çok kazandıran bölgeleri</span> araştır"
+                        </div>
+                    </div>
+                    <div class="msg">
+                        <div class="msg-avatar mcp">🔌</div>
+                        <div class="msg-bubble mcp-bubble">
+                            <span class="hl-green">Web MCP</span> devreye giriyor →
+                            <em>search_web</em> ve <em>read_url_content</em> araçlarını kullanıyor
+                        </div>
+                    </div>
+                    <div class="msg">
+                        <div class="msg-avatar tool">📦</div>
+                        <div class="msg-bubble tool-bubble">
+                            15 kaynak tarandı → Downtown, JVC, Business Bay bölgeleri analiz edildi → Rapor hazırlandı.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== CONNECTED MCP LIST ==================== -->
+        <div class="mcp-list-section animate delay-7">
+            <div class="section-heading">
+                <h2>Antigravity'nin Bağlı MCP'leri</h2>
+                <p>Senin asistanının şu an kullanabildiği araç kutuları</p>
+            </div>
+
+            <div class="mcp-grid">
+                <div class="mcp-item">
+                    <div class="mcp-icon github">🐙</div>
+                    <div>
+                        <h5>GitHub MCP</h5>
+                        <p>Kod oku, commit at, PR aç, issue yönet</p>
+                        <div class="mcp-tools">
+                            <span class="tool-tag">Issue</span>
+                            <span class="tool-tag">PR</span>
+                            <span class="tool-tag">Commit</span>
+                            <span class="tool-tag">Branch</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mcp-item">
+                    <div class="mcp-icon google">📧</div>
+                    <div>
+                        <h5>Google Workspace MCP</h5>
+                        <p>Gmail, Calendar, Drive, Sheets — hepsine eriş</p>
+                        <div class="mcp-tools">
+                            <span class="tool-tag">E-posta</span>
+                            <span class="tool-tag">Takvim</span>
+                            <span class="tool-tag">Drive</span>
+                            <span class="tool-tag">Sheets</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mcp-item">
+                    <div class="mcp-icon filesystem">📁</div>
+                    <div>
+                        <h5>Dosya Sistemi</h5>
+                        <p>Bilgisayarındaki dosyaları oku, yaz, düzenle</p>
+                        <div class="mcp-tools">
+                            <span class="tool-tag">Oku</span>
+                            <span class="tool-tag">Yaz</span>
+                            <span class="tool-tag">Ara</span>
+                            <span class="tool-tag">Düzenle</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mcp-item">
+                    <div class="mcp-icon db">🌐</div>
+                    <div>
+                        <h5>Web Araştırma</h5>
+                        <p>İnternette arama yap, sayfaları oku ve analiz et</p>
+                        <div class="mcp-tools">
+                            <span class="tool-tag">Search</span>
+                            <span class="tool-tag">Read</span>
+                            <span class="tool-tag">Analiz</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== BOTTOM NOTE ==================== -->
+        <div class="bottom-note animate delay-8">
+            <h3>Özetle 🎯</h3>
+            <p>
+                <span class="hl-purple">Yapay zeka</span> çok zeki ama el uzatamaz.
+                <span class="hl-green">MCP sunucuları</span> ona el verir.
+                <br><br>
+                Her MCP, AI'a <strong>farklı bir dünyaya erişim</strong> sağlar:
+                biri <span class="hl-blue">GitHub'a</span> bağlar, biri <span class="hl-blue">Gmail'e</span>,
+                biri <span class="hl-blue">dosyalara</span>.
+                <br><br>
+                Ne kadar çok MCP bağlarsan, AI o kadar çok iş yapabilir. 🚀
+            </p>
+        </div>
+
+    </div><!-- container -->
+
+</body>
+
+</html>

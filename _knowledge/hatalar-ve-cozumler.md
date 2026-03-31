@@ -241,6 +241,36 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Kural:** MCP sunucularını mümkünse Docker yerine npx/uvx ile çalıştır — Docker Desktop bağımlılığını ortadan kaldırır.
 - **Tarih:** Mart 2026
 
+### Notion MCP — Sayfa/Veritabanı 404 Hatası (ERİŞİM İZNİ EKSİK)
+- **Sorun:** Notion MCP bağlantısı (`API-get-self`) başarılı dönüyor ama belirli sayfa veya veritabanına erişmeye çalışınca `404 Not Found` veya `Could not find ...` hatası alınıyor.
+- **Kök Neden:** Notion entegrasyonları (örn. "antigravity" botu) **sadece kendilerine açıkça paylaşılmış** sayfalara erişebilir. Workspace'teki tüm sayfaları otomatik göremez. Kullanıcı yeni bir sayfa oluşturduğunda veya mevcut bir sayfayı paylaşmak istediğinde, o sayfayı entegrasyonla paylaşmamış olabilir.
+- **Belirtiler:**
+  - `API-get-self` başarılı (bot bilgisi döner) ama `API-retrieve-a-page`, `API-query-data-source` hata verir
+  - `API-post-search` ile aratıldığında sayfa sonuçlarda çıkmaz
+  - Aynı workspace'teki bazı sayfalar çalışır, bazıları 404 verir
+- **Çözüm (Kullanıcı Tarafında — 30 saniye):**
+  1. Notion'da ilgili sayfaya git
+  2. Sağ üst köşede `...` (üç nokta) menüsüne tıkla
+  3. **"Connections"** (veya "Bağlantılar") seçeneğini bul
+  4. **"antigravity"** entegrasyonunu ekle (ara ve seç)
+  5. Eğer sayfa bir inline database içeriyorsa, **üst sayfa (parent page)** paylaşılmalı — sadece inline DB paylaşılamaz
+  6. Alt sayfalar (child pages) otomatik olarak üst sayfanın iznini miras alır
+- **Tanı Prosedürü (AI Tarafında):**
+  1. Önce `API-get-self` ile bağlantı sağlığını doğrula
+  2. Sonra `API-post-search` ile sayfayı ada göre arat
+  3. Arama sonucu boşsa → paylaşım eksik → kullanıcıya Connection ekleme talimatı ver
+  4. Arama sonucu varsa → dönen `id` ile doğrudan erişmeyi dene
+- **Önleme:** Yeni bir Notion sayfası/veritabanı ile çalışılacağında, **ilk iş** sayfanın "antigravity" entegrasyonuyla paylaşılıp paylaşılmadığını `API-post-search` ile kontrol et. Bulunamazsa kullanıcıya hemen sor — saatlerce 404 debug etme.
+- **Tarih:** Mart 2026
+
+### Notion MCP — Çift Workspace (İki Farklı Token) Karışıklığı
+- **Sorun:** Antigravity sisteminde iki ayrı Notion workspace var. MCP `notion-mcp-server` sadece **bir** workspace'e bağlı olabilir. Yanlış workspace'teki sayfaya erişmeye çalışınca 404 alınır.
+- **Mevcut MCP Bağlantısı:** `Dolunay Özeren's Notion` workspace'i (antigravity botu)
+- **Diğer Workspace:** `NOTION_SOCIAL_TOKEN` ile erişilen sosyal medya workspace'i (Ceren, Video İçerik Akışları vb.)
+- **Çözüm:** MCP ile erişilemeyen workspace'teki verilere `curl` + `NOTION_SOCIAL_TOKEN` ile ulaş (Python script veya `run_command`). MCP sadece antigravity botunun bağlı olduğu workspace'i görür.
+- **Kural:** `calisma-kurallari.md`'deki Notion Workspace Yapısı tablosuna bak — hangi DB'nin hangi workspace'te olduğunu kontrol et.
+- **Tarih:** Mart 2026
+
 ---
 
 ## Railway — SMTP Port Engellemesi (KRİTİK)
