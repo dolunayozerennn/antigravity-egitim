@@ -276,10 +276,8 @@ def _format_analysis_reply(parsed: dict, success: bool, notion_url: str | None) 
 
     if notion_url:
         lines.append(f"\n📋 [Notion'da Görüntüle]({notion_url})")
-    elif notion_url is None and not parsed:
-        pass
     else:
-        lines.append("\n📋 _Notion'a kaydedildi_")
+        lines.append("\n⚠️ _Notion'a kayıt başarısız oldu_")
 
     return "\n".join(lines)
 

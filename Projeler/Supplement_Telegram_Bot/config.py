@@ -16,7 +16,8 @@ class Config:
         self.GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
         # ── Notion ──
-        self.NOTION_TOKEN = self._require_env("NOTION_TOKEN")
+        # Database, social integration ile paylaşılmış — önce NOTION_TOKEN, sonra NOTION_SOCIAL_TOKEN dene
+        self.NOTION_TOKEN = os.environ.get("NOTION_TOKEN") or self._require_env("NOTION_SOCIAL_TOKEN")
         self.NOTION_DB_ID = self._require_env("NOTION_DB_ID")
 
         # ── Yetkilendirilmiş kullanıcılar (Telegram ID) ──
