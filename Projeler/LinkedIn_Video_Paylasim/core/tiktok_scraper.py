@@ -11,14 +11,14 @@ class TikTokScraper:
         self.download_dir = "/tmp/linkedin_paylasim"
         os.makedirs(self.download_dir, exist_ok=True)
 
-    def get_latest_video_info(self):
+    def get_recent_videos(self, count=10):
         """
-        Fetches the latest video's metadata from the assigned TikTok profile.
-        Returns a dict: {'id': '...', 'title': '...', 'url': '...', 'ext': 'mp4'} or None.
+        Fetches the latest N videos' metadata from the assigned TikTok profile.
+        Returns a list of dicts: [{'id': '...', 'title': '...', 'url': '...'}, ...] or empty list.
         """
         ydl_opts = {
             'extract_flat': True,
-            'playlistend': 1,
+            'playlistend': count,
             'quiet': True,
             'no_warnings': True,
         }
@@ -27,23 +27,24 @@ class TikTokScraper:
             try:
                 result = ydl.extract_info(self.profile_url, download=False)
                 if 'entries' in result and len(result['entries']) > 0:
-                    latest = result['entries'][0]
-                    video_id = latest.get('id')
-                    title = latest.get('title', '')
-                    url = latest.get('url', f"https://www.tiktok.com/@{self.username}/video/{video_id}")
-
-                    logging.info(f"Found latest video ID: {video_id} - Title snippet: {title[:50]}...")
-                    return {
-                        "id": video_id,
-                        "title": title,
-                        "url": url
-                    }
+                    videos = []
+                    for entry in result['entries']:
+                        video_id = entry.get('id')
+                        title = entry.get('title', '')
+                        url = entry.get('url', f"https://www.tiktok.com/@{self.username}/video/{video_id}")
+                        videos.append({
+                            "id": video_id,
+                            "title": title,
+                            "url": url
+                        })
+                    logging.info(f"Found {len(videos)} recent videos on profile.")
+                    return videos
                 else:
                     logging.warning(f"No videos found on profile: {self.profile_url}")
-                    return None
+                    return []
             except Exception as e:
                 logging.error(f"Error extracting profile info for {self.profile_url}: {e}", exc_info=True)
-                return None
+                return []
 
     def download_video(self, video_url: str, output_id: str) -> str:
         """
