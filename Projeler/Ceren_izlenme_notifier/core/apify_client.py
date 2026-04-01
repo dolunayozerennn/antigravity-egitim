@@ -154,15 +154,16 @@ def get_youtube_data():
                 continue
                 
             views = item.get("viewCount") or item.get("views") or 0
-            if isinstance(views, str) and "K" in views:
-                views_num = float(views.replace("K", "").replace("M", "000").split(" ")[0]) * 1000
-            elif isinstance(views, str) and "M" in views:
-                views_num = float(views.replace("M", "").split(" ")[0]) * 1000000
-            else:
-                try:
-                    views_num = int(str(views).replace(",", "").replace(".", "").split(" ")[0])
-                except:
-                    views_num = 0
+            views_str = str(views).strip().upper().replace(",", "").replace(" ", "")
+            try:
+                if "M" in views_str:
+                    views_num = int(float(views_str.replace("M", "")) * 1_000_000)
+                elif "K" in views_str:
+                    views_num = int(float(views_str.replace("K", "")) * 1_000)
+                else:
+                    views_num = int(float(views_str.replace(".", "")))
+            except (ValueError, TypeError):
+                views_num = 0
                     
             url = item.get("url") or item.get("videoUrl") or ""
             is_shorts = "/shorts/" in url or item.get("isShorts")

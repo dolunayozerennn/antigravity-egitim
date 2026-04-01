@@ -31,6 +31,9 @@ GITHUB_OWNER = "dolunayozerennn"
 GITHUB_REPO = "Dolunay_AI_Website"
 GITHUB_BRANCH = "main"
 
+# Netlify Build Hook — push sonrası otomatik deploy tetikler
+NETLIFY_BUILD_HOOK_URL = "https://api.netlify.com/build_hooks/69cd7618168c1cbf4aab0e10"
+
 # Dosya yolları (repo içi)
 BLOG_CONTENT_DIR = "src/content/blog"
 BLOG_IMAGES_DIR = "public/images/blog"
@@ -279,6 +282,18 @@ def publish_blog(video_dir: str, slug: str, blog_title: str = "") -> bool:
 
     if success:
         blog_url = f"https://dolunay.ai/blog/{slug}"
+        print(f"\n  📡 Netlify build hook tetikleniyor...")
+
+        # Netlify Build Hook tetikle
+        try:
+            hook_resp = requests.post(NETLIFY_BUILD_HOOK_URL, timeout=15)
+            if hook_resp.ok:
+                print(f"  ✅ Netlify build başarıyla tetiklendi (HTTP {hook_resp.status_code})")
+            else:
+                print(f"  ⚠️ Netlify hook yanıtı: HTTP {hook_resp.status_code}")
+        except Exception as e:
+            print(f"  ⚠️ Netlify hook tetiklenemedi (GitHub auto-deploy devreye girecek): {e}")
+
         print(f"\n  {'='*50}")
         print(f"  ✅ BLOG YAYINLANDI!")
         print(f"  {'='*50}")

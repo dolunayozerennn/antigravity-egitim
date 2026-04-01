@@ -98,8 +98,8 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
 
     cleaned_leads = valid_leads
     if not cleaned_leads:
-        logger.info("📭 CRM: Validasyondan geçen lead kalmadı — tümü filtrelendi, state güncelleniyor")
-        crm_reader.confirm_processed()
+        logger.info("📭 CRM: Validasyondan geçen lead kalmadı — tümü filtrelendi, state ROLLBACK yapılıyor (sessiz veri kaybı engellendi)")
+        crm_reader.rollback_pending()
         return []
 
     # Toplu (bulk) duplikasyon kontrolü — API çağrılarını azaltır
@@ -161,13 +161,15 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
     # Notion ops log
     ops = get_ops_logger("Lead_Pipeline", "CRM")
     if stats['error'] > 0:
-        ops.warning("CRM Pipeline tamamlandı (hatalarla)", summary_msg)
+        ops.warning("CRM Pipeline tamamlandı (hatalarla) - ROLLBACK tetiklendi", summary_msg)
+        logger.warning("⚠️ Notion API hataları nedeniyle state GÜNCELLENMEDİ (Rollback yapıldı, bir sonraki turda hatalılar tekrar denenecek)")
+        crm_reader.rollback_pending()
     elif stats['created'] > 0:
         ops.success("CRM Pipeline tamamlandı", summary_msg)
+        crm_reader.confirm_processed()
     else:
         ops.info("CRM Pipeline tamamlandı", summary_msg)
-
-    crm_reader.confirm_processed()
+        crm_reader.confirm_processed()
 
 
 def run_notifier_pipeline(notifier_reader: SheetsReader):

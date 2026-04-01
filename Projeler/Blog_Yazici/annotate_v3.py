@@ -69,7 +69,7 @@ def get_font(size):
     for path in candidates:
         try:
             return ImageFont.truetype(path, scaled_size)
-        except:
+        except Exception:
             continue
     return ImageFont.load_default()
 
