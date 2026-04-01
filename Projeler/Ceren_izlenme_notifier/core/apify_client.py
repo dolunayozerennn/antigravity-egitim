@@ -1,0 +1,194 @@
+from apify_client import ApifyClient
+from datetime import datetime, timedelta, timezone
+from logger import get_logger
+from config import settings
+
+logger = get_logger(__name__)
+
+# Initialize the ApifyClient with your API token
+client = ApifyClient(settings.APIFY_API_KEY)
+
+def is_within_7_days(date_str):
+    """
+    Checks if a given ISO8601 date string or timestamp is within the last 7 days.
+    """
+    if not date_str:
+        return False
+        
+    try:
+        if isinstance(date_str, (int, float)):
+            # Handle standard unix timestamp (seconds). Sometimes scrapers return milliseconds.
+            if date_str > 1e11:  # ms
+                date_str = date_str / 1000
+            dt = datetime.fromtimestamp(date_str, tz=timezone.utc)
+        else:
+            # Handle ISO string like "2024-03-01T12:00:00.000Z"
+            # Replacing Z with +00:00 for python 3.10-, or use fromisoformat
+            date_str = date_str.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(date_str)
+            
+        now = datetime.now(timezone.utc)
+        margin = timedelta(days=7)
+        return now - dt <= margin
+    except Exception as e:
+        logger.warning(f"Tarih ayristirma hatasi: {date_str} - {e}")
+        return False
+
+def get_instagram_data():
+    """
+    Instagram'dan profil bazli son gonderileri ceker ve filtrelenmis videoları listeler.
+    Reels icin baraj: 200K > izlenme
+    """
+    logger.info("Instagram verileri çekiliyor...")
+    videos = []
+    try:
+        post_run_input = {
+            "usernames": ["dolunay_ozeren"],
+            "resultsLimit": 30
+        }
+        
+        run = client.actor("apify/instagram-profile-scraper").call(run_input=post_run_input)
+        
+        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+            # sometimesposts are inside latestPosts
+            posts = item.get("latestPosts", [item]) if "latestPosts" in item else [item]
+            for post in posts:
+                dt = post.get("timestamp") or post.get("postedAt")
+                if not is_within_7_days(dt):
+                    continue
+                    
+                is_video = post.get("type") == "Video" or post.get("videoViewCount") is not None
+                
+                if is_video:
+                    views = post.get("videoViewCount") or post.get("viewCount") or 0
+                    if int(views) >= 200000:
+                        videos.append({
+                            "platform": "Instagram Reels",
+                            "url": post.get("url"),
+                            "views": views,
+                            "date": dt
+                        })
+                    
+    except Exception as e:
+        logger.error(f"Instagram scrapinge hatasi: {e}", exc_info=True)
+    return videos
+
+def get_tiktok_data():
+    """
+    TikTok'tan son 7 gunku videolari ceker. Baraj: 100K > izlenme
+    """
+    logger.info("TikTok verileri çekiliyor...")
+    videos = []
+    try:
+        tk_run_input = {
+            "profiles": ["dolunayozeren"],
+            "resultsPerPage": 30,
+            "downloadVideo": False
+        }
+        # tiktok-profile-scraper actor ID from the list
+        run = client.actor("0FXVyOXXEmdGcV88a").call(run_input=tk_run_input)
+        
+        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+            dt = item.get("createTime") or item.get("createTimeISO")
+            if not is_within_7_days(dt):
+                continue
+                
+            views = item.get("playCount") or 0
+            if isinstance(views, str):
+                views = int(views.replace(",", ""))
+                
+            if views >= 100000:
+                videos.append({
+                    "platform": "TikTok",
+                    "url": item.get("webVideoUrl") or item.get("videoUrl"),
+                    "views": views,
+                    "date": dt
+                })
+                
+    except Exception as e:
+        logger.error(f"TikTok scrapinge hatasi: {e}", exc_info=True)
+        
+    return videos
+
+def get_youtube_data():
+    """
+    YouTube'dan son 7 gunku videolari ve Shorts iceriklerini ceker. 
+    Baraj: Shorts >= 100K, Long-Form >= 10K
+    """
+    logger.info("YouTube verileri çekiliyor...")
+    videos = []
+    try:
+        yt_run_input = {
+            "searchKeywords": "dolunayozeren",
+            "maxResults": 30,
+            "maxResultStreams": 0
+        }
+        # youtube-scraper actor ID
+        run = client.actor("h7sDV53CddomktSi5").call(run_input=yt_run_input)
+        
+        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+            dt = item.get("uploadDate") or item.get("date")
+            rel_date = str(item.get("date", "")).lower()
+            
+            is_recent = False
+            if "hour" in rel_date or "minute" in rel_date or "second" in rel_date:
+                is_recent = True
+            elif "day" in rel_date:
+                try:
+                    num = int(rel_date.split(" ")[0])
+                    if num <= 7:
+                        is_recent = True
+                except:
+                    pass
+            elif is_within_7_days(dt):
+                is_recent = True
+                
+            if not is_recent:
+                continue
+                
+            # Must be from our channel to be sure
+            channel = item.get("channelName", "").lower()
+            if "dolunay ozeren" not in channel and "dolunayozeren" not in channel:
+                # Still check if the URL contains our username just in case
+                pass
+                
+            views = item.get("viewCount") or item.get("views") or 0
+            if isinstance(views, str) and "K" in views:
+                views_num = float(views.replace("K", "").replace("M", "000").split(" ")[0]) * 1000
+            elif isinstance(views, str) and "M" in views:
+                views_num = float(views.replace("M", "").split(" ")[0]) * 1000000
+            else:
+                try:
+                    views_num = int(str(views).replace(",", "").replace(".", "").split(" ")[0])
+                except:
+                    views_num = 0
+                    
+            url = item.get("url") or item.get("videoUrl") or ""
+            is_shorts = "/shorts/" in url or item.get("isShorts")
+            
+            if is_shorts and views_num >= 100000:
+                videos.append({
+                    "platform": "YouTube Shorts",
+                    "url": url,
+                    "views": int(views_num),
+                    "date": dt or rel_date
+                })
+            elif not is_shorts and views_num >= 10000:
+                videos.append({
+                    "platform": "YouTube Long Video",
+                    "url": url,
+                    "views": int(views_num),
+                    "date": dt or rel_date
+                })
+
+    except Exception as e:
+        logger.error(f"YouTube scrapinge hatasi: {e}", exc_info=True)
+        
+    return videos
+
+def fetch_all_social_media():
+    videos = []
+    videos.extend(get_instagram_data())
+    videos.extend(get_tiktok_data())
+    videos.extend(get_youtube_data())
+    return videos
