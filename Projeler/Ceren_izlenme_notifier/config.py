@@ -38,5 +38,6 @@ class Config:
 try:
     settings = Config()
 except EnvironmentError as e:
-    print(f"BOOT ERROR: {e}")
+    import logging
+    logging.error(f"BOOT ERROR: {e}", exc_info=True)
     sys.exit(1)

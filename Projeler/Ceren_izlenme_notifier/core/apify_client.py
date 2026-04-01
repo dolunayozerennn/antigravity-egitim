@@ -148,9 +148,10 @@ def get_youtube_data():
                 
             # Must be from our channel to be sure
             channel = item.get("channelName", "").lower()
-            if "dolunay ozeren" not in channel and "dolunayozeren" not in channel:
-                # Still check if the URL contains our username just in case
-                pass
+            url_check = (item.get("url") or item.get("videoUrl") or "").lower()
+            if "dolunay" not in channel and "dolunay" not in url_check:
+                logger.debug(f"Baska kanal videosu atlandi: {channel}")
+                continue
                 
             views = item.get("viewCount") or item.get("views") or 0
             if isinstance(views, str) and "K" in views:
