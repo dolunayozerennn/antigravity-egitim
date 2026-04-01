@@ -14,7 +14,7 @@ import json
 import requests
 from dotenv import load_dotenv
 from autonomous_cover_agent import run_autonomous_generation, generate_three_themes
-from drive_service import upload_cover_to_drive, check_covers_exist
+from drive_service import upload_cover_to_drive, count_existing_covers
 
 load_dotenv()
 
@@ -130,11 +130,17 @@ def process_batch_videos():
             results_summary.append({"name": video['name'], "status": "SKIPPED - No Drive URL"})
             continue
 
-        # Check if covers already exist
-        if check_covers_exist(drive_url):
-            print(f"Skipping {video['name']}: Covers already exist in Drive folder.")
-            results_summary.append({"name": video['name'], "status": "SKIPPED - Covers exist"})
+        # Count existing covers in Drive
+        REQUIRED_COVERS = 6
+        existing_count = count_existing_covers(drive_url)
+        if existing_count >= REQUIRED_COVERS:
+            print(f"✅ Skipping {video['name']}: All {REQUIRED_COVERS} covers already exist.")
+            results_summary.append({"name": video['name'], "status": f"SKIPPED - {existing_count}/{REQUIRED_COVERS} covers exist"})
             continue
+        elif existing_count > 0:
+            print(f"⚠️ {video['name']}: {existing_count}/{REQUIRED_COVERS} covers found — generating remaining...")
+        else:
+            print(f"🆕 {video['name']}: No existing covers — full generation starting.")
 
         # Get script content from Notion
         script_content = get_page_content(video['page_id'])

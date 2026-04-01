@@ -2,7 +2,7 @@ import os
 import random
 from notion_service import get_ready_videos, add_revision_panel
 from autonomous_cover_agent import run_autonomous_generation, generate_three_themes
-from drive_service import upload_cover_to_drive, check_covers_exist
+from drive_service import upload_cover_to_drive, count_existing_covers
 
 
 def process_ready_videos():
@@ -44,10 +44,16 @@ def process_ready_videos():
             print(f"Skipping {video['name']}: No Drive URL found in Notion properties.")
             continue
             
-        # Check if covers already exist in the Drive folder
-        if check_covers_exist(drive_url):
-            print(f"Skipping {video['name']}: Covers already exist in Drive folder.")
+        # Count existing covers in the Drive folder
+        REQUIRED_COVERS = 6
+        existing_count = count_existing_covers(drive_url)
+        if existing_count >= REQUIRED_COVERS:
+            print(f"✅ Skipping {video['name']}: All {REQUIRED_COVERS} covers already exist.")
             continue
+        elif existing_count > 0:
+            print(f"⚠️ {video['name']}: {existing_count}/{REQUIRED_COVERS} covers found — generating remaining...")
+        else:
+            print(f"🆕 {video['name']}: No existing covers — full generation starting.")
         
         # Get script content
         script_content = video.get('script_text', '')

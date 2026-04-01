@@ -44,31 +44,70 @@ def get_or_create_subfolder(service, parent_id: str, folder_name: str) -> str:
         print(f"Error creating/fetching subfolder: {e}")
         return parent_id
 
-def check_covers_exist(folder_url: str) -> bool:
+def count_existing_covers(folder_url: str) -> int:
     """
-    Checks if covers already exist in the given Google Drive folder.
-    It looks for files containing 'KAPAK' in their names.
+    Counts how many cover image files exist inside the KAPAK subfolder
+    of the given Google Drive folder.
+    
+    Returns:
+        int: Number of cover files found (0 if none, folder missing, or error).
     """
     if not folder_url:
-        return False
+        return 0
         
     service = authenticate_google_drive()
     if not service:
-        return False
+        return 0
         
     folder_id = _extract_folder_id(folder_url)
     if not folder_id:
-        return False
+        return 0
         
     try:
-        # Search for files with KAPAK in the name within this folder
-        query = f"'{folder_id}' in parents and name contains 'KAPAK' and trashed = false"
-        results = service.files().list(q=query, fields="files(id, name)", pageSize=1).execute()
-        files = results.get('files', [])
-        return len(files) > 0
+        # Step 1: Find the KAPAK subfolder by exact name match
+        subfolder_query = (
+            f"'{folder_id}' in parents "
+            f"and name = 'KAPAK' "
+            f"and mimeType = 'application/vnd.google-apps.folder' "
+            f"and trashed = false"
+        )
+        subfolder_results = service.files().list(
+            q=subfolder_query, fields="files(id)"
+        ).execute()
+        subfolders = subfolder_results.get('files', [])
+        
+        if not subfolders:
+            return 0
+        
+        kapak_folder_id = subfolders[0]['id']
+        
+        # Step 2: Count all non-folder files inside the KAPAK subfolder
+        files_query = (
+            f"'{kapak_folder_id}' in parents "
+            f"and mimeType != 'application/vnd.google-apps.folder' "
+            f"and trashed = false"
+        )
+        files_results = service.files().list(
+            q=files_query, fields="files(id, name)", pageSize=100
+        ).execute()
+        cover_files = files_results.get('files', [])
+        
+        count = len(cover_files)
+        if count > 0:
+            print(f"  📂 KAPAK klasöründe {count} dosya bulundu:")
+            for f in cover_files:
+                print(f"     - {f['name']}")
+        
+        return count
     except Exception as e:
-        print(f"Error checking existing covers in Drive: {e}")
-        return False
+        print(f"Error counting covers in Drive: {e}")
+        return 0
+
+
+# Backward compatibility alias
+def check_covers_exist(folder_url: str) -> bool:
+    """Legacy wrapper — use count_existing_covers() instead."""
+    return count_existing_covers(folder_url) >= 6
 
 def upload_cover_to_drive(file_path: str, folder_url: str, file_name: str = None):
     """
