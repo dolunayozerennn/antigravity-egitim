@@ -21,4 +21,15 @@ def main():
         logger.error(f"Uygulama calisirken fatal bir hata olustu: {e}", exc_info=True)
 
 if __name__ == "__main__":
-    main()
+    if settings.ENV == "production":
+        import time
+        logger.info("Production modundayiz. 7/24 calisma modunda gunde 1 kez tetiklenecek.")
+        while True:
+            try:
+                main()
+            except Exception as e:
+                logger.error(f"Ana dongu hatasi: {e}")
+            logger.info("Bir sonraki kontrol icin 24 saat bekleniyor...")
+            time.sleep(24 * 60 * 60)
+    else:
+        main()
