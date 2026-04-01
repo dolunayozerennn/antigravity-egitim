@@ -18,7 +18,7 @@ class Config:
         self.LINKEDIN_PERSON_URN = self._require_env("LINKEDIN_PERSON_URN")
 
         # Content Filter Strictness: "relaxed", "moderate", "strict"
-        self.LINKEDIN_FILTER_STRICTNESS = os.environ.get("LINKEDIN_FILTER_STRICTNESS", "moderate")
+        self.LINKEDIN_FILTER_STRICTNESS = os.environ.get("LINKEDIN_FILTER_STRICTNESS", "relaxed")
 
         # Groq (LLM - Content Filter & Caption Adaptation)
         self.GROQ_API_KEY = self._require_env("GROQ_API_KEY")
