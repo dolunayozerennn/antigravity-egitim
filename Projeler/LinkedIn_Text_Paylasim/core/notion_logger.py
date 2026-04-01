@@ -66,8 +66,9 @@ class NotionLogger:
             return already_posted
         except Exception as e:
             logging.error(f"Notion duplicate kontrol hatası: {e}", exc_info=True)
-            # Fail safe: API hata verirse geç (tekrar atmaktansa atlamak güvenli)
-            return True
+            # Fail-open: API hata verirse paylaşıma devam et.
+            # Duplikat riski var ama hiç paylaşmamaktan iyidir.
+            return False
 
     def log_post(
         self,

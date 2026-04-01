@@ -70,5 +70,6 @@ ENV=production python main.py
 - ✅ n8n workflow'ları analiz edildi
 - ✅ Python'a birebir çevrildi
 - ✅ Syntax kontrolü geçti
-- 🔲 Railway'e deploy
-- 🔲 İlk production çalışma doğrulaması
+- ✅ Railway'e deploy (27 Mart 2026 — CronJob: `0 5 * * 1,4`)
+- ✅ Notion DB `Post Tipi` property eklendi + fail-safe bug fix (1 Nisan 2026)
+
