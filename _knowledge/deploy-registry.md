@@ -12,6 +12,20 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ## ✅ Aktif Projeler
 
+### ceren-izlenme-notifier (CronJob — Salı/Perşembe) ✅
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `b5117788-3979-45b3-a92c-eae3606e0dc2`
+- **Service ID:** `058d3d5c-9589-4c49-aca2-f6965207aa38`
+- **Environment ID:** `be212401-34d1-4b34-b25b-0d43b11e1a30`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (mono-repo, Root Dir: `/Projeler/Ceren_izlenme_notifier`)
+- **Lokal Klasör:** `Projeler/Ceren_izlenme_notifier/`
+- **Start Komutu:** `python main.py`
+- **Cron Schedule:** `0 8 * * 2,4` (Salı/Perşembe, UTC 08:00 = TR 11:00)
+- **Son Deploy:** 2026-04-01 (Stabilizasyon: Worker→CronJob dönüşümü, OAuth token refresh, YouTube filtre fix, ölü kod temizliği)
+- **Durum:** ✅ Aktif (Haftada 2 kez sosyal medya performans raporu — Instagram, TikTok, YouTube)
+
+---
+
 ### lead-pipeline (BİRLEŞİK CRON JOB) ✅
 - **Platform:** `railway-cron`
 - **Railway Project ID:** `fc91edb9-5d93-413d-b9b7-75ae81033204`
@@ -62,7 +76,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
 - **Start Komutu:** `python unified_worker.py`
 - **Cron Schedule:** `0 6,12,18 * * *` (Günde 3 kez: 09:00, 15:00, 21:00 TR)
-- **Son Deploy:** 2026-03-24 (stabilizasyon: SDK standardizasyonu, hata yönetimi, unified_worker geçişi, mono-repo bağlantısı)
+- **Son Deploy:** 2026-04-01 (bugfix: check_covers_exist → count_existing_covers, kısmi kapak üretimi desteği eklendi)
 - **Durum:** ✅ Aktif (Kapak üretimi + revizyon kontrolü tek worker'da birleştirildi)
 
 ### revizyon-cron ⛔ (KALDIRILDI — unified_worker'a taşındı)
@@ -146,7 +160,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Text_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 5 * * 1,4` (Haftada 2, UTC 05:00 Pazartesi+Perşembe = TR 08:00)
-- **Son Deploy:** 2026-03-27 (initial deploy: n8n→Python migration, schedule→cron dönüşümü)
+- **Son Deploy:** 2026-04-01 (fix: Notion 'Post Tipi' property eklendi + fail-safe return True→False bug fix. Build SUCCESS, deployment: 4b5350a9)
 - **Durum:** ✅ Aktif (Haftalık AI Haberleri + AI Tavsiyesi LinkedIn postu)
 - **Env Vars:** PERPLEXITY_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
 
@@ -161,9 +175,9 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Twitter_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 8,11,14 * * *` (Günde 3 kez, UTC 08/11/14 = TR 11/14/17)
-- **Son Deploy:** 2026-03-27 (initial deploy: Railway CronJob olarak kuruldu)
+- **Son Deploy:** 2026-04-01 (fix: yt-dlp 2024.3.10→2026.3.17 TikTok API uyum, NOTION_TOKEN→NOTION_SOCIAL_TOKEN düzeltmesi)
 - **Durum:** ✅ Aktif (TikTok→X/Twitter video pipeline, günde 3 kez)
-- **Env Vars:** NOTION_TOKEN, NOTION_TWITTER_DB_ID, X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
+- **Env Vars:** NOTION_SOCIAL_TOKEN, NOTION_TWITTER_DB_ID, X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
 
 ---
 

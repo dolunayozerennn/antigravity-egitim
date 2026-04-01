@@ -80,7 +80,7 @@ class NotionLogger:
                     "Twitter URL": {
                         "url": twitter_url if twitter_url else "https://x.com"
                     },
-                    "Paylasim Tarihi": {
+                    "Paylaşım Tarihi": {
                         "date": {"start": now_iso}
                     }
                 }
