@@ -14,7 +14,7 @@ class Config:
         self.IS_DRY_RUN = self.ENV == "development" or os.environ.get("DRY_RUN", "0") == "1"
         
         # Notion
-        self.NOTION_TOKEN = self._require_env("NOTION_TOKEN")
+        self.NOTION_TOKEN = self._require_env("NOTION_SOCIAL_TOKEN")
         self.NOTION_TWITTER_DB_ID = self._require_env("NOTION_TWITTER_DB_ID")
         
         # X API (Twitter)
