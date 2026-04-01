@@ -17,9 +17,9 @@ def get_gmail_service():
             ['https://www.googleapis.com/auth/gmail.modify']
         )
         
-        # Token geçersiz veya expired ise refresh_token ile yenile
-        if not creds.valid and creds.refresh_token:
-            logger.info("OAuth token gecersiz/expired, refresh_token ile yenileniyor...")
+        # Token expired ise refresh_token ile yenile
+        if creds.expired and creds.refresh_token:
+            logger.info("OAuth token expired, refresh_token ile yenileniyor...")
             creds.refresh(Request())
             logger.info("Token basariyla yenilendi.")
             
@@ -30,9 +30,6 @@ def get_gmail_service():
                 logger.info("Yenilenen token dosyaya kaydedildi.")
             except Exception as save_err:
                 logger.warning(f"Token dosyaya kaydedilemedi (ephemeral FS olabilir): {save_err}")
-        elif not creds.valid and not creds.refresh_token:
-            logger.error("OAuth token gecersiz ve refresh_token bulunamadi! Mail gonderilemez.")
-            return None
         
         service = build('gmail', 'v1', credentials=creds)
         return service
@@ -56,7 +53,7 @@ def send_performance_report(videos):
     html_content = """
     <html>
       <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-        <h2 style="color: #2c3e50;">Sosyal Medya Performans Raporu \ud83d\ude80</h2>
+        <h2 style="color: #2c3e50;">Sosyal Medya Performans Raporu 🚀</h2>
         <p>Merhaba Ceren! Son 7 gün içerisinde hedeflenen barajları aşan içerikler aşağıda listelenmiştir:</p>
         <p style="font-size: 13px; color: #7f8c8d;">Barajlar: Instagram Reels ≥ 200K | TikTok ≥ 100K | YouTube Shorts ≥ 100K | YouTube Long-Form ≥ 10K</p>
         <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
