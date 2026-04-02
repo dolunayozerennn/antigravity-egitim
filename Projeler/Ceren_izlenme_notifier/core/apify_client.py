@@ -138,8 +138,8 @@ def get_youtube_data():
                     num = int(rel_date.split(" ")[0])
                     if num <= 7:
                         is_recent = True
-                except:
-                    pass
+                except (ValueError, IndexError) as e:
+                    logger.debug(f"rel_date parselama atlandi: {rel_date} - {e}")
             elif is_within_7_days(dt):
                 is_recent = True
                 
