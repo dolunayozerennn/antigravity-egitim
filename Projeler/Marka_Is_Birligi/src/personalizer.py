@@ -43,29 +43,11 @@ AI Content Creator | 100M+ Organic Views
 
 EMAIL_SIGNATURE_HTML = """
 <br><br>
-<table cellpadding="0" cellspacing="0" style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #555555; border-top: 2px solid #7c3aed; padding-top: 12px; margin-top: 20px;">
-  <tr>
-    <td style="padding-bottom: 8px;">
-      <strong style="font-size: 15px; color: #1a1a1a;">Dolunay Özeren</strong><br>
-      <span style="color: #7c3aed; font-size: 12px;">AI Content Creator | 100M+ Organic Views</span>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding-bottom: 6px; font-size: 12px; color: #888;">
-      📧 <a href="mailto:dolunay@dolunay.ai" style="color: #7c3aed; text-decoration: none;">dolunay@dolunay.ai</a>
-      &nbsp;·&nbsp;
-      🌐 <a href="https://dolunay.ai" style="color: #7c3aed; text-decoration: none;">dolunay.ai</a>
-    </td>
-  </tr>
-  <tr>
-    <td style="font-size: 12px;">
-      <a href="https://instagram.com/dolunay_ozeren" style="color: #E1306C; text-decoration: none; margin-right: 8px;">Instagram</a>
-      <a href="https://youtube.com/@dolunayozeren" style="color: #FF0000; text-decoration: none; margin-right: 8px;">YouTube</a>
-      <a href="https://tiktok.com/@dolunayozeren" style="color: #00f2ea; text-decoration: none; margin-right: 8px;">TikTok</a>
-      <a href="https://linkedin.com/in/dolunayozeren" style="color: #0077B5; text-decoration: none;">LinkedIn</a>
-    </td>
-  </tr>
-</table>
+<p style="font-size: 13px; color: #555; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 16px;">
+  <strong>Dolunay Özeren</strong><br>
+  AI Content Creator | 100M+ Organic Views<br>
+  <a href="https://dolunay.ai" style="color: #555; text-decoration: none;">dolunay.ai</a>
+</p>
 """
 
 # Fallback kullanım istatistikleri
@@ -135,14 +117,19 @@ with 100M+ organic views in Turkey, to an AI/tech brand for a potential collabor
 
 Rules:
 - Write in English (most AI brands are global)
-- Keep it SHORT — max 150 words for the body
+- Keep it SHORT — max 120 words for the body
 - Be specific about the brand's product/niche
-- Include 2-3 concrete results with links
+- Include 1-2 concrete results (mention numbers, but do NOT include URLs in body)
 - End with a LOW-PRESSURE CTA (just reply if interested)
-- Tone: Professional but warm, NOT desperate
-- Subject line: Creative, curiosity-driving (max 60 chars)
+- Tone: Professional but warm, NOT desperate — like one person writing to another
+- Subject line: Creative, curiosity-driving (max 50 chars, NO ALL CAPS, NO exclamation marks)
 - Do NOT use "Dear" or overly formal language
-- Do NOT use emojis in subject line
+- Do NOT use emojis in subject or body
+- Do NOT use HTML formatting in body_text — write plain conversational text
+- body_html should be a simple <p> wrapped version of body_text, NO bold, NO colors, NO tables
+- MAXIMUM 1 link allowed in body (only dolunay.ai portfolio link if needed)
+- No "Click here", "Check this out", or other spam trigger phrases
+- Avoid words: "free", "guaranteed", "act now", "limited time", "congratulations"
 
 Output format (JSON):
 {"subject": "...", "body_text": "...", "body_html": "..."}
@@ -258,14 +245,11 @@ If you're interested, just reply and I'll share the concept.
 
     body_html = f"""<p>Hi {brand_name} team,</p>
 
-<p>I'm <strong>Dolunay</strong>, a content creator focused on AI, tech, and digital tools. My content has reached over <strong>100 million organic views</strong> in Turkey.</p>
+<p>I'm Dolunay, a content creator focused on AI, tech, and digital tools. My content has reached over 100 million organic views in Turkey.</p>
 
-<p>Recent results:</p>
-<ul>
-{"".join(f'<li><strong>{r["brand"]}</strong>: {r["views"]} views — <a href="{r["url"]}">View</a></li>' for r in DOLUNAY_PROFILE["top_results"])}
-</ul>
+<p>Recent results: {', '.join(f'{r["brand"]} ({r["views"]} views)' for r in DOLUNAY_PROFILE['top_results'])}</p>
 
-<p>I've been following @{handle} and I have a viral campaign idea that could make <strong>{brand_name}</strong> stand out in the Turkish market.</p>
+<p>I've been following @{handle} and I have a viral campaign idea that could make {brand_name} stand out in the Turkish market.</p>
 
 <p>If you're interested, just reply and I'll share the concept.</p>
 {EMAIL_SIGNATURE_HTML}"""

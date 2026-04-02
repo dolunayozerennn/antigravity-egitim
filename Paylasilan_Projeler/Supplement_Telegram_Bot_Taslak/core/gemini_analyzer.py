@@ -198,13 +198,14 @@ Yanıtlarını Türkçe ver. Kısa, öz ve faydalı ol. Emoji kullan."""
         contents=[
             types.Content(
                 parts=[
-                    types.Part(text=system_prompt + "\n\nKullanıcı mesajı: " + message),
+                    types.Part(text=message),
                 ]
             )
         ],
         config=types.GenerateContentConfig(
             temperature=0.7,
             max_output_tokens=2048,
+            system_instruction=system_prompt,
         ),
     )
 

@@ -106,7 +106,8 @@ class NotionLogger:
 
             if resp.status_code == 200:
                 page_url = resp.json().get("url", "")
-                log.info(f"Notion'a yazıldı: {urun_adi} → {page_url}")
+                page_id = resp.json().get("id", "Bilinmeyen ID")
+                log.info(f"Notion'a yazıldı: {urun_adi} → (Sayfa Kimliği: ...{page_id[-6:]})")
                 return page_url
             else:
                 log.error(f"Notion API hatası ({resp.status_code}): {resp.text[:500]}")

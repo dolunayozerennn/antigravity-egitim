@@ -21,6 +21,15 @@ Ayrıca supplement/vitamin hakkında soru sorabilir, chatbot olarak kullanabilir
 
 ---
 
+## 🛡️ Önemli Güvenlik Uyarısı (ZORUNLU OKU)
+
+Projeyi kurarken ve kendi cihazında çalıştırırken aşağıdaki güvenlik kurallarına **kesinlikle** uymalısın:
+1. Oluşturduğun `.env` veya `api-anahtarlari.md` gibi kilit dosyaları **asla** GitHub'a (public veya private fark etmez) pushlama. 
+2. Bu dosyalar projede `.gitignore` içerisine eklenmiş olup korunmaktadır, ancak manuel bir değişiklikte dikkatli ol.
+3. Bot Token veya API_KEY içeren hiçbir klasörü başkasıyla klasör/zip olarak doğrudan paylaşma `cp .env.example .env` gibi örnek şablonları kullan.
+
+---
+
 ## ⚡ Hızlı Kurulum
 
 ### 1. Gereksinimler

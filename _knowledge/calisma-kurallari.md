@@ -24,7 +24,7 @@ Antigravity/
 ├── _knowledge/           → Bu klasör (manuel hafıza)
 │   └── credentials/      → 🔐 Merkezi şifre/token deposu
 ├── Projeler/             → Tüm proje klasörleri
-└── Paylasilan_Projeler/  → Paylaşıma hazır paketler
+└── Paylasima_Hazir/      → Dışarıyla paylaşıma hazırlanan proje ve skill paketleri
 ```
 
 ## Aktif Projeler

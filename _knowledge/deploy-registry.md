@@ -36,7 +36,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
 - **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
-- **Son Deploy:** 2026-03-23 (Webhook bug & root directory fixed. Son deployment SUCCESS)
+- **Son Deploy:** 2026-04-01 (fix: rollback_pending() eklendi — Notion API hataları sessiz data kaybını önler, groq upgrade)
 - **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
 
 ---
@@ -107,8 +107,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/marka-is-birligi`
 - **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-03-21 (fix: markalar.csv otomatik oluşturma — Railway deploy sonrası data kalıcılık sorunu çözüldü, deployment ID: 33f5b55d, smoke test ✅)
-- **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — CSV auto-init)
+- **Son Deploy:** 2026-04-01 (fix: scheduler import hatası + email deliverability iyileştirmeleri — Apollo kaldırıldı, web scraper + IG bio scraper eklendi, anti-spam kuralları, plain-text öncelik, rastgele gönderim zamanı. deployment ID: 4100128a, build SUCCESS ✅)
+- **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — Notion state + ops_logger)
 
 ---
 
@@ -145,7 +145,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 10 * * *` (Günlük, UTC 10:00 = TR 13:00)
-- **Son Deploy:** 2026-03-27 (initial deploy: schedule→cron dönüşümü, Railway CronJob olarak kuruldu)
+- **Son Deploy:** 2026-04-01 (fix: content filter moderate→relaxed — pipeline 6 gündür kilitlenmiş durumdaydı)
 - **Durum:** ✅ Aktif (TikTok→LinkedIn video pipeline, günde 1 kez)
 - **Env Vars:** LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
 
@@ -159,7 +159,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/LinkedIn_Text_Paylasim`)
 - **Lokal Klasör:** `Projeler/LinkedIn_Text_Paylasim/`
 - **Start Komutu:** `python main.py`
-- **Cron Schedule:** `0 5 * * 1,4` (Haftada 2, UTC 05:00 Pazartesi+Perşembe = TR 08:00)
+- **Cron Schedule:** `0 8 * * 1,4` (Haftada 2, UTC 08:00 Pazartesi+Perşembe = TR 11:00)
 - **Son Deploy:** 2026-04-01 (fix: Notion 'Post Tipi' property eklendi + fail-safe return True→False bug fix. Build SUCCESS, deployment: 4b5350a9)
 - **Durum:** ✅ Aktif (Haftalık AI Haberleri + AI Tavsiyesi LinkedIn postu)
 - **Env Vars:** PERPLEXITY_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
@@ -191,18 +191,42 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Blog_Yazici/`
 - **Start Komutu:** `python run_pipeline.py --from-notion`
 - **Cron Schedule:** `0 3 * * *` (Günlük, UTC 03:00)
-- **Son Deploy:** 2026-03-24 (initial deploy: Railway CronJob olarak kuruldu)
+- **Son Deploy:** 2026-04-01 (fix: Netlify build hook eklendi, bare except→except Exception düzeltmesi)
 - **Durum:** ✅ Aktif (Günlük UTC 03:00, Notion'dan yeni "Yayınlandı" videoları seçip otomatik blog üretip dolunay.ai'ye publish eder)
 - **Env Vars:** GROQ_API_KEY, GEMINI_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64), GITHUB_TOKEN
 
 ---
+
+### supplement-telegram-bot
+- **Platform:** `railway`
+- **Railway Project ID:** `35acfbc5-f058-45f9-ba76-373b47e66b07`
+- **Service ID:** `0a3f240f-6fea-4176-b480-a2cdb99e4a93`
+- **Environment ID:** `6f09ea79-49b6-4414-b820-6c83d5bd31cb`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Supplement_Telegram_Bot/`)
+- **Lokal Klasör:** `Projeler/Supplement_Telegram_Bot/`
+- **Son Deploy:** 2026-03-31 (SUCCESS)
+- **Durum:** ✅ Aktif (7/24 Telegram bot — takviye takibi)
+- **Not:** Eğitim amaçlı paylaşılan kopyası: `Paylasilan_Projeler/Supplement_Telegram_Bot_Taslak/`
+
+---
+
+### dolunay-youtube-kapak (Aktif Worker)
+- **Platform:** `railway`
+- **Railway Project ID:** `586a7bf6-1787-4d3a-af13-1e1730ee5a15`
+- **Service ID:** `b15ae2ea-87b0-4818-bb6c-c8f7458817e3`
+- **Environment ID:** `fe917cd2-511f-4e73-9b75-b77ce28d16ae`
+- **Son Deploy:** 2026-04-01 (SUCCESS)
+- **Durum:** ✅ Aktif (YouTube thumbnail üretim worker'ı)
+- **Not:** 3 adet duplikasyon projesi temizlendi (93de, ab22, b3f0 — hepsi FAILED)
+
+---
+
 ## 📌 Askıda / Geliştirme Aşamasındaki Projeler (Deploy Yok)
 
 | Proje | Klasör | Platform | Son Değişiklik | Durum | Not |
 |-------|--------|----------|----------------|-------|-----|
 | Dubai Emlak İçerik | `Projeler/Dubai_Emlak_İçerik_Yazarı/` | `local-only` | 2026-03-09 | ⏸️ Askıda | Script koleksiyonu (transcript, currency, calculator). Deploy planı yok, geliştirme aşamasında |
 | Emlak Arazi Drone | `Projeler/Emlak_Arazi_Drone_Çekim/` | `local-only` | 2026-03-14 | ⏸️ Askıda | Kie AI + Unsplash tabanlı video üretimi. Lokal çalıştırılabilir ama deploy edilmemiş |
-| YouTube Kapak | `Projeler/Dolunay_YouTube_Kapak/` | `local-only` | 2026-03-24 | ⏸️ Askıda | Autonomous YouTube thumbnail agent. railway.json yok, deploy planı yok. Lokal çalıştırılabilir |
 
 ---
 
@@ -258,3 +282,42 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/Dolunay_AI_Website`
 - **Lokal Klasör:** `Projeler/Dolunay_AI_Website/`
 - **Durum:** ⛔ Kaldırıldı (2026-03-22) — Website zaten Netlify'da barınıyor, Railway'deki kopya gereksizdi.
+
+---
+
+### LinkedIn_Text_Paylasim (eski duplikasyon) ⛔ (KALDIRILDI)
+- **Railway Project ID:** `d4c5a5d1-afd5-41ac-87ce-1f880217801d` (servisleri silindi)
+- **Durum:** ⛔ Kaldırıldı (2026-04-01) — Aktif `linkedin-text-cron` (5465753a) ile DUPLİKAYDI. Çift post riski nedeniyle servisi silindi.
+
+---
+
+### Lead Notifier Bot (eski hayalet) ⛔ (KALDIRILDI)
+- **Railway Project ID:** `6b5e029b-0235-4c6b-8b8d-b6dd4d4bb4e0` (servisleri silindi)
+- **Durum:** ⛔ Kaldırıldı (2026-04-01) — Lead Pipeline'a birleştirilmiş ama Railway'de çalışmaya devam ediyordu.
+
+---
+
+### linkedin-paylasim (eski monolitik) ⛔ (TEMİZLENMELİ)
+- **Railway Project ID:** `9aec063f-24f9-4cc3-8a98-90565b9b1b53`
+- **Service ID:** `3d839ef6-ade2-4803-a31d-f906f2ab8183`
+- **Durum:** ⛔ Hayalet Proje — linkedin-text + linkedin-video olarak ayrılmış, bu eski monolitik proje hala aktif. Servisi SİLİNMELİ.
+
+---
+
+### Twitter_Paylasim (eski) ⛔ (TEMİZLENMELİ)
+- **Railway Project ID:** `9b8a5927-1b2b-4d0f-bb4d-fd167b4fcee0`
+- **Service ID:** `twitter-paylasim`
+- **Durum:** ⛔ Hayalet Proje — Yeni `twitter-video-cron` (24c3d0d1) ile DUPLİKE. Servisi SİLİNMELİ.
+
+---
+
+### dolunay-youtube-kapak duplikasyonları ⛔ (TEMİZLENMELİ)
+- **Railway Project IDs:** `93de1226`, `ab229571`, `b3f0902b` (hepsi FAILED)
+- **Aktif proje:** `586a7bf6` (SUCCESS)
+- **Durum:** ⛔ 3 duplikasyon projesi — Hepsi FAILED durumunda, kaynak israfı. SİLİNMELİ.
+
+---
+
+### marka-is-birligi (boş duplikasyon) ⛔ (TEMİZLENMELİ)
+- **Railway Project ID:** `0522fff5-ea33-4c64-9187-1e18531ab39b`
+- **Durum:** ⛔ Boş proje — Servis yok, deployment yok. Aktif proje: `6994adc2`. SİLİNMELİ.

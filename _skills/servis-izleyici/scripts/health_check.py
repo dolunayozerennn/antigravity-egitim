@@ -225,7 +225,8 @@ def parse_deploy_registry(registry_path: Path) -> list:
             elif line.startswith("- **Durum:**"):
                 project["registry_status"] = line.split(":**")[1].strip()
 
-        projects.append(project)
+        if "⛔" not in name and "SİLİNDİ" not in project.get("registry_status", "").upper() and "KALDIRILDI" not in project.get("registry_status", "").upper():
+            projects.append(project)
 
     return projects
 

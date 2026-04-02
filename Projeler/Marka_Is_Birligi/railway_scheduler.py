@@ -24,6 +24,7 @@ import sys
 import time
 import json
 from datetime import datetime, timezone, timedelta
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # ── Proje path'ini ayarla ────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -64,7 +65,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         _service_status["last_heartbeat"] = datetime.now().isoformat()
-        _service_status["next_run"] = str(schedule.next_run()) if schedule.jobs else None
+        _service_status["next_run"] = None  # CronJob modunda schedule kullanılmıyor
         _service_status["uptime_seconds"] = int(
             (datetime.now() - datetime.fromisoformat(_service_status["scheduler_started_at"])).total_seconds()
         ) if _service_status["scheduler_started_at"] else 0

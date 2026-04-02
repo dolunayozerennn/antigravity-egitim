@@ -76,7 +76,7 @@ def get_service():
     return build("gmail", "v1", credentials=creds)
 
 
-def create_email(to, subject, body_html, body_text=None):
+def create_email(to, subject, body_html, body_text=None, plain_text_only=False):
     """
     MIME email oluşturur.
     
@@ -85,21 +85,29 @@ def create_email(to, subject, body_html, body_text=None):
         subject: Konu
         body_html: HTML gövde
         body_text: Plain text gövde (opsiyonel)
+        plain_text_only: True ise sadece plain-text gönderir (spam riski düşer)
     
     Returns:
         dict: Gmail API ready message
     """
-    message = MIMEMultipart("alternative")
-    message["to"] = to
-    message["subject"] = subject
-    message["from"] = SENDER_EMAIL
+    if plain_text_only and body_text:
+        # İlk outreach için plain-text öncelikli — deliverability artırır
+        message = MIMEText(body_text, "plain", "utf-8")
+        message["to"] = to
+        message["subject"] = subject
+        message["from"] = SENDER_EMAIL
+    else:
+        message = MIMEMultipart("alternative")
+        message["to"] = to
+        message["subject"] = subject
+        message["from"] = SENDER_EMAIL
 
-    if body_text:
-        text_part = MIMEText(body_text, "plain", "utf-8")
-        message.attach(text_part)
+        if body_text:
+            text_part = MIMEText(body_text, "plain", "utf-8")
+            message.attach(text_part)
 
-    html_part = MIMEText(body_html, "html", "utf-8")
-    message.attach(html_part)
+        html_part = MIMEText(body_html, "html", "utf-8")
+        message.attach(html_part)
 
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
     return {"raw": raw}
@@ -144,15 +152,18 @@ def create_reply(to, subject, body_html, thread_id, message_id, body_text=None):
     return {"raw": raw, "threadId": thread_id}
 
 
-def send_email(service, to, subject, body_html, body_text=None):
+def send_email(service, to, subject, body_html, body_text=None, plain_text_only=False):
     """
     Email gönderir.
+    
+    Args:
+        plain_text_only: True ise sadece plain-text gönderir (ilk outreach için)
     
     Returns:
         dict: {message_id, thread_id} veya None (hata)
     """
     try:
-        msg = create_email(to, subject, body_html, body_text)
+        msg = create_email(to, subject, body_html, body_text, plain_text_only=plain_text_only)
         result = service.users().messages().send(userId="me", body=msg).execute()
         
         # Gerçek Message-ID header'ını al

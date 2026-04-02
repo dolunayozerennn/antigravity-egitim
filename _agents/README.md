@@ -53,8 +53,8 @@ icerik-uretim/
 **Amaç:** Projelerin production'a alınmasını ve dış dünyayla paylaşılmasını yönetmek.
 
 **Kullandığı Skill'ler:**
-- `_skills/canli-yayina-al/` → Railway deployment
-- `_skills/proje-paylasimi/` → Proje export
+- `_skills/canli-yayina-al/` → Railway/GitHub deploy pipeline
+- `_skills/folder-paylasim/` → Proje export ve paylaşım paketleme
 - `_skills/proje-gorsellestirici/` → HTML görselleştirme
 
 **Yapı:**

@@ -2,39 +2,80 @@
 """
 Contact Finder modülü — Yeni bulunan markalar için iletişim bilgisi toplar.
 
-Pipeline (iyileştirilmiş):
-1. Apollo.io Person Search → "influencer", "partnerships", "marketing", "brand", "growth"
-   title'lı kişileri bul (doğru karar vericiyi hedefle)
-2. Hunter.io Email Finder → Apollo'dan bulunan kişinin emailini al (first_name + last_name + domain)
-3. Hunter.io Domain Search → Kişi bulunamazsa domain genelinde email ara
-4. Hunter.io Email Verification → Bulunan emaili doğrula (sadece deliverable/accept_all kabul)
+Pipeline (v2 — Waterfall):
+1. Web Scrape → Contact/about sayfalarından email çıkarma (ücretsiz, sınırsız)
+2. Hunter.io Domain Search → Domain genelinde email arama (50 kredi/ay)
+3. Instagram Bio Email → IG bio'dan email regex (Apify gerekebilir)
+4. Hunter.io Email Verification → Bulunan emaili doğrula
 5. Doğrulanamayan/bulunamayan → email boş bırakılır, email_status: "not_found"
+
+Apollo.io kaldırıldı (403 hatası, artık çalışmıyor).
 """
 
 import json
+import logging
 import os
 import re
 import time
 import requests
 from urllib.parse import urlparse
 
+logger = logging.getLogger(__name__)
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# ─── Doğru kişiyi bulmak için aranan pozisyon anahtar kelimeleri ───
-TARGET_TITLES = [
-    "influencer",
-    "partnerships",
-    "marketing manager",
-    "brand manager",
-    "brand",
-    "growth",
-    "marketing",
-    "influencer marketing",
-    "creator partnerships",
-    "head of marketing",
-    "head of growth",
-    "business development",
+# ─── Web Scraper: Email bulmak için taranacak sayfalar ───
+CONTACT_PATHS = [
+    "/contact", "/contact-us", "/about", "/about-us",
+    "/partnerships", "/partner", "/collaborate",
+    "/press", "/media", "/business",
+    "/influencer", "/creators", "/work-with-us",
+    "/imprint", "/impressum",
 ]
+
+EMAIL_PATTERN = re.compile(
+    r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+)
+
+# Scrape sonuçlarından filtrelenecek gürültü domain'leri
+NOISE_DOMAINS = {
+    "sentry.io", "wixpress.com", "cloudflare.com",
+    "googleapis.com", "w3.org", "schema.org",
+    "facebook.com", "twitter.com", "instagram.com",
+    "google.com", "apple.com", "microsoft.com",
+    "example.com", "email.com", "test.com",
+    "your-domain.com", "yourdomain.com",
+}
+
+# Gürültü email prefix'leri
+NOISE_PREFIXES = {
+    "noreply", "no-reply", "donotreply", "do-not-reply",
+    "mailer-daemon", "postmaster", "webmaster",
+    "abuse", "security",
+}
+
+# Tercih sırası — en değerli email prefix'leri önce gelir
+PREFERRED_PREFIXES = [
+    "partnerships", "partner", "influencer", "creators", "collab",
+    "marketing", "brand", "business", "press", "media",
+    "hello", "contact", "info", "team",
+]
+
+# Kişi pozisyonları için anahtar kelimeler
+TARGET_TITLE_KEYWORDS = [
+    "influencer", "partnership", "marketing", "brand",
+    "growth", "creator", "content", "collab",
+]
+
+WEB_SCRAPER_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml",
+    "Accept-Language": "en-US,en;q=0.9",
+}
 
 
 def _get_env(key, fallback_lines=None):
@@ -42,7 +83,6 @@ def _get_env(key, fallback_lines=None):
     val = os.environ.get(key)
     if val:
         return val
-    # Lokal fallback: _knowledge/api-anahtarlari.md
     knowledge_path = os.path.join(BASE_DIR, "..", "..", "_knowledge", "api-anahtarlari.md")
     if os.path.exists(knowledge_path) and fallback_lines:
         with open(knowledge_path, "r") as f:
@@ -70,19 +110,49 @@ def get_domain_from_url(url):
 
 
 def guess_website_from_handle(handle):
-    """Instagram handle'dan olası web sitesini tahmin et."""
-    candidates = [
-        f"https://{handle.replace('_', '')}.ai",
-        f"https://{handle.replace('_', '')}.com",
-        f"https://www.{handle.replace('_', '')}.ai",
-    ]
+    """Instagram handle'dan olası web sitesini tahmin et (genişletilmiş)."""
+    clean = handle.lower().replace("_", "").replace(".", "")
 
-    # .ai handle'ı varsa direkt dene
-    if "ai" in handle.lower() or ".ai" in handle.lower():
+    # AI handle'ı varsa .ai uzantısını öne al
+    if "ai" in handle.lower():
         base = handle.lower().replace("_ai", "").replace(".ai", "").replace("_", "")
-        candidates.insert(0, f"https://{base}.ai")
+        candidates = [
+            f"https://{base}.ai",
+            f"https://www.{base}.ai",
+            f"https://{base}.com",
+            f"https://www.{base}.com",
+            f"https://{clean}.ai",
+            f"https://{clean}.com",
+        ]
+    else:
+        candidates = [
+            f"https://{clean}.com",
+            f"https://www.{clean}.com",
+            f"https://{clean}.ai",
+            f"https://{clean}.io",
+            f"https://{clean}.co",
+            f"https://www.{clean}.ai",
+            f"https://www.{clean}.io",
+        ]
 
-    for url in candidates:
+    # Ayrıca alt çizgili hali de dene (brand_name.com)
+    if "_" in handle:
+        dashed = handle.lower().replace("_", "-")
+        candidates.extend([
+            f"https://{dashed}.com",
+            f"https://{dashed}.ai",
+            f"https://{dashed}.io",
+        ])
+
+    # Dedup (sıralama koru)
+    seen = set()
+    unique = []
+    for c in candidates:
+        if c not in seen:
+            seen.add(c)
+            unique.append(c)
+
+    for url in unique:
         try:
             resp = requests.head(url, timeout=5, allow_redirects=True)
             if resp.status_code < 400:
@@ -94,120 +164,109 @@ def guess_website_from_handle(handle):
 
 
 # ═══════════════════════════════════════════════════════════
-# ADIM 1: Apollo.io — Doğru kişiyi bul
+# KADEME 1: Web Scraper — Contact sayfalarından email çıkar
 # ═══════════════════════════════════════════════════════════
 
-def search_apollo_people(domain, api_key):
+def _is_noise_email(email):
+    """Gürültü email'lerini filtrele (tracking pixel, CDN, vb)."""
+    email_lower = email.lower()
+    domain = email_lower.split("@")[-1] if "@" in email_lower else ""
+    prefix = email_lower.split("@")[0] if "@" in email_lower else ""
+
+    # Domain kontrolü
+    if domain in NOISE_DOMAINS:
+        return True
+
+    # Prefix kontrolü
+    if prefix in NOISE_PREFIXES:
+        return True
+
+    # Dosya uzantısı gibi görünen sahte email'ler
+    if domain.endswith((".png", ".jpg", ".gif", ".svg", ".css", ".js")):
+        return True
+
+    # Çok kısa veya çok uzun
+    if len(email_lower) < 5 or len(email_lower) > 80:
+        return True
+
+    return False
+
+
+def _select_best_email(emails):
+    """Email listesinden en uygununu seç (tercih sırasına göre)."""
+    emails_lower = [e.lower() for e in emails]
+
+    for prefix in PREFERRED_PREFIXES:
+        for email in emails_lower:
+            if email.startswith(prefix + "@"):
+                return email
+
+    # Hiçbiri eşleşmezse → en genel olanı döndür (info, hello vb genellikle iyidir)
+    return emails_lower[0]
+
+
+def scrape_contact_emails(website):
     """
-    Apollo.io People Search — domaindeki influencer/partnerships/marketing
-    pozisyonundaki kişileri ara. Email DEĞİL, kişi adı döndürür.
+    Web sitesinin contact/about sayfalarından email adresi çıkarır.
+    Ücretsiz, sınırsız, API gerektirmez.
 
     Returns:
-        list of dict: [{first_name, last_name, title, email (varsa)}, ...]
+        str or None: Bulunan en uygun email adresi
     """
-    if not api_key:
-        print("  ⚠️ Apollo.io API key yok, atlanıyor.")
-        return []
-
-    print(f"  🔍 Apollo.io Person Search: {domain}...")
-    endpoint = "https://api.apollo.io/v1/people/search"
-    headers = {
-        "Cache-Control": "no-cache",
-        "Content-Type": "application/json",
-        "X-Api-Key": api_key,
-    }
-    payload = {
-        "q_organization_domains": domain,
-        "page": 1,
-        "per_page": 10,
-        "person_titles": TARGET_TITLES,
-    }
-
-    try:
-        resp = requests.post(endpoint, headers=headers, json=payload, timeout=15)
-        if resp.status_code == 200:
-            people = resp.json().get("people", [])
-            results = []
-            for p in people:
-                first = p.get("first_name", "").strip()
-                last = p.get("last_name", "").strip()
-                title = p.get("title", "").strip()
-                email = p.get("email", "")  # Apollo bazen veriyor
-
-                if first or last:
-                    results.append({
-                        "first_name": first,
-                        "last_name": last,
-                        "title": title,
-                        "email": email or "",
-                    })
-
-            if results:
-                print(f"  ✅ Apollo: {len(results)} kişi bulundu")
-                for r in results[:3]:
-                    print(f"     → {r['first_name']} {r['last_name']} ({r['title']})")
-            else:
-                print(f"  ℹ️ Apollo: Hedef pozisyonda kişi bulunamadı")
-
-            return results
-        elif resp.status_code == 429:
-            print("  ⚠️ Apollo.io rate limit aşıldı")
-        else:
-            print(f"  ⚠️ Apollo.io HTTP {resp.status_code}")
-    except Exception as e:
-        print(f"  ❌ Apollo.io hatası: {e}")
-
-    return []
-
-
-# ═══════════════════════════════════════════════════════════
-# ADIM 2: Hunter.io Email Finder — Kişi adıyla email bul
-# ═══════════════════════════════════════════════════════════
-
-def find_email_by_name(domain, first_name, last_name, api_key):
-    """
-    Hunter.io Email Finder — Bilinen bir kişinin emailini bul.
-
-    Returns:
-        str or None: Bulunan email adresi
-    """
-    if not api_key or (not first_name and not last_name):
+    if not website:
         return None
 
-    print(f"  🔍 Hunter.io Email Finder: {first_name} {last_name} @ {domain}...")
-    endpoint = "https://api.hunter.io/v2/email-finder"
-    params = {
-        "domain": domain,
-        "first_name": first_name,
-        "last_name": last_name,
-        "api_key": api_key,
-    }
+    print(f"  🔍 Web Scrape: {website} taranıyor...")
+    all_emails = set()
 
-    try:
-        resp = requests.get(endpoint, params=params, timeout=10)
-        if resp.status_code == 200:
-            data = resp.json().get("data", {})
-            email = data.get("email")
-            score = data.get("score", 0)
+    # Ana sayfa + contact sayfaları
+    base = website.rstrip("/")
+    urls_to_check = [base]
+    for path in CONTACT_PATHS:
+        urls_to_check.append(f"{base}{path}")
 
-            if email and score >= 50:
-                print(f"  ✅ Hunter Email Finder: {email} (score: {score})")
-                return email
-            elif email:
-                print(f"  ⚠️ Hunter Email Finder: {email} (düşük score: {score})")
-                return email  # Yine de dene, verify adımı filtreleyecek
-            else:
-                print(f"  ℹ️ Hunter Email Finder: Email bulunamadı")
-        elif resp.status_code == 429:
-            print("  ⚠️ Hunter.io rate limit aşıldı")
-    except Exception as e:
-        print(f"  ❌ Hunter.io Email Finder hatası: {e}")
+    for url in urls_to_check:
+        try:
+            resp = requests.get(
+                url, timeout=8, headers=WEB_SCRAPER_HEADERS,
+                allow_redirects=True,
+            )
+            if resp.status_code != 200:
+                continue
 
-    return None
+            page_text = resp.text
+
+            # 1. mailto: linklerinden çıkar (en güvenilir kaynak)
+            mailto_emails = re.findall(r'mailto:([^"\'\'?\s&]+)', page_text)
+            for e in mailto_emails:
+                e_clean = e.strip().lower()
+                if not _is_noise_email(e_clean):
+                    all_emails.add(e_clean)
+
+            # 2. Regex ile tüm email pattern'lerini bul
+            page_emails = EMAIL_PATTERN.findall(page_text)
+            for e in page_emails:
+                e_clean = e.strip().lower()
+                if not _is_noise_email(e_clean):
+                    all_emails.add(e_clean)
+
+        except requests.exceptions.RequestException:
+            continue
+        except Exception as exc:
+            logger.debug(f"Web scrape hatası ({url}): {exc}")
+            continue
+
+    if not all_emails:
+        print(f"  ℹ️ Web Scrape: Email bulunamadı")
+        return None
+
+    best = _select_best_email(list(all_emails))
+    print(f"  ✅ Web Scrape: {best} (toplam {len(all_emails)} email bulundu)")
+    return best
 
 
 # ═══════════════════════════════════════════════════════════
-# ADIM 3: Hunter.io Domain Search — Genel email arama
+# KADEME 2: Hunter.io Domain Search — API ile email arama
 # ═══════════════════════════════════════════════════════════
 
 def search_hunter_domain(domain, api_key):
@@ -216,8 +275,6 @@ def search_hunter_domain(domain, api_key):
 
     Returns:
         tuple: (personal_emails: list, general_emails: list)
-            personal_emails: [{email, name, position}, ...]
-            general_emails: [email, ...]
     """
     if not api_key:
         return [], []
@@ -265,9 +322,99 @@ def search_hunter_domain(domain, api_key):
         elif resp.status_code == 429:
             print("  ⚠️ Hunter.io rate limit aşıldı")
     except Exception as e:
-        print(f"  ❌ Hunter.io Domain Search hatası: {e}")
+        logger.error(f"Hunter.io Domain Search hatası: {e}", exc_info=True)
 
     return [], []
+
+
+# ═══════════════════════════════════════════════════════════
+# KADEME 3: Instagram Bio Email — Regex ile email çıkar
+# ═══════════════════════════════════════════════════════════
+
+def extract_email_from_ig_bio(handle):
+    """
+    Instagram biyografisinden email çıkarmayı dener.
+    Apify Instagram Scraper kullanır.
+
+    Returns:
+        str or None: Bulunan email
+    """
+    apify_token = os.environ.get("APIFY_API_KEY") or _get_env("APIFY_API_KEY", ["Apify"])
+    if not apify_token or not handle:
+        return None
+
+    print(f"  🔍 IG Bio Scrape: @{handle}...")
+
+    try:
+        # Apify Instagram Profile Scraper kullan
+        resp = requests.post(
+            "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/runs",
+            headers={
+                "Authorization": f"Bearer {apify_token}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "usernames": [handle],
+                "resultsLimit": 1,
+            },
+            timeout=30,
+        )
+
+        if resp.status_code != 201:
+            print(f"  ℹ️ IG Bio: Apify başlatılamadı (HTTP {resp.status_code})")
+            return None
+
+        run_id = resp.json().get("data", {}).get("id")
+        if not run_id:
+            return None
+
+        # Sonucu bekle (max 90 saniye)
+        for _ in range(9):
+            time.sleep(10)
+            status_resp = requests.get(
+                f"https://api.apify.com/v2/actor-runs/{run_id}",
+                headers={"Authorization": f"Bearer {apify_token}"},
+                timeout=10,
+            )
+            status = status_resp.json().get("data", {}).get("status")
+
+            if status == "SUCCEEDED":
+                dataset_id = status_resp.json()["data"]["defaultDatasetId"]
+                items = requests.get(
+                    f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                    headers={"Authorization": f"Bearer {apify_token}"},
+                    timeout=10,
+                ).json()
+
+                if items:
+                    bio = items[0].get("biography", "") or ""
+                    external_url = items[0].get("externalUrl", "") or ""
+                    business_email = items[0].get("businessEmail", "") or ""
+
+                    # Önce business email field'ını kontrol et
+                    if business_email and not _is_noise_email(business_email):
+                        print(f"  ✅ IG Bio: {business_email} (business email)")
+                        return business_email.lower()
+
+                    # Bio'dan email regex ile çıkar
+                    bio_emails = EMAIL_PATTERN.findall(bio)
+                    for e in bio_emails:
+                        if not _is_noise_email(e):
+                            print(f"  ✅ IG Bio: {e} (bio'dan)")
+                            return e.lower()
+
+                    # External URL'yi de website olarak döndürebiliriz (ileride)
+                    print(f"  ℹ️ IG Bio: Email bulunamadı")
+                break
+
+            elif status in ("FAILED", "ABORTED", "TIMED-OUT"):
+                print(f"  ⚠️ IG Bio: Apify run {status}")
+                break
+
+    except Exception as exc:
+        logger.error(f"IG Bio scrape hatası: {exc}", exc_info=True)
+
+    return None
 
 
 # ═══════════════════════════════════════════════════════════
@@ -279,11 +426,7 @@ def verify_email(email, api_key):
     Hunter.io Email Verification — Emailin gerçek olup olmadığını doğrula.
 
     Returns:
-        dict: {
-            is_valid: bool (deliverable veya accept_all),
-            status: str (deliverable/accept_all/undeliverable/risky/unknown),
-            score: int
-        }
+        dict: {is_valid, status, score}
     """
     if not api_key or not email:
         return {"is_valid": False, "status": "no_api_key", "score": 0}
@@ -299,11 +442,9 @@ def verify_email(email, api_key):
         resp = requests.get(endpoint, params=params, timeout=15)
         if resp.status_code == 200:
             data = resp.json().get("data", {})
-            status = data.get("status", "unknown")
             result = data.get("result", "unknown")
             score = data.get("score", 0)
 
-            # "deliverable" veya "accept_all" → geçerli kabul et
             is_valid = result in ("deliverable", "accept_all")
 
             if is_valid:
@@ -313,29 +454,27 @@ def verify_email(email, api_key):
 
             return {"is_valid": is_valid, "status": result, "score": score}
         elif resp.status_code == 429:
-            print("  ⚠️ Hunter.io verify rate limit — emaili güvenli kabul ediyoruz")
-            # Rate limit durumunda emaili kabul etmiyoruz — güvenli tarafta kal
+            print("  ⚠️ Hunter.io verify rate limit")
             return {"is_valid": False, "status": "rate_limited", "score": 0}
     except Exception as e:
-        print(f"  ❌ Hunter.io Verify hatası: {e}")
+        logger.error(f"Hunter.io Verify hatası: {e}", exc_info=True)
 
     return {"is_valid": False, "status": "error", "score": 0}
 
 
 # ═══════════════════════════════════════════════════════════
-# ANA FONKSİYON: Marka için iletişim bilgisi topla
+# ANA FONKSİYON: Marka için iletişim bilgisi topla (Waterfall)
 # ═══════════════════════════════════════════════════════════
 
 def find_contacts_for_brand(brand_info):
     """
     Tek bir marka için iletişim bilgisi toplar.
 
-    Yeni akış:
-    1. Apollo.io → Doğru kişiyi bul (isim + pozisyon)
-    2. Hunter.io Email Finder → O kişinin emailini bul
-    3. Hunter.io Domain Search → Fallback: domain genelinde ara
+    Waterfall (v2):
+    1. Web Scrape → Contact/about sayfalarından email (ücretsiz, sınırsız)
+    2. Hunter.io Domain Search → API ile email arama (50 kredi/ay)
+    3. Instagram Bio → IG biyografisinden email regex (Apify ile)
     4. Hunter.io Email Verify → Bulunan emaili doğrula
-    5. Doğrulanamayan → best_email boş bırakılır
 
     Args:
         brand_info: dict with keys: instagram_handle, marka_adi, website (optional)
@@ -359,13 +498,9 @@ def find_contacts_for_brand(brand_info):
             print(f"  ⚠️ Web sitesi bulunamadı")
 
     domain = get_domain_from_url(website)
-    if not domain:
-        print(f"  ❌ Domain çıkarılamadı — iletişim araması atlanıyor")
-        return _empty_result(website="")
 
-    # ─── API anahtarları ───
+    # ─── API anahtarı ───
     hunter_key = _get_env("HUNTER_API_KEY", ["Hunter.io", "API Anahtarı"])
-    apollo_key = _get_env("APOLLO_API_KEY", ["Apollo.io", "API Anahtarı"])
 
     best_email = None
     contact_name = ""
@@ -373,56 +508,37 @@ def find_contacts_for_brand(brand_info):
     email_source = ""
     personal_emails = []
 
-    # ═══ ADIM 1: Apollo.io → Doğru kişiyi bul ═══
-    apollo_people = search_apollo_people(domain, apollo_key)
+    # ═══ KADEME 1: Web Scrape (ücretsiz, sınırsız) ═══
+    if website:
+        scraped_email = scrape_contact_emails(website)
+        if scraped_email:
+            best_email = scraped_email
+            email_source = "web_scrape"
 
-    # ═══ ADIM 2: Hunter.io Email Finder (Apollo kişisi varsa) ═══
-    if apollo_people:
-        for person in apollo_people:
-            # Apollo zaten email verdi mi?
-            if person.get("email"):
-                best_email = person["email"]
-                contact_name = f"{person['first_name']} {person['last_name']}".strip()
-                contact_title = person.get("title", "")
-                email_source = "apollo_direct"
-                print(f"  ✅ Apollo direkt email: {best_email}")
-                break
-
-            # Hunter Email Finder ile kişinin emailini bul
-            found_email = find_email_by_name(
-                domain,
-                person["first_name"],
-                person["last_name"],
-                hunter_key,
-            )
-            if found_email:
-                best_email = found_email
-                contact_name = f"{person['first_name']} {person['last_name']}".strip()
-                contact_title = person.get("title", "")
-                email_source = "hunter_finder"
-                break
-
-            time.sleep(0.5)  # Rate limiting
-
-    # ═══ ADIM 3: Hunter.io Domain Search (Fallback) ═══
-    if not best_email:
+    # ═══ KADEME 2: Hunter.io Domain Search (50 kredi/ay) ═══
+    if not best_email and domain:
         hunter_personal, hunter_general = search_hunter_domain(domain, hunter_key)
         personal_emails = hunter_personal
 
         if hunter_personal:
-            # Kişisel emaillerden en uygununu seç (marketing/partnership tercihi)
             selected = _select_best_personal(hunter_personal)
             best_email = selected["email"]
             contact_name = selected.get("name", "")
             contact_title = selected.get("position", "")
             email_source = "hunter_domain_personal"
         elif hunter_general:
-            # Genel emailleri marketing ile ilişkili olanlara öncelik ver
             best_email = _select_best_general(hunter_general)
             email_source = "hunter_domain_general"
 
-    # ═══ ADIM 4: Email Verification ═══
-    if best_email:
+    # ═══ KADEME 3: Instagram Bio Email (Apify) ═══
+    if not best_email and handle:
+        ig_email = extract_email_from_ig_bio(handle)
+        if ig_email:
+            best_email = ig_email
+            email_source = "instagram_bio"
+
+    # ═══ KADEME 4: Email Verification ═══
+    if best_email and hunter_key:
         verification = verify_email(best_email, hunter_key)
 
         if verification["is_valid"]:
@@ -430,14 +546,28 @@ def find_contacts_for_brand(brand_info):
             print(f"  ✅ Doğrulanmış email: {best_email}")
         else:
             print(f"  ⛔ Email doğrulanamadı: {best_email} → {verification['status']}")
-            print(f"     → Bu markaya email GÖNDERİLMEYECEK")
-            email_status = f"failed_verification:{verification['status']}"
-            best_email = ""  # Email gönderme!
-            contact_name = ""
-            contact_title = ""
+            # Web scrape'den gelen email'ler genellikle doğrudur.
+            # Sadece "undeliverable" ise reddet, diğer durumlarda (risky, unknown) kabul et.
+            if verification["status"] == "undeliverable":
+                print(f"     → Bu markaya email GÖNDERİLMEYECEK")
+                email_status = f"failed_verification:{verification['status']}"
+                best_email = ""
+                contact_name = ""
+                contact_title = ""
+            else:
+                # risky / unknown / accept_all → yine de dene
+                email_status = f"partially_verified:{verification['status']}"
+                print(f"     → Kısmi doğrulama ({verification['status']}), yine de denenecek")
+    elif best_email:
+        # Hunter key yoksa ama email bulduk — doğrulama olmadan kullan
+        email_status = "unverified"
+        print(f"  ⚠️ Hunter key yok — email doğrulanamadı, direkt kullanılacak")
     else:
         email_status = "not_found"
-        print(f"  ⛔ Email bulunamadı — bu markaya email GÖNDERİLMEYECEK")
+        if not domain:
+            print(f"  ⛔ Domain bulunamadığı için email araması yapılamadı")
+        else:
+            print(f"  ⛔ Email bulunamadı — bu markaya email GÖNDERİLMEYECEK")
 
     # ─── Sonuç ───
     result = {
@@ -451,9 +581,9 @@ def find_contacts_for_brand(brand_info):
     }
 
     if best_email:
-        print(f"  ✅ Sonuç: {best_email} ({contact_name}, {contact_title})")
+        print(f"  ✅ Sonuç: {best_email} (kaynak: {email_source})")
     else:
-        print(f"  ⚠️ Sonuç: Email yok — marka CSV'ye 'not_found' olarak kaydedilecek")
+        print(f"  ⚠️ Sonuç: Email yok — marka CSV'ye '{email_status}' olarak kaydedilecek")
 
     return result
 
@@ -476,18 +606,12 @@ def _select_best_personal(personal_emails):
     Kişisel emailler arasından en uygununu seç.
     Marketing/partnerships/brand/influencer pozisyonlarını tercih et.
     """
-    priority_keywords = [
-        "influencer", "partnership", "marketing", "brand",
-        "growth", "creator", "content", "collab",
-    ]
-
     for person in personal_emails:
         pos = (person.get("position") or "").lower()
-        for kw in priority_keywords:
+        for kw in TARGET_TITLE_KEYWORDS:
             if kw in pos:
                 return person
 
-    # Hiçbiri eşleşmezse ilkini döndür
     return personal_emails[0]
 
 
@@ -496,19 +620,11 @@ def _select_best_general(general_emails):
     Genel emailler arasından en uygununu seç.
     partnerships@ > business@ > hello@ > contact@ > info@ sıralaması.
     """
-    # Tercih sırası — partnerships/business en iyi
-    priority_prefixes = [
-        "partnerships@", "partner@", "business@", "marketing@",
-        "collab@", "influencer@", "creators@",
-        "hello@", "contact@", "info@",
-    ]
-
-    for prefix in priority_prefixes:
+    for prefix in PREFERRED_PREFIXES:
         for email in general_emails:
-            if email.lower().startswith(prefix):
+            if email.lower().startswith(prefix + "@"):
                 return email
 
-    # Hiçbiri eşleşmezse ilkini döndür
     return general_emails[0]
 
 
@@ -539,14 +655,25 @@ def enrich_new_brands(new_brands):
 
     # İstatistikler
     verified = sum(1 for b in enriched if b.get("email_status") == "verified")
+    partial = sum(1 for b in enriched if (b.get("email_status") or "").startswith("partially"))
+    unverified = sum(1 for b in enriched if b.get("email_status") == "unverified")
     not_found = sum(1 for b in enriched if b.get("email_status") == "not_found")
     failed = sum(1 for b in enriched if (b.get("email_status") or "").startswith("failed"))
+
+    # Kaynak dağılımı
+    sources = {}
+    for b in enriched:
+        src = b.get("email_source", "none") or "none"
+        sources[src] = sources.get(src, 0) + 1
 
     print(f"\n{'='*60}")
     print(f"📊 İLETİŞİM SONUÇ RAPORU")
     print(f"   ✅ Doğrulanmış: {verified}/{len(enriched)}")
+    print(f"   🔶 Kısmi doğrulama: {partial}/{len(enriched)}")
+    print(f"   ⚪ Doğrulanmamış: {unverified}/{len(enriched)}")
     print(f"   ⛔ Bulunamayan: {not_found}/{len(enriched)}")
     print(f"   ❌ Doğrulama başarısız: {failed}/{len(enriched)}")
+    print(f"   📡 Kaynaklar: {json.dumps(sources, ensure_ascii=False)}")
     print(f"{'='*60}")
 
     return enriched

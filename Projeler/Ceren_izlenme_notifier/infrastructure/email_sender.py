@@ -3,6 +3,7 @@ from email.message import EmailMessage
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+import datetime
 
 from logger import get_logger
 from config import settings
@@ -23,7 +24,7 @@ def get_gmail_service():
             creds.refresh(Request())
             logger.info("Token basariyla yenilendi.")
             
-            # Yenilenen token'ı dosyaya geri kaydet (ephemeral container'da kalıcı değil ama session boyunca yeterli)
+            # Yenilenen token'ı dosyaya geri kaydet
             try:
                 with open(settings.OAUTH_TOKEN_PATH, 'w') as f:
                     f.write(creds.to_json())
@@ -40,7 +41,7 @@ def get_gmail_service():
         logger.error(f"Gmail servisi baslatilamadi: {e}", exc_info=True)
         return None
 
-def send_performance_report(videos):
+def send_performance_report(videos, report_summary=""):
     """Barajı aşan videoları HTML formatında mail olarak gönderir."""
     if not videos:
         logger.info("Raporlanacak siniri asan video bulunmadi.")
@@ -53,13 +54,26 @@ def send_performance_report(videos):
 
     msg = EmailMessage()
     
-    html_content = """
+    today_str = datetime.datetime.now().strftime("%d %B %Y")
+    
+    html_content = f"""
     <html>
       <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
         <h2 style="color: #2c3e50;">Sosyal Medya Performans Raporu 🚀</h2>
-        <p>Merhaba Ceren! Son 7 gün içerisinde hedeflenen barajları aşan içerikler aşağıda listelenmiştir:</p>
+        <p style="font-size: 14px; margin-bottom: 20px;"><strong>Tarih:</strong> {today_str}</p>
+    """
+    
+    if report_summary:
+        html_content += f"""
+        <div style="background-color: #f1f8ff; padding: 15px; border-left: 4px solid #3498db; margin-bottom: 25px;">
+            {report_summary}
+        </div>
+        """
+        
+    html_content += """
+        <p>Aşağıda hedeflenen barajları aşan içerikler listelenmiştir:</p>
         <p style="font-size: 13px; color: #7f8c8d;">Barajlar: Instagram Reels ≥ 200K | TikTok ≥ 100K | YouTube Shorts ≥ 100K | YouTube Long-Form ≥ 10K</p>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
           <thead>
             <tr style="background-color: #f8f9fa;">
               <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Platform</th>
@@ -111,7 +125,7 @@ def send_performance_report(videos):
 
     msg['To'] = 'ceren@dolunay.ai'
     msg['From'] = 'Dolunay Özeren <dolunay@dolunay.ai>'
-    msg['Subject'] = 'Otomatik Sosyal Medya Raporu'
+    msg['Subject'] = f'🔥 Haftalık Sosyal Medya Çıktıları ({today_str})'
 
     raw_msg = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
 
@@ -124,3 +138,49 @@ def send_performance_report(videos):
         logger.info(f"Rapor basariyla gonderildi! Message Id: {message['id']}")
     except Exception as e:
         logger.error(f"Rapor gonderilim hatasi: {e}", exc_info=True)
+
+def send_technical_error_report(errors):
+    """Sadece teknik problemleri ozerendolunay@gmail.com adresine atar."""
+    if not errors:
+        return
+        
+    service = get_gmail_service()
+    if not service:
+        logger.error("Gmail servisi alinmadi, teknik hata raporu gonderilemedi!")
+        return
+
+    msg = EmailMessage()
+    
+    error_list_html = "".join([f"<li>{err}</li>" for err in errors])
+    
+    html_content = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+        <h2 style="color: #c0392b;">Ceren Notifier - Teknik Hata Raporu ⚠️</h2>
+        <p>Proje çalışırken Apify veri çekme aşamasında aşağıdaki hatalar meydana geldi. Bu platformlar atlandı:</p>
+        <ul>
+            {error_list_html}
+        </ul>
+        <p>Lütfen Apify panosunu ve Actor durumlarını kontrol et.</p>
+      </body>
+    </html>
+    """
+
+    msg.set_content("HTML destekleyen bir mail istemcisi kullanin.")
+    msg.add_alternative(html_content, subtype='html')
+
+    msg['To'] = 'ozerendolunay@gmail.com'
+    msg['From'] = 'Dolunay Özeren <dolunay@dolunay.ai>'
+    msg['Subject'] = '⚠️ Apify Veri Çekme Hatası - Ceren Notifier'
+
+    raw_msg = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+
+    if settings.IS_DRY_RUN:
+        logger.info(f"[DRY-RUN] Teknik hata maili gonderimi atlaniyor.")
+        return
+        
+    try:
+        message = service.users().messages().send(userId="me", body={'raw': raw_msg}).execute()
+        logger.info(f"Teknik hata raporu basariyla gonderildi! Message Id: {message['id']}")
+    except Exception as e:
+        logger.error(f"Teknik hata raporu gonderilim hatasi: {e}", exc_info=True)

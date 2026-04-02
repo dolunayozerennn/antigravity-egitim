@@ -8,6 +8,7 @@ Pipeline: scrape → analyze → find contacts → kişiselleştir → gönder
 import csv
 import json
 import os
+import random
 import time
 from datetime import datetime, timezone, timedelta
 
@@ -225,7 +226,7 @@ def send_outreach_emails(dry_run=False):
         print(f"     Konu: {subject}")
 
         # Gönder
-        result = send_email(service, brand_row["email"], subject, body_html, body_text)
+        result = send_email(service, brand_row["email"], subject, body_html, body_text, plain_text_only=True)
 
         if result:
             update_csv_row(brand_row["lead_id"], {
@@ -246,7 +247,9 @@ def send_outreach_emails(dry_run=False):
             print(f"     ❌ Başarısız")
             stats["failed"] += 1
 
-        time.sleep(10)  # Rate limiting — doğal görünsün
+        wait_time = random.uniform(45, 120)
+        print(f"     ⏳ Sonraki mail için {wait_time:.0f}sn bekleniyor...")
+        time.sleep(wait_time)  # Anti-spam: rastgele aralıklar
 
     print(f"\n{'='*60}")
     print(f"📊 OUTREACH SONUÇ: {stats['sent']} gönderildi, {stats['failed']} başarısız")

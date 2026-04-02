@@ -4,11 +4,18 @@
 > Yarım kalan işler, TODO'lar ve takip gereken konular burada tutulur.
 > Görev tamamlandığında bu dosyadan silinir.
 
-**Son güncelleme:** 27 Mart 2026
+**Son güncelleme:** 2 Nisan 2026
 
 ---
 
 ## Aktif TODO'lar
+
+### ✅ ~~Yeni Gemini API Key'in Entegrasyonu~~ (TAMAMLANDI)
+- **Kaynak:** Railway Health Check & Blog Yazıcı (2 Nisan 2026)
+- **Açıklama:** Sızdırılan ve bloke edilen Gemini API Key (`AIzaSyBm...`) Google Cloud'dan yenilendi. `master.env`, `api-anahtarlari.md` güncellendi. Railway env vars güncellendi.
+- **Öncelik:** Yüksek (P1-Kritik - Blog üretimi çalışmıyor)
+- **Durum:** ✅ Tamamlandı (2 Nisan 2026)
+- **Notlar:** Yeni key: `AIzaSyByXyLOy...`. master.env + api-anahtarlari.md güncellendi. Railway projelerine yansıtıldı (Blog_Yazici, Dolunay_Reels_Kapak, Dolunay_YouTube_Kapak, LinkedIn_Text_Paylasim).
 
 ### ✅ ~~Chat 1: 3 Sosyal Medya Projesi Deploy~~ (TAMAMLANDI)
 - **Kaynak:** Derin Analiz (27 Mart 2026)

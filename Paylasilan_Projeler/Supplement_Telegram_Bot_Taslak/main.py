@@ -40,6 +40,11 @@ notion = NotionLogger(
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Bot başlangıç mesajı."""
+    user = update.effective_user
+    if settings.ALLOWED_USER_IDS and user.id not in settings.ALLOWED_USER_IDS:
+        await update.message.reply_text("⛔ Bu botu kullanma yetkiniz yok.")
+        return
+
     welcome = (
         "👋 Merhaba! Ben **Supplement Buddy**.\n\n"
         "📸 Bana bir supplement/vitamin fotoğrafı gönder, "
@@ -55,6 +60,11 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Yardım mesajı."""
+    user = update.effective_user
+    if settings.ALLOWED_USER_IDS and user.id not in settings.ALLOWED_USER_IDS:
+        await update.message.reply_text("⛔ Bu botu kullanma yetkiniz yok.")
+        return
+
     help_text = (
         "**📸 Fotoğraf Analizi:**\n"
         "Bir supplement/vitamin etiketi fotoğrafı gönder.\n"
@@ -72,10 +82,15 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_durum(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Bot durum kontrolü."""
+    user = update.effective_user
+    if settings.ALLOWED_USER_IDS and user.id not in settings.ALLOWED_USER_IDS:
+        await update.message.reply_text("⛔ Bu botu kullanma yetkiniz yok.")
+        return
+
     status = (
         "✅ **Bot Durumu: Aktif**\n\n"
         f"🤖 Model: `{settings.GEMINI_MODEL}`\n"
-        f"📋 Notion DB: `...{settings.NOTION_DB_ID[-8:]}`\n"
+        "🗄️ Notion DB: `[Bağlandı - Gizli]`\n"
         f"🌍 Ortam: `{settings.ENV}`"
     )
     await update.message.reply_text(status, parse_mode="Markdown")
@@ -275,7 +290,7 @@ def _format_analysis_reply(parsed: dict, success: bool, notion_url: str | None) 
         lines.append(f"\n💡 *Kullanım:* {kullanim['onerilen_kullanim']}")
 
     if notion_url:
-        lines.append(f"\n📋 [Notion'da Görüntüle]({notion_url})")
+        lines.append("\n✅ Notion'a kaydedildi.")
     else:
         lines.append("\n⚠️ _Notion'a kayıt başarısız oldu_")
 
@@ -301,6 +316,10 @@ async def post_init(application):
 def main():
     """Bot entrypoint — polling mode ile 7/24 çalışır."""
     log.info(f"Supplement Buddy başlatılıyor... ENV={settings.ENV}")
+
+    if not settings.ALLOWED_USER_IDS:
+        log.warning("⚠️ DİKKAT: ALLOWED_USER_IDS boş! Bot HERKESE AÇIK durumda çalışıyor.")
+        log.warning("⚠️ DİKKAT: Kötü niyetli kullanım Gemini kotanızı ve Notion veritabanınızı doldurabilir!")
 
     app = (
         ApplicationBuilder()

@@ -17,9 +17,9 @@ Antigravity bir göreve başlamadan önce ilgili skill'i okuyarak nasıl davrana
 | 4 | `lead-generation` | Potansiyel müşteri ve veri toplama (Apify) | 🤖 `musteri-kazanim` |
 | 5 | `eposta-gonderim` | Toplanan verilere e-posta gönderimi (Gmail) | 🤖 `musteri-kazanim` |
 | 6 | `canli-yayina-al` | GitHub + Railway ile 7/24 deployment | 🤖 `yayinla-paylas` |
-| 7 | `proje-gorsellestirici` | HTML tabanlı proje görselleştirme | 🤖 `yayinla-paylas` |
-| 8 | `proje-paylasimi` | Proje export ve paylaşıma hazırlama | 🤖 `yayinla-paylas` |
-| 9 | `sosyal-medya-paylasim` | Sosyal medya paylaşım otomasyonu | — (bağımsız) |
+| 7 | `proje-gorsellestirici` | Projelerin D3.js ile interaktif mimari şeması | 🤖 `yayinla-paylas` |
+| 8 | `folder-paylasim` | Proje export ve paylaşıma hazırlama | 🤖 `yayinla-paylas` |
+| 9 | `rakip-analiz` | Rakiplerin landing page analizi | 🤖 `musteri-kazanim` |
 | 10 | `egitim-gorselleri` | Web temelli görselleştirmeler | — (bağımsız) |
 | 11 | `website-olusturucu` | Web sitesi oluşturma | — (bağımsız) |
 | 12 | `sifre-yonetici` | Merkezi şifre/token yönetimi ve dağıtımı | Tüm agent'lar |

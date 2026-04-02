@@ -245,8 +245,8 @@ Paylasima_Hazir/Projeler/[ProjeAdi]_Taslak/
    - Tüm workflow dosyalarını olduğu gibi kopyala
    - Eğer workflow içinde kişisel referans varsa temizle
 
-6. **Paylasilan_Projeler/ → Dahil Etme**
-   - Bu klasör senin iç çalışma alanın, starter kit'e eklenmez
+6. **Paylasima_Hazir/ → Dahil Etme**
+   - Bu klasör senin paylaşımları sakladığın yerdir, starter kit'e eklenmez
 
 7. **Başlangıç Rehberi Oluşturma**
    - Root'a `BASLANGIÇ_REHBERI.md` ekle

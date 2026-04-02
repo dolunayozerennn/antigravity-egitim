@@ -7,6 +7,12 @@ class Config:
         self.IS_DRY_RUN = self.ENV == "development" or os.environ.get("DRY_RUN", "0") == "1"
         
         self.APIFY_API_KEY = self._require_env("APIFY_API_KEY")
+        self.GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+        
+        # Apify Actor IDs
+        self.APIFY_INSTAGRAM_ACTOR = os.environ.get("APIFY_INSTAGRAM_ACTOR", "apify/instagram-profile-scraper")
+        self.APIFY_TIKTOK_ACTOR = os.environ.get("APIFY_TIKTOK_ACTOR", "0FXVyOXXEmdGcV88a")
+        self.APIFY_YOUTUBE_ACTOR = os.environ.get("APIFY_YOUTUBE_ACTOR", "h7sDV53CddomktSi5")
         
         # When running in Railway or locally, determine where the token is.
         oauth_json = os.environ.get("GMAIL_OAUTH_JSON")

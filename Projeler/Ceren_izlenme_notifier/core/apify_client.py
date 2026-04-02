@@ -2,11 +2,20 @@ from apify_client import ApifyClient
 from datetime import datetime, timedelta, timezone
 from logger import get_logger
 from config import settings
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 logger = get_logger(__name__)
 
 # Initialize the ApifyClient with your API token
 client = ApifyClient(settings.APIFY_API_KEY)
+
+@retry(stop=stop_after_attempt(2), wait=wait_fixed(15))
+def call_apify_actor(actor_id, run_input):
+    """
+    Apify actor çağrısını yapar. Hata durumunda 15 saniye bekleyip 1 kez daha dener (toplam 2 deneme).
+    """
+    logger.info(f"Apify Actor çağrılıyor: {actor_id}")
+    return client.actor(actor_id).call(run_input=run_input)
 
 def is_within_7_days(date_str):
     """
@@ -44,10 +53,10 @@ def get_instagram_data():
     try:
         post_run_input = {
             "usernames": ["dolunay_ozeren"],
-            "resultsLimit": 30
+            "resultsLimit": 10
         }
         
-        run = client.actor("apify/instagram-profile-scraper").call(run_input=post_run_input)
+        run = call_apify_actor(settings.APIFY_INSTAGRAM_ACTOR, post_run_input)
         
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             # sometimesposts are inside latestPosts
@@ -71,7 +80,9 @@ def get_instagram_data():
                     
     except Exception as e:
         logger.error(f"Instagram scrapinge hatasi: {e}", exc_info=True)
-    return videos
+        return [], str(e)
+        
+    return videos, None
 
 def get_tiktok_data():
     """
@@ -82,11 +93,10 @@ def get_tiktok_data():
     try:
         tk_run_input = {
             "profiles": ["dolunayozeren"],
-            "resultsPerPage": 30,
+            "resultsPerPage": 10,
             "downloadVideo": False
         }
-        # tiktok-profile-scraper actor ID from the list
-        run = client.actor("0FXVyOXXEmdGcV88a").call(run_input=tk_run_input)
+        run = call_apify_actor(settings.APIFY_TIKTOK_ACTOR, tk_run_input)
         
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             dt = item.get("createTime") or item.get("createTimeISO")
@@ -107,8 +117,9 @@ def get_tiktok_data():
                 
     except Exception as e:
         logger.error(f"TikTok scrapinge hatasi: {e}", exc_info=True)
+        return [], str(e)
         
-    return videos
+    return videos, None
 
 def get_youtube_data():
     """
@@ -120,11 +131,10 @@ def get_youtube_data():
     try:
         yt_run_input = {
             "searchKeywords": "dolunayozeren",
-            "maxResults": 30,
+            "maxResults": 10,
             "maxResultStreams": 0
         }
-        # youtube-scraper actor ID
-        run = client.actor("h7sDV53CddomktSi5").call(run_input=yt_run_input)
+        run = call_apify_actor(settings.APIFY_YOUTUBE_ACTOR, yt_run_input)
         
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             dt = item.get("uploadDate") or item.get("date")
@@ -185,12 +195,27 @@ def get_youtube_data():
 
     except Exception as e:
         logger.error(f"YouTube scrapinge hatasi: {e}", exc_info=True)
+        return [], str(e)
         
-    return videos
+    return videos, None
 
 def fetch_all_social_media():
     videos = []
-    videos.extend(get_instagram_data())
-    videos.extend(get_tiktok_data())
-    videos.extend(get_youtube_data())
-    return videos
+    errors = []
+    
+    ig_videos, ig_err = get_instagram_data()
+    videos.extend(ig_videos)
+    if ig_err:
+        errors.append(f"Instagram Hatası: {ig_err}")
+        
+    tk_videos, tk_err = get_tiktok_data()
+    videos.extend(tk_videos)
+    if tk_err:
+        errors.append(f"TikTok Hatası: {tk_err}")
+        
+    yt_videos, yt_err = get_youtube_data()
+    videos.extend(yt_videos)
+    if yt_err:
+        errors.append(f"YouTube Hatası: {yt_err}")
+        
+    return videos, errors

@@ -32,7 +32,7 @@ Her iki akışta da **güvenlik birinci** prensibi uygulanır — API anahtarlar
 | Skill | Konum | Ne Zaman Kullanılır |
 |-------|-------|---------------------|
 | **Production Deploy** | `_skills/canli-yayina-al/SKILL.md` | Deploy akışında — GitHub push + Railway deployment |
-| **Proje Paylaşımı** | `_skills/proje-paylasimi/SKILL.md` | Export akışında — temizleme, paketleme, rehber oluşturma |
+| **Proje Paylaşımı** | `_skills/folder-paylasim/SKILL.md` | Export akışında — temizleme, paketleme, rehber oluşturma |
 | **Proje Görselleştirici** | `_skills/proje-gorsellestirici/SKILL.md` | Her iki akışta opsiyonel — projenin nasıl çalıştığını gösteren interaktif HTML |
 
 ---
@@ -100,10 +100,10 @@ Bu akış `_skills/canli-yayina-al/SKILL.md` yönergesini takip eder.
 
 ## 📦 Bölüm B — Export Akışı (Paylaşıma Hazır Paket)
 
-Bu akış `_skills/proje-paylasimi/SKILL.md` yönergesini takip eder.
+Bu akış `_skills/folder-paylasim/SKILL.md` yönergesini takip eder.
 
 ### Adım B1: Hedef Belirleme
-1. `_skills/proje-paylasimi/SKILL.md` dosyasını oku
+1. `_skills/folder-paylasim/SKILL.md` dosyasını oku
 2. Paylaşılacak öğeyi belirle:
    - **Skill** → `_skills/[skill-adi]/` klasörü
    - **Proje** → `Projeler/[proje-adi]/` klasörü
@@ -126,7 +126,7 @@ Bu akış `_skills/proje-paylasimi/SKILL.md` yönergesini takip eder.
 3. Projenin amacını ve kullanımını açıkla
 
 ### Adım B5: Paketleme
-1. `Paylasilan_Projeler/[Proje]_Taslak/` klasörüne aktar
+1. `Paylasima_Hazir/Projeler/[Proje]_Taslak/` klasörüne aktar
 2. Son kontrol — eksik dosya, kırık import yok mu?
 3. Kullanıcıya rapor ver
 
@@ -192,7 +192,7 @@ Bu workflow'lar hem bu agent'ın parçası olarak hem de `_agents/workflows/` al
 - `_knowledge/deploy-registry.md` — Deploy edilmiş projelerin kayıt defteri
 - `_skills/canli-yayina-al/scripts/railway.sh` — Token otomatik bulma wrapper
 - `_skills/canli-yayina-al/templates/` — `.gitignore` ve `railway.json` şablonları
-- `_skills/proje-paylasimi/checklists/` — Güvenlik ve bağımlılık kontrol listeleri
+- `_skills/folder-paylasim/SKILL.md` — Güvenlik ve dışa aktarma kuralları
 - `_skills/proje-gorsellestirici/resources/template.html` — HTML akış şablonu
 
 ---
@@ -208,7 +208,7 @@ Agent: Deploy akışı → A1-A5 adımları → 7/24 çalışır hale getirir
 ### Senaryo 2: Projeyi Öğrencilere Paylaş
 ```
 Kullanıcı: "B2B_Outreach projesini öğrencilere paylaş"
-Agent: Export akışı → B1-B5 adımları → Paylasilan_Projeler/ altında paket
+Agent: Export akışı → B1-B5 adımları → Paylasima_Hazir/ altında paket
 ```
 
 ### Senaryo 3: Deploy + Görselleştir
