@@ -97,9 +97,10 @@ class Config:
             )
 
         if errors:
+            error_msg = f"Eksik konfigürasyon nedeniyle uygulama başlatılamadı: {', '.join(errors)}"
             for err in errors:
                 logger.error(f"❌ Config hatası: {err}")
-            return False
+            raise EnvironmentError(error_msg)
 
         logger.info("✅ Konfigürasyon doğrulandı")
         return True
