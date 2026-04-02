@@ -32,7 +32,11 @@ GITHUB_REPO = "Dolunay_AI_Website"
 GITHUB_BRANCH = "main"
 
 # Netlify Build Hook — push sonrası otomatik deploy tetikler
-NETLIFY_BUILD_HOOK_URL = "https://api.netlify.com/build_hooks/69cd7618168c1cbf4aab0e10"
+# env'den oku (Railway'de değiştirilebilir), yoksa hardcoded fallback
+NETLIFY_BUILD_HOOK_URL = os.environ.get(
+    "NETLIFY_BUILD_HOOK_URL",
+    "https://api.netlify.com/build_hooks/69cd7618168c1cbf4aab0e10"
+)
 
 # Dosya yolları (repo içi)
 BLOG_CONTENT_DIR = "src/content/blog"

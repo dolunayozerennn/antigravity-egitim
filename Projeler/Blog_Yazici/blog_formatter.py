@@ -270,10 +270,14 @@ def format_blog(video_dir: str, custom_slug: str = None, video_name: str = None)
     now = datetime.now(timezone.utc)
     cover_image_path = f"/images/blog/{slug}-cover.webp"
 
+    # YAML-safe: tırnak ve özel karakterleri escape et
+    safe_title = title.replace('"', '\\"')
+    safe_excerpt = excerpt.replace('"', '\\"')
+
     frontmatter = f"""---
-title: "{title}"
+title: "{safe_title}"
 date: "{now.strftime('%Y-%m-%dT%H:%M:%S.000Z')}"
-excerpt: "{excerpt}"
+excerpt: "{safe_excerpt}"
 coverImage: "{cover_image_path}"
 tags: {json.dumps(tags, ensure_ascii=False)}
 ---"""

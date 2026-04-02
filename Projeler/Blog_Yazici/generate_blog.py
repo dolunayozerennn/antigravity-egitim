@@ -106,7 +106,29 @@ SADECE blog yazısını ver, başka bir şey ekleme. Markdown formatında yaz.""
         response.raise_for_status()
         result = response.json()
         
-        blog_text = result["candidates"][0]["content"]["parts"][0]["text"]
+        # ── Defensive: Gemini boş/güvenlik-filtreli yanıt kontrolü ──
+        candidates = result.get("candidates", [])
+        if not candidates:
+            block_reason = result.get("promptFeedback", {}).get("blockReason", "UNKNOWN")
+            print(f"  ❌ Gemini boş yanıt döndü! blockReason: {block_reason}")
+            print(f"  ℹ️  promptFeedback: {result.get('promptFeedback', {})}")
+            return None, {}
+        
+        candidate = candidates[0]
+        finish_reason = candidate.get("finishReason", "")
+        if finish_reason == "SAFETY":
+            safety_ratings = candidate.get("safetyRatings", [])
+            print(f"  ❌ Gemini içerik güvenlik filtresine takıldı!")
+            print(f"  ℹ️  safetyRatings: {safety_ratings}")
+            return None, {}
+        
+        content = candidate.get("content", {})
+        parts = content.get("parts", [])
+        if not parts or not parts[0].get("text"):
+            print(f"  ❌ Gemini yanıtında metin bulunamadı! finishReason: {finish_reason}")
+            return None, {}
+        
+        blog_text = parts[0]["text"]
         
         # Token kullanımı
         usage = result.get("usageMetadata", {})
@@ -159,6 +181,7 @@ def main():
         print(f"  Kaydedildi: {blog_path}")
     else:
         print("❌ Blog üretilemedi!")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
