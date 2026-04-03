@@ -107,7 +107,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/marka-is-birligi`
 - **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-04-01 (fix: scheduler import hatası + email deliverability iyileştirmeleri — Apollo kaldırıldı, web scraper + IG bio scraper eklendi, anti-spam kuralları, plain-text öncelik, rastgele gönderim zamanı. deployment ID: 4100128a, build SUCCESS ✅)
+- **Son Deploy:** 2026-04-02 (stabilize: Apify key rotasyonu 9-key + maliyet opt 15→4 reels, docstring saat fix UTC04=TR07, reporter print→logging.error fix)
 - **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — Notion state + ops_logger)
 
 ---
@@ -160,7 +160,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Text_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 8 * * 1,4` (Haftada 2, UTC 08:00 Pazartesi+Perşembe = TR 11:00)
-- **Son Deploy:** 2026-04-01 (fix: Notion 'Post Tipi' property eklendi + fail-safe return True→False bug fix. Build SUCCESS, deployment: 4b5350a9)
+- **Son Deploy:** 2026-04-03 (fix: Gemini api error fixed by updating model endpoint from gemini-2.0-flash-exp to gemini-2.0-flash)
 - **Durum:** ✅ Aktif (Haftalık AI Haberleri + AI Tavsiyesi LinkedIn postu)
 - **Env Vars:** PERPLEXITY_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
 
