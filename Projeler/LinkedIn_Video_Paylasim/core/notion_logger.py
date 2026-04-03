@@ -41,8 +41,8 @@ class NotionLogger:
             return len(data.get("results", [])) > 0
         except Exception as e:
             logging.error(f"Error checking Notion for video_id {video_id}: {e}", exc_info=True)
-            # Fail safe: return True to avoid spamming if API is down
-            return True
+            # Fail safe: return False to prevent falsely marking a video as processed if API fails
+            return False
 
     def log_video(
         self,

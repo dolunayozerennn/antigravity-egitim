@@ -38,7 +38,7 @@ def job():
 
             # 2a: Duplication Check (already posted OR filtered)
             if logger_db.is_video_posted(video_id):
-                logging.info(f"  [{idx}/{len(recent_videos)}] Skipping {video_id} — already processed.")
+                logging.info(f"  [{idx}/{len(recent_videos)}] Skipping {video_id} — (Daha önce başarıyla yüklendi VEYA filtreden geçemediği için reddedildi)")
                 continue
 
             logging.info(f"  [{idx}/{len(recent_videos)}] New video found! ID: {video_id} — {video_title[:60]}...")
