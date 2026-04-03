@@ -157,4 +157,21 @@ def process_ready_videos():
 
 
 if __name__ == "__main__":
-    process_ready_videos()
+    import os
+    import time
+    
+    # Eğer Railway üzerinde çalışıyorsa (veya zorunlu loop isteniyorsa) sürekli döngüde çalışır.
+    # Railway'de normal servisler (cron olmayan) exited olunca crash sayılır ve FAILED durumuna düşer.
+    if os.environ.get("RAILWAY_ENVIRONMENT_NAME") or os.environ.get("LOOP") == "1":
+        print("🔄 [Railway Worker Mode] Başlatıldı. 10 dakikada bir kontrol edilecek...")
+        while True:
+            try:
+                process_ready_videos()
+            except Exception as e:
+                import logging
+                logging.error(f"Beklenmeyen hata oluştu: {e}", exc_info=True)
+            print("⏳ 10 dakika bekleniyor...")
+            time.sleep(600)
+    else:
+        # Lokal veya tek seferlik çalışma
+        process_ready_videos()
