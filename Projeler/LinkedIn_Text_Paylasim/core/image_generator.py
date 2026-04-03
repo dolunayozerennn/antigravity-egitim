@@ -85,7 +85,7 @@ class ImageGenerator:
             logging.info("[DRY-RUN] Gemini görsel üretme atlanıyor.")
             return None
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key={self.gemini_api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={self.gemini_api_key}"
 
         payload = {
             "contents": [
