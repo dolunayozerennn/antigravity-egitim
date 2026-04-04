@@ -6,7 +6,19 @@ class Config:
         self.ENV = os.environ.get("ENV", "development").lower()
         self.IS_DRY_RUN = self.ENV == "development" or os.environ.get("DRY_RUN", "0") == "1"
         
-        self.APIFY_API_KEY = self._require_env("APIFY_API_KEY")
+        self.APIFY_KEYS = []
+        for i in range(1, 10):
+            val = os.environ.get(f"APIFY_API_KEY_{i}")
+            if val:
+                self.APIFY_KEYS.append(val)
+        
+        # Geriye dönük uyumluluk (eskiden sadece APIFY_API_KEY vardıysa)
+        old_val = os.environ.get("APIFY_API_KEY")
+        if old_val and (old_val not in self.APIFY_KEYS):
+            self.APIFY_KEYS.append(old_val)
+            
+        if not self.APIFY_KEYS:
+            raise EnvironmentError("CRITICAL STARTUP FAILURE: En az bir adet APIFY_API_KEY_x bulunamadı!")
         self.GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
         
         # Apify Actor IDs

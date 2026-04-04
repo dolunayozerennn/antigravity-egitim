@@ -10,6 +10,7 @@ import json
 import os
 import time
 import requests
+import random
 from datetime import datetime, timezone, timedelta
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -17,30 +18,47 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAKIPLER_CSV = os.path.join(BASE_DIR, "config", "rakipler.csv")
 OUTPUT_PATH = os.path.join(BASE_DIR, "data", "raw_reels.json")
 ACTOR_ID = "shu8hvrXbJbY3Eb9W"  # Apify Instagram Reel Scraper
-RESULTS_PER_PROFILE = 15  # Son 15 reel/profil (haftalık yeterli)
+RESULTS_PER_PROFILE = 4  # Son 4 reel/profil (haftalık 1 reels varsayımı)
 POLL_INTERVAL = 15  # saniye
 
 
 def get_apify_token():
-    """Apify token'ını env var'dan veya bilgi dosyasından al."""
-    token = os.environ.get("APIFY_API_KEY")
-    if not token:
-        token = os.environ.get("APIFY_BACKUP_TOKEN")
-    if not token:
+    """Apify token'larını env var'lardan topla ve rastgele seç (Rotasyon)."""
+    keys = []
+    
+    # Yeni yapı: APIFY_API_KEY_1, APIFY_API_KEY_2 vs.
+    for i in range(1, 10):
+        val = os.environ.get(f"APIFY_API_KEY_{i}")
+        if val and val not in keys:
+            keys.append(val)
+            
+    # Geriye dönük uyumluluk
+    val = os.environ.get("APIFY_API_KEY")
+    if val and val not in keys:
+        keys.append(val)
+    val = os.environ.get("APIFY_BACKUP_TOKEN")
+    if val and val not in keys:
+        keys.append(val)
+            
+    if not keys:
         # Lokal geliştirme için fallback
         knowledge_path = os.path.join(BASE_DIR, "..", "..", "_knowledge", "api-anahtarlari.md")
         if os.path.exists(knowledge_path):
             with open(knowledge_path, "r") as f:
                 content = f.read()
-            # Basit parse — ilk apify key'i bul
+            # Basit parse — apify key'leri bul
             for line in content.split("\n"):
                 if "apify_api_" in line and "API Anahtarı" in line:
                     start = line.find("`apify_api_")
                     if start >= 0:
                         end = line.find("`", start + 1)
                         token = line[start+1:end]
-                        break
-    return token
+                        if token and token not in keys:
+                            keys.append(token)
+                            
+    if keys:
+        return random.choice(keys)
+    return None
 
 
 def read_profiles(csv_path=None):

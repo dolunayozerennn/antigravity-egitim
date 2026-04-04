@@ -22,6 +22,12 @@ import requests
 from pathlib import Path
 from datetime import datetime
 
+try:
+    sys.path.insert(0, str(Path(__file__).parent.resolve()))
+    from notion_logger import logger
+except ImportError:
+    logger = None
+
 SCRIPT_DIR = Path(__file__).parent.resolve()
 ANTIGRAVITY_ROOT = SCRIPT_DIR.parent.parent
 PYTHON_BIN = str(SCRIPT_DIR / "env" / "bin" / "python3")
@@ -45,8 +51,16 @@ def run_step(step_name, command_args):
         return True
     except subprocess.CalledProcessError as e:
         print(f"\n❌ HATA: '{step_name}' aşamasında sorun! (Exit Code: {e.returncode})")
+        if logger:
+            try:
+                logger.error(
+                    title=f"Pipeline Hatası: {step_name}",
+                    message=f"Program exit code {e.returncode} ile fail etti.\nKomut: {' '.join(command_args)}"
+                )
+                logger.wait_for_logs()
+            except:
+                pass
         return False
-
 
 def safe_dir_name(name: str) -> str:
     """Video adından güvenli klasör adı oluştur."""
@@ -112,7 +126,12 @@ def update_notion_status(page_id: str, new_status: str = "Blog Yazıldı"):
 
 
 def mark_as_processed(video_info: dict, blog_path: str):
-    """Video'yu processed listesine ekle (ikincil güvenlik — Notion status asıl korumadır)."""
+    """Video'yu processed listesine ekle (ikincil güvenlik — Notion status asıl korumadır).
+    
+    ⚠️ NOT: /tmp Railway container'larında ephemeral'dır — her redeploy'da sıfırlanır.
+    Bu dosya SADECE aynı container ömrü boyunca geçerlidir.
+    Asıl mükerrer koruma: Notion status = "Blog Yazıldı" (notion_video_selector tarafından filtrelenir).
+    """
     processed_path = Path("/tmp") / "processed_videos.json"
     try:
         if processed_path.exists():
@@ -337,6 +356,18 @@ def run_from_notion(args):
 
     # Notion status'ünü güncelle — aynı videonun tekrar bloglanmasını önle
     update_notion_status(video_info["page_id"], "Blog Yazıldı")
+
+    if logger:
+        try:
+            blog_url = f"https://dolunay.ai/blog/{slug}" if not getattr(args, 'no_publish', False) else ""
+            logger.success(
+                title=f"Blog Hazır: {video_name[:40]}",
+                message=f"Video başarıyla blog'a dönüştürüldü ve formata uygun kaydedildi.",
+                blog_link=blog_url
+            )
+            logger.wait_for_logs()
+        except Exception as e:
+            print(f"  ⚠️ Logger hatası: {e}")
 
 
 # ══════════════════════════════════════════════════════════════

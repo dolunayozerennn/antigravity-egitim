@@ -25,6 +25,7 @@ class Config:
         ]
     else:
         CRM_SHEET_TABS = [
+            {"name": "Nisan-2026-Saat Bazlı-v2"},
             {"name": "Mart-2026-Saat Bazlı-v2"},
         ]
 

@@ -45,15 +45,10 @@ def extract_frames(video_path, output_dir, interval_sec):
             filename = f"frame_{saved_count:03d}_t{timestamp_sec:.0f}s.jpg"
             filepath = os.path.join(output_dir, filename)
             
-            # Kaliteyi düşür (dosya boyutu küçük olsun — Groq'a gönderilecek)
-            # Ekran kaydı genelde yüksek çözünürlüktedir, 1280px genişliğe küçült
-            h, w = frame.shape[:2]
-            if w > 1280:
-                scale = 1280 / w
-                new_w, new_h = 1280, int(h * scale)
-                frame = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
-            
-            cv2.imwrite(filepath, frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            # Blog kalitesini artırmak için frame orijinal çözünürlükte kaydedilir (resize edilmez)
+            # JPEG kalitesi maksimum netlik için 95'e çıkarıldı.
+            # (Groq'a gitmeden önce, vision_analyzer içinde hafızada resize edilecek)
+            cv2.imwrite(filepath, frame, [cv2.IMWRITE_JPEG_QUALITY, 95])
             extracted.append({
                 "index": saved_count,
                 "timestamp_sec": round(timestamp_sec, 1),

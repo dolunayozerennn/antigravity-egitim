@@ -145,7 +145,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 10 * * *` (Günlük, UTC 10:00 = TR 13:00)
-- **Son Deploy:** 2026-04-01 (fix: content filter moderate→relaxed — pipeline 6 gündür kilitlenmiş durumdaydı)
+- **Son Deploy:** 2026-04-03 (fix: fail-safe condition in Notion API check updated & log messages clarified)
 - **Durum:** ✅ Aktif (TikTok→LinkedIn video pipeline, günde 1 kez)
 - **Env Vars:** LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
 
@@ -243,81 +243,13 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-## 📦 Arşiv (Kaldırılmış Projeler)
+## 📦 Arşiv (Kalıcı Olarak Silinen / Kaldırılmış Projeler)
 
-### tele-satis-crm ⛔ (KALDIRILDI)
-- **Platform:** `railway` → **SİLİNDİ**
-- **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6`
-- **Service ID:** `faba9665-7499-4ab7-9e8a-d2a26050733f` (silindi)
-- **GitHub Repo:** `dolunayozerennn/tele-satis-crm`
-- **Lokal Klasör:** `Projeler/Tele_Satis_CRM/` (arşiv)
-- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
+**Not:** Bu sekme altında listelenen ve geçmişte pasif, duplike ya da hayalet hale gelen birçok eski proje (Örn: *tele-satis-crm, lead-notifier-bot, tele-satis-notifier, dolunay-ai-website, LinkedIn_Text_Paylasim, dolunay-youtube-kapak klonları*) Railway GraphQL API üzerinden kalıcı olarak silinmiştir.
+Sistemde şu an arayüz karmaşası yaratmamaları ve health check denetimlerinden tamamen çıkarılmaları amacıyla Project ID'leri kayıt defterinden tamamen kaldırılmıştır.
 
----
+Aşağıdaki projeler ilerleyen dönemde platformdan silinmek üzere işaretlenmişti ve tamamı **silinmiştir**:
 
-### lead-notifier-bot ⛔ (KALDIRILDI)
-- **Platform:** `railway` → **SİLİNDİ**
-- **Railway Project ID:** `f23cb036-8434-497e-911b-5df08d6b49e6`
-- **Service ID:** `4d0cfb99-8b2a-4585-86b3-44cc4967bc59` (silindi)
-- **GitHub Repo:** `dolunayozerennn/lead-notifier-bot`
-- **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/` (arşiv)
-- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
-
----
-
-### tele-satis-notifier ⛔ (KALDIRILDI)
-- **Platform:** `railway-cron` → **SİLİNDİ**
-- **Railway Project ID:** `0aea5336-444e-4d6b-8bb3-e47614651055`
-- **Service ID:** `ec68b31f-93fc-44da-8c3d-fe19a5e6eba7` (silindi)
-- **GitHub Repo:** `dolunayozerennn/tele-satis-notifier`
-- **Lokal Klasör:** `Projeler/Tele_Satis_Notifier/` (arşiv)
-- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Lead Pipeline'a birleştirildi. Maliyet optimizasyonu.
-
----
-
-### dolunay-ai-website ⛔ (KALDIRILDI)
-- **Platform:** `railway` → **SİLİNDİ** (Netlify'a taşındı)
-- **Railway Project ID:** `58765514-d122-4653-99c5-e9958330e5a4`
-- **Service ID:** `af8d86d9-aa29-4e4b-bdca-70dd40f7c452` (silindi)
-- **GitHub Repo:** `dolunayozerennn/Dolunay_AI_Website`
-- **Lokal Klasör:** `Projeler/Dolunay_AI_Website/`
-- **Durum:** ⛔ Kaldırıldı (2026-03-22) — Website zaten Netlify'da barınıyor, Railway'deki kopya gereksizdi.
-
----
-
-### LinkedIn_Text_Paylasim (eski duplikasyon) ⛔ (KALDIRILDI)
-- **Railway Project ID:** `d4c5a5d1-afd5-41ac-87ce-1f880217801d` (servisleri silindi)
-- **Durum:** ⛔ Kaldırıldı (2026-04-01) — Aktif `linkedin-text-cron` (5465753a) ile DUPLİKAYDI. Çift post riski nedeniyle servisi silindi.
-
----
-
-### Lead Notifier Bot (eski hayalet) ⛔ (KALDIRILDI)
-- **Railway Project ID:** `6b5e029b-0235-4c6b-8b8d-b6dd4d4bb4e0` (servisleri silindi)
-- **Durum:** ⛔ Kaldırıldı (2026-04-01) — Lead Pipeline'a birleştirilmiş ama Railway'de çalışmaya devam ediyordu.
-
----
-
-### linkedin-paylasim (eski monolitik) ⛔ (TEMİZLENMELİ)
-- **Railway Project ID:** `9aec063f-24f9-4cc3-8a98-90565b9b1b53`
-- **Service ID:** `3d839ef6-ade2-4803-a31d-f906f2ab8183`
-- **Durum:** ⛔ Hayalet Proje — linkedin-text + linkedin-video olarak ayrılmış, bu eski monolitik proje hala aktif. Servisi SİLİNMELİ.
-
----
-
-### Twitter_Paylasim (eski) ⛔ (TEMİZLENMELİ)
-- **Railway Project ID:** `9b8a5927-1b2b-4d0f-bb4d-fd167b4fcee0`
-- **Service ID:** `twitter-paylasim`
-- **Durum:** ⛔ Hayalet Proje — Yeni `twitter-video-cron` (24c3d0d1) ile DUPLİKE. Servisi SİLİNMELİ.
-
----
-
-### dolunay-youtube-kapak duplikasyonları ⛔ (TEMİZLENMELİ)
-- **Railway Project IDs:** `93de1226`, `ab229571`, `b3f0902b` (hepsi FAILED)
-- **Aktif proje:** `586a7bf6` (SUCCESS)
-- **Durum:** ⛔ 3 duplikasyon projesi — Hepsi FAILED durumunda, kaynak israfı. SİLİNMELİ.
-
----
-
-### marka-is-birligi (boş duplikasyon) ⛔ (TEMİZLENMELİ)
-- **Railway Project ID:** `0522fff5-ea33-4c64-9187-1e18531ab39b`
-- **Durum:** ⛔ Boş proje — Servis yok, deployment yok. Aktif proje: `6994adc2`. SİLİNMELİ.
+- ~~`linkedin-paylasim`~~ (`9aec063f`) — Hayalet, linkedin-text + linkedin-video olarak ayrılmıştı. **SİLİNDİ** (2026-04-03)
+- ~~`Twitter_Paylasim`~~ (`9b8a5927`) — Hayalet, twitter-video-cron ile duplike. **SİLİNDİ** (2026-04-03)
+- ~~`marka-is-birligi (boş)`~~ (`0522fff5`) — Boş proje. Aktif: `6994adc2`. **SİLİNDİ** (2026-04-03)

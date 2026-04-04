@@ -5,14 +5,16 @@ Marka İş Birliği — Railway Scheduler
 Bu dosya Railway üzerinde sürekli çalışır ve haftalık görevleri tetikler.
 
 Görevler:
-1. Haftalık Pipeline (Pazartesi 10:00 TR / 07:00 UTC)
+1. Haftalık Pipeline (Pazartesi 07:00 TR / 04:00 UTC)
    → Reels scrape, marka analizi, iletişim bulma, outreach gönderim
-2. Follow-Up Kontrolü (Perşembe 10:00 TR / 07:00 UTC)
+2. Follow-Up Kontrolü (Perşembe 07:00 TR / 04:00 UTC)
    → 7+ günlük cevapsız markalara kişiselleştirilmiş reply
+3. Haftalık Rapor (Cuma 07:00 TR / 04:00 UTC)
+   → Telegram'a haftalık performans özeti
 
 Timezone:
     Railway sunucuları UTC kullanır.
-    TR 10:00 = UTC 07:00
+    Cron: 0 4 * * 1,4,5 → TR 07:00 = UTC 04:00
 
 Health Check:
     PORT env variable üzerinden HTTP sunucusu açılır.

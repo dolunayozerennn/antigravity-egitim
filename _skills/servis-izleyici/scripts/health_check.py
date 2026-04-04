@@ -303,41 +303,36 @@ def query_railway(token: str, project_id: str, service_id: str, environment_id: 
     }
 
 
-def query_railway_deployment_logs(token: str, deployment_id: str, limit: int = 500) -> list:
+def query_railway_deployment_logs(token: str, deployment_id: str, limit: int = 500, hours: int = 24) -> list:
     """
     Railway GraphQL API'den deployment loglarını çeker.
     Son deployment'ın loglarını okur ve error pattern'ları arar.
+    
+    Returns:
+        list: Log entry'ler (dict). Boş liste → API hatası veya log yok.
+        Hata durumunda [{"_monitoring_error": "..."}] döner.
     """
-    # Railway v2 API ile environment logs sorgula
-    # deploymentLogs query'si kullan
+    # startDate ile sadece son N saatin loglarını çek (performans)
+    start_date = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    
     query = """
-    query($deploymentId: String!, $limit: Int) {
-        deploymentLogs(deploymentId: $deploymentId, limit: $limit) {
-            timestamp
+    query($deploymentId: String!, $limit: Int, $startDate: DateTime) {
+        deploymentLogs(deploymentId: $deploymentId, limit: $limit, startDate: $startDate) {
             message
             severity
+            timestamp
         }
     }
     """
-    variables = {"deploymentId": deployment_id, "limit": limit}
+    variables = {"deploymentId": deployment_id, "limit": limit, "startDate": start_date}
     result = _gql_request(token, query, variables)
 
     if not result or "errors" in result:
-        # Alternatif query dene (API versiyonuna göre)
-        alt_query = """
-        query($deploymentId: String!, $limit: Int) {
-            deploymentLogs(deploymentId: $deploymentId, limit: $limit) {
-                ... on Log {
-                    timestamp
-                    message
-                    severity
-                }
-            }
-        }
-        """
-        result = _gql_request(token, alt_query, variables)
-        if not result or "errors" in result:
-            return []
+        error_msg = "API yanıt vermedi"
+        if result and "errors" in result:
+            error_msg = result["errors"][0].get("message", "Bilinmeyen GraphQL hatası")
+        logging.warning(f"     ⚠️  deploymentLogs sorgusu başarısız: {error_msg}")
+        return [{"_monitoring_error": error_msg}]
 
     logs = result.get("data", {}).get("deploymentLogs", [])
     if not logs:
@@ -348,14 +343,24 @@ def query_railway_deployment_logs(token: str, deployment_id: str, limit: int = 5
 def analyze_logs_for_errors(logs: list, hours: int = 24) -> dict:
     """
     Log listesini analiz eder, son N saat içindeki hataları bulur.
-    Returns: {"error_count": int, "errors": [str], "warning_count": int}
+    Returns: {"error_count": int, "errors": [str], "warning_count": int, "monitoring_error": str|None}
     """
+    # Monitoring hatası kontrolü — log sorgusu başarısız olduysa
+    if logs and isinstance(logs[0], dict) and "_monitoring_error" in logs[0]:
+        return {
+            "error_count": 0,
+            "errors": [],
+            "warning_count": 0,
+            "monitoring_error": logs[0]["_monitoring_error"],
+        }
+
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     errors = []
     warnings = []
 
     for log_entry in logs:
         msg = ""
+        severity = ""  # Varsayılan değer — NameError önlemi
         ts = None
 
         if isinstance(log_entry, dict):
@@ -392,6 +397,7 @@ def analyze_logs_for_errors(logs: list, hours: int = 24) -> dict:
         "error_count": len(errors),
         "errors": errors[-10:],  # Son 10 hatayı göster
         "warning_count": len(warnings),
+        "monitoring_error": None,
     }
 
 
@@ -727,7 +733,14 @@ def check_railway_projects(projects: list, token: str, deep_scan: bool = False) 
                 if logs:
                     log_analysis = analyze_logs_for_errors(logs, hours=24)
                     result_entry["log_analysis"] = log_analysis
-                    if log_analysis["error_count"] > 0:
+                    
+                    # Monitoring hatası kontrolü
+                    if log_analysis.get("monitoring_error"):
+                        logging.warning(f"     ⚠️  Log sorgusu başarısız: {log_analysis['monitoring_error']}")
+                        result_entry["problems"].append(
+                            f"MONITORING_FAILURE: Log sorgusu başarısız — {log_analysis['monitoring_error']}"
+                        )
+                    elif log_analysis["error_count"] > 0:
                         logging.warning(f"     ⚠️  Son 24 saatte {log_analysis['error_count']} hata bulundu:")
                         for err in log_analysis["errors"][:3]:
                             logging.warning(f"        → {err[:120]}")
@@ -738,7 +751,7 @@ def check_railway_projects(projects: list, token: str, deep_scan: bool = False) 
                     else:
                         logging.info(f"     ✅ Son 24 saatte hata yok")
                 else:
-                    logging.info(f"     ℹ️  Log verisi alınamadı (API desteği yok olabilir)")
+                    logging.info(f"     ℹ️  Log verisi yok (deployment henüz log üretmemiş)")
 
         results.append(result_entry)
     return results
@@ -853,13 +866,17 @@ def check_stale_launch_agents() -> list:
     """
     issues = []
     la_dir = Path.home() / "Library" / "LaunchAgents"
-    if not la_dir.exists():
-        return issues
+    try:
+        if not la_dir.exists():
+            return issues
 
-    for plist in la_dir.glob("com.antigravity.*.plist"):
-        _check_plist(plist, issues)
-    for plist in la_dir.glob("com.dolunay.*.plist"):
-        _check_plist(plist, issues)
+        for plist in la_dir.glob("com.antigravity.*.plist"):
+            _check_plist(plist, issues)
+        for plist in la_dir.glob("com.dolunay.*.plist"):
+            _check_plist(plist, issues)
+    except PermissionError:
+        logging.info("  ℹ️  LaunchAgents klasörüne erişim izni yok (sandbox kısıtlaması)")
+        return issues
 
     return issues
 

@@ -454,8 +454,19 @@ def print_table(rows: list, threshold: int):
 
 def generate_report(new_assessed: list, processed_list: list, threshold: int):
     """JSON rapor ve konsol çıktısı üretir."""
-    # Sort by score desc
-    new_assessed.sort(key=lambda x: x["score"], reverse=True)
+    def parse_date(date_str):
+        if not date_str:
+            return "1970-01-01"
+        return date_str[:10]
+
+    # Sort primarily by date (newest first), then by score desc
+    new_assessed.sort(
+        key=lambda x: (
+            parse_date(x["video"].get("publish_date")),
+            x["score"]
+        ),
+        reverse=True
+    )
 
     above = [r for r in new_assessed if r["score"] >= threshold]
     below = [r for r in new_assessed if r["score"] < threshold]

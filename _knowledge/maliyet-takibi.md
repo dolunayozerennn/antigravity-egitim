@@ -3,7 +3,7 @@
 Bu dosya kullanılan API servislerinin maliyet, kota ve yenileme bilgilerini takip eder.
 Her token güncelleme veya kota değişikliğinde bu dosya da güncellenir.
 
-**Son Güncelleme:** 11 Mart 2026
+**Son Güncelleme:** 3 Nisan 2026
 
 ---
 
@@ -11,18 +11,18 @@ Her token güncelleme veya kota değişikliğinde bu dosya da güncellenir.
 
 | Servis | Plan | Aylık Maliyet | Kota / Limit | Kullanım Notu | Son Kontrol |
 |--------|------|---------------|-------------|---------------|-------------|
-| OpenAI | Pay-as-you-go | ~$5-15/ay | Token bazlı | GPT-4.1 kullanımı | 11 Mar 2026 |
-| Railway | Hobby | $5/ay | 3 aktif servis | Swc + Shorts + TeleSatis | 11 Mar 2026 |
-| Apify | Free | $0 | Aylık kredi limiti | 2 hesap (ana + yedek) | 11 Mar 2026 |
-| Kie AI | Pay-as-you-go | Değişken | Task bazlı | Sora 2, Kling video üretimi | 11 Mar 2026 |
-| Fal AI | Pay-as-you-go | Değişken | Credit bazlı | Yedek video üretim | 11 Mar 2026 |
-| Telegram | Ücretsiz | $0 | Sınırsız | Bot API | 11 Mar 2026 |
-| Hunter.io | Free | $0 | 25 istek/ay | Email bulma | 11 Mar 2026 |
-| Apollo.io | Free | $0 | Sınırlı | B2B lead bulma | 11 Mar 2026 |
-| Groq | Free | $0 | Rate limit var | Whisper transkript | 11 Mar 2026 |
-| Perplexity | Free | $0 | Rate limit var | Web araştırması | 11 Mar 2026 |
-| ImgBB | Free | $0 | Sınırsız | Görsel upload | 11 Mar 2026 |
-| ElevenLabs | Free | $0 | 10.000 karakter/ay | TTS (henüz aktif değil) | 11 Mar 2026 |
+| OpenAI | Pay-as-you-go | ~$5-15/ay | Token bazlı | GPT-4.1 kullanımı | 3 Nis 2026 |
+| Railway | Hobby/Pro | ~$10-20/ay | ~11 aktif servis | Cronjobs, Workers, Bots | 3 Nis 2026 |
+| Apify | Free/Pay | Değişken | Kredi/Actor | 2 hesap (ana + yedek) | 3 Nis 2026 |
+| Kie AI | Pay-as-you-go | Değişken | Task bazlı | Sora 2, Kling video üretimi | 3 Nis 2026 |
+| Fal AI | Pay-as-you-go | Değişken | Credit bazlı | Yedek video üretim | 3 Nis 2026 |
+| Telegram | Ücretsiz | $0 | Sınırsız | Bot API | 3 Nis 2026 |
+| Hunter.io | Free | $0 | 25 istek/ay | Email bulma | 3 Nis 2026 |
+| Apollo.io | Free | $0 | Sınırlı | B2B lead bulma | 3 Nis 2026 |
+| Groq | Free | $0 | Rate limit var | Whisper transkript, hızlı LLM | 3 Nis 2026 |
+| Perplexity | Free | $0 | Rate limit var | Web araştırması | 3 Nis 2026 |
+| ImgBB | Free | $0 | Sınırsız | Görsel upload | 3 Nis 2026 |
+| ElevenLabs | Free | $0 | 10.000 karakter/ay | TTS (henüz aktif değil) | 3 Nis 2026 |
 
 ---
 
@@ -31,16 +31,17 @@ Her token güncelleme veya kota değişikliğinde bu dosya da güncellenir.
 | Servis | Token Durumu | Yenileme Gerekiyor mu? | Not |
 |--------|-------------|----------------------|-----|
 | OpenAI | ✅ Aktif | — | — |
+| Groq | ✅ Aktif | — | — |
+| Gemini / Google | ✅ Aktif | — | Sızdırılan key yenilendi (Nis 2026) |
 | Kie AI | ✅ Aktif | — | Eski key bazı modellerde çalışmıyor, yenisi kullanılıyor |
 | Fal AI | ✅ Aktif | — | — |
-| Telegram (Shorts Bot) | ✅ Aktif | — | — |
+| Telegram (Botlar) | ✅ Aktif | — | — |
 | Railway | ✅ Aktif | — | — |
-| Groq | ✅ Aktif | — | — |
 | Perplexity | ✅ Aktif | — | — |
+| Apify | ✅ Aktif | — | — |
 | Supadata | ⚠️ Yenilenmeli | Evet | Kullanıcıdan yeni key istenmeli |
 | ElevenLabs | ⚠️ Eklenmedi | Evet | Kullanıcıdan key istenmeli |
-| Gmail (Outreach) | ✅ OAuth aktif | — | Token süresi dolunca yeniden onay gerekir |
-| Gmail (Sweatcoin) | ✅ OAuth aktif | — | Token süresi dolunca yeniden onay gerekir |
+| Gmail (Tümü) | ✅ OAuth aktif | — | Token süresi dolunca otomatik veya manuel onay gerekir |
 
 ---
 
@@ -48,10 +49,10 @@ Her token güncelleme veya kota değişikliğinde bu dosya da güncellenir.
 
 | Kalem | Tutar |
 |-------|-------|
-| Railway (3 servis) | $5 |
+| Railway (~11 servis) | ~$10-20 |
 | OpenAI (GPT-4.1) | ~$5-15 |
 | Kie AI + Fal AI (video) | ~$5-20 |
-| **Tahmini Toplam** | **~$15-40/ay** |
+| **Tahmini Toplam** | **~$20-55/ay** |
 
 ---
 

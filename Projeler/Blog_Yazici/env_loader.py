@@ -29,7 +29,10 @@ _sa_temp_path: str = ""
 
 def _load_master_env() -> dict:
     """master.env dosyasını parse eder (lokal fallback)."""
-    if not MASTER_ENV_PATH.exists():
+    try:
+        if not MASTER_ENV_PATH.exists():
+            return {}
+    except PermissionError:
         return {}
     env = {}
     with open(MASTER_ENV_PATH, "r", encoding="utf-8") as f:
@@ -91,8 +94,11 @@ def get_sa_json_path() -> str:
             print(f"⚠️ GOOGLE_SERVICE_ACCOUNT_JSON decode hatası: {e}")
 
     # 2. Lokal dosya
-    if SA_JSON_PATH.exists():
-        return str(SA_JSON_PATH)
+    try:
+        if SA_JSON_PATH.exists():
+            return str(SA_JSON_PATH)
+    except PermissionError:
+        pass
 
     return ""
 

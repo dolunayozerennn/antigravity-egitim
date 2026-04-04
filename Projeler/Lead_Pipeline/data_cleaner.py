@@ -97,7 +97,7 @@ Ham Veri:
         return cleaned_list
 
     except Exception as e:
-        logger.error(f"❌ LLM Bulk Veri temizleme hatası: {e}")
+        logger.error(f"❌ LLM Bulk Veri temizleme hatası: {e}", exc_info=True)
         # ⚠️ GÜVENLIK: LLM çalışmazsa BOŞ DÖNDER — aksi halde boş alanlarla
         # duplikasyon kontrolü çalışmaz ve her 10 dakikada aynı lead'ler
         # "İsimsiz Lead" olarak Notion'a tekrar tekrar eklenir (spam loop).

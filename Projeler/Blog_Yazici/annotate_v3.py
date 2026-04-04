@@ -142,22 +142,34 @@ def draw_step_badge(draw, number, x, y, theme_color, radius=18):
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     draw.text((sx - tw//2, sy - th//2 - s(1)), text, fill="white", font=font)
 
-def draw_highlight_rect(draw, x, y, w, h, color, width=3, corner_marks=False):
-    """Highlight rectangle with optional corner decorations"""
+def draw_spotlight_highlight(draw, x, y, w, h, color, width=3, corner_marks=True, overlay_opacity=150):
+    """Karanlık bir overlay üzerine, sadece x,y,w,h alanının aydınlık bırakıldığı Spotlight efekti."""
     sx, sy, sw, sh = s(x), s(y), s(w), s(h)
     swidth = s(width)
     
+    # Tüm resmi karart, sadece hedefin (x,y,w,h) dışını karartmak için 4 dikdörtgen çiz
+    im_w, im_h = draw.im.size
+    overlay_fill = (0, 0, 0, overlay_opacity)
+    
+    # 1. Üst
+    if sy > 0:
+        draw.rectangle([0, 0, im_w, sy], fill=overlay_fill)
+    # 2. Alt
+    if sy + sh < im_h:
+        draw.rectangle([0, sy + sh, im_w, im_h], fill=overlay_fill)
+    # 3. Sol
+    if sx > 0:
+        draw.rectangle([0, sy, sx, sy + sh], fill=overlay_fill)
+    # 4. Sağ
+    if sx + sw < im_w:
+        draw.rectangle([sx + sw, sy, im_w, sy + sh], fill=overlay_fill)
+        
     if corner_marks:
-        # Corner-style markers (L-shaped brackets) instead of full rectangle
-        corner_len = min(sw, sh) // 4
+        corner_len = max(min(sw, sh) // 4, s(10))
         corners = [
-            # Top-left
             [(sx, sy+corner_len), (sx, sy), (sx+corner_len, sy)],
-            # Top-right
             [(sx+sw-corner_len, sy), (sx+sw, sy), (sx+sw, sy+corner_len)],
-            # Bottom-left
             [(sx, sy+sh-corner_len), (sx, sy+sh), (sx+corner_len, sy+sh)],
-            # Bottom-right
             [(sx+sw-corner_len, sy+sh), (sx+sw, sy+sh), (sx+sw, sy+sh-corner_len)],
         ]
         for corner in corners:
@@ -426,8 +438,8 @@ def create_annotation(annot_def):
     
     # 4. Scale up for supersampling
     big_w, big_h = TARGET_WIDTH * SCALE, canvas_h * SCALE
-    big_canvas = canvas.resize((big_w, big_h), Image.LANCZOS)
-    draw = ImageDraw.Draw(big_canvas)
+    big_canvas = canvas.resize((big_w, big_h), Image.LANCZOS).convert("RGBA")
+    draw = ImageDraw.Draw(big_canvas, "RGBA")
     
     # 5. Draw annotations
     # Adjust coordinates for the resize (original crop → target width)
@@ -440,10 +452,10 @@ def create_annotation(annot_def):
         def cy(v): return int(v * coord_scale)
         
         if elem["type"] == "rect":
-            draw_highlight_rect(
+            draw_spotlight_highlight(
                 draw, cx(elem["x"]), cy(elem["y"]), cx(elem["w"]), cy(elem["h"]),
                 color=theme["main"], width=3,
-                corner_marks=elem.get("corner_marks", False)
+                corner_marks=elem.get("corner_marks", True)
             )
         elif elem["type"] == "callout":
             draw_callout(
@@ -468,7 +480,7 @@ def create_annotation(annot_def):
     draw_caption_bar(big_canvas, big_canvas_draw, annot_def.get("caption", ""), theme)
     
     # 8. Downsample (LANCZOS = high quality anti-aliasing)
-    final = big_canvas.resize((TARGET_WIDTH, canvas_h), Image.LANCZOS)
+    final = big_canvas.resize((TARGET_WIDTH, canvas_h), Image.LANCZOS).convert("RGB")
     
     # 9. Save
     safe_title = title.replace(" ", "_").replace(":", "").replace("—", "-").replace("'", "")[:40]

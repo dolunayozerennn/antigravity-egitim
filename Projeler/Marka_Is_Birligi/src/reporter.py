@@ -4,6 +4,7 @@ import os
 import time
 from datetime import datetime, timezone, timedelta
 import requests
+import logging
 
 import sys
 
@@ -35,7 +36,7 @@ def send_telegram_alert(message):
         payload = {"chat_id": chat_id, "text": message, "parse_mode": "HTML"}
         requests.post(url, json=payload, timeout=10)
     except Exception as e:
-        print(f"Telegram gönderme hatası: {e}")
+        logging.error(f"Telegram gönderme hatası: {e}", exc_info=True)
 
 def run_weekly_report():
     print("📊 Haftalık rapor hazırlanıyor...")

@@ -4,10 +4,13 @@ from logger import get_logger
 from config import settings
 from tenacity import retry, stop_after_attempt, wait_fixed
 
+import random
+
 logger = get_logger(__name__)
 
-# Initialize the ApifyClient with your API token
-client = ApifyClient(settings.APIFY_API_KEY)
+# Initialize the ApifyClient with a random API token for this execution
+selected_key = random.choice(settings.APIFY_KEYS)
+client = ApifyClient(selected_key)
 
 @retry(stop=stop_after_attempt(2), wait=wait_fixed(15))
 def call_apify_actor(actor_id, run_input):
@@ -53,7 +56,7 @@ def get_instagram_data():
     try:
         post_run_input = {
             "usernames": ["dolunay_ozeren"],
-            "resultsLimit": 10
+            "resultsLimit": 7
         }
         
         run = call_apify_actor(settings.APIFY_INSTAGRAM_ACTOR, post_run_input)
@@ -93,7 +96,7 @@ def get_tiktok_data():
     try:
         tk_run_input = {
             "profiles": ["dolunayozeren"],
-            "resultsPerPage": 10,
+            "resultsPerPage": 7,
             "downloadVideo": False
         }
         run = call_apify_actor(settings.APIFY_TIKTOK_ACTOR, tk_run_input)
@@ -131,7 +134,7 @@ def get_youtube_data():
     try:
         yt_run_input = {
             "searchKeywords": "dolunayozeren",
-            "maxResults": 10,
+            "maxResults": 5,
             "maxResultStreams": 0
         }
         run = call_apify_actor(settings.APIFY_YOUTUBE_ACTOR, yt_run_input)

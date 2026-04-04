@@ -9,6 +9,8 @@ import os
 import sys
 import time
 import requests
+from io import BytesIO
+from PIL import Image
 
 from env_loader import require_env
 
@@ -32,9 +34,19 @@ def load_script(video_dir):
         return None
 
 def encode_image(image_path):
-    """Resmi base64'e encode et"""
-    with open(image_path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+    """Resmi hafızada (in-memory) max 1280px genişliğe küçült ve base64'e encode et"""
+    with Image.open(image_path) as img:
+        w, h = img.size
+        # Groq payload boyutunu aşmamak için makul boyuta al
+        if w > 1280:
+            scale = 1280 / w
+            new_w, new_h = 1280, int(h * scale)
+            img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        
+        # Sadece LLM analizi için kalite 80
+        buffer = BytesIO()
+        img.save(buffer, format="JPEG", quality=80)
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 def analyze_batch(frames_batch, batch_idx, total_batches, script_text=None):
     """5'erli batch analizi"""
@@ -72,31 +84,33 @@ Orijinal Instagram script'i:
 Frame listesi:
 {frames_list}
 
+Senden çok daha ince bir UX/UI analizi bekliyorum. Bu ekran kaydındaki eylemleri (butona tıklama, form doldurma vs.) tam olarak tespit etmelisin.
+
 Görevlerin:
 
-1. Her frame'i analiz et ve şunları belirt:
-   - Bu frame'de ekranda ne görünüyor? (kısaca açıkla)
-   - Frame'ler arasında önemli bir değişiklik var mı?
+1. Her frame'i analiz et ve şunları mükemmel bir dille belirt:
+   - Bu frame'de kullanıcı tam olarak ne yapıyor? Hangi UI elementine odaklanmış? (Insightful açıklama ver)
+   - Bir önceki frame'e göre tam olarak hangi değişiklik oldu?
    - Bu frame blog yazısında kullanılmaya değer mi? (evet/hayır)
 
 2. Blog'a değer frame'ler için:
-   - Bu adımın blog'daki başlığı ne olmalı?
-   - Ekranda vurgulanması gereken alanın yaklaşık konumu (resmin sol üst köşesi 0,0 kabul edildiğinde yüzdesel x, y, genişlik, yükseklik)
-   - Blog'da bu görselin altına yazılacak açıklama
+   - Bu adımın blog'daki başlığı ne olmalı? (Net ve aksiyon odaklı olmalı)
+   - Ekranda VURGULANACAK ALANIN YÜZDESEL KOORDİNATLARI: Bu çok kritik! Tam olarak tıklanan butonu, input alanını veya odaklanılan menüyü aydınlatacak spotlight efekti için kullanılacak. Koordinatlar (x_pct, y_pct, w_pct, h_pct) resmin tamamı 100 kabul edilerek verilmelidir. Yanılsama (hallucination) yapma, olabildiğince isabetli ve küçük/kesin alanları hedefle.
+   - Blog'da bu görselin altına yazılacak teknik ve akıcı açıklama (okuyucuya ne yapması gerektiğini anlatan rehber metni).
 
-3. Birbirine çok benzeyen (değişmeyen) frame'leri "BENZER" olarak işaretle.
+3. Birbirine çok benzeyen (aksiyon olmayan) frame'leri "BENZER" olarak işaretle. (Menü açılmadıysa veya büyük bir form değişikliği yoksa BENZER olarak işaretleyip is_blog_worthy=false yap).
 
 JSON formatında cevap ver. Markdown kullanma:
 [
   {{
     "frame_index": 0,
     "timestamp_sec": 0,
-    "description": "Ekranda görünen sahne açıklaması",
+    "description": "Kullanıcının tam eylemini anlatan detaylı açıklama.",
     "is_blog_worthy": true,
     "similar_to": null,
-    "blog_step_title": "Adım başlığı",
+    "blog_step_title": "Adım başlığı (örn: Ayarlar Menüsü)",
     "highlight_area": {{"x_pct": 10, "y_pct": 20, "w_pct": 50, "h_pct": 10}},
-    "blog_caption": "Bu görselin altına yazılacak metin"
+    "blog_caption": "Bu adımı okuyucuya çok iyi anlatan bir kılavuz metni."
   }}
 ]"""
 

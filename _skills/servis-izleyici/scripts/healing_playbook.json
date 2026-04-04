@@ -156,6 +156,58 @@
       "context": "railway_log",
       "action": "alert_only",
       "description": "Gmail OAuth scope uyumsuzluğu — koddaki SCOPES token'daki scope'larla eşleşmiyor, kod düzeltilmeli ve Railway env var güncellenmeli"
+    },
+    {
+      "id": "monitoring_failure",
+      "match": "MONITORING_FAILURE|Log sorgusu başarısız|deploymentLogs sorgusu başarısız",
+      "context": "railway_log",
+      "action": "alert_only",
+      "description": "İzleme altyapısı arızası — health check scripti Railway API'den log çekemiyor. GraphQL sorgusu veya API şeması güncellenmiş olabilir."
+    },
+    {
+      "id": "graphql_validation_failed",
+      "match": "GRAPHQL_VALIDATION_FAILED|validation error|Cannot query field|Unknown type|is not a type",
+      "context": "railway_log",
+      "action": "alert_only",
+      "description": "Railway GraphQL şema değişikliği — API sorguları kırılmış. health_check.py güncellenmeli."
+    },
+    {
+      "id": "gmail_api_500",
+      "match": "HttpError 5.. when requesting https://gmail\\.googleapis\\.com",
+      "context": "railway_log",
+      "action": "ignore_transient",
+      "description": "Google/Gmail API geçici 5xx sunucu hatası — kendi kendine düzelir",
+      "wait_minutes": 30
+    },
+    {
+      "id": "filename_panic_false_positive",
+      "match": "Kapak.*\\(panic\\)",
+      "context": "railway_log",
+      "action": "ignore_transient",
+      "description": "Dosya isminde panic geçmesi nedeniyle false positive log alarmı",
+      "wait_minutes": 60
+    },
+    {
+      "id": "watchdog_critical_log_false_positive",
+      "match": "AkilliWatchdog.*CRITICAL",
+      "context": "railway_log",
+      "action": "ignore_transient",
+      "description": "Watchdog'un kendi CRITICAL uyarı logu false positive olarak algılandı",
+      "wait_minutes": 60
+    },
+    {
+      "id": "missing_ffmpeg",
+      "match": "FileNotFoundError.*ffmpeg",
+      "context": "railway_log",
+      "action": "alert_only",
+      "description": "Kritik bağımlılık hatası — ffmpeg sistemde yüklü değil, apt paketlerine eklenmeli"
+    },
+    {
+      "id": "opslogger_notion_404",
+      "match": "OpsLogger Error.*Notion'a log gönderilemedi: 404",
+      "context": "railway_log",
+      "action": "alert_only",
+      "description": "OpsLogger ayarlarında eksik veya silinmiş Notion veritabanı ID'si (404 Not Found)"
     }
   ]
 }
