@@ -307,3 +307,25 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
   2. `health_check.py` → satır 681: `p.get("platform") == "railway"` → `p.get("platform") in ("railway", "railway-cron")` olarak genişletildi
 - **Kural:** Bir servisi Railway Cron Job'a taşırken **mutlaka** `deploy-registry.md`'deki platform bilgisini `railway-cron` olarak güncelle.
 - **Tarih:** Mart 2026
+
+---
+
+## Railway — Nixpacks vs Aptfile/apt.txt Uyumsuzluğu (KRİTİK SİSTEMİK HATA)
+
+### `FileNotFoundError: [Errno 2] No such file or directory: 'ffmpeg'` — Sistem Bağımlılıkları Yüklenmiyor
+- **Sorun:** `LinkedIn_Video_Paylasim` ve `Twitter_Video_Paylasim` projelerinde video pipeline her çalıştığında `FileNotFoundError: ffmpeg` hatası alıyordu. Projede `Aptfile` ve `apt.txt` dosyaları `ffmpeg` satırıyla mevcut olmasına rağmen Railway `ffmpeg`'i yüklemiyordu.
+- **Kök Neden:** Railway, **Nixpacks builder** kullanır. Nixpacks, Heroku buildpack'lerine özgü `Aptfile` ve `apt.txt` dosyalarını **tamamen yoksayar**. Bu dosyaların projede bulunması "ayar yapılmış" yanılgısı yaratır (false confidence) ama aslında hiçbir işe yaramaz.
+- **Etki:** Video pipeline günlerce çalışamadı. Aynı hata tekrar tekrar yapıldı çünkü yanıltıcı dosyalar "zaten ayarlanmış" hissi veriyordu.
+- **Çözüm (6 Katmanlı Savunma):**
+  1. **Legacy temizlik:** Tüm `Aptfile` ve `apt.txt` dosyaları silindi
+  2. **nixpacks.toml:** Doğru yapılandırma dosyası `[phases.setup] nixPkgs = ["ffmpeg"]` ile oluşturuldu
+  3. **Fail-fast:** `config.py`'da `shutil.which("ffmpeg")` kontrolü eklendi — uygulama başlarken binary yoksa anında çöker
+  4. **V2 Starter Template:** `_check_system_deps()` metodu ve `nixpacks.toml` şablonu eklendi
+  5. **Deploy Workflow:** Adım 2.5.7 Nixpacks-farkındalıklı sistem bağımlılığı kontrolü olarak güncellendi
+  6. **Healing Playbook:** `missing_ffmpeg` pattern'i düzeltildi (eski yanlış tavsiye kaldırıldı)
+- **Kurallar (KALICI):**
+  1. Railway'de sistem paketi yüklemek için **SADECE** `nixpacks.toml` kullanılır
+  2. `Aptfile` ve `apt.txt` dosyaları oluşturulmaz — bulunursa silinir
+  3. Sistem bağımlılığı gerektiren her projede `config.py`'da `_check_system_deps()` ile fail-fast kontrolü ZORUNLUDUR
+  4. Deploy workflow'unda (Adım 2.5.7) nixpacks.toml varlığı ve legacy dosya kontrolü yapılır
+- **Tarih:** Nisan 2026

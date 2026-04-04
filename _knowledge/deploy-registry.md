@@ -36,7 +36,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
 - **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
-- **Son Deploy:** 2026-04-01 (fix: rollback_pending() eklendi — Notion API hataları sessiz data kaybını önler, groq upgrade)
+- **Son Deploy:** 2026-04-04 (Config güncellemesi: Nisan-2026 sekmesi okumaya eklendi)
 - **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
 
 ---

@@ -197,10 +197,17 @@
     },
     {
       "id": "missing_ffmpeg",
-      "match": "FileNotFoundError.*ffmpeg",
+      "match": "FileNotFoundError.*ffmpeg|No such file.*ffmpeg|ffmpeg.*not found",
       "context": "railway_log",
       "action": "alert_only",
-      "description": "Kritik bağımlılık hatası — ffmpeg sistemde yüklü değil, apt paketlerine eklenmeli"
+      "description": "Kritik bağımlılık hatası — ffmpeg sistemde yüklü değil. ÇÖZÜM: nixpacks.toml dosyasına [phases.setup] nixPkgs = ['ffmpeg'] ekle ve config.py'da _check_system_deps(['ffmpeg']) ile fail-fast kontrol ekle. ⚠️ Aptfile/apt.txt ÇALIŞMAZ — Railway Nixpacks builder bu dosyaları YOKSAYAR."
+    },
+    {
+      "id": "missing_system_binary",
+      "match": "FileNotFoundError.*\\b(chromium|wkhtmltopdf|cairo|imagemagick)\\b|shutil\\.which.*returned None",
+      "context": "railway_log",
+      "action": "alert_only",
+      "description": "Sistem bağımlılığı eksik — nixpacks.toml dosyasına [phases.setup] nixPkgs = ['PAKET_ADI'] eklenmeli. Aptfile/apt.txt ÇALIŞMAZ."
     },
     {
       "id": "opslogger_notion_404",

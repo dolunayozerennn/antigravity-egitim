@@ -42,10 +42,13 @@ Bu workflow, İçerik Üretim Agent'ının son adımıdır. Tam pipeline şu şe
 3. **Model seç** (SKILL.md'deki karar ağacını izle)
    | İhtiyaç | Model |
    |---|---|
-   | Drone / sinematik video | Veo 3.1 |
+   | Drone / sinematik video | Veo 3.1 veya Seedance 2.0 |
    | Kısa, hızlı video | Kling 3.0 |
    | Yüksek kalite sinematik | Veo 3.1 |
    | Ürün reklam videosu | Kling 3.0 |
+   | Image-to-video (görselden video) | Seedance 2.0 (first_frame_url) |
+   | Karakter tutarlılığı (çoklu sahne) | Seedance 2.0 (multimodal referans) |
+   | Zincirleme sahne üretimi | Seedance 2.0 (return_last_frame) |
    | Görsel efekt / mockup | Nano Banana 2 |
    | Görsel düzenleme | Qwen Image Edit |
    | Çok sahneli hikaye | Sora 2 Pro Storyboard |

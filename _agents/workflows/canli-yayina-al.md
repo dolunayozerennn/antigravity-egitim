@@ -113,9 +113,41 @@ grep -rnE "(sk-|AIza|ghp_|ghs_|xoxb-|Bearer [A-Za-z0-9]|api[_-]?key\s*=\s*['\"][
 ```
 - Bir API Key veya Token hardcode edilmişse → ❌ PUSH YAPMA, `os.environ.get()` ile değiştir.
 
-### 2.5.7 — Döcker / Sistem Paketleri Eksikliği Kontrolü
-- Projede `Pillow`, `cairosvg`, `pydub`, `opencv-python` gibi C paketlerine ihtiyaç duyan kütüphaneler kullanılıyorsa, Dockerfile içerisinde `apt-get install` (örn: `libjpeg-dev`, `ffmpeg`, `libgl1-mesa-glx`) olduğundan GÖZÜNLE emin ol.
-- Eksik Sistem Dependency varsa → ❌ PUSH YAPMA, Dockerfile'ı düzelt!
+### 2.5.7 — Sistem Bağımlılıkları Kontrolü (Nixpacks — KRİTİK!)
+
+> **Railway, Nixpacks builder kullanır. `Aptfile` ve `apt.txt` dosyaları YOKSAYILIR!**
+
+```bash
+cd PROJE_KLASÖRÜ
+
+# 1. Legacy dosya tuzağını tespit et — Aptfile/apt.txt varsa SİL!
+if [ -f "Aptfile" ] || [ -f "apt.txt" ]; then
+    echo "❌ YANILTICI DOSYA TESPİT EDİLDİ: Aptfile veya apt.txt bulundu!"
+    echo "   Railway Nixpacks builder bu dosyaları YOKSAYAR."
+    echo "   Bu dosyaları silin ve paketleri nixpacks.toml'a taşıyın."
+fi
+
+# 2. Sistem bağımlılığı gerektiren kütüphaneleri tara
+grep -lqE "ffmpeg|ffprobe|subprocess.*ffmpeg" *.py **/*.py 2>/dev/null && SYS_DEP_NEEDED="ffmpeg"
+grep -lqE "cairosvg|cairo" *.py **/*.py 2>/dev/null && SYS_DEP_NEEDED="$SYS_DEP_NEEDED cairo"
+grep -lqE "chromium|puppeteer|playwright" *.py **/*.py 2>/dev/null && SYS_DEP_NEEDED="$SYS_DEP_NEEDED chromium"
+
+# 3. Eğer sistem bağımlılığı gerekiyorsa → nixpacks.toml kontrol et
+if [ -n "$SYS_DEP_NEEDED" ]; then
+    if [ ! -f "nixpacks.toml" ]; then
+        echo "❌ nixpacks.toml BULUNAMADI! Bu proje $SYS_DEP_NEEDED gerektiriyor."
+        echo "   Oluştur: [phases.setup] nixPkgs = [\"$SYS_DEP_NEEDED\"]"
+    else
+        for dep in $SYS_DEP_NEEDED; do
+            grep -q "$dep" nixpacks.toml || echo "❌ nixpacks.toml'da '$dep' eksik!"
+        done
+    fi
+fi
+```
+
+- Legacy `Aptfile`/`apt.txt` varsa → ❌ SİL, paketleri `nixpacks.toml`'a taşı
+- Sistem bağımlılığı gerektiren kod var ama `nixpacks.toml` yoksa → ❌ PUSH YAPMA, `nixpacks.toml` oluştur!
+- `nixpacks.toml`'da gerekli paket eksikse → ❌ PUSH YAPMA, `nixPkgs`'e ekle!
 
 ### 2.5.8 — Lokal ↔ GitHub Diff Kontrolü (Re-deploy için)
 ```

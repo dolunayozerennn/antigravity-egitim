@@ -196,3 +196,14 @@ Bu workflow, syntax/import kontrolü, README güncelliği, git sync, deploy smok
 3. `AttributeError`, `ImportError`, `SyntaxError`, `Traceback` ara
 4. Fatal error varsa → düzelt, tekrar push, tekrar deploy
 
+## 🔧 Railway Sistem Bağımlılıkları Kuralı (ZORUNLU — Nisan 2026+)
+
+> **Railway, Nixpacks builder kullanır. `Aptfile` ve `apt.txt` dosyaları YOKSAYILIR!**
+
+| Durum | Doğru Çözüm |
+|---|---|
+| Sistem paketi gerekiyor (ffmpeg, chromium vb.) | `nixpacks.toml` → `[phases.setup] nixPkgs = ["ffmpeg"]` |
+| `Aptfile` veya `apt.txt` bulunuyor | ❌ SİL — yanıltıcı, Nixpacks bunları yoksayar |
+| Sistem binary'si kontrolü | `config.py` → `self._check_system_deps(["ffmpeg"])` (fail-fast) |
+
+**Detaylar:** `_knowledge/hatalar-ve-cozumler.md` → "Nixpacks vs Aptfile/apt.txt Uyumsuzluğu"
