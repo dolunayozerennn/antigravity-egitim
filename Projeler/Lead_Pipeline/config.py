@@ -66,6 +66,11 @@ class Config:
     SMTP_USER = os.environ.get("SMTP_USER", "")
     SMTP_APP_PASSWORD = os.environ.get("SMTP_APP_PASSWORD", "")
 
+    # ── WATCHDOG (Lead Akışı İzleme) ───────────────────────────────
+    WATCHDOG_ENABLED = os.environ.get("WATCHDOG_ENABLED", "true").lower() == "true"
+    WATCHDOG_ALERT_EMAIL = os.environ.get("WATCHDOG_ALERT_EMAIL", "ozerendolunay@gmail.com")
+    WATCHDOG_SILENT_HOURS = int(os.environ.get("WATCHDOG_SILENT_HOURS", "24"))
+
     # ── LLM (Parsing) ──────────────────────────────────────────────
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 

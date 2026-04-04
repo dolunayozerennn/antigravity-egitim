@@ -25,6 +25,7 @@ from data_cleaner import clean_leads_bulk
 from notion_writer import NotionWriter
 from notifier import process_and_notify
 from ops_logger import get_ops_logger
+from watchdog import run_watchdog
 
 # ── LOGGING ──────────────────────────────────────────────────
 
@@ -37,9 +38,10 @@ logging.basicConfig(
 logger = logging.getLogger("lead_pipeline")
 
 
-def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
+def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter) -> int:
     """
     CRM Pipeline: Sheets → Temizle → Notion'a yaz.
+    Returns: Bu turda oluşturulan yeni lead sayısı (watchdog için)
     """
     logger.info("═══ CRM Pipeline başlatılıyor ═══")
 
@@ -48,26 +50,34 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
     except Exception as e:
         logger.error(f"❌ CRM Sheets okunamadı: {e}")
         crm_reader.rollback_pending()
-        return []
+        return 0
 
     if not new_rows:
         logger.info("📭 CRM: Yeni lead yok")
         crm_reader.confirm_processed()
-        return []
+        return 0
 
     logger.info(f"📊 CRM: {len(new_rows)} yeni satır bulundu")
 
-    # Toplu veri temizleme (LLM Bulk Parsing)
-    try:
-        cleaned_leads = clean_leads_bulk(new_rows)
-    except Exception as e:
-        logger.error(f"❌ Toplu veri temizleme hatası: {e}")
-        cleaned_leads = []
+    # Toplu veri temizleme (LLM Bulk Parsing — 20'lik chunk'lar halinde)
+    # Büyük batch'lerde Groq token limiti aşımını önlemek için chunking yapılır.
+    # Bu olmadan 50+ lead geldiğinde LLM 400 döner → boş liste → rollback → sonsuz döngü riski.
+    LLM_CHUNK_SIZE = 20
+    cleaned_leads = []
+    for chunk_start in range(0, len(new_rows), LLM_CHUNK_SIZE):
+        chunk = new_rows[chunk_start:chunk_start + LLM_CHUNK_SIZE]
+        try:
+            chunk_result = clean_leads_bulk(chunk)
+            cleaned_leads.extend(chunk_result)
+            logger.info(f"🧠 LLM Chunk [{chunk_start+1}-{chunk_start+len(chunk)}] → {len(chunk_result)} lead temizlendi")
+        except Exception as e:
+            logger.error(f"❌ LLM Chunk [{chunk_start+1}-{chunk_start+len(chunk)}] hatası: {e}", exc_info=True)
+            # Chunk bazlı hata: bu chunk atlanır ama diğer chunk'lar devam eder
 
     if not cleaned_leads:
         logger.warning("⚠️ CRM: Temizlenebilir lead bulunamadı — state GÜNCELLENMEDİ (sonraki çalışmada tekrar denenecek)")
         crm_reader.rollback_pending()
-        return []
+        return 0
 
     # ── İSİM + İLETİŞİM VALİDASYONU ──────────────────────────
     # İsmi boş olan veya hiç iletişim bilgisi olmayan lead'leri filtrele.
@@ -100,7 +110,7 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
     if not cleaned_leads:
         logger.info("📭 CRM: Validasyondan geçen lead kalmadı — tümü filtrelendi, state ROLLBACK yapılıyor (sessiz veri kaybı engellendi)")
         crm_reader.rollback_pending()
-        return []
+        return 0
 
     # Toplu (bulk) duplikasyon kontrolü — API çağrılarını azaltır
     try:
@@ -164,12 +174,15 @@ def run_crm_pipeline(crm_reader: SheetsReader, notion: NotionWriter):
         ops.warning("CRM Pipeline tamamlandı (hatalarla) - ROLLBACK tetiklendi", summary_msg)
         logger.warning("⚠️ Notion API hataları nedeniyle state GÜNCELLENMEDİ (Rollback yapıldı, bir sonraki turda hatalılar tekrar denenecek)")
         crm_reader.rollback_pending()
+        return 0
     elif stats['created'] > 0:
         ops.success("CRM Pipeline tamamlandı", summary_msg)
         crm_reader.confirm_processed()
     else:
         ops.info("CRM Pipeline tamamlandı", summary_msg)
         crm_reader.confirm_processed()
+
+    return stats['created']
 
 
 def run_notifier_pipeline(notifier_reader: SheetsReader):
@@ -260,10 +273,16 @@ def main():
     # Pipeline çalıştır
     try:
         # Adım 1: CRM Pipeline (Sheets → Notion)
-        run_crm_pipeline(crm_reader, notion)
+        new_lead_count = run_crm_pipeline(crm_reader, notion)
 
         # Adım 2: Notifier Pipeline (Sheets → Telegram + Email)
         run_notifier_pipeline(notifier_reader)
+
+        # Adım 3: Watchdog (Lead akışı izleme)
+        try:
+            run_watchdog(crm_reader.service, Config.CRM_SPREADSHEET_ID, new_lead_count)
+        except Exception as e:
+            logger.warning(f"⚠️ Watchdog hatası (pipeline etkilenmez): {e}")
 
     except Exception as e:
         logger.error(f"❌ Pipeline hatası: {e}", exc_info=True)
