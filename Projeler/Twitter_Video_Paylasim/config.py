@@ -1,5 +1,6 @@
 import os
 import sys
+import shutil
 from dotenv import load_dotenv
 
 env_path = os.path.join(os.path.dirname(__file__), "..", "..", "_knowledge", "credentials", "master.env")
@@ -12,6 +13,10 @@ class Config:
         # 1. Check if ENV is defined (Development or Production)
         self.ENV = os.environ.get("ENV", "development").lower()
         self.IS_DRY_RUN = self.ENV == "development" or os.environ.get("DRY_RUN", "0") == "1"
+
+        # System dependency check: ffmpeg is critical for video processing
+        if not shutil.which("ffmpeg"):
+            raise EnvironmentError("CRITICAL STARTUP FAILURE: ffmpeg binary bulunamadı! nixpacks.toml doğru yapılandırılmalı.")
         
         # Notion
         self.NOTION_TOKEN = self._require_env("NOTION_SOCIAL_TOKEN")
