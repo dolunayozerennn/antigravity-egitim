@@ -1,8 +1,15 @@
 import logging
 import subprocess
 import os
+import shutil
 
 from config import settings
+
+# Resolve ffmpeg binary path once at module load.
+# On Railway/Nixpacks, ffmpeg lives under /root/.nix-profile/bin/ which may
+# not be inherited by subprocess child processes. Using the absolute path
+# prevents FileNotFoundError at runtime.
+_FFMPEG_BIN = shutil.which("ffmpeg") or "ffmpeg"
 
 
 class VideoProcessor:
@@ -21,12 +28,13 @@ class VideoProcessor:
         name, ext = os.path.splitext(base_name)
         output_path = os.path.join(dir_name, f"{name}_clean{ext}")
 
-        # FFmpeg command:
+        # FFmpeg command using resolved absolute path:
         # -map_metadata -1 : removes global metadata
         # -vf scale=-2:1080 : ensure 1080p output, maintain aspect ratio
         # Re-encoding with libx264 to strip all TikTok fingerprinting
+        logging.info(f"Using ffmpeg binary: {_FFMPEG_BIN}")
         cmd = [
-            "ffmpeg",
+            _FFMPEG_BIN,
             "-y",
             "-i", input_path,
             "-map_metadata", "-1",
