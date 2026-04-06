@@ -6,10 +6,30 @@ import shutil
 from config import settings
 
 # Resolve ffmpeg binary path once at module load.
-# On Railway/Nixpacks, ffmpeg lives under /root/.nix-profile/bin/ which may
-# not be inherited by subprocess child processes. Using the absolute path
-# prevents FileNotFoundError at runtime.
-_FFMPEG_BIN = shutil.which("ffmpeg") or "ffmpeg"
+# On Railway/Nixpacks, ffmpeg may live under /nix/store or /root/.nix-profile/bin
+# which may not be on PATH for subprocess child processes.
+def _resolve_ffmpeg():
+    """Find ffmpeg binary with multiple fallback strategies."""
+    # 1. Standard which lookup
+    path = shutil.which("ffmpeg")
+    if path:
+        return path
+    # 2. Common Nixpacks locations
+    for candidate in [
+        "/root/.nix-profile/bin/ffmpeg",
+        "/nix/var/nix/profiles/default/bin/ffmpeg",
+    ]:
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    # 3. Glob search through /nix/store (last resort)
+    import glob
+    matches = glob.glob("/nix/store/*/bin/ffmpeg")
+    if matches:
+        return matches[0]
+    logging.warning("ffmpeg binary not found! Video processing will fail.")
+    return "ffmpeg"
+
+_FFMPEG_BIN = _resolve_ffmpeg()
 
 class VideoProcessor:
     def strip_metadata(self, input_path: str) -> str:
