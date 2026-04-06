@@ -71,7 +71,7 @@ class ImageGenerator:
             return prompt
         except Exception as e:
             logging.error(f"GPT-4.1-mini görsel prompt hatası: {e}", exc_info=True)
-            raise
+            return None
 
     def _generate_image_with_gemini(self, prompt: str) -> str:
         """
@@ -85,7 +85,7 @@ class ImageGenerator:
             logging.info("[DRY-RUN] Gemini görsel üretme atlanıyor.")
             return None
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={self.gemini_api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={self.gemini_api_key}"
 
         payload = {
             "contents": [
@@ -137,4 +137,4 @@ class ImageGenerator:
 
         except Exception as e:
             logging.error(f"Gemini görsel üretme hatası: {e}", exc_info=True)
-            raise
+            return None
