@@ -62,18 +62,26 @@ def get_apify_token():
 
 
 def read_profiles(csv_path=None):
-    """Rakipler CSV'den profil URL'lerini okur."""
+    """Rakipler CSV'den profil URL'lerini okur. Sadece Instagram URL'lerini döner."""
     csv_path = csv_path or RAKIPLER_CSV
     urls = []
+    skipped = []
     seen = set()
     with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             url = row["Link"].strip().rstrip("/")
-            if url and url not in seen:
-                seen.add(url)
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            # Apify Instagram Scraper sadece instagram.com URL kabul eder
+            if "instagram.com" in url:
                 urls.append(url)
-    print(f"[SCRAPER] {len(urls)} benzersiz profil bulundu.")
+            else:
+                skipped.append(url)
+    if skipped:
+        print(f"[SCRAPER] ⚠️ {len(skipped)} Instagram dışı URL atlandı: {skipped}")
+    print(f"[SCRAPER] {len(urls)} benzersiz Instagram profili bulundu.")
     return urls
 
 
