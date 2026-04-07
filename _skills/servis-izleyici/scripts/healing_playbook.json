@@ -151,6 +151,13 @@
       "description": "Gemini model deprecate olmuş veya bulunamıyor — kod güncellemesi gerekli (model adı değiştirilmeli)"
     },
     {
+      "id": "openai_model_not_found",
+      "match": "openai\\.NotFoundError.*model.*does not exist|404.*model.*does not exist",
+      "context": "railway_log",
+      "action": "alert_only",
+      "description": "OpenAI model bulunamadı (geçersiz veya deprecate olmuş isim) — kodda model ismi düzeltilmeli (örn. gpt-4o-mini)"
+    },
+    {
       "id": "gmail_invalid_scope",
       "match": "invalid_scope|Bad Request.*scope|scope.*mismatch",
       "context": "railway_log",
