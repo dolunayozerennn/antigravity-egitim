@@ -1,0 +1,38 @@
+[
+  {
+    "step": 1,
+    "title": "Orijinal Sözleşmeyi Açın",
+    "description": "İşlenecek sözleşme Google Docs'ta açık. Typeless'ı başlatmadan önceki orijinal hali.",
+    "path": "/Users/dolunayozeren/Desktop/Antigravity/Projeler/Blog_Yazici/typeless5/annotated_v2/step_01_Orijinal_Sözleşmeyi_Açın.jpg"
+  },
+  {
+    "step": 2,
+    "title": "Metni Seçin ve Typeless'ı Başlatın",
+    "description": "Tüm sözleşme metni seçilmiş (mavi) ve altta Typeless toolbar'ı belirmiş. 'Bunu özetle' gibi sesli komut veriliyor.",
+    "path": "/Users/dolunayozeren/Desktop/Antigravity/Projeler/Blog_Yazici/typeless5/annotated_v2/step_02_Metni_Seçin_ve_Typeless'ı_Başlatın.jpg"
+  },
+  {
+    "step": 3,
+    "title": "AI İşliyor — 'Thinking...'",
+    "description": "Typeless komutu işliyor. 'Thinking' yazısı görünüyor — yapay zeka sözleşmeyi analiz edip yeniden yazıyor.",
+    "path": "/Users/dolunayozeren/Desktop/Antigravity/Projeler/Blog_Yazici/typeless5/annotated_v2/step_03_AI_İşliyor_-_'Thinking...'.jpg"
+  },
+  {
+    "step": 4,
+    "title": "Sonuç: Özet Sözleşme Hazır",
+    "description": "Typeless, sayfalarca sözleşmeyi otomatik olarak özetledi. Başlıklar kalın, maddeler bullet point formatında.",
+    "path": "/Users/dolunayozeren/Desktop/Antigravity/Projeler/Blog_Yazici/typeless5/annotated_v2/step_04_Sonuç_Özet_Sözleşme_Hazır.jpg"
+  },
+  {
+    "step": 5,
+    "title": "İkinci Komut: 'Başlıkları Kalın Yap'",
+    "description": "İkinci düzenleme komutu verildi. Metin tekrar seçili ve Typeless 'Başlıkları kalın yap' komutunu işliyor.",
+    "path": "/Users/dolunayozeren/Desktop/Antigravity/Projeler/Blog_Yazici/typeless5/annotated_v2/step_05_İkinci_Komut_'Başlıkları_Kalın_Yap'.jpg"
+  },
+  {
+    "step": 6,
+    "title": "Final Sonuç: Profesyonel Sözleşme",
+    "description": "İşlem tamamlandı. Sözleşme özeti kalın başlıklarla, bullet pointlerle düzgün biçimlendirilmiş durumda.",
+    "path": "/Users/dolunayozeren/Desktop/Antigravity/Projeler/Blog_Yazici/typeless5/annotated_v2/step_06_Final_Sonuç_Profesyonel_Sözleşme.jpg"
+  }
+]

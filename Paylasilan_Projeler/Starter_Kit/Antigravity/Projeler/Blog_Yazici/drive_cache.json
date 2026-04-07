@@ -1,0 +1,2414 @@
+{
+  "1EvKD1HNySTJgJmaljpp7wON_W411p9ee": {
+    "folder_id": "1EvKD1HNySTJgJmaljpp7wON_W411p9ee",
+    "accessible": true,
+    "source": "api",
+    "total_files": 14,
+    "video_files": 11,
+    "screen_recordings": 0,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 4,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 6,
+    "file_details": [
+      {
+        "name": "skywork2 tiktok.mp4",
+        "cls": "edit",
+        "size": 33442396
+      },
+      {
+        "name": "skywork2 insta.mp4",
+        "cls": "edit",
+        "size": 33007374
+      },
+      {
+        "name": "skywork tiktok.mp4",
+        "cls": "edit",
+        "size": 33583383
+      },
+      {
+        "name": "skywork insta.mp4",
+        "cls": "edit",
+        "size": 33101036
+      },
+      {
+        "name": "4 web sitesi.mov",
+        "cls": "screen_recording",
+        "sub": "Ham görüntüler",
+        "size": 21564656
+      },
+      {
+        "name": "3 rapor.xlsx",
+        "cls": "non_video",
+        "sub": "Ham görüntüler",
+        "size": 10733
+      },
+      {
+        "name": "3 analiz.docx",
+        "cls": "non_video",
+        "sub": "Ham görüntüler",
+        "size": 9529
+      },
+      {
+        "name": "2 sunum.pptx",
+        "cls": "non_video",
+        "sub": "Ham görüntüler",
+        "size": 208975
+      },
+      {
+        "name": "4 Hatta bu klasörden bir web sitesi bile oluşturuyor. .mp4",
+        "cls": "screen_recording",
+        "sub": "Ham görüntüler",
+        "size": 187256383
+      },
+      {
+        "name": "3 dilersem içindeki bilgileri analiz ederek rapor oluşturuyor. .mp4",
+        "cls": "screen_recording",
+        "sub": "Ham görüntüler",
+        "size": 837694343
+      },
+      {
+        "name": "2 yüklediğim klasörü tarayarak özel slayt oluşturuyor..mp4",
+        "cls": "screen_recording",
+        "sub": "Ham görüntüler",
+        "size": 452820798
+      },
+      {
+        "name": "1. Bilgisayarımdaki klasörleri düzenliyor..mp4",
+        "cls": "screen_recording",
+        "sub": "Ham görüntüler",
+        "size": 478365259
+      },
+      {
+        "name": "dosya seçini.mp4",
+        "cls": "probable_screen",
+        "sub": "Ham görüntüler",
+        "size": 11348828
+      },
+      {
+        "name": "MVI_7276.MP4",
+        "cls": "camera",
+        "sub": "Ham görüntüler",
+        "size": 432888160
+      }
+    ],
+    "errors": []
+  },
+  "1AbE1AC6-4r34JvAYijLpEkVDN6ubhL3w": {
+    "folder_id": "1AbE1AC6-4r34JvAYijLpEkVDN6ubhL3w",
+    "accessible": true,
+    "source": "api",
+    "total_files": 15,
+    "video_files": 11,
+    "screen_recordings": 5,
+    "probable_screen": 3,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "tiktok mac2.mp4",
+        "cls": "edit",
+        "size": 198285273
+      },
+      {
+        "name": "insta mac miinis.mp4",
+        "cls": "edit",
+        "size": 198214303
+      },
+      {
+        "name": "4- yani sigortasız maaşsız yapay zeka elemanın.mp4",
+        "cls": "screen_recording",
+        "size": 1892812
+      },
+      {
+        "name": "6- Şubat ayı raporlarını oku ve sunum hazırlayıp partonuma at.mp4",
+        "cls": "screen_recording",
+        "size": 3030852
+      },
+      {
+        "name": "5- WhatsApp bağlanıyor.mov",
+        "cls": "screen_recording",
+        "size": 1547557
+      },
+      {
+        "name": "3- Bayağı mouse klavyeni kontrol edip işlerini yapabiliyor.mp4",
+        "cls": "screen_recording",
+        "size": 5403386
+      },
+      {
+        "name": "2- Clawdbot.mov",
+        "cls": "screen_recording",
+        "size": 7110435
+      },
+      {
+        "name": "HAM VİDEO.mp4",
+        "cls": "camera",
+        "size": 159374188
+      },
+      {
+        "name": "emergent 3.mov",
+        "cls": "probable_screen",
+        "size": 5102482
+      },
+      {
+        "name": "emegernt 2.mov",
+        "cls": "probable_screen",
+        "size": 7955967
+      },
+      {
+        "name": "emergent 1.mov",
+        "cls": "probable_screen",
+        "size": 17567332
+      },
+      {
+        "name": "Screenshot 2026-02-09 at 12.21.01.png",
+        "cls": "non_video",
+        "sub": "1- GİRİŞ",
+        "size": 1180661
+      },
+      {
+        "name": "Screenshot 2026-02-09 at 12.20.41.png",
+        "cls": "non_video",
+        "sub": "1- GİRİŞ",
+        "size": 1595604
+      },
+      {
+        "name": "Screenshot 2026-02-09 at 12.20.32.png",
+        "cls": "non_video",
+        "sub": "1- GİRİŞ",
+        "size": 1454920
+      },
+      {
+        "name": "Screenshot 2026-02-09 at 12.20.27.png",
+        "cls": "non_video",
+        "sub": "1- GİRİŞ",
+        "size": 1025618
+      }
+    ],
+    "errors": []
+  },
+  "1cVl9O7ah6AunVozfDOg26PCyXCjpernT": {
+    "folder_id": "1cVl9O7ah6AunVozfDOg26PCyXCjpernT",
+    "accessible": true,
+    "source": "api",
+    "total_files": 5,
+    "video_files": 5,
+    "screen_recordings": 1,
+    "probable_screen": 2,
+    "camera_files": 0,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "typeless 2 tiktok.mp4",
+        "cls": "edit",
+        "size": 25826054
+      },
+      {
+        "name": "Typeless 2 insta.mp4",
+        "cls": "edit",
+        "size": 22546039
+      },
+      {
+        "name": "sadece whatsapp kısmına bak.mp4",
+        "cls": "probable_screen",
+        "size": 26494150
+      },
+      {
+        "name": "Screen Recording 2026-02-09 at 17.47.12.mov",
+        "cls": "screen_recording",
+        "size": 966340
+      },
+      {
+        "name": "Teleprompter-2026-08-02_15-01-58.mp4",
+        "cls": "probable_screen",
+        "size": 137537370
+      }
+    ],
+    "errors": []
+  },
+  "18lmrJ4mbJWubG2U87IIEg2Hfn6sW6XQf": {
+    "folder_id": "18lmrJ4mbJWubG2U87IIEg2Hfn6sW6XQf",
+    "accessible": true,
+    "source": "api",
+    "total_files": 8,
+    "video_files": 8,
+    "screen_recordings": 0,
+    "probable_screen": 5,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "nim vday tiktok.mp4",
+        "cls": "edit",
+        "size": 21409665
+      },
+      {
+        "name": "nim vday insta.mp4",
+        "cls": "edit",
+        "size": 21639983
+      },
+      {
+        "name": "örnek 3.mp4",
+        "cls": "probable_screen",
+        "size": 504970
+      },
+      {
+        "name": "örnek 2.mp4",
+        "cls": "probable_screen",
+        "size": 743020
+      },
+      {
+        "name": "örnek 1.mp4",
+        "cls": "probable_screen",
+        "size": 408783
+      },
+      {
+        "name": "görsel oluşturma.mov",
+        "cls": "probable_screen",
+        "size": 16757824
+      },
+      {
+        "name": "nim vday template seçimi.mov",
+        "cls": "probable_screen",
+        "size": 32183257
+      },
+      {
+        "name": "MVI_7272.MP4",
+        "cls": "camera",
+        "size": 500479660
+      }
+    ],
+    "errors": []
+  },
+  "17Sed1ndLqLZJ3dM9j57G_D4IcjIPsop7": {
+    "folder_id": "17Sed1ndLqLZJ3dM9j57G_D4IcjIPsop7",
+    "accessible": true,
+    "source": "api",
+    "total_files": 9,
+    "video_files": 4,
+    "screen_recordings": 2,
+    "probable_screen": 1,
+    "camera_files": 1,
+    "edit_files": 0,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "printify 8.mp4",
+        "cls": "probable_screen",
+        "size": 36536637
+      },
+      {
+        "name": "Screen Recording 2026-01-13 at 13.36.35.mov",
+        "cls": "screen_recording",
+        "size": 69789539
+      },
+      {
+        "name": "ChatGPT Image 13 Oca 2026 13_36_07.png",
+        "cls": "non_video",
+        "size": 2391246
+      },
+      {
+        "name": "Screen Recording 2026-01-13 at 13.34.54.mov",
+        "cls": "screen_recording",
+        "size": 147241519
+      },
+      {
+        "name": "MVI_7253.MP4",
+        "cls": "camera",
+        "size": 423551748
+      },
+      {
+        "name": "Printify8_K2B_ParayiKirdim.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 638300
+      },
+      {
+        "name": "Printify8_K2A_FotografiAnimeyeCevir.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 659129
+      },
+      {
+        "name": "Printify8_K1B_OturKazan.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 624468
+      },
+      {
+        "name": "Printify8_K1A_30000Satis.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 692659
+      }
+    ],
+    "errors": []
+  },
+  "1htMRnXY2bg72kDTAk7xboNSGgWqHjSLU": {
+    "folder_id": "1htMRnXY2bg72kDTAk7xboNSGgWqHjSLU",
+    "accessible": true,
+    "source": "api",
+    "total_files": 5,
+    "video_files": 5,
+    "screen_recordings": 2,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "emergent 25 tiktok.mp4",
+        "cls": "edit",
+        "size": 30958667
+      },
+      {
+        "name": "emergent 25 insta.mp4",
+        "cls": "edit",
+        "size": 29810957
+      },
+      {
+        "name": "2 - fotoğrafı çekiyorum.mp4",
+        "cls": "screen_recording",
+        "size": 56040360
+      },
+      {
+        "name": "1 - prompt ve soru cevap.mp4",
+        "cls": "screen_recording",
+        "size": 142752786
+      },
+      {
+        "name": "MVI_7244.MP4",
+        "cls": "camera",
+        "size": 465785788
+      }
+    ],
+    "errors": []
+  },
+  "1zJC2CdwyyvEIGhu893idbPMkpyKPIwEf": {
+    "folder_id": "1zJC2CdwyyvEIGhu893idbPMkpyKPIwEf",
+    "accessible": true,
+    "source": "api",
+    "total_files": 11,
+    "video_files": 7,
+    "screen_recordings": 0,
+    "probable_screen": 1,
+    "camera_files": 2,
+    "edit_files": 4,
+    "unknown_video": 0,
+    "subfolders": 2,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "blink 2 tiktok.mp4",
+        "cls": "edit",
+        "size": 27081646
+      },
+      {
+        "name": "blink 2 insta.mp4",
+        "cls": "edit",
+        "size": 26984137
+      },
+      {
+        "name": "RPReplay_Final1771328594.mp4",
+        "cls": "probable_screen",
+        "size": 744439550
+      },
+      {
+        "name": "MVI_7379.MP4",
+        "cls": "camera",
+        "size": 420261140
+      },
+      {
+        "name": "MVI_7378.MP4",
+        "cls": "camera",
+        "size": 198108904
+      },
+      {
+        "name": "Blink2_K2B_KagittanSiteye.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 559403
+      },
+      {
+        "name": "Blink2_K2A_TasarimciYok.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 521945
+      },
+      {
+        "name": "Blink2_K1B_CizVeSiteYap.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 612199
+      },
+      {
+        "name": "Blink2_K1A_500BinTLTasarruf.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 609554
+      },
+      {
+        "name": "blink 2 tiktok.mp4",
+        "cls": "edit",
+        "sub": "eski",
+        "size": 26826834
+      },
+      {
+        "name": "blink 2 insta.mp4",
+        "cls": "edit",
+        "sub": "eski",
+        "size": 26698982
+      }
+    ],
+    "errors": []
+  },
+  "13ubkDWixeC5glSrshF-zfSZwwNkLbACR": {
+    "folder_id": "13ubkDWixeC5glSrshF-zfSZwwNkLbACR",
+    "accessible": true,
+    "source": "api",
+    "total_files": 11,
+    "video_files": 6,
+    "screen_recordings": 0,
+    "probable_screen": 4,
+    "camera_files": 0,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "Kimi 4-Tiktok-Revize.mp4",
+        "cls": "edit",
+        "size": 353040984
+      },
+      {
+        "name": "Kimi 4-Instagram-Revize.mp4",
+        "cls": "edit",
+        "size": 348831296
+      },
+      {
+        "name": "icon kimi.jpg",
+        "cls": "non_video",
+        "size": 10621
+      },
+      {
+        "name": "Teleprompter-2026-03-03_16-36-10.mp4",
+        "cls": "probable_screen",
+        "size": 176099263
+      },
+      {
+        "name": "sosyal medya rapor.mp4",
+        "cls": "probable_screen",
+        "size": 9575612
+      },
+      {
+        "name": "kurulum.mp4",
+        "cls": "probable_screen",
+        "size": 2290357
+      },
+      {
+        "name": "ClawHub.mp4",
+        "cls": "probable_screen",
+        "size": 3957824
+      },
+      {
+        "name": "image.png",
+        "cls": "non_video",
+        "size": 106164
+      },
+      {
+        "name": "Kapak 3.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 777743
+      },
+      {
+        "name": "Kapak 2.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 703438
+      },
+      {
+        "name": "Kapak 1.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 698278
+      }
+    ],
+    "errors": []
+  },
+  "1Gb51W_GwlTgtzO6giL-WMxCqEV9qLaA8": {
+    "folder_id": "1Gb51W_GwlTgtzO6giL-WMxCqEV9qLaA8",
+    "accessible": true,
+    "source": "api",
+    "total_files": 5,
+    "video_files": 3,
+    "screen_recordings": 0,
+    "probable_screen": 1,
+    "camera_files": 1,
+    "edit_files": 1,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "testimonial mustafa rekalm.mp4",
+        "cls": "probable_screen",
+        "size": 30013522
+      },
+      {
+        "name": "testimonial mustafa tiktok.mp4",
+        "cls": "edit",
+        "size": 13369459
+      },
+      {
+        "name": "Screenshot_2026-01-07-17-13-08-09_e83481424e08a93e8b34a9fb2e4f6b36.jpg",
+        "cls": "non_video",
+        "size": 235902
+      },
+      {
+        "name": "Screenshot_2026-01-07-17-12-04-53.jpg",
+        "cls": "non_video",
+        "size": 234566
+      },
+      {
+        "name": "MVI_7236.MP4",
+        "cls": "camera",
+        "size": 331781280
+      }
+    ],
+    "errors": []
+  },
+  "1hP9C9MItcvp6chRbMsEuRADzirlcVkZN": {
+    "folder_id": "1hP9C9MItcvp6chRbMsEuRADzirlcVkZN",
+    "accessible": true,
+    "source": "api",
+    "total_files": 4,
+    "video_files": 4,
+    "screen_recordings": 1,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "arcads instagram.mp4",
+        "cls": "edit",
+        "size": 36097646
+      },
+      {
+        "name": "arcads tiktok.mp4",
+        "cls": "edit",
+        "size": 37427697
+      },
+      {
+        "name": "Screen Recording 2025-12-15 at 18.32.58.mov",
+        "cls": "screen_recording",
+        "size": 166112635
+      },
+      {
+        "name": "MVI_7267.MP4",
+        "cls": "camera",
+        "size": 719577696
+      }
+    ],
+    "errors": []
+  },
+  "1nfO-iMqlAy3dU6Ve-01Vs89LO9OeCZp_": {
+    "folder_id": "1nfO-iMqlAy3dU6Ve-01Vs89LO9OeCZp_",
+    "accessible": true,
+    "source": "api",
+    "total_files": 6,
+    "video_files": 5,
+    "screen_recordings": 1,
+    "probable_screen": 1,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "printify tiktok/shorts.mp4",
+        "cls": "edit",
+        "size": 38944491
+      },
+      {
+        "name": "printify instagram.mp4",
+        "cls": "edit",
+        "size": 41321696
+      },
+      {
+        "name": "Screen Recording 2026-01-13 at 12.53.52.mov",
+        "cls": "screen_recording",
+        "size": 120371621
+      },
+      {
+        "name": "C9D9AD0C-221F-4DA2-8646-0010E0CDF64F.PNG",
+        "cls": "non_video",
+        "size": 2780905
+      },
+      {
+        "name": "RPReplay_Final1768297789.MP4",
+        "cls": "probable_screen",
+        "size": 53917681
+      },
+      {
+        "name": "MVI_7252.MP4",
+        "cls": "camera",
+        "size": 314544672
+      }
+    ],
+    "errors": []
+  },
+  "1SJUF6IR8JN7NWN905IJViYiOhhNVwwnZ": {
+    "folder_id": "1SJUF6IR8JN7NWN905IJViYiOhhNVwwnZ",
+    "accessible": true,
+    "source": "api",
+    "total_files": 13,
+    "video_files": 13,
+    "screen_recordings": 0,
+    "probable_screen": 2,
+    "camera_files": 2,
+    "edit_files": 4,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 5,
+    "file_details": [
+      {
+        "name": "creati 6 revize tiktok.mp4",
+        "cls": "edit",
+        "size": 30747383
+      },
+      {
+        "name": "creati 6 revize insta.mp4",
+        "cls": "edit",
+        "size": 30113055
+      },
+      {
+        "name": "RPReplay_Final1769672377.MP4",
+        "cls": "probable_screen",
+        "size": 20533436
+      },
+      {
+        "name": "WhatsApp Video 2026-01-29 at 10.18.28.mp4",
+        "cls": "probable_screen",
+        "size": 1285065
+      },
+      {
+        "name": "MVI_7254.MP4",
+        "cls": "camera",
+        "size": 412354228
+      },
+      {
+        "name": "creati 6 tiktok.mp4",
+        "cls": "edit",
+        "sub": "ARŞİV",
+        "size": 29130905
+      },
+      {
+        "name": "creati 6 instaa.mp4",
+        "cls": "edit",
+        "sub": "ARŞİV",
+        "size": 31304159
+      },
+      {
+        "name": "ÇIKIŞ.mp4",
+        "cls": "probable_screen",
+        "sub": "ARŞİV",
+        "size": 6919813
+      },
+      {
+        "name": "GİRİŞ.mp4",
+        "cls": "probable_screen",
+        "sub": "ARŞİV",
+        "size": 787921
+      },
+      {
+        "name": "ScreenRecording_01-16-2026 16-32-31_1.mp4",
+        "cls": "screen_recording",
+        "sub": "ARŞİV",
+        "size": 13868871
+      },
+      {
+        "name": "AI Output (tersine çevirilmiş hali).mp4",
+        "cls": "probable_screen",
+        "sub": "ARŞİV",
+        "size": 1555031
+      },
+      {
+        "name": "ScreenRecording_01-16-2026 12-06-33_1.MP4",
+        "cls": "screen_recording",
+        "sub": "ARŞİV",
+        "size": 31502074
+      },
+      {
+        "name": "MVI_7240.MP4",
+        "cls": "camera",
+        "sub": "ARŞİV",
+        "size": 590045308
+      }
+    ],
+    "errors": []
+  },
+  "1OfcIOeY3LL1W8zpgBqLQ4QnzeaKZ5Waf": {
+    "folder_id": "1OfcIOeY3LL1W8zpgBqLQ4QnzeaKZ5Waf",
+    "accessible": true,
+    "source": "api",
+    "total_files": 5,
+    "video_files": 4,
+    "screen_recordings": 1,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "emergent 24 tiktok.mp4",
+        "cls": "edit",
+        "size": 29757115
+      },
+      {
+        "name": "emergent 24 insta.mp4",
+        "cls": "edit",
+        "size": 30667962
+      },
+      {
+        "name": "Screen Recording 2026-01-02 at 13.37.16.mov",
+        "cls": "screen_recording",
+        "size": 177205355
+      },
+      {
+        "name": "Gemini_Generated_Image_76fnk276fnk276fn.png",
+        "cls": "non_video",
+        "size": 6990682
+      },
+      {
+        "name": "MVI_7194.MP4",
+        "cls": "camera",
+        "size": 321771804
+      }
+    ],
+    "errors": []
+  },
+  "1Taf4CwdaDoLulMfPDFEELwf6rNshqcvy": {
+    "folder_id": "1Taf4CwdaDoLulMfPDFEELwf6rNshqcvy",
+    "accessible": true,
+    "source": "api",
+    "total_files": 2,
+    "video_files": 2,
+    "screen_recordings": 0,
+    "probable_screen": 1,
+    "camera_files": 1,
+    "edit_files": 0,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "form1.mp4",
+        "cls": "probable_screen",
+        "size": 14801939
+      },
+      {
+        "name": "MVI_7388.MP4",
+        "cls": "camera",
+        "size": 260460644
+      }
+    ],
+    "errors": []
+  },
+  "1PgonP-Z3wvUyyRxM2H1GPT14AXiPb0MM": {
+    "folder_id": "1PgonP-Z3wvUyyRxM2H1GPT14AXiPb0MM",
+    "accessible": true,
+    "source": "api",
+    "total_files": 12,
+    "video_files": 5,
+    "screen_recordings": 0,
+    "probable_screen": 1,
+    "camera_files": 0,
+    "edit_files": 4,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "kovduğu için para kazanıyorum tiktok_1.mp4",
+        "cls": "edit",
+        "size": 94778004
+      },
+      {
+        "name": "kovduğu için para kazanıyorum insta_1.mp4",
+        "cls": "edit",
+        "size": 91227096
+      },
+      {
+        "name": "ses revize.m4a",
+        "cls": "non_video",
+        "size": 351639
+      },
+      {
+        "name": "kovduğu için para kazanıyorum tiktok.mp4",
+        "cls": "edit",
+        "size": 50355628
+      },
+      {
+        "name": "kovduğu için para kazanıyorum insta.mp4",
+        "cls": "edit",
+        "size": 50565582
+      },
+      {
+        "name": " kovduğu için para kazanıyorum.MOV",
+        "cls": "probable_screen",
+        "size": 581347636
+      },
+      {
+        "name": "Konsept_3B.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 673997
+      },
+      {
+        "name": "Konsept_3A.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 687856
+      },
+      {
+        "name": "Konsept_2B.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 869747
+      },
+      {
+        "name": "Konsept_2A.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 795338
+      },
+      {
+        "name": "Konsept_1B.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 722926
+      },
+      {
+        "name": "Konsept_1A.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 724071
+      }
+    ],
+    "errors": []
+  },
+  "15FHDh3rqFHZZsCNP1wn0AFoKJRhfxXp4": {
+    "folder_id": "15FHDh3rqFHZZsCNP1wn0AFoKJRhfxXp4",
+    "accessible": true,
+    "source": "api",
+    "total_files": 11,
+    "video_files": 7,
+    "screen_recordings": 1,
+    "probable_screen": 2,
+    "camera_files": 1,
+    "edit_files": 3,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "nim 17 tiktok.mp4",
+        "cls": "edit",
+        "size": 35524575
+      },
+      {
+        "name": "nim 17 insta.mp4",
+        "cls": "edit",
+        "size": 34267424
+      },
+      {
+        "name": "nim tiktok/shorts.mp4",
+        "cls": "edit",
+        "size": 35636413
+      },
+      {
+        "name": "nim instagram",
+        "cls": "non_video",
+        "size": 34225805
+      },
+      {
+        "name": "2- ortaya bu çıkıyor..jpg",
+        "cls": "non_video",
+        "size": 766133
+      },
+      {
+        "name": "Mesela bunu seçiyorum - part 2",
+        "cls": "non_video",
+        "size": 12403374
+      },
+      {
+        "name": "Mesela bunu seçiyorum - part 1",
+        "cls": "non_video",
+        "size": 13284170
+      },
+      {
+        "name": "1 -böyle bir yapmak istiyorsun.mp4",
+        "cls": "screen_recording",
+        "size": 1117042
+      },
+      {
+        "name": "butona basıyorum ve tüm şablonları tek tek gösteriyorum.MP4",
+        "cls": "probable_screen",
+        "size": 189478680
+      },
+      {
+        "name": "nime giriyorum.mov",
+        "cls": "probable_screen",
+        "size": 3919315
+      },
+      {
+        "name": "MVI_7251.MP4",
+        "cls": "camera",
+        "size": 411574384
+      }
+    ],
+    "errors": []
+  },
+  "1owvIkVTsmXtU6ZqGLdV03DCfiW2yxkdm": {
+    "folder_id": "1owvIkVTsmXtU6ZqGLdV03DCfiW2yxkdm",
+    "accessible": true,
+    "source": "api",
+    "total_files": 18,
+    "video_files": 7,
+    "screen_recordings": 1,
+    "probable_screen": 3,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "kimi 3 insta.mp4",
+        "cls": "edit",
+        "size": 68974636
+      },
+      {
+        "name": "kimi 3 tiktok.mp4",
+        "cls": "edit",
+        "size": 69087609
+      },
+      {
+        "name": "REVİZE 0. SANİYE.png",
+        "cls": "non_video",
+        "size": 1067088
+      },
+      {
+        "name": "REVİZE 8. SANİYE.png",
+        "cls": "non_video",
+        "size": 1417394
+      },
+      {
+        "name": "Sticker örnek4.PNG",
+        "cls": "non_video",
+        "size": 1546305
+      },
+      {
+        "name": "Sticker örnek3.PNG",
+        "cls": "non_video",
+        "size": 1411770
+      },
+      {
+        "name": "Sticker örnek2.PNG",
+        "cls": "non_video",
+        "size": 1492586
+      },
+      {
+        "name": "Sticker örnek 1.PNG",
+        "cls": "non_video",
+        "size": 1306183
+      },
+      {
+        "name": "50 sticker.mov",
+        "cls": "screen_recording",
+        "size": 16092795
+      },
+      {
+        "name": "Beni oku",
+        "cls": "non_video",
+        "size": 1024
+      },
+      {
+        "name": "o da buna göre düzenliyor.mov",
+        "cls": "probable_screen",
+        "size": 11907932
+      },
+      {
+        "name": "değişikliği konuşarak anlatıyorsun.mov",
+        "cls": "probable_screen",
+        "size": 733582
+      },
+      {
+        "name": "Word dosyasını bir avukat gibi düzenledi.mp4",
+        "cls": "probable_screen",
+        "size": 639106
+      },
+      {
+        "name": "ham video.mp4",
+        "cls": "camera",
+        "size": 217398664
+      },
+      {
+        "name": "Kimi3_K2B_YazmaKodla.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 609328
+      },
+      {
+        "name": "Kimi3_K2A_GPTden8KatUcuz.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 709975
+      },
+      {
+        "name": "Kimi3_K1B_SiteyiKlonla.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 614452
+      },
+      {
+        "name": "Kimi3_K1A_CinYineKazandi.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 735152
+      }
+    ],
+    "errors": []
+  },
+  "1sKtd5bALqJXwt-cpT3AlkWzKwJkNck6_": {
+    "folder_id": "1sKtd5bALqJXwt-cpT3AlkWzKwJkNck6_",
+    "accessible": true,
+    "source": "api",
+    "total_files": 6,
+    "video_files": 6,
+    "screen_recordings": 3,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "meshy tiktok/shorts.mp4",
+        "cls": "edit",
+        "size": 39062242
+      },
+      {
+        "name": "meshy instagram.mp4",
+        "cls": "edit",
+        "size": 40848411
+      },
+      {
+        "name": "3 - 3d tasarımlar.mov",
+        "cls": "screen_recording",
+        "size": 161282183
+      },
+      {
+        "name": "2 - Meshy diye bir siteye giriyorum.mov",
+        "cls": "screen_recording",
+        "size": 3645545
+      },
+      {
+        "name": "1 - 2 yerde cut lazım onun dışında hızlandıracağız sadece.mov",
+        "cls": "screen_recording",
+        "size": 62611738
+      },
+      {
+        "name": "MVI_7227.MP4",
+        "cls": "camera",
+        "size": 454400620
+      }
+    ],
+    "errors": []
+  },
+  "1qZdLLqTWcra2Q1ZD0M7LroY1BMCM1PB-": {
+    "folder_id": "1qZdLLqTWcra2Q1ZD0M7LroY1BMCM1PB-",
+    "accessible": true,
+    "source": "api",
+    "total_files": 16,
+    "video_files": 15,
+    "screen_recordings": 1,
+    "probable_screen": 2,
+    "camera_files": 1,
+    "edit_files": 4,
+    "unknown_video": 0,
+    "subfolders": 2,
+    "subfolder_screen_recs": 7,
+    "file_details": [
+      {
+        "name": "genspark tiktok_2.mp4",
+        "cls": "edit",
+        "size": 78034430
+      },
+      {
+        "name": "genspark instagram_1.mp4",
+        "cls": "edit",
+        "size": 77804580
+      },
+      {
+        "name": "Logo.jpg",
+        "cls": "non_video",
+        "size": 550201
+      },
+      {
+        "name": "Video.mp4",
+        "cls": "probable_screen",
+        "size": 4589253
+      },
+      {
+        "name": "RPReplay_Final1771327791.mp4",
+        "cls": "probable_screen",
+        "size": 171422835
+      },
+      {
+        "name": "ScreenRecording_02-09-2026 16-26-02_1.mp4",
+        "cls": "screen_recording",
+        "size": 32043258
+      },
+      {
+        "name": "MVI_7370.MP4",
+        "cls": "camera",
+        "size": 922052752
+      },
+      {
+        "name": "genspark instagram.mp4",
+        "cls": "edit",
+        "sub": "eski",
+        "size": 55679412
+      },
+      {
+        "name": "genspark tiktok.mp4",
+        "cls": "edit",
+        "sub": "eski",
+        "size": 55553630
+      },
+      {
+        "name": "düzenleme.mp4",
+        "cls": "probable_screen",
+        "sub": "REVİZE",
+        "size": 69823941
+      },
+      {
+        "name": "Sosyal medya video.mp4",
+        "cls": "probable_screen",
+        "sub": "REVİZE",
+        "size": 4918735
+      },
+      {
+        "name": "3 B.MOV",
+        "cls": "screen_recording",
+        "sub": "REVİZE",
+        "size": 20241610
+      },
+      {
+        "name": "3 A.MOV",
+        "cls": "screen_recording",
+        "sub": "REVİZE",
+        "size": 4195981
+      },
+      {
+        "name": "2 .MOV",
+        "cls": "screen_recording",
+        "sub": "REVİZE",
+        "size": 30411891
+      },
+      {
+        "name": "1 B.MOV",
+        "cls": "screen_recording",
+        "sub": "REVİZE",
+        "size": 23967859
+      },
+      {
+        "name": "1 A.MOV",
+        "cls": "screen_recording",
+        "sub": "REVİZE",
+        "size": 13491202
+      }
+    ],
+    "errors": []
+  },
+  "1Lh4SuNgOKbop3qRTcV1sGhll3iLrewbJ": {
+    "folder_id": "1Lh4SuNgOKbop3qRTcV1sGhll3iLrewbJ",
+    "accessible": true,
+    "source": "api",
+    "total_files": 5,
+    "video_files": 5,
+    "screen_recordings": 2,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "blink new tiktok/shorts.mp4",
+        "cls": "edit",
+        "size": 28895093
+      },
+      {
+        "name": "blink new instagram.mp4",
+        "cls": "edit",
+        "size": 27085097
+      },
+      {
+        "name": "Screen Recording 2026-01-29 at 13.38.28.mov",
+        "cls": "screen_recording",
+        "size": 8048919
+      },
+      {
+        "name": "Screen Recording 2026-01-29 at 13.30.11.mov",
+        "cls": "screen_recording",
+        "size": 339572386
+      },
+      {
+        "name": "MVI_7256.MP4",
+        "cls": "camera",
+        "size": 383005100
+      }
+    ],
+    "errors": []
+  },
+  "1MpwE00pAu0AltEQ4dRbC7UXX71K1y_7W": {
+    "folder_id": "1MpwE00pAu0AltEQ4dRbC7UXX71K1y_7W",
+    "accessible": true,
+    "source": "api",
+    "total_files": 6,
+    "video_files": 5,
+    "screen_recordings": 2,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "tripo 3d tiktok and shorts.mp4",
+        "cls": "edit",
+        "size": 37428509
+      },
+      {
+        "name": "tripo 3d instagram.mp4",
+        "cls": "edit",
+        "size": 38652386
+      },
+      {
+        "name": "SES REVİZE.m4a",
+        "cls": "non_video",
+        "size": 478693
+      },
+      {
+        "name": "Screen Recording 2026-01-17 at 19.56.07.mov",
+        "cls": "screen_recording",
+        "size": 53201198
+      },
+      {
+        "name": "Screen Recording 2026-01-17 at 19.26.57.mov",
+        "cls": "screen_recording",
+        "size": 19089199
+      },
+      {
+        "name": "MVI_7241.MP4",
+        "cls": "camera",
+        "size": 593328560
+      }
+    ],
+    "errors": []
+  },
+  "139DD5VBqNs8iUbrDRGW7bmu9Vorge7Fi": {
+    "folder_id": "139DD5VBqNs8iUbrDRGW7bmu9Vorge7Fi",
+    "accessible": true,
+    "source": "api",
+    "total_files": 7,
+    "video_files": 6,
+    "screen_recordings": 0,
+    "probable_screen": 3,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "mureka tiktok.mp4",
+        "cls": "edit",
+        "size": 32644195
+      },
+      {
+        "name": "mureka insta.mp4",
+        "cls": "edit",
+        "size": 32932275
+      },
+      {
+        "name": "Dolunay Şarkı VDay.mp3",
+        "cls": "non_video",
+        "size": 4393631
+      },
+      {
+        "name": "Ve ne istediğimden bahsediyorum.mov",
+        "cls": "probable_screen",
+        "size": 46832198
+      },
+      {
+        "name": "Singer butonuna basıryorum.mov",
+        "cls": "probable_screen",
+        "size": 15981713
+      },
+      {
+        "name": "Mureka Giriş.mp4",
+        "cls": "probable_screen",
+        "size": 4791093
+      },
+      {
+        "name": "MVI_7255.MP4",
+        "cls": "camera",
+        "size": 478558172
+      }
+    ],
+    "errors": []
+  },
+  "1KOTqP1tWkxkXnKkxRRxMDKX7ifiYc1eH": {
+    "folder_id": "1KOTqP1tWkxkXnKkxRRxMDKX7ifiYc1eH",
+    "accessible": true,
+    "source": "api",
+    "total_files": 8,
+    "video_files": 7,
+    "screen_recordings": 0,
+    "probable_screen": 4,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "nim x kling insta.mp4",
+        "cls": "edit",
+        "size": 40861613
+      },
+      {
+        "name": "nim x kling tiktok.mp4",
+        "cls": "edit",
+        "size": 42117224
+      },
+      {
+        "name": "ekstra kaynak, bunu da aralara ekleyebilriiz.mp4",
+        "cls": "probable_screen",
+        "size": 32685121
+      },
+      {
+        "name": "bu paraları.png",
+        "cls": "non_video",
+        "size": 164891
+      },
+      {
+        "name": "Nim Kling 1.mov",
+        "cls": "probable_screen",
+        "size": 16905686
+      },
+      {
+        "name": "video1.mp4",
+        "cls": "probable_screen",
+        "size": 24599268
+      },
+      {
+        "name": "video2 .mp4",
+        "cls": "probable_screen",
+        "size": 11925094
+      },
+      {
+        "name": "MVI_7302.MP4",
+        "cls": "camera",
+        "size": 521633784
+      }
+    ],
+    "errors": []
+  },
+  "129uPxvpECVW0IliAm3jxlG3jZuf5QcIr": {
+    "folder_id": "129uPxvpECVW0IliAm3jxlG3jZuf5QcIr",
+    "accessible": true,
+    "source": "api",
+    "total_files": 22,
+    "video_files": 8,
+    "screen_recordings": 0,
+    "probable_screen": 5,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "Dzine-Instagram.mp4",
+        "cls": "edit",
+        "size": 180333019
+      },
+      {
+        "name": "Dzine-Tiktok.mp4",
+        "cls": "edit",
+        "size": 176172360
+      },
+      {
+        "name": "dzine2.mov",
+        "cls": "probable_screen",
+        "size": 531965775
+      },
+      {
+        "name": "Untitled-20260309-133413-2440.mp4",
+        "cls": "probable_screen",
+        "size": 15017750
+      },
+      {
+        "name": "Untitled-20260309-133252-8006.mp4",
+        "cls": "probable_screen",
+        "size": 16013625
+      },
+      {
+        "name": "Untitled-20260309-133249-6783.mp4",
+        "cls": "probable_screen",
+        "size": 14075628
+      },
+      {
+        "name": "dzine 1.mov",
+        "cls": "probable_screen",
+        "size": 712883907
+      },
+      {
+        "name": "Untitled-20260309-130121-2208.png",
+        "cls": "non_video",
+        "size": 7880812
+      },
+      {
+        "name": "Untitled-20260309-130025-2951.png",
+        "cls": "non_video",
+        "size": 6866798
+      },
+      {
+        "name": "Untitled-20260309-125841-5532.png",
+        "cls": "non_video",
+        "size": 8557586
+      },
+      {
+        "name": "sydney1.webp",
+        "cls": "non_video",
+        "size": 93488
+      },
+      {
+        "name": "MVI_7416.MP4",
+        "cls": "camera",
+        "size": 462953260
+      },
+      {
+        "name": "Dzine_Kapak_T3_PasaportuYirt_V2.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 727680
+      },
+      {
+        "name": "Dzine_Kapak_T3_PasaportuYirt_V1.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 758369
+      },
+      {
+        "name": "Dzine_Kapak_T2_KendiniDonustur_V2.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 743323
+      },
+      {
+        "name": "Dzine_Kapak_T2_KendiniDonustur_V1.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 643647
+      },
+      {
+        "name": "Dzine_Kapak_T1_1Foto10Ulke_V2.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 734279
+      },
+      {
+        "name": "Dzine_Kapak_T1_1Foto10Ulke_V1.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 776084
+      },
+      {
+        "name": "Dzine_Kapak_2B_ViralVideoFormulu_Director.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 605854
+      },
+      {
+        "name": "Dzine_Kapak_2A_ViralVideoFormulu_Burst.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 675431
+      },
+      {
+        "name": "Dzine_Kapak_1B_1FOTO10ULKE_Grid.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 596897
+      },
+      {
+        "name": "Dzine_Kapak_1A_1FOTO10ULKE_Portal.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 684661
+      }
+    ],
+    "errors": []
+  },
+  "1-7ZAIsfywXmufdZ9lH_MIe4f9uIIuSxW": {
+    "folder_id": "1-7ZAIsfywXmufdZ9lH_MIe4f9uIIuSxW",
+    "accessible": true,
+    "source": "api",
+    "total_files": 11,
+    "video_files": 10,
+    "screen_recordings": 0,
+    "probable_screen": 2,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 5,
+    "file_details": [
+      {
+        "name": "abacus 5.mp4",
+        "cls": "probable_screen",
+        "size": 32763688
+      },
+      {
+        "name": "REVİZE PART 2.mov",
+        "cls": "edit",
+        "size": 81321474
+      },
+      {
+        "name": "REVİZE PART 1 abacusai motion control.mov",
+        "cls": "edit",
+        "size": 1462320
+      },
+      {
+        "name": "Landing Page.png",
+        "cls": "non_video",
+        "size": 1084059
+      },
+      {
+        "name": "Video Generation.mp4",
+        "cls": "probable_screen",
+        "size": 61096692
+      },
+      {
+        "name": "MVI_7301.MP4",
+        "cls": "camera",
+        "size": 685643332
+      },
+      {
+        "name": "abacus 5.mp4",
+        "cls": "probable_screen",
+        "sub": "GİRİŞ",
+        "size": 33305139
+      },
+      {
+        "name": "98a8b3df-e84a-4671-82c9-cd1b378d06ad.mp4",
+        "cls": "probable_screen",
+        "sub": "GİRİŞ",
+        "size": 25301408
+      },
+      {
+        "name": "f95e8059-078d-4198-8ae7-c902449ebbc4.mp4",
+        "cls": "probable_screen",
+        "sub": "GİRİŞ",
+        "size": 26221578
+      },
+      {
+        "name": "0708f25e-51fd-470c-a70a-ce1adb321de1.mp4",
+        "cls": "probable_screen",
+        "sub": "GİRİŞ",
+        "size": 20303577
+      },
+      {
+        "name": "96a29453-3dfd-482b-8b91-cc00a7e58912.mp4",
+        "cls": "probable_screen",
+        "sub": "GİRİŞ",
+        "size": 20388495
+      }
+    ],
+    "errors": []
+  },
+  "18s0xjG4UICOJUO2M7-2RnCfn7QNDcPl9": {
+    "folder_id": "18s0xjG4UICOJUO2M7-2RnCfn7QNDcPl9",
+    "accessible": true,
+    "source": "api",
+    "total_files": 5,
+    "video_files": 5,
+    "screen_recordings": 0,
+    "probable_screen": 2,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "verdent tiktok.mp4",
+        "cls": "edit",
+        "size": 24548522
+      },
+      {
+        "name": "verdent insta.mp4",
+        "cls": "edit",
+        "size": 25432182
+      },
+      {
+        "name": "final çıktı.mov",
+        "cls": "probable_screen",
+        "size": 15877996
+      },
+      {
+        "name": "prompt girme, inşa etme.mov",
+        "cls": "probable_screen",
+        "size": 78362034
+      },
+      {
+        "name": "MVI_7270.MP4",
+        "cls": "camera",
+        "size": 458875632
+      }
+    ],
+    "errors": []
+  },
+  "1mCx7FF5LZPbOGRJ7R2B6yvyb6wQqQvjx": {
+    "folder_id": "1mCx7FF5LZPbOGRJ7R2B6yvyb6wQqQvjx",
+    "accessible": true,
+    "source": "api",
+    "total_files": 8,
+    "video_files": 5,
+    "screen_recordings": 0,
+    "probable_screen": 1,
+    "camera_files": 2,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "Abacus 6-Instagram-Revize.mp4",
+        "cls": "edit",
+        "size": 216779042
+      },
+      {
+        "name": "Abacus 6-Tiktok-Revize.mp4",
+        "cls": "edit",
+        "size": 218715394
+      },
+      {
+        "name": "Fitness Tracker.mp4",
+        "cls": "probable_screen",
+        "size": 22824291
+      },
+      {
+        "name": "MVI_7407.MP4",
+        "cls": "camera",
+        "size": 681762408
+      },
+      {
+        "name": "MVI_7406.MP4",
+        "cls": "camera",
+        "size": 1653687560
+      },
+      {
+        "name": "Kapak 3.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 638821
+      },
+      {
+        "name": "Kapak 2.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 672170
+      },
+      {
+        "name": "Kapak 1.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 725598
+      }
+    ],
+    "errors": []
+  },
+  "1ajpgLWj_FoWY3bSvoqr9zxdn2gWU7h1O": {
+    "folder_id": "1ajpgLWj_FoWY3bSvoqr9zxdn2gWU7h1O",
+    "accessible": true,
+    "source": "api",
+    "total_files": 13,
+    "video_files": 12,
+    "screen_recordings": 7,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 4,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "dokie tiktok/shorts.mp4",
+        "cls": "edit",
+        "size": 54336033
+      },
+      {
+        "name": "dokie insta.mp4",
+        "cls": "edit",
+        "size": 55183622
+      },
+      {
+        "name": "Screen Recording 2026-01-26 at 20.17.38.mov",
+        "cls": "screen_recording",
+        "size": 33259981
+      },
+      {
+        "name": "dokie instagram version.mp4",
+        "cls": "edit",
+        "size": 55191447
+      },
+      {
+        "name": "Dokie instagram.mp4",
+        "cls": "edit",
+        "size": 42800799
+      },
+      {
+        "name": "7.mov",
+        "cls": "screen_recording",
+        "size": 8484670
+      },
+      {
+        "name": "6.mov",
+        "cls": "screen_recording",
+        "size": 8958196
+      },
+      {
+        "name": "5.mov",
+        "cls": "screen_recording",
+        "size": 221592937
+      },
+      {
+        "name": "4.mov",
+        "cls": "screen_recording",
+        "size": 10990848
+      },
+      {
+        "name": "3.mov",
+        "cls": "screen_recording",
+        "size": 146535624
+      },
+      {
+        "name": "2.png",
+        "cls": "non_video",
+        "size": 181195
+      },
+      {
+        "name": "1.mov",
+        "cls": "screen_recording",
+        "size": 2938372
+      },
+      {
+        "name": "MVI_7248.MP4",
+        "cls": "camera",
+        "size": 466361968
+      }
+    ],
+    "errors": []
+  },
+  "14evKagVYwTpltl5EppQQA4gytFO0D3Zg": {
+    "folder_id": "14evKagVYwTpltl5EppQQA4gytFO0D3Zg",
+    "accessible": true,
+    "source": "api",
+    "total_files": 16,
+    "video_files": 13,
+    "screen_recordings": 10,
+    "probable_screen": 1,
+    "camera_files": 0,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "emergent 29 insta.mp4",
+        "cls": "edit",
+        "size": 45203452
+      },
+      {
+        "name": "emergent 29 tiktok.mp4",
+        "cls": "edit",
+        "size": 43140894
+      },
+      {
+        "name": "IMG_6585.MOV",
+        "cls": "probable_screen",
+        "size": 5073715
+      },
+      {
+        "name": "12.MOV",
+        "cls": "screen_recording",
+        "size": 65142219
+      },
+      {
+        "name": "11.MOV",
+        "cls": "screen_recording",
+        "size": 17703578
+      },
+      {
+        "name": "9 b.mp4",
+        "cls": "screen_recording",
+        "size": 25575555
+      },
+      {
+        "name": "10 inşa ediliyor.mp4",
+        "cls": "screen_recording",
+        "size": 106486062
+      },
+      {
+        "name": "9 a inşa ediyor.MOV",
+        "cls": "screen_recording",
+        "size": 133585143
+      },
+      {
+        "name": "8 sesli komut veriyorum.MOV",
+        "cls": "screen_recording",
+        "size": 33478915
+      },
+      {
+        "name": "7 emergentı açıyorum.MOV",
+        "cls": "screen_recording",
+        "size": 68276498
+      },
+      {
+        "name": "6 bira daha düşünüyorum (burada matematik yaparken rakamları ekrana kocaman yazalım)",
+        "cls": "non_video",
+        "size": 13644871
+      },
+      {
+        "name": "5 geri geliyorum ve düşünüyorum.MOV",
+        "cls": "screen_recording",
+        "size": 24119122
+      },
+      {
+        "name": "3 yanına gidiyorum ",
+        "cls": "non_video",
+        "size": 13685978
+      },
+      {
+        "name": "4 (blurlu kadın) MOV",
+        "cls": "non_video",
+        "size": 21600350
+      },
+      {
+        "name": "2 (blurlu kadın).MOV",
+        "cls": "screen_recording",
+        "size": 45415418
+      },
+      {
+        "name": "1.MOV",
+        "cls": "screen_recording",
+        "size": 12197502
+      }
+    ],
+    "errors": []
+  },
+  "1ugZhjOWw4t48QIuy5X6pvBctRK6zemjB": {
+    "folder_id": "1ugZhjOWw4t48QIuy5X6pvBctRK6zemjB",
+    "accessible": true,
+    "source": "api",
+    "total_files": 9,
+    "video_files": 8,
+    "screen_recordings": 0,
+    "probable_screen": 5,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "abacus 4 tiktok/shorts.mp4",
+        "cls": "edit",
+        "size": 35500917
+      },
+      {
+        "name": "abacus 4 instagram.mp4",
+        "cls": "edit",
+        "size": 36692515
+      },
+      {
+        "name": "takvim.mp4",
+        "cls": "probable_screen",
+        "size": 34735776
+      },
+      {
+        "name": "NOT",
+        "cls": "non_video",
+        "size": 1024
+      },
+      {
+        "name": "Abacus açtığım kısım.mov",
+        "cls": "probable_screen",
+        "size": 19524334
+      },
+      {
+        "name": "Gmail.mp4",
+        "cls": "probable_screen",
+        "size": 31838395
+      },
+      {
+        "name": "Blog.mp4",
+        "cls": "probable_screen",
+        "size": 59268866
+      },
+      {
+        "name": "Tweet.mp4",
+        "cls": "probable_screen",
+        "size": 36855013
+      },
+      {
+        "name": "MVI_7249.MP4",
+        "cls": "camera",
+        "size": 560514716
+      }
+    ],
+    "errors": []
+  },
+  "1ZZazj6RLoGaovBMwlrFOKJrErN756Ysa": {
+    "folder_id": "1ZZazj6RLoGaovBMwlrFOKJrErN756Ysa",
+    "accessible": true,
+    "source": "api",
+    "total_files": 7,
+    "video_files": 3,
+    "screen_recordings": 1,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 1,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "eSim.io-dolunay-revize.mp4",
+        "cls": "edit",
+        "size": 269656883
+      },
+      {
+        "name": "ScreenRecording_03-13-2026 12-39-19_1.mp4",
+        "cls": "screen_recording",
+        "size": 13601898
+      },
+      {
+        "name": "IMG_9004.PNG",
+        "cls": "non_video",
+        "size": 7308
+      },
+      {
+        "name": "MVI_7418.MP4",
+        "cls": "camera",
+        "size": 786824696
+      },
+      {
+        "name": "Kapak 3.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 680317
+      },
+      {
+        "name": "Kapak 2.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 654613
+      },
+      {
+        "name": "Kapak 1.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 631141
+      }
+    ],
+    "errors": []
+  },
+  "1RRksLzoEqL97zTLw6nRKOSrUo5WfV7P6": {
+    "folder_id": "1RRksLzoEqL97zTLw6nRKOSrUo5WfV7P6",
+    "accessible": true,
+    "source": "api",
+    "total_files": 16,
+    "video_files": 9,
+    "screen_recordings": 0,
+    "probable_screen": 7,
+    "camera_files": 0,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "Emergent-Instagram.mp4",
+        "cls": "edit",
+        "size": 169089427
+      },
+      {
+        "name": "Emergent-Tiktok.mp4",
+        "cls": "edit",
+        "size": 163107655
+      },
+      {
+        "name": "Karakter 2 PART 2.mp4",
+        "cls": "probable_screen",
+        "size": 8236242
+      },
+      {
+        "name": "Karakter 2 PART 3.MP4",
+        "cls": "probable_screen",
+        "size": 56676384
+      },
+      {
+        "name": "Karakter 1.MP4",
+        "cls": "probable_screen",
+        "size": 941472784
+      },
+      {
+        "name": "Karakter 2 PART 1",
+        "cls": "non_video",
+        "size": 336248776
+      },
+      {
+        "name": "video4.mov",
+        "cls": "probable_screen",
+        "size": 15128574
+      },
+      {
+        "name": "video3.mov",
+        "cls": "probable_screen",
+        "size": 618897
+      },
+      {
+        "name": "video2.mov",
+        "cls": "probable_screen",
+        "size": 30392651
+      },
+      {
+        "name": "video1.mp4",
+        "cls": "probable_screen",
+        "size": 4986121
+      },
+      {
+        "name": "grafik yatay.png",
+        "cls": "non_video",
+        "size": 305113
+      },
+      {
+        "name": "grafik dikey.png",
+        "cls": "non_video",
+        "size": 257048
+      },
+      {
+        "name": "Emergent28_K2B_KopyalaKazan.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 569882
+      },
+      {
+        "name": "Emergent28_K2A_KendiUygulamaniYap.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 588711
+      },
+      {
+        "name": "Emergent28_K1B_85MilyonDolar.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 615984
+      },
+      {
+        "name": "Emergent28_K1A_DuolingoKopyala.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 629808
+      }
+    ],
+    "errors": []
+  },
+  "1aSpVsU6kGQpLj_mH2_pvhp-KmDfM064C": {
+    "folder_id": "1aSpVsU6kGQpLj_mH2_pvhp-KmDfM064C",
+    "accessible": true,
+    "source": "api",
+    "total_files": 6,
+    "video_files": 6,
+    "screen_recordings": 0,
+    "probable_screen": 5,
+    "camera_files": 0,
+    "edit_files": 1,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "kimi 2 tiktok.mp4",
+        "cls": "edit",
+        "size": 69490444
+      },
+      {
+        "name": "kimi 2 v2.mp4",
+        "cls": "probable_screen",
+        "size": 69521255
+      },
+      {
+        "name": "kimi 2.mp4",
+        "cls": "probable_screen",
+        "size": 69478733
+      },
+      {
+        "name": "Teleprompter-2026-16-01_16-39-47.mp4",
+        "cls": "probable_screen",
+        "size": 171443052
+      },
+      {
+        "name": "IMG_6296.MOV",
+        "cls": "probable_screen",
+        "size": 39854899
+      },
+      {
+        "name": "IMG_6298.MOV",
+        "cls": "probable_screen",
+        "size": 10316502
+      }
+    ],
+    "errors": []
+  },
+  "1Xgm8mAba_8b1EvXTcux5PD9iEoZaa48Z": {
+    "folder_id": "1Xgm8mAba_8b1EvXTcux5PD9iEoZaa48Z",
+    "accessible": true,
+    "source": "api",
+    "total_files": 6,
+    "video_files": 6,
+    "screen_recordings": 3,
+    "probable_screen": 0,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 0,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "emergent 27 tiktok.mp4",
+        "cls": "edit",
+        "size": 24708888
+      },
+      {
+        "name": "emergent 27 insta.mp4",
+        "cls": "edit",
+        "size": 22686475
+      },
+      {
+        "name": "3- emergent sonuç.mov",
+        "cls": "screen_recording",
+        "size": 16057677
+      },
+      {
+        "name": "2-  emergent inşa etme.mov",
+        "cls": "screen_recording",
+        "size": 7755882
+      },
+      {
+        "name": "1 - emergent prompt.mov",
+        "cls": "screen_recording",
+        "size": 6368535
+      },
+      {
+        "name": "MVI_7266.MP4",
+        "cls": "camera",
+        "size": 405216624
+      }
+    ],
+    "errors": []
+  },
+  "1pjy40TO4MydyqaVAiOu2TcgqEbOMgPsi": {
+    "folder_id": "1pjy40TO4MydyqaVAiOu2TcgqEbOMgPsi",
+    "accessible": true,
+    "source": "api",
+    "total_files": 12,
+    "video_files": 7,
+    "screen_recordings": 0,
+    "probable_screen": 3,
+    "camera_files": 2,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "Verdent 2-Instagram-Revize-2.mp4",
+        "cls": "edit",
+        "size": 304838999
+      },
+      {
+        "name": "Verdent 2-Tiktok-Revize-2.mp4",
+        "cls": "edit",
+        "size": 310775811
+      },
+      {
+        "name": "diagram görsel.png",
+        "cls": "non_video",
+        "size": 137533
+      },
+      {
+        "name": "Dolunay Script Planlaması.xlsx",
+        "cls": "non_video",
+        "size": 9482
+      },
+      {
+        "name": "diagram.mov",
+        "cls": "probable_screen",
+        "size": 4645286
+      },
+      {
+        "name": "haberler ve scriptler.mov",
+        "cls": "probable_screen",
+        "size": 12338502
+      },
+      {
+        "name": "verdent plan modu.mov",
+        "cls": "probable_screen",
+        "size": 67109866
+      },
+      {
+        "name": "MVI_7410.MP4",
+        "cls": "camera",
+        "size": 460414032
+      },
+      {
+        "name": "MVI_7409.MP4",
+        "cls": "camera",
+        "size": 1281136160
+      },
+      {
+        "name": "Kapak 3.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 680706
+      },
+      {
+        "name": "Kapak 2.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 732578
+      },
+      {
+        "name": "Kapak 1.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 662769
+      }
+    ],
+    "errors": []
+  },
+  "1Fhw6YPpqCnqZlRzyfXehP3idB28sHIfE": {
+    "folder_id": "1Fhw6YPpqCnqZlRzyfXehP3idB28sHIfE",
+    "accessible": true,
+    "source": "api",
+    "total_files": 10,
+    "video_files": 6,
+    "screen_recordings": 0,
+    "probable_screen": 3,
+    "camera_files": 1,
+    "edit_files": 2,
+    "unknown_video": 0,
+    "subfolders": 1,
+    "subfolder_screen_recs": 0,
+    "file_details": [
+      {
+        "name": "Morpara-Tiktok-Revize.mp4",
+        "cls": "edit",
+        "size": 136159631
+      },
+      {
+        "name": "Morpara-Instasgram-Revize.mp4",
+        "cls": "edit",
+        "size": 136319893
+      },
+      {
+        "name": "ses revize.m4a",
+        "cls": "non_video",
+        "size": 127283
+      },
+      {
+        "name": "uygulama indirme.mov",
+        "cls": "probable_screen",
+        "size": 485330
+      },
+      {
+        "name": "ek görüntüler.mp4",
+        "cls": "probable_screen",
+        "size": 23173348
+      },
+      {
+        "name": "uygulama açılış.mp4",
+        "cls": "probable_screen",
+        "size": 920204
+      },
+      {
+        "name": "MVI_7403.MP4",
+        "cls": "camera",
+        "size": 365087364
+      },
+      {
+        "name": "Kapak 3.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 669152
+      },
+      {
+        "name": "Kapak 2.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 591222
+      },
+      {
+        "name": "Kapak 1.png",
+        "cls": "non_video",
+        "sub": "KAPAK",
+        "size": 623885
+      }
+    ],
+    "errors": []
+  }
+}

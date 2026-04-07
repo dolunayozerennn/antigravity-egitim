@@ -1,0 +1,54 @@
+{
+  "last_updated": "2026-03-11T17:14:17.407539",
+  "overall_grade": "C",
+  "template_updates": [
+    {
+      "template_name": "CREATIVE_SOURCING_RESPONSE",
+      "current_issue": "Template does not include placeholders for payout details or audience segment.",
+      "suggested_change": "Introduce {{payout_detail}} and {{audience_segment}} tokens and require them to be populated when available."
+    },
+    {
+      "template_name": "INFLUENCER_PROGRAM_ONBOARDING",
+      "current_issue": "No validation that the greeting uses the proper name.",
+      "suggested_change": "Replace greeting line with \"Hi {{first_name}},\" and enforce name extraction from email metadata."
+    },
+    {
+      "template_name": "UNKNOWN_INTENT_FALLBACK",
+      "current_issue": "Absent; AI defaults to onboarding steps even when irrelevant.",
+      "suggested_change": "Add a fallback template that asks for clarification: \"Hi {{first_name}}, could you please let me know which aspect of the program you'd like more information on?\""
+    }
+  ],
+  "knowledge_gaps": [
+    "Detailed understanding of Sweatcoin's performance‑based payout structure and typical payout ranges.",
+    "Creator audience segmentation (e.g., gaming, Roblox, lifestyle) and how to reference it in pitches.",
+    "Brand‑specific terminology such as \"Influencer Hub\" vs \"Creator Program\" and when each applies.",
+    "Handling of ambiguous subject lines that contain emojis or informal language."
+  ],
+  "high_priority_fixes": [
+    {
+      "issue": "Loss of key persuasive details (payout figures, audience info)",
+      "fix": "Add a post‑generation validation step that checks the AI draft against the human reference for missing numeric or audience‑specific tokens and reinserts them.",
+      "impact": "high"
+    },
+    {
+      "issue": "Incorrect greeting using handles",
+      "fix": "Implement a name‑resolution routine: if a proper name is present in the original email metadata, force the template to use that name; otherwise fall back to the handle.",
+      "impact": "high"
+    },
+    {
+      "issue": "Intent misclassification for ambiguous or UNKNOWN thread types",
+      "fix": "Enhance the intent classifier with a fallback \"REQUEST_CLARIFICATION\" label and train on examples where the creator asks about budget or program details.",
+      "impact": "medium"
+    },
+    {
+      "issue": "Providing irrelevant onboarding steps for CREATIVE_SOURCING inquiries",
+      "fix": "Create separate response templates for CREATIVE_SOURCING vs INFLUENCER_PROGRAM and enforce template selection based on both detected type and intent confidence thresholds.",
+      "impact": "medium"
+    },
+    {
+      "issue": "Missing branding/signature elements",
+      "fix": "Add a mandatory signature placeholder (e.g., \"{{agent_signature}}\") to every template and verify its presence before finalizing the draft.",
+      "impact": "low"
+    }
+  ]
+}

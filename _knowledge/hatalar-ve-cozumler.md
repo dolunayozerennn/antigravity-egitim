@@ -329,3 +329,17 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
   3. Sistem bağımlılığı gerektiren her projede `config.py`'da `_check_system_deps()` ile fail-fast kontrolü ZORUNLUDUR
   4. Deploy workflow'unda (Adım 2.5.7) nixpacks.toml varlığı ve legacy dosya kontrolü yapılır
 - **Tarih:** Nisan 2026
+
+### Nixpacks ffmpeg PATH Kaybı — `shutil.which` Bulur Ama `subprocess.run` Bulamaz (ALT SORUN)
+- **Sorun:** `nixpacks.toml` doğru, build SUCCESS, `config.py`'deki `shutil.which("ffmpeg")` fail-fast kontrolü **geçiyor** (BOOT ERROR yok), AMA `video_processor.py`'deki `subprocess.run(["ffmpeg", ...])` çağrısı `FileNotFoundError: [Errno 2] No such file or directory: 'ffmpeg'` hatası veriyor.
+- **Kök Neden:** Nixpacks, ffmpeg'i `/root/.nix-profile/bin/` altına kuruyor. Ana Python process bu PATH'i görüyor (`shutil.which` başarılı), ama `subprocess.run` child process spawn ederken bazı durumlarda nix PATH'i miras alamıyor.
+- **Çözüm:** `video_processor.py`'de bare `"ffmpeg"` string'i yerine modül load sırasında `shutil.which("ffmpeg")` ile resolve edilen **absolute path** kullanılır:
+  ```python
+  import shutil
+  _FFMPEG_BIN = shutil.which("ffmpeg") or "ffmpeg"
+  # subprocess.run([_FFMPEG_BIN, "-y", "-i", ...])
+  ```
+- **Etkilenen Projeler:** `Twitter_Video_Paylasim`, `LinkedIn_Video_Paylasim`
+- **Kural:** Railway/Nixpacks'ta sistem binary'leri (`ffmpeg`, `imagemagick` vb.) her zaman `shutil.which()` ile resolve edilmiş absolute path ile çağrılmalı. Bare binary adı kullanma.
+- **Tarih:** 5 Nisan 2026
+

@@ -231,7 +231,7 @@ async def process_message(user_text: str) -> dict:
 async def chat_reply(user_text: str) -> str:
     """Video üretimi sırasında sohbet cevabı."""
     response = await openai_client.chat.completions.create(
-        model="gpt-4.1-mini",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": SYSTEM_CHAT_DURING_GEN},
             {"role": "user", "content": user_text},

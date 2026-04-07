@@ -107,7 +107,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/marka-is-birligi`
 - **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-04-02 (stabilize: Apify key rotasyonu 9-key + maliyet opt 15→4 reels, docstring saat fix UTC04=TR07, reporter print→logging.error fix)
+- **Son Deploy:** 2026-04-06 (fix: YouTube URL filtreleme — Apify actor sadece Instagram URL kabul ediyor, karışık URL'ler 400 Bad Request hatasına yol açıyordu)
 - **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — Notion state + ops_logger)
 
 ---
@@ -175,7 +175,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Twitter_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 8,11,14 * * *` (Günde 3 kez, UTC 08/11/14 = TR 11/14/17)
-- **Son Deploy:** 2026-04-01 (fix: yt-dlp 2024.3.10→2026.3.17 TikTok API uyum, NOTION_TOKEN→NOTION_SOCIAL_TOKEN düzeltmesi)
+- **Son Deploy:** 2026-04-06 (fix: ffmpeg-full nix pkg + multi-fallback binary path resolution — shutil.which + nix-profile + nix-store glob)
 - **Durum:** ✅ Aktif (TikTok→X/Twitter video pipeline, günde 3 kez)
 - **Env Vars:** NOTION_SOCIAL_TOKEN, NOTION_TWITTER_DB_ID, X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
 
