@@ -36,7 +36,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
 - **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
-- **Son Deploy:** 2026-04-04 (Config güncellemesi: Nisan-2026 sekmesi okumaya eklendi)
+- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
 
 ---
@@ -65,7 +65,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
 - **Start Komutu:** `python unified_worker.py`
 - **Cron Schedule:** `0 6,12,18 * * *` (Günde 3 kez: 09:00, 15:00, 21:00 TR)
-- **Son Deploy:** 2026-04-01 (bugfix: check_covers_exist → count_existing_covers, kısmi kapak üretimi desteği eklendi)
+- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (Kapak üretimi + revizyon kontrolü tek worker'da birleştirildi)
 
 ### revizyon-cron ⛔ (KALDIRILDI — unified_worker'a taşındı)
@@ -83,7 +83,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/isbirligi-tahsilat-takip`
 - **Lokal Klasör:** `Projeler/Isbirligi_Tahsilat_Takip/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-21 (migration: Notion Workspace değiştirildi — smoke test ✅)
+- **Son Deploy:** 2026-04-02 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (Notion-based state, Gmail API OAuth2 e-posta)
 
 ---
@@ -109,7 +109,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/akilli-watchdog`
 - **Lokal Klasör:** `Projeler/Akilli_Watchdog/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-03-27 (v3.0: Token freshness kontrolü + Railway deployment probe + 9 servis izleme)
+- **Son Deploy:** 2026-04-05 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (Günde 1 kez çalışır — UTC 00:00. Token expire takibi + Railway health check eklendi.)
 - **Env Vars:** GROQ_API_KEY, NOTION_API_TOKEN, NOTION_SOCIAL_TOKEN, GOOGLE_OUTREACH_TOKEN_JSON, GOOGLE_SERVICE_ACCOUNT_JSON, RAILWAY_TOKEN
 
@@ -134,7 +134,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 10 * * *` (Günlük, UTC 10:00 = TR 13:00)
-- **Son Deploy:** 2026-04-03 (fix: fail-safe condition in Notion API check updated & log messages clarified)
+- **Son Deploy:** 2026-04-05 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (TikTok→LinkedIn video pipeline, günde 1 kez)
 - **Env Vars:** LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
 
@@ -149,7 +149,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Text_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 8 * * 1,4` (Haftada 2, UTC 08:00 Pazartesi+Perşembe = TR 11:00)
-- **Son Deploy:** 2026-04-03 (fix: Gemini api error fixed by updating model endpoint from gemini-2.0-flash-exp to gemini-2.0-flash)
+- **Son Deploy:** 2026-04-07 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (Haftalık AI Haberleri + AI Tavsiyesi LinkedIn postu)
 - **Env Vars:** PERPLEXITY_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
 
@@ -164,7 +164,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Twitter_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 8,11,14 * * *` (Günde 3 kez, UTC 08/11/14 = TR 11/14/17)
-- **Son Deploy:** 2026-04-06 (fix: ffmpeg-full nix pkg + multi-fallback binary path resolution — shutil.which + nix-profile + nix-store glob)
+- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (TikTok→X/Twitter video pipeline, günde 3 kez)
 - **Env Vars:** NOTION_SOCIAL_TOKEN, NOTION_TWITTER_DB_ID, X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
 
@@ -180,7 +180,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Blog_Yazici/`
 - **Start Komutu:** `python run_pipeline.py --from-notion`
 - **Cron Schedule:** `0 3 * * *` (Günlük, UTC 03:00)
-- **Son Deploy:** 2026-04-01 (fix: Netlify build hook eklendi, bare except→except Exception düzeltmesi)
+- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (Günlük UTC 03:00, Notion'dan yeni "Yayınlandı" videoları seçip otomatik blog üretip dolunay.ai'ye publish eder)
 - **Env Vars:** GROQ_API_KEY, GEMINI_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64), GITHUB_TOKEN
 
@@ -193,9 +193,10 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Environment ID:** `6f09ea79-49b6-4414-b820-6c83d5bd31cb`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Supplement_Telegram_Bot/`)
 - **Lokal Klasör:** `Projeler/Supplement_Telegram_Bot/`
-- **Son Deploy:** 2026-03-31 (SUCCESS)
+- **Son Deploy:** 2026-03-31 (SUCCESS — Railway API doğrulandı)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — takviye takibi)
 - **Not:** Eğitim amaçlı paylaşılan kopyası: `Paylasilan_Projeler/Supplement_Telegram_Bot_Taslak/`
+- **⚠️ DİKKAT:** Lokal klasör `Paylasilan_Projeler/Supplement_Telegram_Bot_Taslak/` dosyalarından oluşturuldu (2026-04-08). GitHub monorepo'ya henüz push edilmedi — bir sonraki push ile senkronize olacak.
 
 ---
 
@@ -204,8 +205,11 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `586a7bf6-1787-4d3a-af13-1e1730ee5a15`
 - **Service ID:** `b15ae2ea-87b0-4818-bb6c-c8f7458817e3`
 - **Environment ID:** `fe917cd2-511f-4e73-9b75-b77ce28d16ae`
-- **Son Deploy:** 2026-04-01 (SUCCESS)
-- **Durum:** ✅ Aktif (YouTube thumbnail üretim worker'ı)
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Dolunay_YouTube_Kapak/`)
+- **Lokal Klasör:** `Projeler/Dolunay_YouTube_Kapak/`
+- **Start Komutu:** `python main.py`
+- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
+- **Durum:** ✅ Aktif (YouTube thumbnail üretim worker'ı — 10 dk loop ile sürekli çalışır)
 - **Not:** 3 adet duplikasyon projesi temizlendi (93de, ab22, b3f0 — hepsi FAILED)
 
 ---

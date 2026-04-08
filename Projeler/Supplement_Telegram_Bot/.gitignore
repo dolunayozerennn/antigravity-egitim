@@ -1,0 +1,22 @@
+# Ortam değişkenleri (hassas bilgiler)
+.env
+*.env
+credentials.env
+token.json
+credentials.json
+api-anahtarlari.md
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Sistem
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+.cursor/
