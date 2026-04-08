@@ -54,18 +54,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-### sweatcoin-email-automation
-- **Platform:** `railway`
-- **Railway Project ID:** `0c1ff084-c7a2-4e46-8372-2fb9c58ec6e4`
-- **Service ID:** `08224222-4d79-43ec-b649-1a8ac4c8c8ad`
-- **Environment ID:** `6b719f66-e9a6-45d3-81b5-a566fabb829f`
-- **GitHub Repo:** `dolunayozerennn/sweatcoin-email-automation`
-- **Lokal Klasör:** `Projeler/Swc_Email_Responder/`
-- **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-03-23 (fix: is_team_email domain regex bug fixed to preserve internal emails)
-- **Durum:** ✅ Aktif (v2.7: is_team_email fix, Railway Cron geçişi yapıldı, schedule: 0 7,11,15 * * 1-5)
 
----
 
 ### dolunay-reels-kapak (Unified Worker)
 - **Platform:** `railway-cron`
@@ -226,7 +215,6 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 | Proje | Klasör | Platform | Son Değişiklik | Durum | Not |
 |-------|--------|----------|----------------|-------|-----|
 | Dubai Emlak İçerik | `Projeler/Dubai_Emlak_İçerik_Yazarı/` | `local-only` | 2026-03-09 | ⏸️ Askıda | Script koleksiyonu (transcript, currency, calculator). Deploy planı yok, geliştirme aşamasında |
-| Emlak Arazi Drone | `Projeler/Emlak_Arazi_Drone_Çekim/` | `local-only` | 2026-03-14 | ⏸️ Askıda | Kie AI + Unsplash tabanlı video üretimi. Lokal çalıştırılabilir ama deploy edilmemiş |
 
 ---
 
@@ -253,3 +241,5 @@ Aşağıdaki projeler ilerleyen dönemde platformdan silinmek üzere işaretlenm
 - ~~`linkedin-paylasim`~~ (`9aec063f`) — Hayalet, linkedin-text + linkedin-video olarak ayrılmıştı. **SİLİNDİ** (2026-04-03)
 - ~~`Twitter_Paylasim`~~ (`9b8a5927`) — Hayalet, twitter-video-cron ile duplike. **SİLİNDİ** (2026-04-03)
 - ~~`marka-is-birligi (boş)`~~ (`0522fff5`) — Boş proje. Aktif: `6994adc2`. **SİLİNDİ** (2026-04-03)
+- ~~`sweatcoin-email-automation`~~ (`0c1ff084`) — Proje tamamen kapatıldı, Railway'den silindi, lokal arşive taşındı. **SİLİNDİ** (2026-04-08)
+- ~~`Emlak Arazi Drone Çekim`~~ — Local-only proje, hiç deploy edilmemişti. Lokal arşive taşındı. **ARŞİVLENDİ** (2026-04-08)

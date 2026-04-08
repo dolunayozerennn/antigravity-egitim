@@ -159,6 +159,37 @@ Re-deploy ise:
 
 **⚠️ BU ADIM ATLANILAMAZ. HER PUSH'TAN ÖNCE ÇALIŞTIRILMALIDIR.**
 
+## Adım 2.9: 🐳 DOCKER SİMÜLASYON TESTİ (ÖNERİLEN)
+
+> **Railway'de çökecek hataları lokal'de yakala.** Sistem bağımlılığı olan projeler (ffmpeg, chromium vb.) için KRİTİK.
+
+Docker Desktop mevcutsa ve proje sistem bağımlılığı kullanıyorsa:
+
+```bash
+cd PROJE_KLASÖRÜ
+
+# 1. Proje için minimal Dockerfile oluştur (yoksa)
+cat > /tmp/Dockerfile.railtest << 'EOF'
+FROM python:3.11-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "main.py", "--dry-run"]
+EOF
+
+# 2. Build & çalıştır (env var'ları mock olarak ver)
+docker build -t railtest -f /tmp/Dockerfile.railtest .
+docker run --rm -e ENV=development railtest
+```
+
+- Build hatası varsa → requirements.txt veya sistem bağımlılığı eksik
+- Runtime hatası varsa → path/config sorunu
+- `--dry-run` flag'i yoksa → `python -c "import main"` ile sadece import testi yap
+
+**⚠️ NOT:** Docker Desktop yoksa veya proje sistem bağımlılığı kullanmıyorsa bu adım ATLANABİLİR.
+
 ## Adım 3: GitHub'a Push (Native Mono-Repo)
 
 > **DİKKAT:** Sistemin mimarisi Native Mono-Repo'ya geçmiştir. Railway için ayrı GitHub reposu OLUŞTURULMAZ. Tüm kod `dolunayozerennn/antigravity-egitim` üzerinde yaşar.
@@ -291,33 +322,70 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 
 **⚠️ BU ADIM ATLANILAMAZ. HER DEPLOY SONRASI ÇALIŞTIRILMALIDIR.**
 
+## Adım 7.9: 🛡️ STABİLİZE-LITE (ZORUNLU — ATLANAMAZ, ~5 dk)
+
+> **Her deploy sonrası çalışan minimum kalite kontrolü. Tam `/stabilize` yerine bu yeterlidir.**
+
+### Kontrol 1: Deploy Status
+- Railway GraphQL → Son deployment status `SUCCESS` mi?
+- Değilse → log oku, düzelt, tekrar deploy
+
+### Kontrol 2: Runtime Log Taraması
+```bash
+# Son 100 log satırında fatal error ara
+curl -s -X POST https://backboard.railway.app/graphql/v2 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"query": "{ deploymentLogs(deploymentId: \"DEPLOYMENT_ID\", limit: 100) { message severity timestamp } }"}'
+```
+Fatal pattern'ler: `Traceback`, `ImportError`, `SyntaxError`, `AttributeError`, `Process exited with code 1`
+
+### Kontrol 3: Env Var Doğrulama
+- Proje klasöründe `.env.example` veya `config.py` varsa → oradaki tüm env key'lerinin Railway'de tanımlı olduğunu doğrula
+
+### Kontrol 4: Cron Tetiklemesi (Sadece cron projeler)
+- Cron projesi ise → Railway'den manuel redeploy/tetikleme yap
+- 90 sn bekle → tekrar log kontrol et
+- Cron değilse → bu adımı atla
+
+### Kontrol 5: Platform Checklist
+- `_knowledge/platform-checklists/railway.md` → ilgili bölümleri hızlıca kontrol et
+
+**⚠️ BU 5 KONTROL ATLANAMAZ. Bunları geçmeyen deploy "tamamlandı" SAYILMAZ.**
+
 ## Adım 8: Kayıt ve Rapor
 
-1. `_knowledge/deploy-registry.md` dosyasına proje bilgilerini ekle
+1. `_knowledge/deploy-registry.md` dosyasına proje bilgilerini ekle/güncelle
 2. Kullanıcıya rapor ver:
 
 ```
 ✅ Production Deploy Tamamlandı!
 
 📦 Proje: [Proje Adı]
-🔗 GitHub: github.com/dolunayozerennn/repo-adi (private)
+🔗 GitHub: github.com/dolunayozerennn/antigravity-egitim (mono-repo)
 🚂 Railway: https://railway.app/project/PROJE_ID
 🔒 Güvenlik: API key'ler environment variable olarak ayarlandı
-🧪 Testler: X/X geçti
-🔍 Smoke Test: ✅ Loglar temiz
+🧪 Pre-push testler: ✅ Geçti
+🛡️ Stabilize-Lite: ✅ 5/5 kontrol geçti
 
 Durum: 7/24 aktif çalışıyor ✨
 ```
 
-## Adım 9: ⚠️ Stabilizasyon Önerisi (ZORUNLU)
+## Adım 9: 📡 48-Saat İzleme Kaydı (ZORUNLU)
 
-> Deploy tamamlandıktan sonra aşağıdaki mesajı **her zaman** kullanıcıya göster:
+> Her deploy sonrası `bekleyen-gorevler.md`'ye izleme kaydı eklenir. Sonraki konuşmalarda otomatik takip edilir.
 
+`_knowledge/bekleyen-gorevler.md`'ye şu entry'yi ekle:
+```markdown
+### 🟡 48-Saat İzleme — [PROJE_ADI]
+- **Deploy tarihi:** [tarih]
+- **İzleme bitiş:** [tarih+48h]
+- **Kontrol 1:** ⏳ Bekliyor (ilk konuşmada Railway logları kontrol edilecek)
+- **Kontrol 2:** ⏳ Bekliyor
+- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 ```
-⚠️ Deploy tamamlandı. Kapsamlı stabilizasyon için `/stabilize <PROJE_ADI>` çalıştırmanızı öneriyorum.
-Bu, 21 kontrol noktasından geçirerek projenin production-ready olduğunu garanti eder.
-```
 
-> Kullanıcı onaylarsa → `/stabilize` workflow'unu hemen başlat.
-> Stabilize çalıştırılmadan deploy tam anlamıyla "tamamlanmış" SAYILMAZ.
+> ⚠️ İzleme süresi dolana kadar görev `bekleyen-gorevler.md`'de kalır.
+> Her konuşma başında bu dosya okunduğunda, izleme görevleri için Railway logları kontrol edilir.
+> 2 ardışık temiz kontrol sonrası görev arşive taşınır.
 

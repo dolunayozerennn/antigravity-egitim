@@ -4,13 +4,22 @@
 > Yarım kalan işler, TODO'lar ve takip gereken konular burada tutulur.
 > Görev tamamlandığında bu dosyadan silinir.
 
-**Son güncelleme:** 3 Nisan 2026
+**Son güncelleme:** 7 Nisan 2026
 
 ---
 
 ## Aktif TODO'lar
 
 _Şu an bekleyen görev bulunmamaktadır._
+
+---
+
+## 📡 48-Saat İzleme (Aktif Takip)
+
+> Deploy sonrası eklenen izleme kayıtları burada tutulur.
+> Her konuşma başında bu bölüm kontrol edilir — izleme süresi dolmuş ve 2 temiz kontrol geçilmişse arşive taşınır.
+
+_Şu an aktif izleme bulunmamaktadır._
 
 ---
 
@@ -38,4 +47,14 @@ _Şu an bekleyen görev bulunmamaktadır._
 > - **Açıklama:** [Ne yapılması gerekiyor]
 > - **Öncelik:** Yüksek / Orta / Düşük
 > - **Durum:** Planlandı / Devam ediyor / Bloke
+> ```
+>
+> **48-Saat İzleme Format:**
+> ```
+> ### 🟡 48-Saat İzleme — [PROJE_ADI]
+> - **Deploy tarihi:** [tarih]
+> - **İzleme bitiş:** [tarih+48h]
+> - **Kontrol 1:** ⏳/✅/❌ [tarih — sonuç]
+> - **Kontrol 2:** ⏳/✅/❌ [tarih — sonuç]
+> - **Sonuç:** 2 temiz kontrol → arşive taşı
 > ```

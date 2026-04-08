@@ -207,3 +207,112 @@ Bu workflow, syntax/import kontrolü, README güncelliği, git sync, deploy smok
 | Sistem binary'si kontrolü | `config.py` → `self._check_system_deps(["ffmpeg"])` (fail-fast) |
 
 **Detaylar:** `_knowledge/hatalar-ve-cozumler.md` → "Nixpacks vs Aptfile/apt.txt Uyumsuzluğu"
+
+## 🔍 Hata Düzeltme Protokolü (ZORUNLU — Nisan 2026+)
+
+> **Hata raporlandığında HEMEN koda dalma. Önce analiz, sonra plan, sonra fix.**
+
+1. **3-Soru Analizi (fix yazmadan ÖNCE):**
+   - Bu hata TAM OLARAK nereden kaynaklanıyor? (kök neden, semptom değil)
+   - Bu fix başka nereleri etkiler? (`grep` ile tüm referansları tara)
+   - Bu hata tipi `hatalar-ve-cozumler.md`'de var mı? (varsa o çözümü uygula)
+2. **Çözüm planını kullanıcıya sun** → Onay al → Fix uygula
+3. **Fix sonrası → tüm etkilenen yerleri test et**
+4. **Yeni pattern ise → `hatalar-ve-cozumler.md`'ye ekle**
+
+**Detaylı workflow:** `_agents/workflows/hata-duzeltme.md`
+
+## 🎯 Küçük Parça Prensibi (ZORUNLU — Nisan 2026+)
+
+> **Büyük değişiklik yapıp sonunda test etme. Her parçayı ayrı test et.**
+
+- Her değişiklik maks 1 dosya veya 1 fonksiyon kapsamında olmalı
+- Push öncesi her dosya değişikliğini ayrı ayrı test et
+- 3'ten fazla dosya değişiyorsa → kullanıcıya "Bu değişikliği X parçaya bölmemi öneriyorum" de
+- Her parça bittikten sonra → syntax + import testi çalıştır
+
+## 🛡️ Stabilize-Lite + 48-Saat İzleme (ZORUNLU — Nisan 2026+)
+
+> **Her deploy sonrası 5 dakikalık zorunlu minimum kontrol + 48 saat izleme.**
+
+### Stabilize-Lite (5 kontrol, her deploy'da ZORUNLU):
+1. Deploy status → SUCCESS mi?
+2. Son 100 log'da fatal error var mı?
+3. Tüm env var'lar Railway'de tanımlı mı?
+4. Cron ise → manuel tetikle, 90 sn bekle, log kontrol et
+5. Platform checklist → `_knowledge/platform-checklists/railway.md` kontrol et
+
+### 48-Saat İzleme:
+- Deploy sonrası `bekleyen-gorevler.md`'ye izleme kaydı eklenir
+- Sonraki konuşmalarda Railway logları kontrol edilir
+- 2 ardışık temiz kontrol → izleme kapatılır
+
+**Detaylı workflow:** `_agents/workflows/canli-yayina-al.md` → Adım 7.9 ve 9
+
+## 📋 Platform Kontrol Listeleri (ZORUNLU — Nisan 2026+)
+
+> **Yeni proje kurarken ve Railway'de hata düzeltirken bu listeyi KONTROL ET.**
+
+- **Railway:** `_knowledge/platform-checklists/railway.md`
+- İleride Netlify vb. için de oluşturulabilir
+
+## 📊 Görev Raporu (ZORUNLU — Nisan 2026+)
+
+> **Her görev tamamlandığında kullanıcıya teknik olmayan, anlaşılır bir rapor sunulur.**
+> Kullanıcı kodlama bilmez — sonucu, durumu ve aksiyonu anlayabileceği formatta öğrenmelidir.
+
+### Rapor Formatı:
+```
+📋 GÖREV RAPORU — [Proje/Görev Adı]
+
+🎯 Ne yapıldı: [1 cümleyle açıklama]
+
+✅ Çalışıyor mu?
+   - Yayına alındı mı? → Evet/Hayır
+   - Gerçekten çalışıyor mu? → Evet (log'da hata yok) / Hayır (şu hata var)
+   - Bekleyen risk var mı? → Yok / "48 saat izlemeye alındı"
+
+⚡ Bir şey yapman gerekiyor mu? → Hayır / Evet: [basit talimat]
+
+🔢 Kalite Skoru: X/5
+   1. Kod hatasız mı? ✅/❌
+   2. Doğru çalışıyor mu? ✅/❌
+   3. Güvenli mi (şifre sızdırmaz)? ✅/❌
+   4. Başka projeleri bozmuyor mu? ✅/❌
+   5. İzlemeye alındı mı? ✅/❌
+```
+
+### Kurallar:
+- **Deploy görevlerinde:** Rapor ZORUNLU
+- **Hata düzeltme görevlerinde:** Rapor ZORUNLU
+- **Basit bilgi sorularında:** Rapor gerekmez
+- Kalite skoru 5/5 değilse → eksik maddeyi açıkla ve çözüm öner
+
+## 🔭 Pipeline Gözlemlenebilirlik (ZORUNLU — Nisan 2026+)
+
+> **Çok adımlı projeler "kapalı kutu" olmamalı.**
+> Kullanıcı, pipeline'ın hangi adımında ne olduğunu görebilmeli.
+
+### Prensip:
+Kullanıcı kodlama bilmiyor. Bir proje 6 adımlı bir pipeline çalıştırıyorsa ve sonuç hatalıysa, kullanıcı hatanın hangi adımda oluştuğunu bilemez. Bu yüzden:
+
+1. **Her çok adımlı proje (3+ adım)**, her adımın başarı/başarısızlık durumunu gözlemlenebilir bir yere yazmalı
+2. **Hedef:** Notion Operations Log DB (`33095514-0a32-81b4-858a-ff81a77b6d48`)
+3. **Minimum log formatı:** Proje adı, çalışma tarihi, adım adım durum (✅/❌), hata mesajı (varsa), toplam süre
+
+### Uygulama Kuralları:
+- **Yeni projeler:** `pipeline_logger.py` modülü ile başlat (V2 Starter şablonuna eklenecek)
+- **Mevcut projeler:** Peyderpey ekle — tek seferde hepsini değiştirme (Küçük Parça Prensibi)
+- **Log seviyesi:** P1 (kritik hatalar) Notion'a yazılır + Telegram bildirimi. P2 (uyarılar) sadece Notion'a yazılır
+- **Railway logları yeterli mi?** HAYIR — kullanıcı Railway dashboard'a girip log okuyamaz. Notion'a yazılması ZORUNLU
+
+### Notion Operations Log DB Şeması (Minimum):
+| Property | Tip | Açıklama |
+|---|---|---|
+| Proje | Title | Pipeline'ın adı |
+| Tarih | Date | Çalışma tarihi/saati |
+| Durum | Select | ✅ Başarılı / ❌ Başarısız / ⚠️ Kısmi |
+| Adımlar | Rich Text | Adım adım durum özeti |
+| Hata | Rich Text | Hata mesajı (varsa) |
+| Süre | Number | Toplam çalışma süresi (saniye) |
+

@@ -59,6 +59,20 @@ def process_ready_videos():
         script_content = video.get('script_text', '')
         topic = video['name']
         
+        # Select ONE cutout for this entire video (all 6 variants use the same face)
+        # This prevents face identity drift between variants (learnings Rule 17)
+        cutout_name = random.choice(available_cutouts)
+        cutout_path = os.path.join(cutout_dir, cutout_name)
+        
+        # Prepare extra reference cutouts for stronger face identity locking
+        other_cutouts = [f for f in available_cutouts if f != cutout_name]
+        extra_cutout_paths = [
+            os.path.join(cutout_dir, c) 
+            for c in random.sample(other_cutouts, min(2, len(other_cutouts)))
+        ] if other_cutouts else []
+        
+        print(f"🧑 Cutout: {cutout_name} (+{len(extra_cutout_paths)} extra refs)")
+        
         # Generate 3 different themes via Gemini
         themes = generate_three_themes(topic, script_content)
         
@@ -72,7 +86,7 @@ def process_ready_videos():
         # For each theme, generate 2 variants
         for t_idx, theme in enumerate(themes, 1):
             theme_name = theme.get("theme_name", f"theme{t_idx}")
-            cover_text = theme.get("cover_text", "BUNU İZLE")
+            cover_text = theme.get("cover_text", topic.upper())
             scene_description = theme.get("scene_description", "")
             
             print(f"\n  ── Tema {t_idx}/{len(themes)}: {theme_name.upper()} ──")
@@ -83,10 +97,6 @@ def process_ready_videos():
             
             for v_idx in range(1, 3):  # 2 variants per theme
                 print(f"\n     🎨 Varyasyon {v_idx}/2 üretiliyor...")
-                
-                # Select a random cutout
-                cutout_name = random.choice(available_cutouts)
-                cutout_path = os.path.join(cutout_dir, cutout_name)
                 
                 safe_video_name = "".join([c for c in video['name'] if c.isalpha() or c.isdigit() or c==' ']).rstrip()
                 final_cover_filename = f"{safe_video_name} KAPAK T{t_idx}_{theme_name}_V{v_idx}.png"
@@ -100,7 +110,8 @@ def process_ready_videos():
                     max_retries=2,
                     variant_index=v_idx,
                     script_text=script_content,
-                    scene_description=scene_description
+                    scene_description=scene_description,
+                    extra_cutout_paths=extra_cutout_paths
                 )
                 
                 if not success:

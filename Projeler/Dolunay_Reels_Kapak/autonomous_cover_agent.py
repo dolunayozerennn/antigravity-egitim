@@ -65,7 +65,8 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
         "model": "nano-banana-pro",
         "input": {
             "prompt": prompt,
-            "aspect_ratio": "9:16"
+            "aspect_ratio": "9:16",
+            "image_input": image_inputs
         }
     }
     
@@ -234,13 +235,20 @@ def generate_three_themes(video_name: str, script_text: str) -> list:
     Kullanım: 3 tema × 2 varyasyon = 6 kapak.
     """
     print(f"🧠 Generating 3 themes via Gemini (Video: {video_name})...")
-    if not client or not script_text:
-        print("WARNING: No Gemini client or no script. Using generic fallback themes.")
-        return [
-            {"theme_name": "fallback1", "cover_text": "BUNU İZLE", "scene_description": "A dramatic cinematic portrait with intense lighting."},
-            {"theme_name": "fallback2", "cover_text": "İNANILMAZ", "scene_description": "A mysterious moody scene with neon reflections."},
-            {"theme_name": "fallback3", "cover_text": "HERKES ŞAŞIRDI", "scene_description": "An empowering dynamic shot with dramatic perspective."},
-        ]
+    if not client:
+        raise EnvironmentError(
+            "CRITICAL: Gemini client not initialized. Check GEMINI_API_KEY env variable. "
+            "Cannot generate themes without AI — aborting pipeline."
+        )
+    
+    if not script_text or len(script_text.strip()) < 20:
+        print(f"⚠️ WARNING: Script too short or empty for '{video_name}' ({len(script_text.strip()) if script_text else 0} chars)")
+        print(f"   Generating themes from video name context instead...")
+        script_text = (
+            f"Video başlığı: {video_name}. "
+            f"Bu başlıktan yola çıkarak Türkçe, dikkat çekici ve videonun konusuyla ilgili "
+            f"yaratıcı kapak metinleri üret. Video adını doğrudan kullanma."
+        )
 
     prompt = f"""
     You are an expert Turkish social media strategist for short-form videos (Reels/TikTok/Shorts).
@@ -308,12 +316,9 @@ def generate_three_themes(video_name: str, script_text: str) -> list:
             return parsed[:3]
         return [parsed]
     except Exception as e:
-        print(f"Error generating themes: {e}")
-        return [
-            {"theme_name": "fallback1", "cover_text": "BUNU İZLE", "scene_description": "A dramatic cinematic portrait."},
-            {"theme_name": "fallback2", "cover_text": "İNANILMAZ", "scene_description": "A mysterious moody scene."},
-            {"theme_name": "fallback3", "cover_text": "HERKES ŞAŞIRDI", "scene_description": "An empowering dynamic shot."},
-        ]
+        print(f"❌ CRITICAL: Failed to generate themes via Gemini: {e}")
+        print(f"   Cannot proceed with generic fallback — aborting to prevent low-quality covers.")
+        raise RuntimeError(f"Gemini theme generation failed for '{video_name}': {e}") from e
 
 
 # Keep backward compatibility
