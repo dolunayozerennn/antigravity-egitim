@@ -15,8 +15,26 @@ class Config:
         self.IS_DRY_RUN = self.ENV == "development" or os.environ.get("DRY_RUN", "0") == "1"
 
         # System dependency check: ffmpeg is critical for video processing
-        if not shutil.which("ffmpeg"):
+        # On Railway/Nixpacks, ffmpeg may not be on PATH but exists under /nix/store
+        import glob
+        ffmpeg_found = shutil.which("ffmpeg")
+        if not ffmpeg_found:
+            # Fallback: check common Nixpacks locations
+            for candidate in [
+                "/root/.nix-profile/bin/ffmpeg",
+                "/nix/var/nix/profiles/default/bin/ffmpeg",
+            ]:
+                if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                    ffmpeg_found = candidate
+                    break
+        if not ffmpeg_found:
+            # Last resort: glob search through /nix/store
+            matches = glob.glob("/nix/store/*/bin/ffmpeg")
+            if matches:
+                ffmpeg_found = matches[0]
+        if not ffmpeg_found:
             raise EnvironmentError("CRITICAL STARTUP FAILURE: ffmpeg binary bulunamadı! nixpacks.toml doğru yapılandırılmalı.")
+        print(f"✅ ffmpeg found at: {ffmpeg_found}")
         
         # Notion
         self.NOTION_TOKEN = self._require_env("NOTION_SOCIAL_TOKEN")
