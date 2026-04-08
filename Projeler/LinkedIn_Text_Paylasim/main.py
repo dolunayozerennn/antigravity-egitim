@@ -15,11 +15,14 @@ import time
 import schedule
 
 from logger import setup_logging
+from ops_logger import get_ops_logger
 from core.researcher import Researcher
 from core.post_writer import PostWriter
 from core.image_generator import ImageGenerator
 from core.linkedin_publisher import LinkedInPublisher
 from core.notion_logger import NotionLogger
+
+ops = get_ops_logger("LinkedIn_Text_Paylasim", "Pipeline")
 
 
 def run_weekly_news():
@@ -27,9 +30,7 @@ def run_weekly_news():
     Workflow 1: Haftanın AI Haberleri — Her Pazartesi
     n8n: "LinkedIn Automation - Onaysız"
     """
-    logging.info("=" * 60)
-    logging.info("WORKFLOW 1: Haftanın AI Haberleri başlatılıyor...")
-    logging.info("=" * 60)
+    ops.info("Workflow Başladı", "Haftanın AI Haberleri — Pazartesi pipeline'ı")
 
     post_type = "Haftalık AI Haberleri"
     notion_logger = NotionLogger()
@@ -37,50 +38,47 @@ def run_weekly_news():
     try:
         # Duplicate kontrol
         if notion_logger.is_already_posted_this_week(post_type):
-            logging.info("Bu hafta zaten AI haberleri postu atılmış. Atlanıyor.")
+            ops.info("Duplicate Atlandı", "Bu hafta zaten AI haberleri postu atılmış")
             return
 
         # Step 1: Perplexity ile araştırma
         researcher = Researcher()
-        logging.info("Adım 1/5: Perplexity ile AI haberleri araştırılıyor...")
+        ops.info("Adım 1/5", "Perplexity ile AI haberleri araştırılıyor")
         research_content = researcher.research_weekly_news()
-        logging.info(f"Araştırma tamamlandı ({len(research_content)} karakter)")
+        ops.info("Araştırma Tamamlandı", f"{len(research_content)} karakter")
 
         # Step 2: GPT-4.1 ile post yaz
         writer = PostWriter()
-        logging.info("Adım 2/5: GPT-4.1 ile LinkedIn postu yazılıyor...")
+        ops.info("Adım 2/5", "GPT-4.1 ile LinkedIn postu yazılıyor")
         post_text = writer.write_weekly_news_post(research_content)
-        logging.info(f"Post yazıldı ({len(post_text)} karakter)")
+        ops.info("Post Yazıldı", f"{len(post_text)} karakter")
 
         # Step 3: GPT-4.1-mini ile görsel prompt üret + Gemini ile görsel üret
         img_gen = ImageGenerator()
-        logging.info("Adım 3/5: Görsel prompt üretiliyor + Gemini ile görsel oluşturuluyor...")
+        ops.info("Adım 3/5", "Görsel prompt üretiliyor + Gemini ile görsel oluşturuluyor")
         image_path = img_gen.generate_post_image(post_text)
         if image_path:
-            logging.info(f"Görsel üretildi: {image_path}")
+            ops.info("Görsel Üretildi", image_path)
         else:
-            logging.warning("Görsel üretilemedi, sadece metin post atılacak.")
+            ops.warning("Görsel Üretilemedi", "Sadece metin post atılacak")
 
         # Step 4: LinkedIn'e paylaş
         publisher = LinkedInPublisher()
-        logging.info("Adım 4/5: LinkedIn'e paylaşılıyor...")
+        ops.info("Adım 4/5", "LinkedIn'e paylaşılıyor")
         post_urn = publisher.create_text_image_post(text=post_text, image_path=image_path)
 
         if post_urn:
             linkedin_url = f"https://www.linkedin.com/feed/update/{post_urn}/"
-            logging.info(f"Adım 5/5: Notion'a loglanıyor...")
+            ops.info("Adım 5/5", "Notion'a loglanıyor")
             notion_logger.log_post(
                 post_type=post_type,
                 status="Success",
                 post_text=post_text,
                 linkedin_url=linkedin_url
             )
-            logging.info("=" * 60)
-            logging.info(f"✅ BAŞARILI: AI haberleri postu paylaşıldı!")
-            logging.info(f"LinkedIn URL: {linkedin_url}")
-            logging.info("=" * 60)
+            ops.success("Workflow Tamamlandı", f"AI haberleri postu paylaşıldı — {linkedin_url}")
         else:
-            logging.error("LinkedIn post oluşturulamadı!")
+            ops.error("LinkedIn Post Başarısız", message="LinkedIn API post oluşturma başarısız")
             notion_logger.log_post(
                 post_type=post_type,
                 status="Failed",
@@ -94,7 +92,7 @@ def run_weekly_news():
             logging.info(f"Geçici görsel silindi: {image_path}")
 
     except Exception as e:
-        logging.error(f"FATAL: Haftanın AI haberleri workflow hatası: {e}", exc_info=True)
+        ops.error("FATAL: Haftanın AI Haberleri", exception=e, message=str(e)[:500])
         try:
             notion_logger.log_post(
                 post_type=post_type,
@@ -110,9 +108,7 @@ def run_weekly_tip():
     Workflow 2: Haftalık AI Tavsiyesi — Her Perşembe
     n8n: "LinkedIn AI Tips - Onaysız"
     """
-    logging.info("=" * 60)
-    logging.info("WORKFLOW 2: Haftalık AI Tavsiyesi başlatılıyor...")
-    logging.info("=" * 60)
+    ops.info("Workflow Başladı", "Haftalık AI Tavsiyesi — Perşembe pipeline'ı")
 
     post_type = "Haftalık AI Tavsiyesi"
     notion_logger = NotionLogger()
@@ -120,50 +116,47 @@ def run_weekly_tip():
     try:
         # Duplicate kontrol
         if notion_logger.is_already_posted_this_week(post_type):
-            logging.info("Bu hafta zaten AI tavsiyesi postu atılmış. Atlanıyor.")
+            ops.info("Duplicate Atlandı", "Bu hafta zaten AI tavsiyesi postu atılmış")
             return
 
         # Step 1: Perplexity ile araştırma
         researcher = Researcher()
-        logging.info("Adım 1/5: Perplexity ile AI tavsiyesi araştırılıyor...")
+        ops.info("Adım 1/5", "Perplexity ile AI tavsiyesi araştırılıyor")
         research_content = researcher.research_weekly_tip()
-        logging.info(f"Araştırma tamamlandı ({len(research_content)} karakter)")
+        ops.info("Araştırma Tamamlandı", f"{len(research_content)} karakter")
 
         # Step 2: GPT-4.1 ile post yaz
         writer = PostWriter()
-        logging.info("Adım 2/5: GPT-4.1 ile LinkedIn postu yazılıyor...")
+        ops.info("Adım 2/5", "GPT-4.1 ile LinkedIn postu yazılıyor")
         post_text = writer.write_weekly_tip_post(research_content)
-        logging.info(f"Post yazıldı ({len(post_text)} karakter)")
+        ops.info("Post Yazıldı", f"{len(post_text)} karakter")
 
         # Step 3: GPT-4.1-mini ile görsel prompt üret + Gemini ile görsel üret
         img_gen = ImageGenerator()
-        logging.info("Adım 3/5: Görsel prompt üretiliyor + Gemini ile görsel oluşturuluyor...")
+        ops.info("Adım 3/5", "Görsel prompt üretiliyor + Gemini ile görsel oluşturuluyor")
         image_path = img_gen.generate_post_image(post_text)
         if image_path:
-            logging.info(f"Görsel üretildi: {image_path}")
+            ops.info("Görsel Üretildi", image_path)
         else:
-            logging.warning("Görsel üretilemedi, sadece metin post atılacak.")
+            ops.warning("Görsel Üretilemedi", "Sadece metin post atılacak")
 
         # Step 4: LinkedIn'e paylaş
         publisher = LinkedInPublisher()
-        logging.info("Adım 4/5: LinkedIn'e paylaşılıyor...")
+        ops.info("Adım 4/5", "LinkedIn'e paylaşılıyor")
         post_urn = publisher.create_text_image_post(text=post_text, image_path=image_path)
 
         if post_urn:
             linkedin_url = f"https://www.linkedin.com/feed/update/{post_urn}/"
-            logging.info(f"Adım 5/5: Notion'a loglanıyor...")
+            ops.info("Adım 5/5", "Notion'a loglanıyor")
             notion_logger.log_post(
                 post_type=post_type,
                 status="Success",
                 post_text=post_text,
                 linkedin_url=linkedin_url
             )
-            logging.info("=" * 60)
-            logging.info(f"✅ BAŞARILI: AI tavsiyesi postu paylaşıldı!")
-            logging.info(f"LinkedIn URL: {linkedin_url}")
-            logging.info("=" * 60)
+            ops.success("Workflow Tamamlandı", f"AI tavsiyesi postu paylaşıldı — {linkedin_url}")
         else:
-            logging.error("LinkedIn post oluşturulamadı!")
+            ops.error("LinkedIn Post Başarısız", message="LinkedIn API post oluşturma başarısız")
             notion_logger.log_post(
                 post_type=post_type,
                 status="Failed",
@@ -177,7 +170,7 @@ def run_weekly_tip():
             logging.info(f"Geçici görsel silindi: {image_path}")
 
     except Exception as e:
-        logging.error(f"FATAL: Haftalık AI tavsiyesi workflow hatası: {e}", exc_info=True)
+        ops.error("FATAL: Haftalık AI Tavsiyesi", exception=e, message=str(e)[:500])
         try:
             notion_logger.log_post(
                 post_type=post_type,
@@ -197,8 +190,7 @@ if __name__ == "__main__":
 
     if mode == "schedule":
         # Lokal geliştirme veya sürekli çalışan mod
-        logging.info("LinkedIn_Text_Paylasim started in SCHEDULE mode (local dev).")
-        logging.info("Zamanlama: Pazartesi 08:00 (AI Haberleri) + Perşembe 08:00 (AI Tavsiyesi)")
+        ops.info("Başlatıldı", "SCHEDULE mode (local dev) — Pazartesi 08:00 + Perşembe 08:00")
         schedule.every().monday.at("08:00").do(run_weekly_news)
         schedule.every().thursday.at("08:00").do(run_weekly_tip)
         while True:
@@ -208,15 +200,16 @@ if __name__ == "__main__":
         # Railway Cron modu: container açılır, gün kontrolü yapar, ilgili job çalışır, exit.
         # Cron: 0 5 * * 1,4 (UTC 05:00 Pazartesi+Perşembe = TR 08:00)
         today = datetime.utcnow().weekday()  # 0=Monday, 3=Thursday
-        logging.info(f"LinkedIn_Text_Paylasim started in CRON mode. Today is weekday={today}")
+        ops.info("Başlatıldı", f"CRON mode — weekday={today}")
 
         if today == 0:  # Monday
-            logging.info("Bugün Pazartesi — Haftalık AI Haberleri workflow'u çalıştırılıyor...")
+            ops.info("Gün Kontrolü", "Bugün Pazartesi — Haftalık AI Haberleri workflow'u çalıştırılıyor")
             run_weekly_news()
         elif today == 3:  # Thursday
-            logging.info("Bugün Perşembe — Haftalık AI Tavsiyesi workflow'u çalıştırılıyor...")
+            ops.info("Gün Kontrolü", "Bugün Perşembe — Haftalık AI Tavsiyesi workflow'u çalıştırılıyor")
             run_weekly_tip()
         else:
-            logging.info(f"Bugün ne Pazartesi ne Perşembe (weekday={today}). Atlanıyor.")
+            ops.info("Gün Kontrolü", f"Bugün ne Pazartesi ne Perşembe (weekday={today}). Atlanıyor.")
 
-        logging.info("Job finished. Container will now exit.")
+        ops.info("Job Bitti", "Container kapanıyor")
+        ops.wait_for_logs()

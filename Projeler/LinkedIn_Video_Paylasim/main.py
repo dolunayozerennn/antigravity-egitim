@@ -7,12 +7,13 @@ from core.video_processor import VideoProcessor
 from core.content_filter import ContentFilter
 from core.linkedin_publisher import LinkedInPublisher
 from core.notion_logger import NotionLogger
+from ops_logger import get_ops_logger
+
+ops = get_ops_logger("LinkedIn_Video_Paylasim", "Pipeline")
 
 
 def job():
-    logging.info("==============================================")
-    logging.info("Starting Daily TikTok -> LinkedIn Workflow")
-    logging.info("==============================================")
+    ops.info("Workflow Başladı", "Daily TikTok → LinkedIn Video Pipeline")
 
     try:
         # Initialize Core Modules
@@ -25,10 +26,10 @@ def job():
         # Step 1: Fetch Recent Videos (last 10)
         recent_videos = scraper.get_recent_videos(count=10)
         if not recent_videos:
-            logging.info("Workflow Stop: Could not fetch any videos from TikTok.")
+            ops.warning("Workflow Durdu", "TikTok'tan video çekilemedi")
             return
 
-        logging.info(f"Checking {len(recent_videos)} recent videos for a suitable candidate...")
+        ops.info("Video Listesi", f"{len(recent_videos)} video kontrol ediliyor")
 
         # Step 2: Loop through videos — find first suitable, unprocessed one
         for idx, video in enumerate(recent_videos, 1):
@@ -41,7 +42,7 @@ def job():
                 logging.info(f"  [{idx}/{len(recent_videos)}] Skipping {video_id} — (Daha önce başarıyla yüklendi VEYA filtreden geçemediği için reddedildi)")
                 continue
 
-            logging.info(f"  [{idx}/{len(recent_videos)}] New video found! ID: {video_id} — {video_title[:60]}...")
+            ops.info("Yeni Video Bulundu", f"[{idx}/{len(recent_videos)}] ID: {video_id} — {video_title[:60]}...")
 
             # 2b: LLM Content Filter
             logging.info("  Running LLM content filter...")
@@ -60,13 +61,13 @@ def job():
                     filter_decision="Rejected",
                     filter_reason=reason
                 )
-                logging.info(f"  Video {video_id} rejected by content filter. Trying next...")
+                ops.info("Video Reddedildi", f"Content filter: {reason[:100]}")
                 continue
 
             # Step 3: Download Video (1080p)
             downloaded_path = scraper.download_video(video_url, output_id=f"linkedin_{video_id}")
             if not downloaded_path:
-                logging.error(f"  Video {video_id} download failed. Trying next...")
+                ops.error("Video İndirme Başarısız", message=f"Video {video_id} indirilemedi")
                 logger_db.log_video(
                     video_id=video_id,
                     status="Failed",
@@ -80,7 +81,7 @@ def job():
                 # Step 4: Metadata Strip + 1080p Ensure
                 cleaned_path = processor.strip_metadata(downloaded_path)
                 if not cleaned_path:
-                    logging.error(f"  Video {video_id} metadata stripping failed. Trying next...")
+                    ops.error("FFmpeg İşleme Başarısız", message=f"Video {video_id} metadata strip hatası")
                     logger_db.log_video(
                         video_id=video_id,
                         status="Failed",
@@ -98,7 +99,7 @@ def job():
                 # Step 6: Upload Video to LinkedIn
                 video_urn = publisher.upload_video(cleaned_path)
                 if not video_urn:
-                    logging.error(f"  Video {video_id} LinkedIn upload failed. Trying next...")
+                    ops.error("LinkedIn Upload Başarısız", message=f"Video {video_id} yüklenemedi")
                     logger_db.log_video(
                         video_id=video_id,
                         status="Failed",
@@ -112,7 +113,7 @@ def job():
                 # Step 7: Create LinkedIn Post
                 post_urn = publisher.create_post(text=linkedin_caption, video_urn=video_urn)
                 if not post_urn:
-                    logging.error(f"  Video {video_id} post creation failed. Trying next...")
+                    ops.error("LinkedIn Post Başarısız", message=f"Video {video_id} post oluşturulamadı")
                     logger_db.log_video(
                         video_id=video_id,
                         status="Failed",
@@ -135,10 +136,7 @@ def job():
                     adapted_caption=linkedin_caption
                 )
 
-                logging.info("==============================================")
-                logging.info(f"Workflow Complete: Video successfully posted to LinkedIn!")
-                logging.info(f"LinkedIn URL: {linkedin_url}")
-                logging.info("==============================================")
+                ops.success("Workflow Tamamlandı", f"Video başarıyla paylaşıldı — {linkedin_url}")
                 return  # SUCCESS — exit after first successful post
 
             finally:
@@ -148,13 +146,10 @@ def job():
                     scraper.clean_tmp_files(cleaned_path)
 
         # If we reach here, all videos were either already processed or rejected
-        logging.info("==============================================")
-        logging.info("Workflow Complete: No suitable new video found among recent uploads.")
-        logging.info("All recent videos were either already processed or rejected by content filter.")
-        logging.info("==============================================")
+        ops.info("Workflow Tamamlandı", "Uygun yeni video bulunamadı — tümü zaten işlenmiş veya reddedilmiş")
 
     except Exception as e:
-        logging.error(f"FATAL ERROR in job: {e}", exc_info=True)
+        ops.error("FATAL ERROR", exception=e, message=str(e)[:500])
 
 
 if __name__ == "__main__":
@@ -165,14 +160,14 @@ if __name__ == "__main__":
 
     if mode == "schedule":
         # Lokal geliştirme veya sürekli çalışan mod
-        logging.info("LinkedIn_Video_Paylasim started in SCHEDULE mode (local dev).")
-        logging.info("Ensure the TZ env variable is set to 'Europe/Istanbul' on Railway for accurate timings.")
+        ops.info("Başlatıldı", "SCHEDULE mode (local dev) — Her gün 13:00")
         schedule.every().day.at("13:00").do(job)
         while True:
             schedule.run_pending()
             time.sleep(60)
     else:
         # Railway Cron modu: container açılır, job çalışır, container kapanır.
-        logging.info("LinkedIn_Video_Paylasim started in CRON mode. Running job once and exiting.")
+        ops.info("Başlatıldı", "CRON mode — tek çalışma")
         job()
-        logging.info("Job finished. Container will now exit.")
+        ops.info("Job Bitti", "Container kapanıyor")
+        ops.wait_for_logs()
