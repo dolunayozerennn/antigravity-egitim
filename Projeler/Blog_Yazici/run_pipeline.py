@@ -24,7 +24,8 @@ from datetime import datetime
 
 try:
     sys.path.insert(0, str(Path(__file__).parent.resolve()))
-    from notion_logger import logger
+    from ops_logger import get_ops_logger
+    logger = get_ops_logger("Blog_Yazici", "Pipeline")
 except ImportError:
     logger = None
 

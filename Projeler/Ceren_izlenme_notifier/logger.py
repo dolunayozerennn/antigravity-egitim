@@ -1,24 +1,28 @@
 import logging
 import sys
+from ops_logger import get_ops_logger
+
+class OpsLoggerAdapter:
+    def __init__(self, name="Pipeline", project="Ceren_Notifier"):
+        self._ops = get_ops_logger(project, name)
+        
+    def info(self, msg, *args, **kwargs):
+        self._ops.info(str(msg))
+        
+    def warning(self, msg, *args, **kwargs):
+        self._ops.warning(str(msg))
+        
+    def error(self, msg, *args, **kwargs):
+        exc_info = kwargs.get("exc_info")
+        import sys
+        if exc_info:
+            _, exc_value, _ = sys.exc_info()
+            self._ops.error(str(msg), exception=exc_value)
+        else:
+            self._ops.error(str(msg))
+            
+    def debug(self, msg, *args, **kwargs):
+        self._ops.info(f"[DEBUG] {msg}")
 
 def get_logger(name):
-    """
-    Antigravity V2 Standard Logger
-    Özellikler:
-    - INFO ve üzeri çalışır
-    - Exception ve Hata detayı olan stack trace'leri yutmaz, formatlı loglar.
-    - Tüm Railway projelerinde aynı formata sahip olmayı garanti eder.
-    """
-    logger = logging.getLogger(name)
-    
-    # Sadece bir kere handler ekleyelim (multiple runs vs için)
-    if not logger.handlers:
-        logger.setLevel(logging.INFO)
-        handler = logging.StreamHandler(sys.stdout)
-        
-        # Format: 2026-03-24 15:30:21 - module_name - INFO - Mesaj
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        
-    return logger
+    return OpsLoggerAdapter(name, "Ceren_Notifier")

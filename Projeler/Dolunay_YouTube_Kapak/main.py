@@ -17,6 +17,9 @@ def process_ready_videos():
     Ana pipeline: YouTube database'inden 'Çekildi' durumundaki videoları alır,
     her biri için 3 tema × 2 varyasyon = 6 thumbnail üretir.
     """
+    from ops_logger import get_ops_logger
+    ops = get_ops_logger("YouTube_Kapak", "Pipeline")
+    ops.info("YouTube Thumbnail Pipeline Başlatıldı")
     print("=" * 60)
     print("🎬 YOUTUBE THUMBNAIL GENERATION PIPELINE")
     print("📐 Format: 16:9 Landscape (2560×1440)")
@@ -154,6 +157,8 @@ def process_ready_videos():
     print("\n" + "=" * 60)
     print("🎬 YOUTUBE THUMBNAIL PIPELINE COMPLETED")
     print("=" * 60)
+    from ops_logger import get_ops_logger
+    get_ops_logger("YouTube_Kapak", "Pipeline").success("YouTube Thumbnail Pipeline Tamamlandı")
 
 
 if __name__ == "__main__":
@@ -168,8 +173,9 @@ if __name__ == "__main__":
             try:
                 process_ready_videos()
             except Exception as e:
-                import logging
-                logging.error(f"Beklenmeyen hata oluştu: {e}", exc_info=True)
+                from ops_logger import get_ops_logger
+                ops = get_ops_logger("YouTube_Kapak", "Pipeline")
+                ops.error(f"Beklenmeyen hata oluştu: {e}", exception=e)
             print("⏳ 10 dakika bekleniyor...")
             time.sleep(600)
     else:
