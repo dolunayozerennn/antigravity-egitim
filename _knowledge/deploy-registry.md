@@ -46,7 +46,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `01bf8d6e-9eb4-4a42-aaa0-0103e6e56033`
 - **Service ID:** `151725ce-0416-41dd-9b94-768353c919b5`
 - **Environment ID:** `64704cfe-b15e-4cb0-9256-e89575da34c4`
-- **GitHub Repo:** `dolunayozerennn/shorts-demo-bot`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Shorts_Demo_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/Shorts_Demo_Otomasyonu/`
 - **Start Komutu:** `python bot.py`
 - **Son Deploy:** 2026-03-17
@@ -56,17 +56,16 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 
 
-### dolunay-reels-kapak (Unified Worker)
-- **Platform:** `railway-cron`
-- **Railway Project ID:** `fed6db49-de57-4fbe-9988-528416f1b668`
-- **Service ID:** `98fa5736-7e6f-454a-a648-22e47a92c28a`
-- **Environment ID:** `f555d0bb-125e-4d15-838e-dbeb2936a721`
-- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Dolunay_Reels_Kapak`)
-- **Lokal Klasör:** `Projeler/Dolunay_Reels_Kapak/`
-- **Start Komutu:** `python unified_worker.py`
-- **Cron Schedule:** `0 6,12,18 * * *` (Günde 3 kez: 09:00, 15:00, 21:00 TR)
-- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
-- **Durum:** ✅ Aktif (Kapak üretimi + revizyon kontrolü tek worker'da birleştirildi)
+### dolunay-otonom-kapak (Unified Monolith V2)
+- **Platform:** `railway`
+- **Railway Project ID:** (TBD - Dağıtım bekleniyor)
+- **Service ID:** (TBD)
+- **Environment ID:** (TBD)
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo)
+- **Root Directory:** `Projeler/Dolunay_Otonom_Kapak/`
+- **Lokal Klasör:** `Projeler/Dolunay_Otonom_Kapak/`
+- **Start Komutu:** `python main.py`
+- **Durum:** ⏳ Deploy bekliyor (Yeni V2 yapısı. ENV Variable üzerinden Reels/YouTube ayarlanarak deploy edilecek)
 
 ### revizyon-cron ⛔ (KALDIRILDI — unified_worker'a taşındı)
 - **Railway Project ID:** `fed6db49-de57-4fbe-9988-528416f1b668`
@@ -80,7 +79,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `8f70b293-dc33-426a-95f7-19741d3ae03c`
 - **Service ID:** `533f2a47-c8f6-4e3b-a5a1-0f5b2f9b8b8d`
 - **Environment ID:** `cc3aa405-1388-421c-93af-146fa91f1a1e`
-- **GitHub Repo:** `dolunayozerennn/isbirligi-tahsilat-takip`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Isbirligi_Tahsilat_Takip`)
 - **Lokal Klasör:** `Projeler/Isbirligi_Tahsilat_Takip/`
 - **Start Komutu:** `python main.py`
 - **Son Deploy:** 2026-04-02 (auto-deploy — SUCCESS doğrulandı)
@@ -93,7 +92,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `6994adc2-edb2-4c91-b43d-237f28d41a69`
 - **Service ID:** `997b869b-bd24-4be5-b37f-d5ff2f85232b`
 - **Environment ID:** `5fc44142-a014-4a20-912d-c1424bfae895`
-- **GitHub Repo:** `dolunayozerennn/marka-is-birligi`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Marka_Is_Birligi`)
 - **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
 - **Start Komutu:** `python railway_scheduler.py`
 - **Son Deploy:** 2026-04-06 (fix: YouTube URL filtreleme — Apify actor sadece Instagram URL kabul ediyor, karışık URL'ler 400 Bad Request hatasına yol açıyordu)
@@ -106,7 +105,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `ec3ea7b1-9bdb-4886-a197-026ee2d2126c`
 - **Service ID:** `ddb6ddd6-4918-4b27-bd5c-946bb829bc42`
 - **Environment ID:** `45ef43a9-5ba2-475b-be50-56aaaf6b9906`
-- **GitHub Repo:** `dolunayozerennn/akilli-watchdog`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Akilli_Watchdog`)
 - **Lokal Klasör:** `Projeler/Akilli_Watchdog/`
 - **Start Komutu:** `python main.py`
 - **Son Deploy:** 2026-04-05 (auto-deploy — SUCCESS doğrulandı)
@@ -200,19 +199,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-### dolunay-youtube-kapak (Aktif Worker)
-- **Platform:** `railway`
-- **Railway Project ID:** `586a7bf6-1787-4d3a-af13-1e1730ee5a15`
-- **Service ID:** `b15ae2ea-87b0-4818-bb6c-c8f7458817e3`
-- **Environment ID:** `fe917cd2-511f-4e73-9b75-b77ce28d16ae`
-- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Dolunay_YouTube_Kapak/`)
-- **Lokal Klasör:** `Projeler/Dolunay_YouTube_Kapak/`
-- **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
-- **Durum:** ✅ Aktif (YouTube thumbnail üretim worker'ı — 10 dk loop ile sürekli çalışır)
-- **Not:** 3 adet duplikasyon projesi temizlendi (93de, ab22, b3f0 — hepsi FAILED)
 
----
 
 ## 📌 Askıda / Geliştirme Aşamasındaki Projeler (Deploy Yok)
 
@@ -245,5 +232,7 @@ Aşağıdaki projeler ilerleyen dönemde platformdan silinmek üzere işaretlenm
 - ~~`linkedin-paylasim`~~ (`9aec063f`) — Hayalet, linkedin-text + linkedin-video olarak ayrılmıştı. **SİLİNDİ** (2026-04-03)
 - ~~`Twitter_Paylasim`~~ (`9b8a5927`) — Hayalet, twitter-video-cron ile duplike. **SİLİNDİ** (2026-04-03)
 - ~~`marka-is-birligi (boş)`~~ (`0522fff5`) — Boş proje. Aktif: `6994adc2`. **SİLİNDİ** (2026-04-03)
+- ~~`dolunay-reels-kapak`~~ (`fed6db49`) — V2'ye (Dolunay_Otonom_Kapak) taşındı. **ARŞİVLENDİ** (2026-04-09)
+- ~~`dolunay-youtube-kapak`~~ (`586a7bf6`) — V2'ye (Dolunay_Otonom_Kapak) taşındı. **ARŞİVLENDİ** (2026-04-09)
 - ~~`sweatcoin-email-automation`~~ (`0c1ff084`) — Proje tamamen kapatıldı, Railway'den silindi, lokal arşive taşındı. **SİLİNDİ** (2026-04-08)
 - ~~`Emlak Arazi Drone Çekim`~~ — Local-only proje, hiç deploy edilmemişti. Lokal arşive taşındı. **ARŞİVLENDİ** (2026-04-08)
