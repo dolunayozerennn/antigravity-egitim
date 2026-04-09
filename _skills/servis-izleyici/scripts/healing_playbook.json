@@ -222,6 +222,21 @@
       "context": "railway_log",
       "action": "alert_only",
       "description": "OpsLogger ayarlarında eksik veya silinmiş Notion veritabanı ID'si (404 Not Found)"
+    },
+    {
+      "id": "opslog_zero_results",
+      "match": "\\[OpsLog.*\\].*tamamlandı.*'(sent|failed|skipped)':\\s*0",
+      "context": "railway_log",
+      "action": "ignore_transient",
+      "description": "OpsLogger info mesajı — görev tamamlandı ama sonuç sıfır, hata değil",
+      "wait_minutes": 60
+    },
+    {
+      "id": "missing_cutouts",
+      "match": "No image files found in assets/cutouts|No cutout directory found",
+      "context": "railway_log",
+      "action": "alert_only",
+      "description": "YouTube kapak projesinde cutout dosyaları bulunamadı — assets/cutouts klasörü Railway container'da boş. Cutout görsellerini repo'ya ekle veya harici depolamaya geç."
     }
   ]
 }
