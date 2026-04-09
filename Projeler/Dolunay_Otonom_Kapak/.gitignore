@@ -1,0 +1,22 @@
+node_modules/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# IDEs
+.idea/
+.vscode/
+
+# Environment files
+.env
+master.env
+
+# Outputs
+outputs/
+assets/screenshot_*.png
+
+# Logs
+run.log
+*.log
