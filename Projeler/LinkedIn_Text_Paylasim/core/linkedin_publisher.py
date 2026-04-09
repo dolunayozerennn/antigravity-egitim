@@ -22,7 +22,7 @@ class LinkedInPublisher:
         self.headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json",
-            "LinkedIn-Version": "202403",
+            "LinkedIn-Version": "202503",
             "X-Restli-Protocol-Version": "2.0.0",
         }
 
