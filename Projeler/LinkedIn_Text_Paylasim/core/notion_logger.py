@@ -3,7 +3,8 @@ Notion'a LinkedIn Text paylaşım logları yazan modül.
 Mevcut LinkedIn_Paylasim projesindeki notion_logger.py ile aynı DB'yi kullanır.
 """
 import requests
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("LinkedIn_Text_Paylasim", "NotionLogger")
 from datetime import datetime, timezone
 
 from config import settings
@@ -62,10 +63,10 @@ class NotionLogger:
             data = resp.json()
             already_posted = len(data.get("results", [])) > 0
             if already_posted:
-                logging.info(f"Bu hafta zaten '{post_type}' postu atılmış. Atlanıyor.")
+                ops.info(f"Bu hafta zaten '{post_type}' postu atılmış. Atlanıyor.")
             return already_posted
         except Exception as e:
-            logging.error(f"Notion duplicate kontrol hatası: {e}", exc_info=True)
+            ops.error(f"Notion duplicate kontrol hatası: {e}", exception=e)
             # Fail-open: API hata verirse paylaşıma devam et.
             # Duplikat riski var ama hiç paylaşmamaktan iyidir.
             return False
@@ -91,7 +92,7 @@ class NotionLogger:
             error_message: Hata durumunda açıklama
         """
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Notion log atlanıyor -> Tip: {post_type}, Status: {status}")
+            ops.info(f"[DRY-RUN] Notion log atlanıyor -> Tip: {post_type}, Status: {status}")
             return True
 
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -137,8 +138,8 @@ class NotionLogger:
             }
             resp = requests.post(url, headers=self.headers, json=payload, timeout=10)
             resp.raise_for_status()
-            logging.info(f"Notion'a loglandı -> Tip: {post_type}, Status: {status}")
+            ops.info(f"Notion'a loglandı -> Tip: {post_type}, Status: {status}")
             return True
         except Exception as e:
-            logging.error(f"Notion log hatası: {e}", exc_info=True)
+            ops.error(f"Notion log hatası: {e}", exception=e)
             return False

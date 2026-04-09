@@ -2,7 +2,8 @@
 OpenAI GPT-4.1 ile LinkedIn postu yazma.
 n8n'deki "Post Yazarı" node'unun birebir karşılığı.
 """
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("LinkedIn_Text_Paylasim", "PostWriter")
 from datetime import datetime
 from openai import OpenAI
 
@@ -81,7 +82,7 @@ class PostWriter:
     def _generate(self, system_message: str, user_message: str) -> str:
         """GPT-4.1 ile post üretir."""
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] GPT-4.1 post yazma atlanıyor.")
+            ops.info(f"[DRY-RUN] GPT-4.1 post yazma atlanıyor.")
             return "[DRY-RUN] 🚀 Bu hafta AI dünyasında neler oldu?\n\n1. OpenAI yeni modelini tanıttı\n2. Google Gemini güncellendi\n\n#AI #YapayZeka"
 
         try:
@@ -94,8 +95,8 @@ class PostWriter:
                 temperature=0.7
             )
             content = response.choices[0].message.content.strip()
-            logging.info(f"Post yazıldı ({len(content)} karakter)")
+            ops.info(f"Post yazıldı ({len(content)} karakter)")
             return content
         except Exception as e:
-            logging.error(f"GPT-4.1 post yazma hatası: {e}", exc_info=True)
+            ops.error(f"GPT-4.1 post yazma hatası: {e}", exception=e)
             raise

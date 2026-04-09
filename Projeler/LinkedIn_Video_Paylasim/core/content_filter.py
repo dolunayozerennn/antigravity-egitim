@@ -1,4 +1,5 @@
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("LinkedIn_Video_Paylasim", "ContentFilter")
 import json
 import requests
 
@@ -52,7 +53,7 @@ class ContentFilter:
             data = resp.json()
             return data["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            logging.error(f"Groq API call failed: {e}", exc_info=True)
+            ops.error(f"Groq API call failed: {e}", exception=e)
             return None
 
     def evaluate_content(self, video_title: str, video_description: str = "") -> dict:
@@ -83,12 +84,12 @@ SADECE aşağıdaki JSON formatında yanıt ver, başka hiçbir şey yazma:
             user_prompt += f"\nVideo açıklaması: {video_description}"
 
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Would evaluate content: '{video_title[:50]}...'")
+            ops.info(f"[DRY-RUN] Would evaluate content: '{video_title[:50]}...'")
             return {"decision": "APPROVE", "reason": "Dry-run mode", "confidence": 1.0}
 
         raw_response = self._call_groq(system_prompt, user_prompt)
         if not raw_response:
-            logging.warning("LLM evaluation failed — defaulting to REJECT for safety.")
+            ops.warning("LLM evaluation failed — defaulting to REJECT for safety.")
             return {"decision": "REJECT", "reason": "LLM API çağrısı başarısız", "confidence": 0.0}
 
         try:
@@ -110,7 +111,7 @@ SADECE aşağıdaki JSON formatında yanıt ver, başka hiçbir şey yazma:
                 "confidence": float(result.get("confidence", 0.5))
             }
         except (json.JSONDecodeError, ValueError) as e:
-            logging.error(f"Failed to parse LLM filter response: {raw_response[:200]}. Error: {e}")
+            ops.error(f"Failed to parse LLM filter response: {raw_response[:200]}. Error: {e}", exception=e)
             return {"decision": "REJECT", "reason": f"JSON parse hatası: {raw_response[:100]}", "confidence": 0.0}
 
     def adapt_caption_for_linkedin(self, original_caption: str) -> str:
@@ -122,7 +123,7 @@ SADECE aşağıdaki JSON formatında yanıt ver, başka hiçbir şey yazma:
             return "Siz bu konuda ne düşünüyorsunuz? 💬"
 
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Would adapt caption: '{original_caption[:50]}...'")
+            ops.info(f"[DRY-RUN] Would adapt caption: '{original_caption[:50]}...'")
             return f"[LinkedIn Adapted] {original_caption}"
 
         system_prompt = """Sen bir LinkedIn içerik uzmanısın. Dolunay Özeren adlı Dubai merkezli bir gayrimenkul danışmanı ve girişimcinin TikTok'ta paylaştığı videonun caption'ını LinkedIn'e uyarlaman isteniyor.
@@ -140,7 +141,7 @@ Kurallar:
 
         adapted = self._call_groq(system_prompt, user_prompt)
         if not adapted:
-            logging.warning("Caption adaptation failed — using cleaned original.")
+            ops.warning("Caption adaptation failed — using cleaned original.")
             # Fallback: basic cleanup
             words = original_caption.split()
             clean_words = [w for w in words if not w.startswith("#")]

@@ -2,7 +2,8 @@
 Perplexity API ile güncel AI haberleri araştırması.
 n8n'deki "AI Haberleri" node'unun birebir karşılığı.
 """
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("LinkedIn_Text_Paylasim", "Researcher")
 import requests
 from datetime import datetime
 
@@ -60,7 +61,7 @@ class Researcher:
     def _query_perplexity(self, prompt: str) -> str:
         """Perplexity API'ye sorgu gönderir ve sonucu döndürür."""
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Perplexity sorgusu atlanıyor. Prompt: {prompt[:100]}...")
+            ops.info(f"[DRY-RUN] Perplexity sorgusu atlanıyor. Prompt: {prompt[:100]}...")
             return "[DRY-RUN] Bu hafta AI dünyasında önemli gelişmeler yaşandı. OpenAI yeni modelini tanıttı."
 
         url = f"{self.base_url}/chat/completions"
@@ -80,8 +81,8 @@ class Researcher:
             resp.raise_for_status()
             data = resp.json()
             content = data["choices"][0]["message"]["content"]
-            logging.info(f"Perplexity araştırması tamamlandı ({len(content)} karakter)")
+            ops.info(f"Perplexity araştırması tamamlandı ({len(content)} karakter)")
             return content
         except Exception as e:
-            logging.error(f"Perplexity API hatası: {e}", exc_info=True)
+            ops.error(f"Perplexity API hatası: {e}", exception=e)
             raise

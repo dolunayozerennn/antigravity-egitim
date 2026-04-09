@@ -1,4 +1,5 @@
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("Twitter_Video_Paylasim", "TiktokScraper")
 import yt_dlp
 import os
 
@@ -32,17 +33,17 @@ class TikTokScraper:
                     title = latest.get('title', '')
                     url = latest.get('url', f"https://www.tiktok.com/@{self.username}/video/{video_id}")
                     
-                    logging.info(f"Found latest video ID: {video_id} - Title snippet: {title[:30]}...")
+                    ops.info(f"Found latest video ID: {video_id} - Title snippet: {title[:30]}...")
                     return {
                         "id": video_id,
                         "title": title,
                         "url": url
                     }
                 else:
-                    logging.warning(f"No videos found on profile: {self.profile_url}")
+                    ops.warning(f"No videos found on profile: {self.profile_url}")
                     return None
             except Exception as e:
-                logging.error(f"Error extracting profile info for {self.profile_url}: {e}", exc_info=True)
+                ops.error(f"Error extracting profile info for {self.profile_url}: {e}", exception=e)
                 return None
 
     def download_video(self, video_url: str, output_id: str) -> str:
@@ -63,13 +64,13 @@ class TikTokScraper:
                 ydl.download([video_url])
                 expected_file = os.path.join(self.download_dir, f"{output_id}.mp4")
                 if os.path.exists(expected_file):
-                    logging.info(f"Successfully downloaded TikTok video to {expected_file}")
+                    ops.info(f"Successfully downloaded TikTok video to {expected_file}")
                     return expected_file
                 else:
-                    logging.error(f"Download completed but file not found at {expected_file}")
+                    ops.error(f"Download completed but file not found at {expected_file}")
                     return None
             except Exception as e:
-                logging.error(f"Error downloading TikTok video {video_url}: {e}", exc_info=True)
+                ops.error(f"Error downloading TikTok video {video_url}: {e}", exception=e)
                 return None
 
     def clean_tmp_files(self, filepath: str):
@@ -79,6 +80,6 @@ class TikTokScraper:
         if filepath and os.path.exists(filepath):
             try:
                 os.remove(filepath)
-                logging.info(f"Cleaned up temporary file: {filepath}")
+                ops.info(f"Cleaned up temporary file: {filepath}")
             except Exception as e:
-                logging.error(f"Failed to clean up file {filepath}: {e}", exc_info=True)
+                ops.error(f"Failed to clean up file {filepath}: {e}", exception=e)

@@ -3,7 +3,8 @@ LinkedIn API ile metin + görsel post paylaşma.
 n8n'deki "Create a post" node'unun birebir karşılığı.
 Görsel paylaşım için Images API (registerUpload + upload + post) kullanır.
 """
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("LinkedIn_Text_Paylasim", "LinkedinPublisher")
 import requests
 import os
 
@@ -37,7 +38,7 @@ class LinkedInPublisher:
         Returns: Post URN veya None
         """
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] LinkedIn post atlanıyor: '{text[:80]}...'")
+            ops.info(f"[DRY-RUN] LinkedIn post atlanıyor: '{text[:80]}...'")
             return "urn:li:share:mock_post_dry_run"
 
         # Görsel varsa önce yükle
@@ -45,7 +46,7 @@ class LinkedInPublisher:
         if image_path and os.path.exists(image_path):
             image_urn = self._upload_image(image_path)
             if not image_urn:
-                logging.warning("Görsel yüklenemedi, sadece metin post atılacak.")
+                ops.warning("Görsel yüklenemedi, sadece metin post atılacak.")
 
         # Post oluştur
         return self._create_post(text, image_urn)
@@ -80,7 +81,7 @@ class LinkedInPublisher:
             ]["uploadUrl"]
             asset = data["value"]["asset"]
 
-            logging.info(f"Görsel upload kaydı başarılı. Asset: {asset}")
+            ops.info(f"Görsel upload kaydı başarılı. Asset: {asset}")
 
             # Step 2: Upload binary
             upload_headers = {
@@ -92,14 +93,14 @@ class LinkedInPublisher:
 
             resp = requests.put(upload_url, headers=upload_headers, data=image_data, timeout=60)
             if resp.status_code not in (200, 201):
-                logging.error(f"Görsel yükleme hatası: {resp.status_code} - {resp.text[:300]}")
+                ops.error(f"Görsel yükleme hatası: {resp.status_code} - {resp.text[:300]}")
                 return None
 
-            logging.info(f"Görsel LinkedIn'e yüklendi: {asset}")
+            ops.info(f"Görsel LinkedIn'e yüklendi: {asset}")
             return asset
 
         except Exception as e:
-            logging.error(f"LinkedIn görsel yükleme hatası: {e}", exc_info=True)
+            ops.error(f"LinkedIn görsel yükleme hatası: {e}", exception=e)
             return None
 
     def _create_post(self, text: str, image_urn: str = None) -> str:
@@ -139,11 +140,11 @@ class LinkedInPublisher:
                     data = resp.json() if resp.text else {}
                     post_urn = data.get("id", "unknown")
 
-                logging.info(f"LinkedIn post başarıyla oluşturuldu! Post URN: {post_urn}")
+                ops.info(f"LinkedIn post başarıyla oluşturuldu! Post URN: {post_urn}")
                 return post_urn
             else:
-                logging.error(f"LinkedIn post oluşturma hatası: {resp.status_code} - {resp.text[:500]}")
+                ops.error(f"LinkedIn post oluşturma hatası: {resp.status_code} - {resp.text[:500]}")
                 return None
         except Exception as e:
-            logging.error(f"LinkedIn post hatası: {e}", exc_info=True)
+            ops.error(f"LinkedIn post hatası: {e}", exception=e)
             return None

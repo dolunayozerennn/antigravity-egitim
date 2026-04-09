@@ -1,5 +1,6 @@
 import requests
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("LinkedIn_Video_Paylasim", "NotionLogger")
 from datetime import datetime, timezone
 
 from config import settings
@@ -40,7 +41,7 @@ class NotionLogger:
             data = resp.json()
             return len(data.get("results", [])) > 0
         except Exception as e:
-            logging.error(f"Error checking Notion for video_id {video_id}: {e}", exc_info=True)
+            ops.error(f"Error checking Notion for video_id {video_id}: {e}", exception=e)
             # Fail safe: return False to prevent falsely marking a video as processed if API fails
             return False
 
@@ -59,7 +60,7 @@ class NotionLogger:
         Status can be: "Success", "Failed", "Filtered"
         """
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Would log to Notion -> ID: {video_id}, Status: {status}, Filter: {filter_decision}")
+            ops.info(f"[DRY-RUN] Would log to Notion -> ID: {video_id}, Status: {status}, Filter: {filter_decision}")
             return True
 
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -109,8 +110,8 @@ class NotionLogger:
             }
             resp = requests.post(url, headers=self.headers, json=payload, timeout=10)
             resp.raise_for_status()
-            logging.info(f"Successfully logged Video ID {video_id} to Notion with status {status}.")
+            ops.info(f"Successfully logged Video ID {video_id} to Notion with status {status}.")
             return True
         except Exception as e:
-            logging.error(f"Error logging video {video_id} to Notion: {e}", exc_info=True)
+            ops.error(f"Error logging video {video_id} to Notion: {e}", exception=e)
             return False

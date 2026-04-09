@@ -2,7 +2,8 @@
 GPT-4.1-mini ile görsel prompt üretme + Gemini ile görsel üretme.
 n8n'deki "Gorsel Prompt Yazarı" + "Generate an image" node'larının birebir karşılığı.
 """
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("LinkedIn_Text_Paylasim", "ImageGenerator")
 import requests
 import base64
 import os
@@ -43,7 +44,7 @@ class ImageGenerator:
         n8n'deki "Gorsel Prompt Yazarı" node'unun birebir karşılığı.
         """
         if settings.IS_DRY_RUN:
-            logging.info("[DRY-RUN] Görsel prompt üretme atlanıyor.")
+            ops.info("[DRY-RUN] Görsel prompt üretme atlanıyor.")
             return "[DRY-RUN] Minimalist AI infographic prompt"
 
         user_message = (
@@ -67,10 +68,10 @@ class ImageGenerator:
                 temperature=0.7
             )
             prompt = response.choices[0].message.content.strip()
-            logging.info(f"Görsel prompt üretildi ({len(prompt)} karakter)")
+            ops.info(f"Görsel prompt üretildi ({len(prompt)} karakter)")
             return prompt
         except Exception as e:
-            logging.error(f"GPT-4.1-mini görsel prompt hatası: {e}", exc_info=True)
+            ops.error(f"GPT-4.1-mini görsel prompt hatası: {e}", exception=e)
             return None
 
     def _generate_image_with_gemini(self, prompt: str) -> str:
@@ -82,7 +83,7 @@ class ImageGenerator:
         Returns: Üretilen görselin geçici dosya yolu veya None
         """
         if settings.IS_DRY_RUN:
-            logging.info("[DRY-RUN] Gemini görsel üretme atlanıyor.")
+            ops.info("[DRY-RUN] Gemini görsel üretme atlanıyor.")
             return None
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={self.gemini_api_key}"
@@ -108,7 +109,7 @@ class ImageGenerator:
             # Gemini response'tan image verisini çıkar
             candidates = data.get("candidates", [])
             if not candidates:
-                logging.error(f"Gemini boş yanıt döndü: {data}")
+                ops.error(f"Gemini boş yanıt döndü: {data}")
                 return None
 
             parts = candidates[0].get("content", {}).get("parts", [])
@@ -129,12 +130,12 @@ class ImageGenerator:
                     tmp_file.write(image_bytes)
                     tmp_file.close()
 
-                    logging.info(f"Gemini görseli üretildi: {tmp_file.name} ({len(image_bytes)} bytes)")
+                    ops.info(f"Gemini görseli üretildi: {tmp_file.name} ({len(image_bytes)} bytes)")
                     return tmp_file.name
 
-            logging.error(f"Gemini yanıtında görsel bulunamadı. Parts: {[p.keys() for p in parts]}")
+            ops.error(f"Gemini yanıtında görsel bulunamadı. Parts: {[p.keys() for p in parts]}")
             return None
 
         except Exception as e:
-            logging.error(f"Gemini görsel üretme hatası: {e}", exc_info=True)
+            ops.error(f"Gemini görsel üretme hatası: {e}", exception=e)
             return None

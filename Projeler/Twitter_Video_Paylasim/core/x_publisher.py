@@ -1,4 +1,5 @@
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("Twitter_Video_Paylasim", "XPublisher")
 import tweepy
 import time
 
@@ -32,15 +33,15 @@ class XPublisher:
         Returns the media_id string.
         """
         if not video_path:
-            logging.error("No video path provided for X upload.")
+            ops.error("No video path provided for X upload.")
             return None
 
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Would have uploaded {video_path} to X API.")
+            ops.info(f"[DRY-RUN] Would have uploaded {video_path} to X API.")
             return "mock_media_id_123"
 
         try:
-            logging.info(f"Uploading {video_path} to X API...")
+            ops.info(f"Uploading {video_path} to X API...")
             
             # Tweepy chunked media upload natively handles INIT, APPEND, FINALIZE and STATUS polling.
             # wait_for_async_upload=True means it will synchronously block until the video is 'succeeded'.
@@ -52,11 +53,11 @@ class XPublisher:
             )
             media_id = media.media_id_string
             
-            logging.info(f"INIT/APPEND/FINALIZE complete. Media ID: {media_id}. Processing finished.")
+            ops.info(f"INIT/APPEND/FINALIZE complete. Media ID: {media_id}. Processing finished.")
             return media_id
 
         except Exception as e:
-            logging.error(f"Failed to upload video to X API: {e}", exc_info=True)
+            ops.error(f"Failed to upload video to X API: {e}", exception=e)
             return None
 
     def post_tweet(self, text: str, media_id: str) -> str:
@@ -64,19 +65,19 @@ class XPublisher:
         Creates a tweet using X API v2 with the uploaded media.
         """
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Would tweet: '{text}' with media_id: {media_id}")
+            ops.info(f"[DRY-RUN] Would tweet: '{text}' with media_id: {media_id}")
             return "mock_tweet_id_456"
 
         try:
-            logging.info("Creating tweet...")
+            ops.info("Creating tweet...")
             response = self.client.create_tweet(
                 text=text,
                 media_ids=[media_id] if media_id else None
             )
             
             tweet_id = response.data.get('id')
-            logging.info(f"Tweet successfully posted! Tweet ID: {tweet_id}")
+            ops.info(f"Tweet successfully posted! Tweet ID: {tweet_id}")
             return tweet_id
         except Exception as e:
-            logging.error(f"Failed to post tweet: {e}", exc_info=True)
+            ops.error(f"Failed to post tweet: {e}", exception=e)
             return None

@@ -1,4 +1,5 @@
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("Twitter_Video_Paylasim", "VideoProcessor")
 import subprocess
 import os
 import shutil
@@ -26,7 +27,7 @@ def _resolve_ffmpeg():
     matches = glob.glob("/nix/store/*/bin/ffmpeg")
     if matches:
         return matches[0]
-    logging.warning("ffmpeg binary not found! Video processing will fail.")
+    ops.warning("ffmpeg binary not found! Video processing will fail.")
     return "ffmpeg"
 
 _FFMPEG_BIN = _resolve_ffmpeg()
@@ -38,7 +39,7 @@ class VideoProcessor:
         Returns the path to the stripped file.
         """
         if not input_path or not os.path.exists(input_path):
-            logging.error(f"Cannot strip metadata from missing file: {input_path}")
+            ops.error(f"Cannot strip metadata from missing file: {input_path}")
             return None
 
         # Determine output path
@@ -51,7 +52,7 @@ class VideoProcessor:
         # -map_metadata -1 : removes global metadata
         # Re-encoding the video completely (libx264) to ensure the file hash is brand new
         # and X's algorithm cannot detect it as a TikTok downloaded file.
-        logging.info(f"Using ffmpeg binary: {_FFMPEG_BIN}")
+        ops.info(f"Using ffmpeg binary: {_FFMPEG_BIN}")
         cmd = [
             _FFMPEG_BIN,
             "-y",  # overwrite output files without asking
@@ -66,16 +67,16 @@ class VideoProcessor:
         ]
 
         try:
-            logging.info(f"Stripping metadata with command: {' '.join(cmd)}")
+            ops.info(f"Stripping metadata with command: {' '.join(cmd)}")
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=120)
             if result.returncode == 0 and os.path.exists(output_path):
-                logging.info(f"Metadata stripping successful -> {output_path}")
+                ops.info(f"Metadata stripping successful -> {output_path}")
                 return output_path
             else:
-                logging.error(f"FFmpeg failed with exit code {result.returncode}.\nSTDERR: {result.stderr}")
+                ops.error(f"FFmpeg failed with exit code {result.returncode}.\nSTDERR: {result.stderr}")
                 return None
         except Exception as e:
-            logging.error(f"Failed to execute FFmpeg command: {e}", exc_info=True)
+            ops.error(f"Failed to execute FFmpeg command: {e}", exception=e)
             return None
 
     def refine_caption(self, raw_caption: str) -> str:

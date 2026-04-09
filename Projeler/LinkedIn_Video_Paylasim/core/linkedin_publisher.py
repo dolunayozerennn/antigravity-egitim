@@ -1,4 +1,5 @@
-import logging
+from ops_logger import get_ops_logger
+ops = get_ops_logger("LinkedIn_Video_Paylasim", "LinkedinPublisher")
 import requests
 import os
 import math
@@ -40,15 +41,15 @@ class LinkedInPublisher:
         Returns the video URN string or None on failure.
         """
         if not video_path or not os.path.exists(video_path):
-            logging.error(f"Video file not found: {video_path}")
+            ops.error(f"Video file not found: {video_path}")
             return None
 
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Would upload {video_path} to LinkedIn.")
+            ops.info(f"[DRY-RUN] Would upload {video_path} to LinkedIn.")
             return "urn:li:video:mock_video_123"
 
         file_size = os.path.getsize(video_path)
-        logging.info(f"Starting LinkedIn video upload: {video_path} ({file_size / (1024*1024):.1f} MB)")
+        ops.info(f"Starting LinkedIn video upload: {video_path} ({file_size / (1024*1024):.1f} MB)")
 
         # Step 1: Initialize Upload
         video_urn = self._initialize_upload(file_size)
@@ -65,7 +66,7 @@ class LinkedInPublisher:
         if not finalized:
             return None
 
-        logging.info(f"LinkedIn video upload complete! Video URN: {video_urn}")
+        ops.info(f"LinkedIn video upload complete! Video URN: {video_urn}")
         return video_urn
 
     def _initialize_upload(self, file_size: int) -> str:
@@ -89,18 +90,18 @@ class LinkedInPublisher:
             upload_instructions = data.get("value", {}).get("uploadInstructions", [])
 
             if not video_urn:
-                logging.error(f"No video URN in initialize response: {data}")
+                ops.error(f"No video URN in initialize response: {data}")
                 return None
 
             # Store upload instructions for chunk upload
             self._upload_instructions = upload_instructions
-            logging.info(f"Upload initialized. Video URN: {video_urn}, Chunks: {len(upload_instructions)}")
+            ops.info(f"Upload initialized. Video URN: {video_urn}, Chunks: {len(upload_instructions)}")
             return video_urn
 
         except Exception as e:
-            logging.error(f"Failed to initialize LinkedIn video upload: {e}", exc_info=True)
+            ops.error(f"Failed to initialize LinkedIn video upload: {e}", exception=e)
             if hasattr(e, 'response') and e.response is not None:
-                logging.error(f"Response body: {e.response.text[:500]}")
+                ops.error(f"Response body: {e.response.text[:500]}")
             return None
 
     def _upload_file_chunks(self, video_path: str, video_urn: str, file_size: int) -> bool:
@@ -110,7 +111,7 @@ class LinkedInPublisher:
                 for i, instruction in enumerate(self._upload_instructions):
                     upload_url = instruction.get("uploadUrl")
                     if not upload_url:
-                        logging.error(f"No upload URL for chunk {i}")
+                        ops.error(f"No upload URL for chunk {i}")
                         return False
 
                     # Read the chunk
@@ -118,7 +119,7 @@ class LinkedInPublisher:
                     if not chunk_data:
                         break
 
-                    logging.info(f"Uploading chunk {i+1}/{len(self._upload_instructions)} ({len(chunk_data)} bytes)...")
+                    ops.info(f"Uploading chunk {i+1}/{len(self._upload_instructions)} ({len(chunk_data)} bytes)...")
 
                     upload_headers = {
                         "Authorization": f"Bearer {self.access_token}",
@@ -127,14 +128,14 @@ class LinkedInPublisher:
 
                     resp = requests.put(upload_url, headers=upload_headers, data=chunk_data, timeout=120)
                     if resp.status_code not in (200, 201):
-                        logging.error(f"Chunk {i+1} upload failed: {resp.status_code} - {resp.text[:300]}")
+                        ops.error(f"Chunk {i+1} upload failed: {resp.status_code} - {resp.text[:300]}")
                         return False
 
-            logging.info("All chunks uploaded successfully.")
+            ops.info("All chunks uploaded successfully.")
             return True
 
         except Exception as e:
-            logging.error(f"Error uploading file chunks: {e}", exc_info=True)
+            ops.error(f"Error uploading file chunks: {e}", exception=e)
             return False
 
     def _finalize_upload(self, video_urn: str) -> bool:
@@ -149,25 +150,25 @@ class LinkedInPublisher:
                     data = resp.json()
                     status = data.get("status", "")
                     if status == "AVAILABLE":
-                        logging.info(f"Video processing complete. Status: {status}")
+                        ops.info(f"Video processing complete. Status: {status}")
                         return True
                     elif status in ("PROCESSING", "WAITING_UPLOAD"):
-                        logging.info(f"Video still processing (attempt {attempt+1}/{max_retries})...")
+                        ops.info(f"Video still processing (attempt {attempt+1}/{max_retries})...")
                         time.sleep(10)
                     elif status == "PROCESSING_FAILED":
-                        logging.error(f"Video processing failed on LinkedIn side: {data}")
+                        ops.error(f"Video processing failed on LinkedIn side: {data}")
                         return False
                     else:
-                        logging.info(f"Unknown status '{status}', waiting... (attempt {attempt+1})")
+                        ops.info(f"Unknown status '{status}', waiting... (attempt {attempt+1})")
                         time.sleep(10)
                 else:
-                    logging.warning(f"Status check returned {resp.status_code}, retrying...")
+                    ops.warning(f"Status check returned {resp.status_code}, retrying...")
                     time.sleep(10)
             except Exception as e:
-                logging.error(f"Error checking video status: {e}", exc_info=True)
+                ops.error(f"Error checking video status: {e}", exception=e)
                 time.sleep(10)
 
-        logging.error("Video processing timed out after 5 minutes.")
+        ops.error("Video processing timed out after 5 minutes.")
         return False
 
     def create_post(self, text: str, video_urn: str) -> str:
@@ -176,7 +177,7 @@ class LinkedInPublisher:
         Returns the post URN or None.
         """
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Would create LinkedIn post: '{text[:80]}...' with video {video_urn}")
+            ops.info(f"[DRY-RUN] Would create LinkedIn post: '{text[:80]}...' with video {video_urn}")
             return "urn:li:share:mock_post_456"
 
         url = f"{self.API_BASE}/rest/posts"
@@ -209,11 +210,11 @@ class LinkedInPublisher:
                     data = resp.json() if resp.text else {}
                     post_urn = data.get("id", "unknown")
                 
-                logging.info(f"LinkedIn post created successfully! Post URN: {post_urn}")
+                ops.info(f"LinkedIn post created successfully! Post URN: {post_urn}")
                 return post_urn
             else:
-                logging.error(f"Failed to create LinkedIn post: {resp.status_code} - {resp.text[:500]}")
+                ops.error(f"Failed to create LinkedIn post: {resp.status_code} - {resp.text[:500]}")
                 return None
         except Exception as e:
-            logging.error(f"Error creating LinkedIn post: {e}", exc_info=True)
+            ops.error(f"Error creating LinkedIn post: {e}", exception=e)
             return None

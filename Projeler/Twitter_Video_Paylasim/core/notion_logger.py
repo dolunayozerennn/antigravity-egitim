@@ -1,6 +1,6 @@
 import requests
-import logging
-
+from ops_logger import get_ops_logger
+ops = get_ops_logger("Twitter_Video_Paylasim", "NotionLogger")
 from config import settings
 
 class NotionLogger:
@@ -42,7 +42,7 @@ class NotionLogger:
             data = resp.json()
             return len(data.get("results", [])) > 0
         except Exception as e:
-            logging.error(f"Error checking Notion for video_id {video_id}: {e}", exc_info=True)
+            ops.error(f"Error checking Notion for video_id {video_id}: {e}", exception=e)
             # Fail safe: if we can't check, assume it might not be posted, but maybe return True to prevent double post? 
             # Better return True to avoid spamming if API is down.
             return True
@@ -52,7 +52,7 @@ class NotionLogger:
         Logs a video attempt or success to the Notion database.
         """
         if settings.IS_DRY_RUN:
-            logging.info(f"[DRY-RUN] Would log to Notion -> ID: {video_id}, Status: {status}")
+            ops.info(f"[DRY-RUN] Would log to Notion -> ID: {video_id}, Status: {status}")
             return True
 
         from datetime import datetime
@@ -87,8 +87,8 @@ class NotionLogger:
             }
             resp = requests.post(url, headers=self.headers, json=payload, timeout=10)
             resp.raise_for_status()
-            logging.info(f"Successfully logged Video ID {video_id} to Notion with status {status}.")
+            ops.info(f"Successfully logged Video ID {video_id} to Notion with status {status}.")
             return True
         except Exception as e:
-            logging.error(f"Error logging video {video_id} to Notion: {e}", exc_info=True)
+            ops.error(f"Error logging video {video_id} to Notion: {e}", exception=e)
             return False
