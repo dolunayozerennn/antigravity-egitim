@@ -56,16 +56,29 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 
 
-### dolunay-otonom-kapak (Unified Monolith V2)
-- **Platform:** `railway`
-- **Railway Project ID:** (TBD - Dağıtım bekleniyor)
-- **Service ID:** (TBD)
-- **Environment ID:** (TBD)
-- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo)
-- **Root Directory:** `Projeler/Dolunay_Otonom_Kapak/`
+### dolunay-otonom-kapak (Unified Monolith V2 — 2 CronJob)
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `9a55cc02-4e75-44f9-993c-31c6f0616c55`
+- **Environment ID:** `f23dd962-8015-45aa-ab47-94e34d8023c0`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Dolunay_Otonom_Kapak`)
 - **Lokal Klasör:** `Projeler/Dolunay_Otonom_Kapak/`
 - **Start Komutu:** `python main.py`
-- **Durum:** ⏳ Deploy bekliyor (Yeni V2 yapısı. ENV Variable üzerinden Reels/YouTube ayarlanarak deploy edilecek)
+
+#### Servis 1: reels-kapak
+- **Service ID:** `3afcca6e-8f29-4ea6-bc99-b212a4269e34`
+- **COVER_TYPE:** `reels`
+- **Cron Schedule:** `0 6 * * *` (Günlük, UTC 06:00 = TR 09:00)
+- **Son Deploy:** 2026-04-10 (V2 ilk deploy — SUCCESS)
+- **Durum:** ✅ Aktif (Günde 1 kez Reels kapak üretimi — 3 tema × 2 varyasyon = 6 kapak)
+
+#### Servis 2: youtube-kapak
+- **Service ID:** `0bfc46ea-887f-4a62-a3da-bc7fb824eb3c`
+- **COVER_TYPE:** `youtube`
+- **Cron Schedule:** `0 7 * * *` (Günlük, UTC 07:00 = TR 10:00)
+- **Son Deploy:** 2026-04-10 (V2 ilk deploy — SUCCESS)
+- **Durum:** ✅ Aktif (Günde 1 kez YouTube thumbnail üretimi — 5 tema × 2 varyasyon = 10 kapak)
+
+- **Env Vars:** COVER_TYPE, ENV, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, NOTION_DB_YOUTUBE_ISBIRLIKLERI, NOTION_DB_OPS_LOG, KIE_API_KEY, GEMINI_API_KEY, IMGBB_API_KEY, GOOGLE_OUTREACH_TOKEN_JSON
 
 ### revizyon-cron ⛔ (KALDIRILDI — unified_worker'a taşındı)
 - **Railway Project ID:** `fed6db49-de57-4fbe-9988-528416f1b668`
@@ -178,9 +191,10 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Root Directory:** `Projeler/Blog_Yazici/`
 - **Lokal Klasör:** `Projeler/Blog_Yazici/`
 - **Start Komutu:** `python run_pipeline.py --from-notion`
-- **Cron Schedule:** `0 3 * * *` (Günlük, UTC 03:00)
+- **Cron Schedule:** `0 3 * * 1` (Haftalık Pazartesi, UTC 03:00 = TR 06:00)
 - **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
-- **Durum:** ✅ Aktif (Günlük UTC 03:00, Notion'dan yeni "Yayınlandı" videoları seçip otomatik blog üretip dolunay.ai'ye publish eder)
+- **Cron Değişiklik:** 2026-04-10 — Günlükten haftalığa çekildi (Netlify free plan kredi optimizasyonu: her deploy 15 kredi, günlük=450/ay aşım, haftalık=60/ay güvenli)
+- **Durum:** ✅ Aktif (Haftalık Pazartesi UTC 03:00, Notion'dan yeni "Yayınlandı" videoları seçip otomatik blog üretip dolunay.ai'ye publish eder)
 - **Env Vars:** GROQ_API_KEY, GEMINI_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64), GITHUB_TOKEN
 
 ---
