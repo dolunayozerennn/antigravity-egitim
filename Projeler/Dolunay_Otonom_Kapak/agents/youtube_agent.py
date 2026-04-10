@@ -227,11 +227,9 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
 
 # ─── CUTOUT SELECTOR ──────────────────────────────────────────────────────────
 
-# Resolve cutouts directory: local project first, then shared Reels project
-_PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-_LOCAL_CUTOUTS = os.path.join(_PROJECT_DIR, "assets", "cutouts")
-_SHARED_CUTOUTS = os.path.join(os.path.dirname(_PROJECT_DIR), "Dolunay_Reels_Kapak", "assets", "cutouts")
-CUTOUTS_DIR = _LOCAL_CUTOUTS if os.path.exists(_LOCAL_CUTOUTS) else _SHARED_CUTOUTS
+# Resolve cutouts directory: unified project's assets/cutouts
+_PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Go up from agents/ to project root
+CUTOUTS_DIR = os.path.join(_PROJECT_DIR, "assets", "cutouts")
 
 def select_cutouts_for_theme(theme_name: str, count: int = 3, target_mood: str = "confident") -> list:
     """

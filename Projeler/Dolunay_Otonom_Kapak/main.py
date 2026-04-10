@@ -18,16 +18,11 @@ from core.ops_logger import get_ops_logger
 def get_available_cutouts(project_dir: str):
     """
     Returns a list of local cutout filenames.
-    Shared cutouts are placed centrally in assets/cutouts.
+    Cutouts are in assets/cutouts/ within the unified project.
     """
     cutout_dir = os.path.join(project_dir, "assets", "cutouts")
     if not os.path.exists(cutout_dir):
-        # Fallback to older shared folder during migration if needed
-        alt_cutout_dir = os.path.join(os.path.dirname(project_dir), "Dolunay_Reels_Kapak", "assets", "cutouts")
-        if os.path.exists(alt_cutout_dir):
-            cutout_dir = alt_cutout_dir
-        else:
-            return None, []
+        return None, []
     
     cutouts = [f for f in os.listdir(cutout_dir) if f.lower().endswith(('png', 'jpg', 'jpeg'))]
     return cutout_dir, cutouts
@@ -232,9 +227,12 @@ def main():
     logger = get_logger("Otonom_Kapak", level="INFO")
     logger.info(f"[{cover_type.upper()}] Pipeline Başlatılıyor...")
 
-    # Infinite Loop (Worker mode functionality similar to original implementation)
-    if os.environ.get("RAILWAY_ENVIRONMENT_NAME") or os.environ.get("LOOP") == "1":
-        logger.info(f"🔄 [Railway Worker Mode] Döngüsü Başlatıldı. Sık aralıklarla {cover_type} logları kontrol edilecek...")
+    # CronJob Mode (default) — tek sefer çalıştır, çık
+    # Worker Mode (opt-in) — LOOP=1 ile sonsuz döngü
+    use_worker_loop = os.environ.get("LOOP") == "1"
+
+    if use_worker_loop:
+        logger.info(f"🔄 [Worker Mode] Döngüsü Başlatıldı. {cover_type} pipeline sonsuz döngüde çalışacak...")
         while True:
             try:
                 if cover_type == "reels":
@@ -248,10 +246,18 @@ def main():
             logger.info("⏳ 10 dakika bekleniyor...")
             time.sleep(600)
     else:
-        if cover_type == "reels":
-            process_reels(logger)
-        else:
-            process_youtube(logger)
+        # CronJob Mode — çalıştır ve çık
+        logger.info(f"⏱️ [CronJob Mode] Tek seferlik çalışma başlatıldı.")
+        try:
+            if cover_type == "reels":
+                process_reels(logger)
+            else:
+                process_youtube(logger)
+            logger.info(f"✅ [{cover_type.upper()}] Pipeline tamamlandı. Çıkılıyor.")
+        except Exception as e:
+            logger.error(f"Pipeline hatası: {e}", exc_info=True)
+            get_ops_logger(f"{cover_type.capitalize()}_Kapak", "Pipeline").error(f"Fatally Failed: {e}", exception=e)
+            sys.exit(1)
 
 
 if __name__ == "__main__":
