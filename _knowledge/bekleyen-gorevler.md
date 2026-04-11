@@ -32,6 +32,15 @@ _Şu an bekleyen görev bulunmamaktadır._
 
 > Aşağıdaki görevler tamamlanmış ve referans amaçlı saklanmaktadır.
 
+### ✅ Ekosistem Geneli Anti-Klişe Prompt Optimizasyonu (11 Nisan 2026)
+- **Kaynak:** Kullanıcı Talebi — Otonom Kapak ve diğer metin jeneratörleri
+- **Yapılanlar:** 
+  1. Dolunay_Otonom_Kapak ("bilgisayar kullanan insan" klişesi yasaklandı, fiziksel metafor eklendi)
+  2. Blog_Yazici ("Sonuç olarak", "Dijital çağda" tarzı yapay zeka kalıpları yasaklandı)
+  3. LinkedIn_Text_Paylasim ("Hey network", aşırı emoji kullanımı ve sahte heyecan yasaklandı)
+  4. Marka_Is_Birligi (Cold outreach "I hope this email finds you well" başlangıcı yasaklandı)
+- Tüm README'ler güncellenerek GitHub'a tek seferde deploy edildi.
+
 ### ✅ Sistem Optimizasyonu — Disk & Mimari Temizliği (3 Nisan 2026)
 - **Kaynak:** Teknik Audit konuşması
 - **Yapılanlar:** ~3.7 GB disk alanı kazanıldı (venv'ler, node_modules, temp dosyalar). Ölü klasörler (Lead_Notifier_Bot, Tele_Satis_CRM) silindi. Orphan dosyalar arşive taşındı. 3 hayalet Railway projesi temizlendi. Dokümantasyon güncellendi.

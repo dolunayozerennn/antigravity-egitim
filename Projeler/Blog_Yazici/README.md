@@ -20,7 +20,7 @@ Notion "Yayınlandı" Videoları
   → Vision LLM Analiz (vision_analyzer.py — Groq Llama 4 Scout)
   → Dinamik Annotation (annotate_v3.py — 2x supersampling, auto-highlight)
   → Self-Review ve Auto-Fix (Groq Vision)
-  → Blog Metni Üretimi (generate_blog.py — OpenAI GPT-4.1)
+  → Blog Metni Üretimi (generate_blog.py — OpenAI GPT-4.1 — Yapay zeka klişeleri örn: 'Sonuç olarak' katı şekilde yasaklı)
   → Kapak Görseli Üretimi (cover_generator.py — Apify Flux)
   → Netlify & GitHub Deploy (blog_publisher.py)
   → Yayına Hazır Blog Yazısı

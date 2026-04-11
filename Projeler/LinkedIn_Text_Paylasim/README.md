@@ -17,7 +17,7 @@ Her hafta iki ayrı LinkedIn postu otomatik olarak üretir ve paylaşır:
 ```
 Schedule Trigger
   → Perplexity API (Güncel AI haberleri/tips araştır)
-  → GPT-4.1 (LinkedIn postu yaz)
+  → GPT-4.1 (LinkedIn postu yaz — Anti-klişe: Emoji spam ve 'Hey network' kullanımı yasaklı)
   → GPT-4.1-mini (Görsel prompt üret)
   → Gemini (Görsel üret)
   → LinkedIn API (Metin + görsel paylaş)

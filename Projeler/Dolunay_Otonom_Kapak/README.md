@@ -32,11 +32,11 @@ Dolunay_Otonom_Kapak/
 ## 🔄 Pipeline Akışı
 
 1. **Notion Query** → "Çekildi" statüsündeki videoları getir
-2. **Tema Üretimi** → Gemini ile 3 (Reels) veya 5 (YouTube) farklı konsept oluştur
+2. **Tema Üretimi** → Gemini ile 3 (Reels) veya 5 (YouTube) farklı konsept oluştur *(Anti-klişe: Ekrana bakan insan yasaktır, sadece fiziksel güçlü metaforlar üretilir)*
 3. **Cutout Seçimi** → Kişi fotoğrafları arasından mood'a göre otomatik seçim
 4. **Görsel Üretim** → Kie AI'ya cutout + prompt gönder (9:16 veya 16:9)
-5. **Self-Review** → Gemini Vision ile otomatik değerlendirme (metin, safe zone, yüz kimliği)
-6. **Iterasyon** → Skor < 8 ise prompt iyileştirip yeniden üret (max N retry)
+5. **Self-Review** → Gemini Vision ile otomatik değerlendirme (metin, safe zone, yüz kimliği ve 'masa başı klişesi' kontrolü)
+6. **Iterasyon** → Skor < 8 ise veya görsel klişe ise prompt iyileştirip yeniden üret (max N retry)
 7. **Drive Upload** → Onaylanan kapağı Google Drive THUMBNAIL klasörüne yükle
 8. **Revizyon Paneli** → Notion sayfasına tema linkli revizyon paneli ekle
 
