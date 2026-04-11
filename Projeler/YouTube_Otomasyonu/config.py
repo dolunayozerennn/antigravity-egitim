@@ -47,8 +47,9 @@ class Config:
         # ── YouTube Upload ──
         self.YOUTUBE_CLIENT_ID = os.environ.get("YOUTUBE_CLIENT_ID", "")
         self.YOUTUBE_CLIENT_SECRET = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
-        self.YOUTUBE_CATEGORY_ID = os.environ.get("YOUTUBE_CATEGORY_ID", "28")  # Science & Technology
-        self.YOUTUBE_PRIVACY = os.environ.get("YOUTUBE_PRIVACY", "unlisted")  # unlisted for safety
+        self.YOUTUBE_REFRESH_TOKEN = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
+        self.YOUTUBE_CATEGORY_ID = os.environ.get("YOUTUBE_CATEGORY_ID", "15")  # Pets & Animals
+        self.YOUTUBE_PRIVACY = os.environ.get("YOUTUBE_PRIVACY", "public")  # public — videonun izlenmesi gerekiyor
         self.YOUTUBE_ENABLED = os.environ.get("YOUTUBE_ENABLED", "false").lower() == "true"
 
         # ── Telegram Bot (V2 — Chat-based) ──

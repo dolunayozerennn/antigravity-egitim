@@ -27,3 +27,9 @@ auto_config.json
 
 # OS
 .DS_Store
+
+# n8n workflow dosyaları (referans — commit edilmez)
+*.json
+!topics.json
+!youtube_credentials.json
+!auto_config.json

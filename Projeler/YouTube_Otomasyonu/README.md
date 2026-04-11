@@ -1,6 +1,7 @@
 # YouTube Otomasyonu V2
 
 > Chat-based Telegram bot ile otonom video üretimi sistemi.
+> **Pets Got Talent** kanalı — 7/24 otonom çalışır.
 
 ## 🎯 Ne Yapıyor?
 
@@ -8,10 +9,10 @@ Telegram üzerinden doğal dilde sohbet ederek video üretimini başlatır:
 
 1. **Sohbet** — Kullanıcı video fikrini anlatır
 2. **Bilgi Toplama** — Bot sorular sorarak detayları netleştirir (model, format, süre)
-3. **Prompt Üretimi** — GPT-4.1 ile model-spesifik video promptları üretir
+3. **Viral Prompt Üretimi** — 21 kanıtlanmış senaryo havuzu + GPT-4.1 zenginleştirme
 4. **Video Üretimi** — Kie AI üzerinden Seedance 2.0 veya Veo 3.1 ile video üretir
 5. **Birleştirme** — Çoklu klipleri Replicate API (veya FFmpeg fallback) ile birleştirir
-6. **YouTube Upload** — Data API v3 ile YouTube'a yükler
+6. **YouTube Upload** — Data API v3 ile YouTube'a yükler (ENV-based OAuth2)
 7. **Loglama** — Notion'a detaylı pipeline kaydı yazar
 
 ## 🏗️ Mimari
@@ -45,8 +46,9 @@ Kullanıcı → Telegram Bot → GPT-4.1 → Kie AI (Seedance/Veo) → Replicate
 | `OPENAI_API_KEY` | ✅ | GPT-4.1 + Whisper |
 | `KIE_API_KEY` | ✅ | Kie AI video üretimi |
 | `REPLICATE_API_TOKEN` | ✅ | Video birleştirme |
-| `YOUTUBE_CLIENT_ID` | ❌ | YouTube upload (opsiyonel) |
-| `YOUTUBE_CLIENT_SECRET` | ❌ | YouTube upload (opsiyonel) |
+| `YOUTUBE_CLIENT_ID` | ⚡ | YouTube upload (Railway'de zorunlu) |
+| `YOUTUBE_CLIENT_SECRET` | ⚡ | YouTube upload (Railway'de zorunlu) |
+| `YOUTUBE_REFRESH_TOKEN` | ⚡ | YouTube OAuth2 refresh token (Railway'de zorunlu) |
 | `YOUTUBE_ENABLED` | ❌ | `true` → YouTube'a yükle |
 | `NOTION_SOCIAL_TOKEN` | ❌ | Notion API token |
 | `NOTION_DB_YOUTUBE_OTOMASYON` | ❌ | Notion database ID |

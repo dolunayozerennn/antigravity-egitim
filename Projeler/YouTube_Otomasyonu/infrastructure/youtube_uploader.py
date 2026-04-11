@@ -1,7 +1,9 @@
 """
 YouTube Uploader V2 — YouTube Data API v3 ile video yükleme.
 Shorts (#Shorts tag) ve Long-form desteği.
-OAuth2 authentication, resumable upload, dry-run desteği.
+
+Railway-uyumlu OAuth2: Token bilgilerini ENV variable'lardan okur,
+dosya sistemi olmadan çalışır. Headless ortamda browser gerekmez.
 """
 import os
 import json
@@ -113,66 +115,100 @@ async def upload_to_youtube(video_path: str, prompt_data: dict, is_shorts: bool 
     log.info(f"   URL: {video_url}")
     log.info(f"   Video ID: {video_id}")
 
+    # Token'ı güncelle (refresh olduysa)
+    _save_token_if_needed(creds)
+
     return video_url
 
 
 def _get_credentials():
-    """OAuth2 credentials'ı al veya yenile."""
-    from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    from google.auth.transport.requests import Request
+    """
+    OAuth2 credentials'ı al.
 
-    token_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "youtube_token.json")
-    creds_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "youtube_credentials.json")
+    Öncelik sırası:
+    1. ENV variable'lardan reconstruct (Railway uyumlu — ÖNCELİKLİ)
+    2. Lokal dosyadan oku (geliştirme ortamı fallback)
+    """
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
 
     creds = None
 
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, [YOUTUBE_UPLOAD_SCOPE])
+    # ── Yöntem 1: ENV'den Reconstruct (Railway) ──
+    refresh_token = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
+    client_id = settings.YOUTUBE_CLIENT_ID
+    client_secret = settings.YOUTUBE_CLIENT_SECRET
 
-    if creds and creds.expired and creds.refresh_token:
-        log.info("🔄 YouTube token yenileniyor...")
-        creds.refresh(Request())
-        with open(token_path, "w") as f:
-            f.write(creds.to_json())
-        log.info("✅ Token yenilendi.")
-
-    elif not creds or not creds.valid:
-        if not os.path.exists(creds_path):
-            _create_credentials_file(creds_path)
-
-        log.info("🔐 YouTube OAuth2 akışı başlatılıyor...")
-        flow = InstalledAppFlow.from_client_secrets_file(creds_path, [YOUTUBE_UPLOAD_SCOPE])
-        creds = flow.run_local_server(port=0)
-
-        with open(token_path, "w") as f:
-            f.write(creds.to_json())
-        log.info("✅ YouTube token kaydedildi.")
-
-    return creds
-
-
-def _create_credentials_file(creds_path: str):
-    """Config'deki Client ID/Secret'tan credentials.json oluşturur."""
-    if not settings.YOUTUBE_CLIENT_ID or not settings.YOUTUBE_CLIENT_SECRET:
-        raise RuntimeError(
-            "YouTube upload için YOUTUBE_CLIENT_ID ve YOUTUBE_CLIENT_SECRET gerekli!"
+    if refresh_token and client_id and client_secret:
+        log.info("🔑 YouTube credentials ENV'den yükleniyor (Railway modu)...")
+        creds = Credentials(
+            token=None,  # Expired — refresh gerekecek
+            refresh_token=refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=client_id,
+            client_secret=client_secret,
+            scopes=[YOUTUBE_UPLOAD_SCOPE],
         )
 
-    credentials_data = {
-        "installed": {
-            "client_id": settings.YOUTUBE_CLIENT_ID,
-            "client_secret": settings.YOUTUBE_CLIENT_SECRET,
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": ["http://localhost"],
-        }
-    }
+        # Token'ı refresh et
+        try:
+            creds.refresh(Request())
+            log.info("✅ YouTube token ENV'den refresh edildi.")
+            return creds
+        except Exception as e:
+            log.error(f"❌ ENV-based token refresh başarısız: {e}", exc_info=True)
+            # Lokal fallback'e düş
 
-    with open(creds_path, "w") as f:
-        json.dump(credentials_data, f, indent=2)
+    # ── Yöntem 2: Lokal Dosyadan Oku (Geliştirme) ──
+    token_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "youtube_token.json")
 
-    log.info(f"📝 YouTube credentials dosyası oluşturuldu: {creds_path}")
+    if os.path.exists(token_path):
+        log.info("📁 YouTube credentials lokal dosyadan yükleniyor...")
+        creds = Credentials.from_authorized_user_file(token_path, [YOUTUBE_UPLOAD_SCOPE])
+
+        if creds and creds.expired and creds.refresh_token:
+            log.info("🔄 YouTube token yenileniyor...")
+            creds.refresh(Request())
+            with open(token_path, "w") as f:
+                f.write(creds.to_json())
+            log.info("✅ Token yenilendi ve kaydedildi.")
+
+        if creds and creds.valid:
+            return creds
+
+    # ── Yöntem 3: İlk Kez Kurulum (Sadece Lokal) ──
+    if not settings.ENV == "production":
+        creds_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "youtube_credentials.json")
+        if os.path.exists(creds_path):
+            log.info("🔐 YouTube OAuth2 akışı başlatılıyor (ilk kurulum)...")
+            from google_auth_oauthlib.flow import InstalledAppFlow
+            flow = InstalledAppFlow.from_client_secrets_file(creds_path, [YOUTUBE_UPLOAD_SCOPE])
+            creds = flow.run_local_server(port=0)
+
+            with open(token_path, "w") as f:
+                f.write(creds.to_json())
+            log.info("✅ YouTube token oluşturuldu ve kaydedildi.")
+            return creds
+
+    raise RuntimeError(
+        "YouTube credentials bulunamadı! "
+        "Railway'de YOUTUBE_REFRESH_TOKEN, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET "
+        "env variable'ları set edilmeli. "
+        "Lokal'de youtube_token.json veya youtube_credentials.json olmalı."
+    )
+
+
+def _save_token_if_needed(creds):
+    """Lokal ortamda token'ı dosyaya kaydet (Railway'de geçer)."""
+    if settings.ENV == "production":
+        return  # Railway'de dosya sistemi ephemeral — kaydetme
+
+    token_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "youtube_token.json")
+    try:
+        with open(token_path, "w") as f:
+            f.write(creds.to_json())
+    except Exception:
+        pass  # Kritik değil
 
 
 def _build_description(prompt_data: dict, is_shorts: bool) -> str:
