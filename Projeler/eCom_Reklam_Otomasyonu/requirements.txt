@@ -1,0 +1,18 @@
+# eCom Reklam Otomasyonu — Kilitli Bağımlılıklar
+# Projenize eklenecek her yeni paketin bir '==' numarası olmak ZORUNDADIR. (Strict Pinning)
+
+# Telegram Bot Framework
+python-telegram-bot==21.10
+
+# OpenAI (GPT-5 Mini — Chat + Vision)
+openai==1.68.2
+
+# HTTP İstekleri (Kie AI, ElevenLabs, ImgBB, Replicate, Perplexity)
+requests==2.32.3
+urllib3==2.2.1
+
+# Notion SDK
+notion-client==2.2.1
+
+# Replicate (Video + Ses Birleştirme)
+replicate==1.0.4

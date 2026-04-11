@@ -1,0 +1,36 @@
+# Environment & Credentials
+.env
+.env.*
+!.env.example
+master.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+/tmp/
+*.tmp
+*.log
+
+# Storyboard / demo dosyaları
+*.json
+!package.json
