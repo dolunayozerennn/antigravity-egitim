@@ -35,14 +35,22 @@ main.py → Scheduler + Workflow Orchestration
 
 ## Filter Strictness Seviyeleri
 
-- **relaxed:** Sadece açıkça uygunsuz içerikler reddedilir
-- **moderate:** (default) İş dünyasıyla ilişkili içerikler geçer, casual eğlence reddedilir
+- **relaxed:** (varsayılan) Her türlü içerik kabul edilir — sadece açık küfür, nefret veya cinsel içerik reddedilir
+- **moderate:** Eğlence, lifestyle, kişisel içerikler dahil kabul edilir — sadece açıkça uygunsuz reddedilir
 - **strict:** Sadece direkt iş/yatırım/kariyer içerikleri geçer
 
-## 🛡️ Stabilizasyon ve Hata Giderme (2026-03-26)
+> **Fallback:** Tüm videolar content filter tarafından reddedilirse, en düşük güvenle reddedilen video otomatik olarak kabul edilir.
 
+## 🛡️ Stabilizasyon ve Hata Giderme
+
+### 2026-03-26
 - **Fix 1:** LinkedIn API versiyon `202403` sunset olmuştu → `202503`'e güncellendi
 - **Fix 2:** yt-dlp `2024.3.10` → `2026.3.17`'ye güncellendi (TikTok extraction uyumluluğu)
 - **Fix 3:** `.gitignore`'a `token.json`, `credentials.json`, `.venv/` eklendi
 - **Fix 4:** README'deki `NOTION_TOKEN` env var adı `NOTION_SOCIAL_TOKEN` olarak düzeltildi
-- **Doğrulama:** Tüm komponent testleri (Content Filter, Caption, Notion Logger, LinkedIn API) başarılı
+
+### 2026-04-11 (Büyük Fix)
+- **Fix 5:** Content filter prompt'ları ultra-esnek yapıldı — 7+ gün boyunca tüm videolar reddediliyordu
+- **Fix 6:** Fallback mekanizması eklendi — tüm videolar filtrelenince en düşük güvenli reddedilen kabul ediliyor
+- **Fix 7:** `wait_all_loggers()` eklendi — tüm OpsLogger queue'ları container exit öncesi flush
+- **Fix 8:** Railway env var `LINKEDIN_FILTER_STRICTNESS` → `relaxed` olarak güncellendi

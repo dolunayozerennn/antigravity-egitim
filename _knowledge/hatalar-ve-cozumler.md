@@ -162,6 +162,34 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 
 ---
 
+## LinkedIn Automation
+
+### LinkedIn Images API URN Format Uyumsuzluğu — v2/assets vs rest/posts (KRİTİK)
+- **Sorun:** `LinkedIn_Text_Paylasim` projesinde görsel+metin postu oluşturma her zaman başarısız. LinkedIn'e hiç görselli post atılamadı.
+- **Kök Neden:** Eski `v2/assets?action=registerUpload` API'si `urn:li:digitalmediaAsset:...` formatında URN döndürüyor, ama yeni `rest/posts` API'si `content.media.id` alanında `urn:li:image:...` formatı bekliyor. Format uyumsuzluğu 4xx hata döndürüyor.
+- **Çözüm:** Görsel upload `rest/images?action=initializeUpload` endpoint'ine migrate edildi. Bu endpoint `urn:li:image:...` formatında URN döndürüyor ve `rest/posts` ile uyumlu.
+- **Kural:** LinkedIn API'da eski (v2) ve yeni (rest) endpoint'ler aynı anda kullanılMAMALI. Her iki operasyon (upload + post) aynı API versiyonundan olmalı.
+- **Tarih:** 11 Nisan 2026
+
+### LinkedIn Video Content Filter — Groq LLM Tüm Videoları Reddediyor (KRİTİK)
+- **Sorun:** `LinkedIn_Video_Paylasim` pipeline'ı 7+ gün boyunca hiçbir TikTok videosunu LinkedIn'e paylaşamadı. Groq (llama-3.3-70b) content filter, "moderate" modda bile her videoyu reddetti.
+- **Kök Neden:** "moderate" prompt'taki kriter ("kurumsal olması gerekmez" demesine rağmen) LLM'in yorumlaması çok dardı. "Evcil hayvan koleksiyonu", "casual ve kişisel", "eğlence" gibi sebeplerle hep REJECT kararı verdi.
+- **Çözüm (3 katman):**
+  1. Prompt'lar ultra-esnek yapıldı — moderate şimdi "Diğer HER ŞEYİ KABUL ET" diyor
+  2. Railway env var `LINKEDIN_FILTER_STRICTNESS=relaxed` yapıldı (sadece küfür/nefret/cinsel reddet)
+  3. **Fallback mekanizması** eklendi: Tüm videolar reddedilirse, en düşük güvenle reddedilen ZORLA kabul edilir
+- **Kural:** LLM content filter'ları beklenenden daha kısıtlayıcı olabilir. Her zaman fallback eklenmeli.
+- **Tarih:** 11 Nisan 2026
+
+### OpsLogger Queue Flush — Container Exit Before Logs Written
+- **Sorun:** Her iki LinkedIn projesinde ops logları Notion'a ulaşmıyordu. Ops log query'si boş dönüyordu.
+- **Kök Neden:** `ops.wait_for_logs()` sadece `main.py`'deki Pipeline OpsLogger instance'ını bekliyordu. Core modüllerdeki (LinkedinPublisher, ContentFilter vb.) OpsLogger instance'ları ayrı queue'lara sahip ve bunlar flush edilmeden container kapanıyordu.
+- **Çözüm:** `wait_all_loggers()` fonksiyonu eklendi — `_instances` dict'teki TÜM OpsLogger'ların queue'larını boşaltır. Container kapanmadan önce bu çağrılıyor.
+- **Kural:** CronJob projelerinde `ops_logger` birden fazla instance oluşturuyorsa (farklı component adlarıyla), exit'ten önce `wait_all_loggers()` çağır.
+- **Tarih:** 11 Nisan 2026
+
+---
+
 ## Kod-Repo Senkronizasyon Hataları
 
 ### Config.DEDUP_WINDOW_DAYS AttributeError — Lokal ↔ Production Uyumsuzluğu (KRİTİK)
@@ -402,3 +430,34 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Kural:** Hosting değişikliği önerisi yapılırken Cloudflare Pages ÖNERİLMEZ. Kullanıcı daha önce denedi ve başarısız oldu.
 - **Tarih:** Nisan 2026
 
+---
+
+## GitHub — Pages Build Spam (Alarm Yorgunluğu)
+
+### Her Push'ta "Run failed: pages build and deployment" Maili — SAHTE ALARM (KRİTİK)
+- **Sorun:** `antigravity-egitim` mono-reposuna her `git push` yapıldığında GitHub otomatik olarak "pages build and deployment" workflow'unu tetikliyordu. Repo bir statik site olmadığı için (Python projeleri ve markdown dosyaları barındırır) her build KESİNLİKLE başarısız oluyor ve "Run failed" bildirim maili gönderiyordu. Tek günde 10+ sahte hata maili alınıyordu.
+- **Etki:** Gerçek Railway crash mailleri ile sahte GitHub Pages mailleri birbirine karışıyordu → **alarm yorgunluğu (alert fatigue)** → gerçek sorunlar gözden kaçıyordu.
+- **Kök Neden:** GitHub Pages özelliği açık bırakılmıştı (muhtemelen eski bir deneme). Mono-repo mimarisinde her push Actions workflow'unu tetikliyor.
+- **Çözüm (11 Nisan 2026):**
+  1. GitHub API ile Pages tamamen kapatıldı (`DELETE /repos/.../pages` → HTTP 204)
+  2. GitHub Actions da repo düzeyinde devre dışı bırakıldı (`PUT /repos/.../actions/permissions` → `enabled: false`)
+- **Kural:**
+  1. Statik site barındırmayan GitHub repolarında **Pages özelliği kapalı olmalı**. Yeni repo oluşturulduğunda kontrol et.
+  2. `antigravity-egitim` gibi mono-repo'larda CI/CD, Railway'in kendi build sistemi ile yapılır — GitHub Actions KULLANILMAZ.
+  3. Alarm yorgunluğu ciddi bir operasyonel risktir. Her sahte alarm kaynağı derhal kapatılmalıdır.
+- **Tarih:** 11 Nisan 2026
+
+---
+
+## Pre-Push Test Kapsamı — Import Testi Tek Başına Yetersiz
+
+### Import Testi Geçiyor Ama Runtime'da TypeError CRASH — Caller ↔ Callee İmza Uyumsuzluğu (KRİTİK)
+- **Sorun:** Deploy öncesi import testi (`python3 -c "import modül"`) tüm modülleri başarıyla import ediyordu (✅ 12/12). Ancak production'da `get_logger("Otonom_Kapak", level="INFO")` çağrısı `TypeError: got an unexpected keyword argument 'level'` ile CRASH oldu. Import testi bu hatayı YAKALAYAMAZ çünkü modül yükleniyor ama fonksiyon çağrılmıyor.
+- **Kök Neden:** Import testi sadece modülün Python yorumlayıcısına yüklenip yüklenemeyeceğini kontrol eder. Fonksiyonların doğru argümanlarla çağrılıp çağrılmadığını doğrulamaz. `main.py` `get_logger(name, level=...)` çağırıyor, `logger.py` sadece `get_logger(name)` kabul ediyor — bu uyumsuzluk ancak fonksiyon **çalıştırıldığında** ortaya çıkıyor.
+- **Etki:** V2 geçişinde servisler 21 saat boyunca çökük kaldı. İmport testi "✅ geçti" dediği için güvenle push edildi.
+- **Çözüm:** Deploy workflow'una (`canli-yayina-al.md`) **Adım 2.5.9 — Caller ↔ Callee İmza Doğrulaması** eklendi. Python AST modülü ile entry point'teki fonksiyon çağrılarının keyword argümanları, aynı projedeki fonksiyon tanımlarıyla karşılaştırılır. Uyumsuzluk bulunursa push engellenir.
+- **Kural:**
+  1. Import testi GEREKLİDİR ama TEK BAŞINA YETERSİZ — her zaman imza doğrulaması ile birlikte çalıştırılmalı
+  2. Bir fonksiyonun **çağrı noktasını** (caller) değiştirirken, **tanımını** (callee) da güncelle
+  3. Bir fonksiyonun **tanımını** değiştirirken, **tüm çağrı noktalarını** `grep` ile bul ve uyumlu olduğunu doğrula
+- **Tarih:** 11 Nisan 2026

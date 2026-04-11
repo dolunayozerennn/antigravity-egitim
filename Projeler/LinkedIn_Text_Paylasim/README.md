@@ -19,8 +19,9 @@ Schedule Trigger
   → Perplexity API (Güncel AI haberleri/tips araştır)
   → GPT-4.1 (LinkedIn postu yaz — Anti-klişe: Emoji spam ve 'Hey network' kullanımı yasaklı)
   → GPT-4.1-mini (Görsel prompt üret)
-  → Gemini (Görsel üret)
-  → LinkedIn API (Metin + görsel paylaş)
+  → Kie AI Nano Banana 2 (Görsel üret)
+  → LinkedIn Images API (rest/images — initializeUpload + binary upload)
+  → LinkedIn Posts API (rest/posts — metin + urn:li:image paylaş)
   → Notion (Log yaz)
 ```
 
@@ -34,8 +35,8 @@ LinkedIn_Text_Paylasim/
 ├── core/
 │   ├── researcher.py      → Perplexity API (AI haberleri araştırması)
 │   ├── post_writer.py     → GPT-4.1 (post yazma)
-│   ├── image_generator.py → GPT-4.1-mini (prompt) + Gemini (görsel)
-│   ├── linkedin_publisher.py → LinkedIn API (paylaşım)
+│   ├── image_generator.py → GPT-4.1-mini (prompt) + Kie AI Nano Banana 2 (görsel)
+│   ├── linkedin_publisher.py → LinkedIn Images API + Posts API (paylaşım)
 │   └── notion_logger.py   → Notion loglama + duplicate kontrol
 ├── n8n_workflows/         → Orijinal n8n JSON dosyaları (referans)
 ├── requirements.txt       → Pinned dependencies
@@ -49,11 +50,12 @@ LinkedIn_Text_Paylasim/
 |----------|----------|
 | `PERPLEXITY_API_KEY` | AI haberleri araştırması |
 | `OPENAI_API_KEY` | Post yazma + görsel prompt |
-| `GEMINI_API_KEY` | Görsel üretme |
-| `LINKEDIN_ACCESS_TOKEN` | LinkedIn post paylaşma |
+| `KIE_API_KEY` | Kie AI Nano Banana 2 görsel üretimi |
+| `LINKEDIN_ACCESS_TOKEN` | LinkedIn post paylaşma (OAuth2, 60 gün süreli) |
 | `LINKEDIN_PERSON_URN` | LinkedIn profil URN |
 | `NOTION_SOCIAL_TOKEN` | Notion log yazma |
 | `NOTION_LINKEDIN_DB_ID` | Notion database ID |
+| `NOTION_DB_OPS_LOG` | Ops log database ID |
 | `TZ=Europe/Istanbul` | Railway timezone |
 
 ## 🧑‍💻 Lokal Test
@@ -72,4 +74,11 @@ ENV=production python main.py
 - ✅ Syntax kontrolü geçti
 - ✅ Railway'e deploy (27 Mart 2026 — CronJob: `0 5 * * 1,4`)
 - ✅ Notion DB `Post Tipi` property eklendi + fail-safe bug fix (1 Nisan 2026)
+
+## 🛡️ Stabilizasyon (2026-04-11)
+
+- **Fix 1:** Görsel üretim Gemini → Kie AI Nano Banana 2'ye migrate edildi
+- **Fix 2:** Görsel upload v2/assets (registerUpload) → rest/images (initializeUpload) API'ye geçirildi — URN format uyumsuzluğu düzeltildi
+- **Fix 3:** `_create_post()` hata loglaması iyileştirildi — HTTP response body + author/image bilgisi detaylı yazılıyor
+- **Fix 4:** `wait_all_loggers()` eklendi — tüm OpsLogger instance queue'ları container exit öncesi flush ediliyor
 

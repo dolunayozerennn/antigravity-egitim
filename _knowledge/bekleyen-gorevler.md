@@ -52,6 +52,17 @@
 - **Kontrol 2:** ⏳ (2026-04-13 — ikinci kontrol)
 - **Sonuç:** 2 temiz kontrol → arşive taşı
 
+### 🟡 48-Saat İzleme — LinkedIn Otomasyonu (Text + Video)
+- **Deploy tarihi:** 2026-04-11 (4 kritik fix — Images API migration, content filter relaxed, ops logger flush, fallback)
+- **İzleme bitiş:** 2026-04-13
+- **Kontrol 1:** ⏳ (2026-04-12 — Text cron: Pazartesi/Perşembe, Video cron: günlük)
+- **Kontrol 2:** ⏳ (2026-04-13 — ikinci çalışma)
+- **Fix özeti:** 
+  - Text: v2/assets → rest/images API migration (URN format fix)
+  - Video: content filter "relaxed" + fallback mekanizması (tüm videolar filtrelenince en düşük güvenli kabul)
+  - Her ikisi: wait_all_loggers() ile tüm ops instance'ları flush
+- **Sonuç:** 2 temiz kontrol → arşive taşı
+
 ---
 
 ## Tamamlanan TODO'lar (Arşiv)
