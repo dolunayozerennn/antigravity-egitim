@@ -230,7 +230,21 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-## 📌 Askıda / Geliştirme Aşamasındaki Projeler (Deploy Yok)
+### youtube-otomasyonu-v2 (Worker — Telegram Polling)
+- **Platform:** `railway`
+- **Railway Project ID:** `87e24335-52c9-460f-8b2e-0f481f5501bd`
+- **Service ID:** `d17abb9e-3ef1-4f50-98c1-f4290bb2f090`
+- **Environment ID:** `30bb2f27-0297-4148-88f0-d28f2ac58a6c`
+- **Deployment ID:** `4cf818f0-d2d3-482a-bef6-8e97595432a5`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/YouTube_Otomasyonu`)
+- **Lokal Klasör:** `Projeler/YouTube_Otomasyonu/`
+- **Start Komutu:** `python main.py`
+- **Son Deploy:** 2026-04-11 (V2 ilk deploy — Chat-based Telegram bot + Seedance 2.0 / Veo 3.1 + Otonom mod)
+- **YouTube Kanalı:** Pets Got Talent (UCvj1A1gds6jZUgsPbhF3Muw) — OAuth2 bağlı
+- **Durum:** ✅ Aktif (7/24 Telegram bot — YouTube video üretim otomasyonu)
+- **Env Vars:** ENV, OPENAI_API_KEY, KIE_API_KEY, REPLICATE_API_TOKEN, TELEGRAM_YOUTUBE_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, ALLOWED_USER_IDS, NOTION_SOCIAL_TOKEN, NOTION_DB_YOUTUBE_OTOMASYON, DEFAULT_MODEL, YOUTUBE_ENABLED
+
+---
 
 | Proje | Klasör | Platform | Son Değişiklik | Durum | Not |
 |-------|--------|----------|----------------|-------|-----|
