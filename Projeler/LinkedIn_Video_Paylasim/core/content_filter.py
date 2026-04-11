@@ -15,8 +15,8 @@ class ContentFilter:
     """
 
     STRICTNESS_PROMPTS = {
-        "relaxed": "Sadece açıkça uygunsuz içerikleri reddet (küfür, nefret söylemi, cinsel içerik). Eğlendirici veya günlük hayat içerikleri kabul edilebilir.",
-        "moderate": "Dolunay, Dubai'de gayrimenkul danışmanı olmasının yanı sıra bir içerik üreticisi ve girişimcidir. LinkedIn profilinde gayrimenkul, yatırım, iş dünyası, motivasyon, teknoloji, yapay zeka, kişisel gelişim, girişimcilik VE lifestyle/yaşam tarzı konularını paylaşır. Dolunay'ın TikTok'taki içerikleri genellikle bu alanlara dokunur. Bir videonun LinkedIn'e uygun olması için tamamen kurumsal olması GEREKMEZ — eğitici, ilham verici, eğlendirici ama profesyonel bağlamda paylaşılabilir içerikler de KABUL EDİLMELİDİR. Sadece açıkça uygunsuz (küfür, nefret, cinsel), spam veya tamamen anlamsız içerikleri reddet. Şüphe durumunda KABUL ET.",
+        "relaxed": "Her türlü içerik LinkedIn'de paylaşılabilir. Sadece açık küfür, nefret söylemi veya cinsel içerik içeren videoları reddet. Bunların dışındaki TÜM içerikler — eğlence, günlük hayat, kişisel, lifestyle, motivasyon, komedi dahil — KABUL EDİLMELİDİR. Şüphe durumunda MUTLAKA KABUL ET.",
+        "moderate": "Dolunay bir içerik üreticisi ve girişimcidir. LinkedIn profilinde her türlü konuyu paylaşır — gayrimenkul, teknoloji, motivasyon, lifestyle, komedi, günlük hayat, kişisel deneyimler, eğlence. Bir videonun kurumsal veya profesyonel olması GEREKMEZ. Eğlenceli, kişisel, casual, günlük hayata dair içerikler de LinkedIn'de gayet paylaşılabilir. Sadece açık küfür, nefret söylemi, spam veya cinsel içerik barındıran videoları reddet. Diğer HER ŞEYİ KABUL ET. Şüphe durumunda MUTLAKA KABUL ET. REJECT kararı verme eşiğin ÇOK YÜKSEK olmalı.",
         "strict": "Sadece doğrudan iş dünyası, gayrimenkul, finans, yatırım, kariyer gelişimi veya profesyonel eğitim içeriklerini kabul et. Diğer her şeyi reddet."
     }
 

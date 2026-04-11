@@ -53,35 +53,29 @@ class LinkedInPublisher:
 
     def _upload_image(self, image_path: str) -> str:
         """
-        Görseli LinkedIn'e yükler ve asset URN döndürür.
-        LinkedIn Images API (registerUpload + binary upload).
+        Görseli LinkedIn'e yükler ve image URN döndürür.
+        Yeni LinkedIn Images API (initializeUpload + binary upload).
+        Dönen URN formatı: urn:li:image:... (rest/posts API ile uyumlu).
         """
         try:
-            # Step 1: Register Upload
-            register_url = f"{self.API_BASE}/v2/assets?action=registerUpload"
-            register_payload = {
-                "registerUploadRequest": {
-                    "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
-                    "owner": self.person_urn,
-                    "serviceRelationships": [
-                        {
-                            "relationshipType": "OWNER",
-                            "identifier": "urn:li:userGeneratedContent"
-                        }
-                    ]
+            # Step 1: Initialize Upload (yeni Images API)
+            init_url = f"{self.API_BASE}/rest/images?action=initializeUpload"
+            init_payload = {
+                "initializeUploadRequest": {
+                    "owner": self.person_urn
                 }
             }
 
-            resp = requests.post(register_url, headers=self.headers, json=register_payload, timeout=30)
-            resp.raise_for_status()
+            resp = requests.post(init_url, headers=self.headers, json=init_payload, timeout=30)
+            if resp.status_code not in (200, 201):
+                ops.error("Görsel Upload Init Hatası", message=f"HTTP {resp.status_code} — {resp.text[:500]}")
+                return None
+
             data = resp.json()
+            upload_url = data["value"]["uploadUrl"]
+            image_urn = data["value"]["image"]
 
-            upload_url = data["value"]["uploadMechanism"][
-                "com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"
-            ]["uploadUrl"]
-            asset = data["value"]["asset"]
-
-            ops.info(f"Görsel upload kaydı başarılı. Asset: {asset}")
+            ops.info("Görsel Upload Init", f"Image URN: {image_urn}")
 
             # Step 2: Upload binary
             upload_headers = {
@@ -96,8 +90,8 @@ class LinkedInPublisher:
                 ops.error("Görsel Yükleme Hatası", message=f"HTTP {resp.status_code} — {resp.text[:500]}")
                 return None
 
-            ops.info(f"Görsel LinkedIn'e yüklendi: {asset}")
-            return asset
+            ops.info("Görsel Yüklendi", f"{image_urn} ({len(image_data)} bytes)")
+            return image_urn
 
         except Exception as e:
             ops.error("LinkedIn Görsel Yükleme Hatası", exception=e, message=str(e)[:500])
@@ -106,7 +100,7 @@ class LinkedInPublisher:
     def _create_post(self, text: str, image_urn: str = None) -> str:
         """
         LinkedIn post oluşturur (metin veya metin+görsel).
-        n8n'deki "Create a post" node'u — shareMediaCategory: IMAGE.
+        rest/posts API — image_urn formatı: urn:li:image:... (yeni Images API'den).
         """
         url = f"{self.API_BASE}/rest/posts"
 
@@ -123,7 +117,7 @@ class LinkedInPublisher:
             "isReshareDisabledByAuthor": False
         }
 
-        # Görsel varsa content ekle
+        # Görsel varsa content ekle (urn:li:image:... formatı)
         if image_urn:
             payload["content"] = {
                 "media": {
@@ -140,10 +134,15 @@ class LinkedInPublisher:
                     data = resp.json() if resp.text else {}
                     post_urn = data.get("id", "unknown")
 
-                ops.info(f"LinkedIn post başarıyla oluşturuldu! Post URN: {post_urn}")
+                ops.info("LinkedIn Post Başarılı", f"URN: {post_urn} | Görsel: {'var' if image_urn else 'yok'}")
                 return post_urn
             else:
-                ops.error("LinkedIn Post Oluşturma Hatası", message=f"HTTP {resp.status_code} — {resp.text[:500]}")
+                # Detaylı hata logla — HTTP kodu + tam yanıt body'si
+                error_body = resp.text[:800] if resp.text else "(boş yanıt)"
+                ops.error(
+                    "LinkedIn Post Oluşturma Hatası",
+                    message=f"HTTP {resp.status_code} | Author: {self.person_urn} | Image: {image_urn or 'yok'} | Body: {error_body}"
+                )
                 return None
         except Exception as e:
             ops.error("LinkedIn Post Hatası", exception=e, message=str(e)[:500])

@@ -15,7 +15,7 @@ import time
 import schedule
 
 from logger import setup_logging
-from ops_logger import get_ops_logger
+from ops_logger import get_ops_logger, wait_all_loggers
 from core.researcher import Researcher
 from core.post_writer import PostWriter
 from core.image_generator import ImageGenerator
@@ -212,4 +212,4 @@ if __name__ == "__main__":
             ops.info("Gün Kontrolü", f"Bugün ne Pazartesi ne Perşembe (weekday={today}). Atlanıyor.")
 
         ops.info("Job Bitti", "Container kapanıyor")
-        ops.wait_for_logs()
+        wait_all_loggers()

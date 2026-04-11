@@ -194,3 +194,13 @@ def get_ops_logger(project_name: str, component: str = "Pipeline") -> OpsLogger:
     if key not in _instances:
         _instances[key] = OpsLogger(project_name, component)
     return _instances[key]
+
+
+def wait_all_loggers():
+    """Tüm OpsLogger instance'larının kuyruklarını boşaltır.
+    CronJob container'ları kapanmadan önce çağrılmalıdır.
+    Aksi halde core modüllerdeki (Publisher, ImageGen vb.) loglar kaybolur.
+    """
+    for key, logger in _instances.items():
+        logger.wait_for_logs()
+
