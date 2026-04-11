@@ -26,26 +26,32 @@ class OpenAIService:
 
     # ── Chat (Metin Tabanlı) ──
 
-    def chat(self, messages: list[dict], temperature: float = 0.7, max_tokens: int = 2000) -> str:
+    def chat(self, messages: list[dict], temperature: float = 1.0, max_tokens: int = 2000) -> str:
         """
         OpenAI chat completion çağrısı.
 
         Args:
             messages: OpenAI format mesaj listesi [{"role": "...", "content": "..."}]
-            temperature: Yaratıcılık seviyesi (0.0-2.0)
+            temperature: Yaratıcılık seviyesi (NOT: GPT-5 Mini sadece 1.0 destekler)
             max_tokens: Maximum yanıt uzunluğu
 
         Returns:
             str: Modelin yanıtı
         """
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-            content = response.choices[0].message.content
+            # GPT-5 Mini sadece temperature=1 destekler, parametre gönderme
+            create_kwargs = {
+                "model": self.model,
+                "messages": messages,
+                "max_completion_tokens": max_tokens,
+            }
+            # GPT-5 Mini bazen boş content döndürüyor — retry mekanizması
+            for attempt in range(3):
+                response = self.client.chat.completions.create(**create_kwargs)
+                content = response.choices[0].message.content or ""
+                if content.strip():
+                    break
+                log.warning(f"OpenAI boş content döndürdü (deneme {attempt+1}/3)")
             log.info(f"Chat yanıt alındı — {len(content)} karakter, "
                      f"tokens: {response.usage.total_tokens}")
             return content
@@ -87,7 +93,7 @@ class OpenAIService:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
             )
             content = response.choices[0].message.content
             log.info(f"Vision analiz tamamlandı — {len(content)} karakter")
@@ -131,7 +137,7 @@ class OpenAIService:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
             )
             content = response.choices[0].message.content
             log.info(f"Image bytes analiz tamamlandı — {len(content)} karakter")
@@ -143,7 +149,7 @@ class OpenAIService:
 
     # ── JSON Çıktı ──
 
-    def chat_json(self, messages: list[dict], temperature: float = 0.7,
+    def chat_json(self, messages: list[dict], temperature: float = 1.0,
                   max_tokens: int = 3000) -> dict:
         """
         Chat completion çağrısı — JSON response_format ile.
@@ -152,15 +158,24 @@ class OpenAIService:
             dict: Parse edilmiş JSON yanıt
         """
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                response_format={"type": "json_object"},
-            )
-            content = response.choices[0].message.content
+            # GPT-5 Mini sadece temperature=1 destekler, parametre gönderme
+            create_kwargs = {
+                "model": self.model,
+                "messages": messages,
+                "max_completion_tokens": max_tokens,
+                "response_format": {"type": "json_object"},
+            }
+            # GPT-5 Mini bazen boş content döndürüyor — retry mekanizması
+            for attempt in range(3):
+                response = self.client.chat.completions.create(**create_kwargs)
+                content = response.choices[0].message.content or ""
+                if content.strip():
+                    break
+                log.warning(f"OpenAI JSON boş content döndürdü (deneme {attempt+1}/3)")
             log.info(f"JSON yanıt alındı — tokens: {response.usage.total_tokens}")
+            if not content.strip():
+                log.warning("OpenAI 3 denemede de boş content döndürdü — boş dict dönülecek")
+                return {}
             return json.loads(content)
 
         except json.JSONDecodeError:

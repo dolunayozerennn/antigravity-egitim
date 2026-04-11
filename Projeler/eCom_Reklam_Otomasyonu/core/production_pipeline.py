@@ -243,7 +243,7 @@ class ProductionPipeline:
                     log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
                     audio_bytes = self.elevenlabs.generate_speech(
                         text=voiceover_text,
-                        voice_name="Rachel",
+                        voice_name="Sarah",
                         stability=0.5,
                         similarity_boost=0.75,
                         style=0.4,

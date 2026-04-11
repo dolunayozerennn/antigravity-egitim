@@ -17,13 +17,15 @@ log = get_logger("elevenlabs_service")
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 REQUEST_TIMEOUT = 60  # TTS uzun sürebilir
 
-# Önerilen ses ID'leri (ElevenLabs varsayılan sesler)
+# Önerilen ses ID'leri (ElevenLabs varsayılan sesler — API'den doğrulanmış)
 DEFAULT_VOICES = {
-    "Rachel": "21m00Tcm4TlvDq8ikWAM",     # Kadın, sıcak — reklam dış sesi
-    "Charlie": "IKne3meq5aSn9XLyUdCD",     # Erkek, doğal
-    "Callum": "N2lVS1w4EtoT3dr4eOWO",      # Erkek, tok
-    "Daniel": "onwK4e9ZLuTAKqWW03F9",      # Erkek, spiker
-    "Liam": "TX3LPaxmHKxFdv7VOQHJ",        # Erkek, genç
+    "Sarah": "EXAVITQu4vr4xnSDxMaL",        # Kadın, olgun, güven verici — reklam dış sesi
+    "Charlie": "IKne3meq5aSn9XLyUdCD",       # Erkek, derin, enerjik
+    "Roger": "CwhRBWXzGAHq8TQ4Fs17",         # Erkek, rahat, doğal
+    "Laura": "FGY2WhTYpPnrIDTdsKH5",         # Kadın, enerjik
+    "George": "JBFqnCBsd6RMkjVDRZzb",        # Erkek, sıcak hikaye anlatıcısı
+    "Daniel": "onwK4e9ZLuTAKqWW03F9",        # Erkek, spiker
+    "Liam": "TX3LPaxmHKxFdv7VOQHJ",          # Erkek, genç
 }
 
 
@@ -41,7 +43,7 @@ class ElevenLabsService:
     def generate_speech(
         self,
         text: str,
-        voice_name: str = "Rachel",
+        voice_name: str = "Sarah",
         stability: float = 0.5,
         similarity_boost: float = 0.75,
         style: float = 0.4,
@@ -52,7 +54,7 @@ class ElevenLabsService:
 
         Args:
             text: Seslendirilecek metin (Türkçe destekli)
-            voice_name: Ses adı (Rachel, Charlie, Callum, Daniel, Liam)
+            voice_name: Ses adı (Sarah, Charlie, Roger, Laura, George, Daniel, Liam)
             stability: Tutarlılık (0.0-1.0)
             similarity_boost: Ses benzerliği (0.0-1.0)
             style: Stil ekstrapolasyonu (0.0-1.0)
@@ -67,11 +69,18 @@ class ElevenLabsService:
         """
         voice_id = DEFAULT_VOICES.get(voice_name)
         if not voice_id:
-            available = ", ".join(DEFAULT_VOICES.keys())
-            raise ValueError(
-                f"Geçersiz ses adı: '{voice_name}'. "
-                f"Kullanılabilir sesler: {available}"
-            )
+            # Fallback: isim içinde geçiyor mu diye kontrol et
+            voice_name_lower = voice_name.lower()
+            for name, vid in DEFAULT_VOICES.items():
+                if name.lower() == voice_name_lower or voice_name_lower in name.lower():
+                    voice_id = vid
+                    break
+            if not voice_id:
+                available = ", ".join(DEFAULT_VOICES.keys())
+                raise ValueError(
+                    f"Geçersiz ses adı: '{voice_name}'. "
+                    f"Kullanılabilir sesler: {available}"
+                )
 
         url = (
             f"{ELEVENLABS_BASE_URL}/text-to-speech/{voice_id}"

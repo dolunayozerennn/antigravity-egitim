@@ -130,7 +130,7 @@ class KieAIService:
     def create_tts(
         self,
         text: str,
-        voice: str = "Rachel",
+        voice: str = "Sarah",
         stability: float = 0.5,
         similarity_boost: float = 0.75,
         speed: float = 1.0,
@@ -142,7 +142,7 @@ class KieAIService:
 
         Args:
             text: Seslendirilecek metin
-            voice: Ses adı (Rachel, Charlie, Callum, Daniel, Liam)
+            voice: Ses adı (Sarah, Charlie, Roger, Laura, George, Daniel, Liam)
             stability: Tutarlılık (0.0-1.0)
             similarity_boost: Ses benzerliği (0.0-1.0)
             speed: Konuşma hızı
