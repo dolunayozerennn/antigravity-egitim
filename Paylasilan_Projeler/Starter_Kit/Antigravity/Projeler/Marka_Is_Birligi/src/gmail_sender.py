@@ -23,8 +23,8 @@ SCOPES = ["https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "EMAIL_ADRESI_BURAYA")
 
 # Credential dosya yolları
-CREDENTIALS_FILE = os.path.join(BASE_DIR, "..", "..", "_knowledge", "credentials", "oauth", "gmail-dolunay-ai-credentials.json")
-TOKEN_FILE = os.path.join(BASE_DIR, "..", "..", "_knowledge", "credentials", "oauth", "gmail-dolunay-ai-token.json")
+CREDENTIALS_FILE = os.path.join(BASE_DIR, "..", "..", "_knowledge", "credentials", "oauth", "gmail-[isim]-ai-credentials.json")
+TOKEN_FILE = os.path.join(BASE_DIR, "..", "..", "_knowledge", "credentials", "oauth", "gmail-[isim]-ai-token.json")
 
 
 def authenticate():
@@ -32,7 +32,7 @@ def authenticate():
     creds = None
 
     # Railway'de env var'dan token oku
-    token_json_str = os.environ.get("GOOGLE_DOLUNAY_AI_TOKEN_JSON")
+    token_json_str = os.environ.get("GOOGLE_OUTREACH_TOKEN_JSON")
     if token_json_str:
         try:
             # Base64 decode
@@ -55,7 +55,7 @@ def authenticate():
             if not os.path.exists(CREDENTIALS_FILE):
                 raise FileNotFoundError(
                     f"Credentials dosyası bulunamadı: {CREDENTIALS_FILE}\n"
-                    "Railway'de: GOOGLE_DOLUNAY_AI_TOKEN_JSON env var ayarlayın."
+                    "Railway'de: GOOGLE_OUTREACH_TOKEN_JSON env var ayarlayın."
                 )
             print("[GMAIL] Tarayıcıda Google hesabınızla giriş yapın...")
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)

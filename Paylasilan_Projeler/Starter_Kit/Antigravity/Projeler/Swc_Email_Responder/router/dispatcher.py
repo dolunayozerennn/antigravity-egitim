@@ -174,9 +174,9 @@ def dispatch_email(service, msg_obj, cs_agent, ip_agent):
     
     # ═══════════════════════════════════════════════════
     # ADIM 2.7: LLM Tabanlı Email İlgi Analizi
-    # Email'in Dolunay'ın sorumluluk alanında olup olmadığını
+    # Email'in [İSİM]'ın sorumluluk alanında olup olmadığını
     # LLM ile belirle. Ödeme şikâyetleri, iş ortağı görüşmeleri
-    # vb. Dolunay'ın işi olmayan mailler sadece okundu yapılır.
+    # vb. [İSİM]'ın işi olmayan mailler sadece okundu yapılır.
     # NOT: Forward özelliği 2026-03-16'da kaldırıldı.
     # ═══════════════════════════════════════════════════
     relevance = classify_email_relevance(ctx.subject, ctx.body, ctx.sender_email)

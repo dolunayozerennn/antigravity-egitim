@@ -5,7 +5,7 @@ Sweatcoin influencer pazarlama operasyonlarını (özellikle Roblox ve Fortnite/
 
 Gelen e-postaları akıllı bir şekilde sınıflandırır, doğru agent'a yönlendirir ve **otomatik draft** oluşturur. Ayrıca Google Sheets üzerinden outreach email gönderimi, statü takibi ve günlük raporlama yapar.
 
-**⚠️ Hiçbir email otomatik gönderilmez — tüm yanıtlar DRAFT olarak oluşturulur, Dolunay onaylayıp gönderir.**
+**⚠️ Hiçbir email otomatik gönderilmez — tüm yanıtlar DRAFT olarak oluşturulur, [İSİM] onaylayıp gönderir.**
 
 ---
 
@@ -66,7 +66,7 @@ Swc_Email_Responder/
 │   └── daily_reporter.py       # Günlük outreach raporu (email ile)
 │
 ├── shared/                      # Ortak utility modülleri
-│   ├── google_auth.py           # 🔐 Merkezi OAuth — 3 hesap (outreach, swc, dolunay_ai)
+│   ├── google_auth.py           # 🔐 Merkezi OAuth — 3 hesap (outreach, swc, [isim]_ai)
 │   ├── gmail_client.py          # Gmail API istemcisi (unread, draft, mark_as_read)
 │   ├── sheets_client.py         # Google Sheets API istemcisi
 │   ├── llm_client.py            # Groq LLM API istemcisi (4 fonksiyon, retry mekanizmalı)
@@ -89,10 +89,10 @@ Dispatcher her okunmamış emaili şu sırayla değerlendirir:
 
 | Adım | Kontrol | Aksiyon |
 |:-----|:--------|:--------|
-| 1 | **Takım üyesi** (`@sweatco.in`) | IGNORE — UNREAD bırak (manuel yanıtlanacak) |
+| 1 | **Takım üyesi** (`@[ŞİRKET_DOMAIN]`) | IGNORE — UNREAD bırak (manuel yanıtlanacak) |
 | 2 | **Sistem/Bot** (Notion, Google, Apify vb.) | Mark as read |
 | 2.5 | **Transactional** (MailSuite Daily Report vb.) | Mark as read |
-| 2.7 | **LLM İlgi Analizi** — Email Dolunay'ın işi mi? | PAYMENT_COMPLAINT / BUSINESS_PARTNER / IRRELEVANT → Mark as read |
+| 2.7 | **LLM İlgi Analizi** — Email [İSİM]'ın işi mi? | PAYMENT_COMPLAINT / BUSINESS_PARTNER / IRRELEVANT → Mark as read |
 | 3 | **Thread başlangıcı** — Biz mi başlattık? | Thread'in ilk mesajını kontrol et |
 | 4a | **Onlar başlattıysa** → LLM Cold Outreach tespiti | UGC_COLD / COLD_EMAIL → Mark as read |
 | 4b | **Onlar başlattıysa** → GENUINE | Agent'a yönlendir |
@@ -108,7 +108,7 @@ Her agent aynı 3 aşamalı pipeline'ı takip eder:
 2. **Draft Üretimi:** Bilgi tabanı + template hint ile bağlama uygun draft üret
 3. **Draft Review:** Düşük confidence'lı draft'ları LLM ile review edip iyileştir
 
-**Sonuç:** Gmail'de DRAFT oluşturulur, email UNREAD kalır → Dolunay kontrol edip gönderir.
+**Sonuç:** Gmail'de DRAFT oluşturulur, email UNREAD kalır → [İSİM] kontrol edip gönderir.
 
 ---
 
@@ -148,7 +148,7 @@ Scriptler işlemleri tamamlar tamamlamaz `sys.exit(0)` ile kendini kapatır (`re
 | Fonksiyon | Amaç |
 |:----------|:------|
 | `classify_thread_type()` | Thread Creative Sourcing mi, Influencer Program mı? |
-| `classify_email_relevance()` | Email Dolunay'ın sorumluluğunda mı? (Payment/Business/Irrelevant) |
+| `classify_email_relevance()` | Email [İSİM]'ın sorumluluğunda mı? (Payment/Business/Irrelevant) |
 | `classify_cold_outreach()` | Inbound email genuine mi, cold pitch mi? |
 | `analyze_reply_intent()` | Yanıtın niyeti ne? (INTERESTED, PAID_ONLY, vb.) |
 | `generate_draft()` | Bağlama uygun draft email üret |
@@ -163,9 +163,9 @@ Scriptler işlemleri tamamlar tamamlamaz `sys.exit(0)` ile kendini kapatır (`re
 
 `feedback_engine.py` — AI agent'ın performansını ölçen offline backtesting sistemi:
 
-1. Gmail'den gerçek thread çiftlerini çeker (creator → Dolunay yanıtı)
+1. Gmail'den gerçek thread çiftlerini çeker (creator → [İSİM] yanıtı)
 2. AI agent'ı aynı mesaja draft yazması için simüle eder
-3. AI draft'ını Dolunay'ın gerçek yanıtıyla LLM ile karşılaştırır
+3. AI draft'ını [İSİM]'ın gerçek yanıtıyla LLM ile karşılaştırır
 4. Puan, feedback ve iyileştirme önerisi üretir
 
 Sonuçlar `feedback_results.json` ve `learned_patterns.json`'a kaydedilir.

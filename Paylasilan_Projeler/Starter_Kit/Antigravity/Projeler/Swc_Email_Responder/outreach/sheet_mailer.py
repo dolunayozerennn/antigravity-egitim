@@ -100,7 +100,7 @@ def _send_email(gmail_service, to_address, subject, body_text):
     message = MIMEText(body_text)
     message['to'] = to_address
     message['subject'] = subject
-    message['from'] = 'd.ozeren@sweatco.in'
+    message['from'] = '[İŞ_EMAIL_ADRESI]'
     
     raw = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
     try:

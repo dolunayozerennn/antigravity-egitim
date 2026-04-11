@@ -18,7 +18,7 @@ Bu skill, hedef kitle (B2B, B2C, Influencer, Topluluk Üyesi) ve onların ileti�
 Sistemin ana motoru Apify'dır. Diğer araçlar (Hunter/Apollo) sadece yedek (fallback) amaçlıdır.
 
 1. **ÖNCELİKLİ (ZORUNLU): Apify API Key**
-   - Kaynak: `_knowledge/api-anahtarlari.md` (Dolunay Ana Hesap veya Yedek Hesap)
+   - Kaynak: `_knowledge/api-anahtarlari.md` ([İSİM] Ana Hesap veya Yedek Hesap)
    - Kullanım: Arama, kazıma (scraping), e-posta/telefon zenginleştirme (enrichment) işlemleri.
 
 2. **YEDEK (OPSİYONEL): Hunter.io & Apollo.io**

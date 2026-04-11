@@ -40,7 +40,7 @@ def send_collaboration_mail(target_email, brand_name, portfolio_link="https://po
 
     # Mail mesajını oluştur
     message = MIMEMultipart("alternative")
-    message["Subject"] = f"{brand_name} x Dolunay Özeren | İş Birliği Teklifi"
+    message["Subject"] = f"{brand_name} x [İSİM SOYAD] | İş Birliği Teklifi"
     message["From"] = settings.GMAIL_USER
     message["To"] = target_email
 
@@ -48,7 +48,7 @@ def send_collaboration_mail(target_email, brand_name, portfolio_link="https://po
     text = f"""
     Merhaba {brand_name},
     
-    Ben Dolunay Özeren. Markanızla iş birliği yapmak istiyorum.
+    Ben [İSİM SOYAD]. Markanızla iş birliği yapmak istiyorum.
     Portfolyomu buradan inceleyebilirsiniz: {portfolio_link}
     
     Sevgiler.

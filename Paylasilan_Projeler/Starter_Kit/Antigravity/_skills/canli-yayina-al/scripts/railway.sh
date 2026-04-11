@@ -97,7 +97,7 @@ case "$1" in
     create-service)
         if [ -z "$4" ]; then
             echo "❌ Kullanım: ./railway.sh create-service <project_id> <servis_adi> <github_repo> [branch]" >&2
-            echo "   Örnek: ./railway.sh create-service abc-123 my-bot dolunayozerennn/my-bot main" >&2
+            echo "   Örnek: ./railway.sh create-service abc-123 my-bot [GITHUB_KULLANICI]/my-bot main" >&2
             exit 1
         fi
         local_proj="$2"
@@ -111,7 +111,7 @@ case "$1" in
     connect-repo)
         if [ -z "$3" ]; then
             echo "❌ Kullanım: ./railway.sh connect-repo <service_id> <github_repo> [branch]" >&2
-            echo "   Örnek: ./railway.sh connect-repo abc-123 dolunayozerennn/my-bot main" >&2
+            echo "   Örnek: ./railway.sh connect-repo abc-123 [GITHUB_KULLANICI]/my-bot main" >&2
             exit 1
         fi
         local_svc_id="$2"

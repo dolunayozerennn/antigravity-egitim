@@ -373,7 +373,7 @@
             },
             {
               "name": "user",
-              "value": "dolunayozeren"
+              "value": "[SOSYAL_MEDYA_KULLANICI]"
             },
             {
               "name": "platform[]",
@@ -423,7 +423,7 @@
             },
             {
               "name": "user",
-              "value": "dolunayozeren"
+              "value": "[SOSYAL_MEDYA_KULLANICI]"
             },
             {
               "name": "platform[]",

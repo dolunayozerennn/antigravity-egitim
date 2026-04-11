@@ -177,7 +177,7 @@ Your job is to classify outreach emails into two categories:
 CREATIVE_SOURCING: We initially reached out about video collaboration / content creation.
 Signals: collaboration inquiry, video integration, "your exact style", creative brief,
 UGC, content creation, promotional video.
-IMPORTANT: Even if our initial outreach mentioned 'collaboration', Dolunay usually
+IMPORTANT: Even if our initial outreach mentioned 'collaboration', [İSİM] usually
 explains that the program is PERFORMANCE-BASED (per install), NOT upfront paid.
 
 INFLUENCER_PROGRAM: We are inviting creators to join our free affiliate program.
@@ -253,8 +253,8 @@ account and report a specific technical issue with receiving money."""
 Context: {agent_knowledge}
 
 IMPORTANT CONTEXT FROM BACKTESTING:
-- Dolunay treats MOST replies with the same approach: explain performance model + offer to set up
-- Even when people complain, Dolunay often just sends onboarding steps
+- [İSİM] treats MOST replies with the same approach: explain performance model + offer to set up
+- Even when people complain, [İSİM] often just sends onboarding steps
 - Only classify as PAYMENT_COMPLAINT if the person explicitly reports a technical failure
   with an EXISTING account (e.g., "my withdrawal failed", "I didn't receive my Bitrefill code")
 - If someone mentions wanting money but hasn't signed up: classify as INTERESTED
@@ -285,7 +285,7 @@ def generate_draft(name, reply_body, intent_result, context_type, agent_knowledg
     messages = [
         {
             "role": "system",
-            "content": f"""You are Dolunay from Sweatcoin's marketing team, writing email replies.
+            "content": f"""You are [İSİM] from Sweatcoin's marketing team, writing email replies.
 
 CONTEXT: {context_type.replace('_', ' ').title()}
 {agent_knowledge}
@@ -307,10 +307,10 @@ CONTEXT: {context_type.replace('_', ' ').title()}
 2. ALWAYS include a closing line before the signature
 3. ALWAYS end with:
    Best,
-   Dolunay
+   [İSİM]
    Influencer & Affiliate Marketing – Sweatcoin
 
-DOLUNAY'S REAL STYLE (learned from backtesting against 10 real threads):
+[İSİM]'S REAL STYLE (learned from backtesting against 10 real threads):
 - For CS/COUNTER_OFFER/PRICE_SHARED: After "Hi {name},", write "Thank you for getting back to me!"
 - For IP onboarding (INTERESTED): After "Hi {name},", write "Awesome! Getting started is very simple:"
 - Keep replies SHORT: 3-5 sentences max
@@ -324,7 +324,7 @@ DOLUNAY'S REAL STYLE (learned from backtesting against 10 real threads):
 - End onboarding messages with: "Let me know if you have any questions."
 - For payment complaints: ask for sign-up email to investigate
 
-CRITICAL: The TEMPLATE HINT is a REAL email Dolunay has sent before.
+CRITICAL: The TEMPLATE HINT is a REAL email [İSİM] has sent before.
 Your job is to REPRODUCE the template with ONLY the name changed.
 Do NOT add, remove, or change any content from the template.
 
@@ -352,14 +352,14 @@ def classify_email_relevance(subject, body_text, sender_email):
     """
     LLM tabanlı email ilgi/kategori analizi.
     
-    Email'in Dolunay'ın sorumluluğunda olup olmadığını belirler.
+    Email'in [İSİM]'ın sorumluluğunda olup olmadığını belirler.
     Keyword-based filtrelerin aksine, bağlamı anlayarak karar verir.
     
     Kategoriler:
-    - RELEVANT: Dolunay'ın işi — influencer/creator outreach yanıtları
-    - PAYMENT_COMPLAINT: Son kullanıcı ödeme/çekim şikâyeti (Dolunay'ın işi DEĞİL)
-    - BUSINESS_PARTNER: İş ortağı görüşmesi (Runa, vs.) — Dolunay'ın işi DEĞİL
-    - IRRELEVANT: Dolunay'ın işiyle hiç alakasız
+    - RELEVANT: [İSİM]'ın işi — influencer/creator outreach yanıtları
+    - PAYMENT_COMPLAINT: Son kullanıcı ödeme/çekim şikâyeti ([İSİM]'ın işi DEĞİL)
+    - BUSINESS_PARTNER: İş ortağı görüşmesi (Runa, vs.) — [İSİM]'ın işi DEĞİL
+    - IRRELEVANT: [İSİM]'ın işiyle hiç alakasız
     
     Returns: {"category": str, "confidence": 0.0-1.0, "reason": str}
     """
@@ -368,12 +368,12 @@ def classify_email_relevance(subject, body_text, sender_email):
             "role": "system",
             "content": """You are an email classifier for Sweatcoin's marketing team.
 
-Dolunay works in Influencer & Affiliate Marketing. His responsibility is:
+[İSİM] works in Influencer & Affiliate Marketing. His responsibility is:
 - Outreach to influencers/creators for video collaborations
 - Managing the Influencer Program (affiliate/performance-based)
 - Responding to creators who reply to his outreach emails
 
-Things that are NOT Dolunay's responsibility:
+Things that are NOT [İSİM]'s responsibility:
 - End-user payment/withdrawal complaints (e.g. "I didn't receive my payment", "my withdrawal failed")
 - Business partner discussions (e.g. Runa, payment providers, B2B partnerships)
 - Internal operations, finance, legal matters
@@ -381,7 +381,7 @@ Things that are NOT Dolunay's responsibility:
 
 Classify the email into one of these categories:
 
-RELEVANT: This email IS related to Dolunay's influencer/creator work.
+RELEVANT: This email IS related to [İSİM]'s influencer/creator work.
   Examples: creator asking about collaboration, replying to outreach, asking about the program
 
 PAYMENT_COMPLAINT: An END-USER (not a business partner) is complaining about
@@ -501,7 +501,7 @@ def review_and_improve_draft(original_draft, reply_body, name, context_type, int
 CONTEXT: {context_type.replace('_', ' ').title()}
 RECIPIENT: {name}
 INTENT: {intent_result.get('intent', 'UNCLEAR')}
-{f"TEMPLATE HINT (this is what Dolunay ACTUALLY writes — use as reference): {template_hint}" if template_hint else ""}
+{f"TEMPLATE HINT (this is what [İSİM] ACTUALLY writes — use as reference): {template_hint}" if template_hint else ""}
 
 Review the draft reply below and check for:
 1. ACCURACY: Does it correctly address the person's intent?
@@ -519,9 +519,9 @@ Review the draft reply below and check for:
    - Payment complaints: Empathetic but still practical
    - NEVER overly casual or salesy
 4. BREVITY: Keep it 3-5 sentences max. Strip unnecessary content.
-5. SIGNATURE: Must be "Best,\nDolunay\nInfluencer & Affiliate Marketing – Sweatcoin"
+5. SIGNATURE: Must be "Best,\n[İSİM]\nInfluencer & Affiliate Marketing – Sweatcoin"
 
-IMPORTANT: The template hint represents Dolunay's PROVEN real approach.
+IMPORTANT: The template hint represents [İSİM]'s PROVEN real approach.
 If the draft significantly deviates from the template, REWRITE it to match
 the template more closely.
 

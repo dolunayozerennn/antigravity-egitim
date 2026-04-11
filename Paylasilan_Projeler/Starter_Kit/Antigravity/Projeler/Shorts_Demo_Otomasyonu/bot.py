@@ -497,7 +497,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             "Demo hakkınız doldu 🎯\n"
             "Daha fazlası için AI Factory'ye katılın!\n"
-            "https://www.skool.com/yapay-zeka-factory/about?ref=044f39496d4f45fab11775bcefe4b7f4"
+            "https://www.skool.com/yapay-zeka-factory/about?ref=KENDI_REFERANS_KODUNUZ"
         )
         return
 

@@ -79,7 +79,7 @@ SERVICE_SIGNATURES = {
         "env_vars": ["GMAIL_OUTREACH_CLIENT_ID", "GMAIL_OUTREACH_CLIENT_SECRET"],
     },
     "gmail_swc": {
-        "patterns": [r"GMAIL_SWC", r"sweatco\.in", r"d\.ozeren@"],
+        "patterns": [r"GMAIL_SWC", r"sweatco\.in", r"[İŞ_EMAIL_PREFIXI]@"],
         "env_vars": ["GMAIL_SWC_CLIENT_ID", "GMAIL_SWC_CLIENT_SECRET"],
     },
     "telegram": {

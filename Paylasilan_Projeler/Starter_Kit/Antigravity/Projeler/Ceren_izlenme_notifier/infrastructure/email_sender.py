@@ -124,7 +124,7 @@ def send_performance_report(videos, report_summary=""):
     msg.add_alternative(html_content, subtype='html')
 
     msg['To'] = 'EMAIL_ADRESI_BURAYA'
-    msg['From'] = 'Dolunay Özeren <EMAIL_ADRESI_BURAYA>'
+    msg['From'] = '[İSİM SOYAD] <EMAIL_ADRESI_BURAYA>'
     msg['Subject'] = f'🔥 Haftalık Sosyal Medya Çıktıları ({today_str})'
 
     raw_msg = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
@@ -156,7 +156,7 @@ def send_technical_error_report(errors):
     html_content = f"""
     <html>
       <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-        <h2 style="color: #c0392b;">Ceren Notifier - Teknik Hata Raporu ⚠️</h2>
+        <h2 style="color: #c0392b;">[TAKİP_EDİLEN_HESAP] Notifier - Teknik Hata Raporu ⚠️</h2>
         <p>Proje çalışırken Apify veri çekme aşamasında aşağıdaki hatalar meydana geldi. Bu platformlar atlandı:</p>
         <ul>
             {error_list_html}
@@ -170,8 +170,8 @@ def send_technical_error_report(errors):
     msg.add_alternative(html_content, subtype='html')
 
     msg['To'] = 'EMAIL_ADRESI_BURAYA'
-    msg['From'] = 'Dolunay Özeren <EMAIL_ADRESI_BURAYA>'
-    msg['Subject'] = '⚠️ Apify Veri Çekme Hatası - Ceren Notifier'
+    msg['From'] = '[İSİM SOYAD] <EMAIL_ADRESI_BURAYA>'
+    msg['Subject'] = '⚠️ Apify Veri Çekme Hatası - [TAKİP_EDİLEN_HESAP] Notifier'
 
     raw_msg = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
 

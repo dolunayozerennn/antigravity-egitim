@@ -27,12 +27,12 @@ def generate_report_summary(videos):
         context_text = "\n".join(context_lines)
         
         prompt = f"""
-Sen Ceren'e sosyal medya raporu sunan profesyonel ve enerjik bir dijital asistansın.
+Sen [TAKİP_EDİLEN_HESAP]'a sosyal medya raporu sunan profesyonel ve enerjik bir dijital asistansın.
 Aşağıda son 7 günde barajı aşan videoların bilgileri var:
 
 {context_text}
 
-Lütfen yukarıdaki verilere bakarak, Ceren için mailin en başında okunacak 2-3 cümlelik çok kısa, motive edici ve net bir Türkçe özet metin yaz.
+Lütfen yukarıdaki verilere bakarak, [TAKİP_EDİLEN_HESAP] için mailin en başında okunacak 2-3 cümlelik çok kısa, motive edici ve net bir Türkçe özet metin yaz.
 Sadece metni döndür, selamlama veya ekstra açıklama yapma. Doğrudan özete gir.
 Metin HTML formatında olacak, dolayısıyla kalın yapmak istediğin yerleri <b> ile sarabilirsin.
         """

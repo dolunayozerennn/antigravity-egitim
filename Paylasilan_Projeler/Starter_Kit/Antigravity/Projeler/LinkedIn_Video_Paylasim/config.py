@@ -35,7 +35,7 @@ class Config:
         self.NOTION_LINKEDIN_DB_ID = self._require_env("NOTION_LINKEDIN_DB_ID")
 
         # App specific
-        self.TIKTOK_USERNAME = os.environ.get("TIKTOK_USERNAME", "dolunayozeren")
+        self.TIKTOK_USERNAME = os.environ.get("TIKTOK_USERNAME", "[SOSYAL_MEDYA_KULLANICI]")
 
     def _require_env(self, key, default=None):
         """Fetches an environment variable, raises error if missing."""

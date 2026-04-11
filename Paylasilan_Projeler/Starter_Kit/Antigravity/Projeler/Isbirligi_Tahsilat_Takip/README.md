@@ -91,7 +91,7 @@ python main.py
 ## 🚂 Deploy Bilgisi
 
 - **Platform:** Railway (Native Cron Job)
-- **GitHub Repo:** `dolunayozerennn/isbirligi-tahsilat-takip`
+- **GitHub Repo:** `[GITHUB_KULLANICI]/isbirligi-tahsilat-takip`
 - **Start Komutu:** `python main.py`
 - **Restart Policy:** `NEVER`
 - **Zamanlama:** Her gün 07:00 UTC (Railway formatında `0 7 * * *`)

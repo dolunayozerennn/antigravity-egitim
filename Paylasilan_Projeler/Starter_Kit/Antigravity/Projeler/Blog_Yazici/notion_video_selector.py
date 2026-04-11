@@ -2,7 +2,7 @@
 """
 notion_video_selector.py — Notion Video → Blog Uygunluk Değerlendirici
 =====================================================================
-Notion "Dolunay Reels" database'inden "Yayınlandı" statüsündeki videoları çeker,
+Notion "[İSİM] Reels" database'inden "Yayınlandı" statüsündeki videoları çeker,
 her videonun Google Drive klasörünü analiz eder ve blog yazılmaya uygunluk
 puanı hesaplar.
 

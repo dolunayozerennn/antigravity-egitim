@@ -63,7 +63,7 @@ def generate_blog(annotations_data, script_text):
         context_note = "Aşağıda bir ekran kaydı videosunun frame'lerinin adım adım analizi var. Bu analizlerden profesyonel bir blog yazısı üret. Orijinal video scripti mevcut olmadığı için ekran görüntüsü açıklamalarından yola çıkarak aracın ne yaptığını, kimlere hitap ettiğini ve nasıl kullanıldığını çıkar."
         tool_rule = "6. Aracın ne olduğunu ve kimlere hitap ettiğini ekran görüntülerinden çıkarım yaparak detaylıca anlat"
     
-    prompt = f"""Sen KISISEL_WEBSITE_BURAYA'nin kurucusu Dolunay Özeren'in blog yazılarını yazan bir teknoloji blog yazarısın. Dolunay, yapay zeka araçlarını tanıtan Türkiye'nin en büyük Instagram sayfalarından birini yönetiyor.
+    prompt = f"""Sen KISISEL_WEBSITE_BURAYA'nin kurucusu [İSİM SOYAD]'in blog yazılarını yazan bir teknoloji blog yazarısın. [İSİM], yapay zeka araçlarını tanıtan Türkiye'nin en büyük Instagram sayfalarından birini yönetiyor.
 
 {context_note}
 

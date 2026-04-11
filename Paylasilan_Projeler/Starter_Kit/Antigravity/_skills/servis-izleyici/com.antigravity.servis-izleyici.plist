@@ -8,7 +8,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Library/Frameworks/Python.framework/Versions/3.13/bin/python3</string>
-        <string>/Users/dolunayozeren/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py</string>
+        <string>/Users/KULLANICI/Desktop/Antigravity/_skills/servis-izleyici/scripts/health_check.py</string>
         <string>--check-up</string>
         <string>--auto-heal</string>
     </array>
@@ -25,6 +25,6 @@
     
     <!-- Çalışma dizini -->
     <key>WorkingDirectory</key>
-    <string>/Users/dolunayozeren/Desktop/Antigravity</string>
+    <string>/Users/KULLANICI/Desktop/Antigravity</string>
 </dict>
 </plist>

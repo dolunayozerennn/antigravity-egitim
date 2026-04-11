@@ -4,7 +4,7 @@
 > Yarım kalan işler, TODO'lar ve takip gereken konular burada tutulur.
 > Görev tamamlandığında bu dosyadan silinir.
 
-**Son güncelleme:** 7 Nisan 2026
+**Son güncelleme:** 10 Nisan 2026
 
 ---
 
@@ -19,7 +19,12 @@ _Şu an bekleyen görev bulunmamaktadır._
 > Deploy sonrası eklenen izleme kayıtları burada tutulur.
 > Her konuşma başında bu bölüm kontrol edilir — izleme süresi dolmuş ve 2 temiz kontrol geçilmişse arşive taşınır.
 
-_Şu an aktif izleme bulunmamaktadır._
+### 🟡 48-Saat İzleme — Dolunay_Otonom_Kapak (Reels + YouTube)
+- **Deploy tarihi:** 2026-04-10
+- **İzleme bitiş:** 2026-04-12
+- **Kontrol 1:** ⏳ (2026-04-11 — cron çalışması bekleniyor)
+- **Kontrol 2:** ⏳ (2026-04-12 — ikinci cron çalışması)
+- **Sonuç:** 2 temiz kontrol → arşive taşı
 
 ---
 

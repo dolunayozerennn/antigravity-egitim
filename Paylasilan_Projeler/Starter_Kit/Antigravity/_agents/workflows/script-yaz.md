@@ -4,7 +4,7 @@ description: Video scripti üret — bölge analizi, gayrimenkul yatırımı vey
 
 # Script Yaz — Dubai Gayrimenkul Video
 
-Çağrı Bozay için sosyal medya video scripti üretme adımları.
+[MÜŞTERİ_ADI] için sosyal medya video scripti üretme adımları.
 
 ## Bağlam
 - **Skill:** `Projeler/Dubai Emlak İçerik Yazarı/skills/icerik-yazari/SKILL.md` → ÖNCE OKU

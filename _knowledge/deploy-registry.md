@@ -192,10 +192,10 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Blog_Yazici/`
 - **Start Komutu:** `python run_pipeline.py --from-notion`
 - **Cron Schedule:** `0 3 * * 1` (Haftalık Pazartesi, UTC 03:00 = TR 06:00)
-- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
+- **Son Deploy:** 2026-04-11 (fix: Gemini → OpenAI GPT-4.1 geçişi — Gemini free tier quota crash çözüldü)
 - **Cron Değişiklik:** 2026-04-10 — Günlükten haftalığa çekildi (Netlify free plan kredi optimizasyonu: her deploy 15 kredi, günlük=450/ay aşım, haftalık=60/ay güvenli)
 - **Durum:** ✅ Aktif (Haftalık Pazartesi UTC 03:00, Notion'dan yeni "Yayınlandı" videoları seçip otomatik blog üretip dolunay.ai'ye publish eder)
-- **Env Vars:** GROQ_API_KEY, GEMINI_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64), GITHUB_TOKEN
+- **Env Vars:** GROQ_API_KEY, OPENAI_API_KEY_DOLUNAY_AI, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64), GITHUB_TOKEN
 
 ---
 

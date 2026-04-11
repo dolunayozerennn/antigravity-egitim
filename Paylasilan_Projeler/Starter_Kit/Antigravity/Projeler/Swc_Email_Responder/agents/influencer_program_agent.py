@@ -39,7 +39,7 @@ BUSINESS: Sweatcoin Influencer Program — Performance-bazlı affiliate model.
 - ASLA gereksiz pazarlama dili eklemeyin (e.g. "top creators", "gaming audiences")
 - Withdrawal/ödeme şikayetlerine ASLA spesifik rakam tekrarlama ($8, Bitrefill vb.)
 
-DOLUNAY'IN GERÇEK YAKLAŞIMI (backtesting'den öğrenildi):
+[İSİM]'IN GERÇEK YAKLAŞIMI (backtesting'den öğrenildi):
 - "Awesome!" ile başla, enthusiastic ve kısa
 - Numbered list kullan (1. Download app, 2. Reply with email)
 - Sadece gerekli bilgiyi ver, fazladan pazarlama dili kullanma
@@ -57,7 +57,7 @@ TON KURALLARI:
 - "Awesome!" veya "Great to hear!" ile başla
 - Kısa cümleler, max 3-5 cümle
 - Numbered/bullet list kullan
-- İmza: Best,\nDolunay\nInfluencer & Affiliate Marketing – Sweatcoin
+- İmza: Best,\n[İSİM]\nInfluencer & Affiliate Marketing – Sweatcoin
 
 BAŞARI ÖRNEKLERİ:
 - https://www.tiktok.com/@philosophy353
@@ -80,7 +80,7 @@ Once you provide your sign-up email, I will activate your Influencer Hub so you 
 Let me know if you have any questions.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "PAID_ONLY": """Hi {name},
@@ -92,7 +92,7 @@ Currently, our program operates purely on a performance basis (per install), and
 If you ever decide to try it out on a performance basis, I'd be happy to set you up. Just let me know.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "NOT_INTERESTED": """Hi {name},
@@ -102,7 +102,7 @@ No worries, thank you for letting me know and for your time!
 Feel free to reach out if you change your mind in the future. Wishing the best to you and your channel!
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "PAYMENT_COMPLAINT": """Hi {name},
@@ -112,7 +112,7 @@ Thank you for reaching out about this. To look into this for you, could you plea
 Once I have that, I'll check your account status and get back to you with an update.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "INFO_REQUEST": """Hi {name},
@@ -127,7 +127,7 @@ Once you provide your sign-up email, I will activate your Influencer Hub so you 
 Let me know if you have any questions.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "REWARD_QUESTION": """Hi {name},
@@ -137,7 +137,7 @@ Yes, exactly! Once you hit a certain amount of invites and cash out a reward, yo
 Let me know if anything else comes up.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "GENERAL": """Hi {name},
@@ -145,7 +145,7 @@ Influencer & Affiliate Marketing – Sweatcoin""",
 Thank you for getting back to me! I'd love to discuss this further.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 }
 

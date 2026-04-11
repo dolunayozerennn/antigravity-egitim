@@ -10,7 +10,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/dolunayozeren/Desktop/Antigravity/_skills/otomatik-yedekleme/scripts/backup.sh</string>
+        <string>/Users/KULLANICI/Desktop/Antigravity/_skills/otomatik-yedekleme/scripts/backup.sh</string>
     </array>
 
     <!-- Her Pazar 03:00 -->
@@ -26,10 +26,10 @@
 
     <!-- Stdout log -->
     <key>StandardOutPath</key>
-    <string>/Users/dolunayozeren/Desktop/_backups/launchd_output.log</string>
+    <string>/Users/KULLANICI/Desktop/_backups/launchd_output.log</string>
 
     <!-- Stderr log -->
     <key>StandardErrorPath</key>
-    <string>/Users/dolunayozeren/Desktop/_backups/launchd_error.log</string>
+    <string>/Users/KULLANICI/Desktop/_backups/launchd_error.log</string>
 </dict>
 </plist>

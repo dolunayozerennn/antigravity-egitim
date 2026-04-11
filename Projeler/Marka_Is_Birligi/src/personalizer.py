@@ -126,6 +126,8 @@ Rules:
 - Do NOT use "Dear" or overly formal language
 - Do NOT use emojis in subject or body
 - Do NOT use HTML formatting in body_text — write plain conversational text
+- Do NOT start with "I hope this email finds you well" or "Hope you're doing well". Start directly with the hook.
+- Do NOT start sentences with "My name is Dolunay". Just introduce yourself naturally in context or rely on the signature.
 - body_html should be a simple <p> wrapped version of body_text, NO bold, NO colors, NO tables
 - MAXIMUM 1 link allowed in body (only dolunay.ai portfolio link if needed)
 - No "Click here", "Check this out", or other spam trigger phrases

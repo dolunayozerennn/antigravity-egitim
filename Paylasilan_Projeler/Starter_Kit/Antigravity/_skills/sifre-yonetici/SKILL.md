@@ -15,7 +15,7 @@ _knowledge/credentials/
 ├── google-service-account.json     ← Google Cloud Service Account
 ├── oauth/
 │   ├── gmail-outreach-token.json
-│   └── gmail-swc-token.json
+│   └── gmail-ek-hesap-token.json
 └── README.md
 
 Projeler/XYZ_Proje/
@@ -158,7 +158,7 @@ _knowledge/credentials/oauth/
 ├── google_auth.py              ← TÜM projeler bu modülü import eder
 ├── auth_helper.py              ← İlk seferlik yetkilendirme scripti
 ├── gmail-outreach-token.json   ← EMAIL_ADRESI_BURAYA (Gmail+Drive+Sheets)
-├── gmail-swc-token.json        ← d.ozeren@sweatco.in (Gmail+Drive+Sheets)
+├── gmail-ek-hesap-token.json        ← [İŞ_EMAIL_ADRESI] (Gmail+Drive+Sheets)
 ├── gmail-outreach-credentials.json
 └── gmail-swc-credentials.json
 ```
@@ -178,7 +178,7 @@ gmail = get_gmail_service("outreach")
 sheets = get_sheets_service("outreach")
 drive = get_drive_service("outreach")
 
-# Sweatcoin hesabı (d.ozeren@sweatco.in)
+# Sweatcoin hesabı ([İŞ_EMAIL_ADRESI])
 gmail = get_gmail_service("swc")
 sheets = get_sheets_service("swc")
 ```

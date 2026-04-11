@@ -16,7 +16,7 @@ Hi [Name],
 
 Hope you are doing well!
 
-I’m Dolunay from the Influencer Marketing team at Sweatcoin. I’ve been following your profile for a while and absolutely love the comedy videos and skits you post. You have a great way of turning everyday situations into genuinely funny and relatable content!
+I’m [İSİM] from the Influencer Marketing team at Sweatcoin. I’ve been following your profile for a while and absolutely love the comedy videos and skits you post. You have a great way of turning everyday situations into genuinely funny and relatable content!
 
 We would love to collaborate with you. We are looking for talented creators with your exact style to produce a short promotional video integrating Sweatcoin into one of your skits. 
 
@@ -28,5 +28,5 @@ Looking forward to hearing from you and hopefully collaborating soon!
 
 Best regards,
 
-**Dolunay Özeren**
+**[İSİM SOYAD]**
 *Influencer Marketing Team, Sweatcoin*

@@ -1,1 +1,1 @@
-# Ceren İzlenme Notifier — Infrastructure Module
+# [TAKİP_EDİLEN_HESAP] İzlenme Notifier — Infrastructure Module

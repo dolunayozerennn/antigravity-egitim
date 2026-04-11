@@ -2,9 +2,9 @@
 Feedback Engine — AI Agent Kendi Kendini Geliştirme Mekanizması
 ================================================================
 Bu script:
-1. Gmail'den gerçek thread çiftlerini çeker (creator → Dolunay yanıtı)
+1. Gmail'den gerçek thread çiftlerini çeker (creator → [İSİM] yanıtı)
 2. AI agent'ı aynı mesaja nasıl draft yazacağını simüle eder
-3. Dolunay'ın gerçek yanıtıyla AI draft'ını Groq LLM ile karşılaştırır
+3. [İSİM]'ın gerçek yanıtıyla AI draft'ını Groq LLM ile karşılaştırır
 4. Her karşılaştırma için feedback puanı ve iyileştirme önerisi üretir
 5. Tüm sonuçları kaydeder → agent bilgi tabanını iyileştirmek için kullanılır
 
@@ -44,7 +44,7 @@ from agents.influencer_program_agent import InfluencerProgramAgent, IP_KNOWLEDGE
 
 def extract_thread_pairs(service, days=30, limit=20):
     """
-    Gmail'den 'creator yazdı → Dolunay cevap verdi' çiftlerini çek.
+    Gmail'den 'creator yazdı → [İSİM] cevap verdi' çiftlerini çek.
     
     Her çift:
     {
@@ -52,7 +52,7 @@ def extract_thread_pairs(service, days=30, limit=20):
         "creator_email": "...",
         "creator_name": "...",
         "creator_message": "...",     # Creator'ın yazdığı
-        "dolunay_reply": "...",       # Dolunay'ın gerçek yanıtı
+        "[isim]_reply": "...",       # [İSİM]'ın gerçek yanıtı
         "subject": "...",
         "thread_type": "CREATIVE_SOURCING" | "INFLUENCER_PROGRAM",
         "first_message_body": "...",  # Thread'in ilk mesajı (router için)
@@ -103,7 +103,7 @@ def extract_thread_pairs(service, days=30, limit=20):
             first_body = extract_body(first_msg['payload'])
             first_subject = get_header(first_msg['payload']['headers'], 'Subject')
             
-            # "Creator yazdı → Dolunay cevap verdi" çiftlerini bul
+            # "Creator yazdı → [İSİM] cevap verdi" çiftlerini bul
             for i in range(len(thread_messages) - 1):
                 current_msg = thread_messages[i]
                 next_msg = thread_messages[i + 1]
@@ -111,13 +111,13 @@ def extract_thread_pairs(service, days=30, limit=20):
                 current_sender = get_header(current_msg['payload']['headers'], 'From').lower()
                 next_sender = get_header(next_msg['payload']['headers'], 'From').lower()
                 
-                # Creator yazdı → Dolunay cevap verdi
+                # Creator yazdı → [İSİM] cevap verdi
                 if 'sweatco.in' not in current_sender and 'sweatco.in' in next_sender:
                     creator_body = extract_body(current_msg['payload'])
-                    dolunay_body = extract_body(next_msg['payload'])
+                    [isim]_body = extract_body(next_msg['payload'])
                     
                     # Boş body'leri atla
-                    if not creator_body.strip() or not dolunay_body.strip():
+                    if not creator_body.strip() or not [isim]_body.strip():
                         continue
                     
                     # Sistem emaillerini atla
@@ -146,7 +146,7 @@ def extract_thread_pairs(service, days=30, limit=20):
                         "creator_email": creator_email,
                         "creator_name": creator_name,
                         "creator_message": creator_body[:3000],
-                        "dolunay_reply": dolunay_body[:3000],
+                        "[isim]_reply": [isim]_body[:3000],
                         "subject": subject,
                         "thread_type": thread_type,
                         "first_message_body": first_body[:2000],
@@ -253,19 +253,19 @@ def simulate_agent_response(pair):
 
 
 # ══════════════════════════════════════════════════════════════════════
-# ADIM 3: AI Draft vs Dolunay Gerçek Yanıt Karşılaştırması
+# ADIM 3: AI Draft vs [İSİM] Gerçek Yanıt Karşılaştırması
 # ══════════════════════════════════════════════════════════════════════
 
 def compare_with_human(pair, ai_result):
     """
-    AI'ın ürettiği draft ile Dolunay'ın gerçek yanıtını karşılaştır.
+    AI'ın ürettiği draft ile [İSİM]'ın gerçek yanıtını karşılaştır.
     LLM ile detaylı feedback üret.
     """
     messages = [
         {
             "role": "system",
             "content": """You are an expert email quality analyst. You will compare an AI-generated 
-email draft with the ACTUAL email written by a human (Dolunay from Sweatcoin).
+email draft with the ACTUAL email written by a human ([İSİM] from Sweatcoin).
 
 Your task:
 1. Compare the two emails side by side
@@ -281,7 +281,7 @@ Respond in JSON:
     "overall_score": 1-10,
     "scores": {
         "intent_match": 1-10,       // Did AI correctly identify what the person wanted?
-        "tone_match": 1-10,         // Is the tone similar to Dolunay's style?
+        "tone_match": 1-10,         // Is the tone similar to [İSİM]'s style?
         "content_accuracy": 1-10,   // Are the facts/links/details correct?
         "brevity": 1-10,            // Is the length appropriate?
         "would_send": true/false    // Would this draft be good enough to send as-is?
@@ -301,8 +301,8 @@ CREATOR MESSAGE:
 
 ---
 
-DOLUNAY'S ACTUAL REPLY:
-{pair['dolunay_reply'][:1500]}
+[İSİM]'S ACTUAL REPLY:
+{pair['[isim]_reply'][:1500]}
 
 ---
 
@@ -419,7 +419,7 @@ def run_backtesting(days=30, limit=15):
               f"(confidence: {ai_result['intent'].get('confidence', 0):.0%})")
         
         # Karşılaştırma
-        print(f"   📊 Dolunay vs AI karşılaştırılıyor...")
+        print(f"   📊 [İSİM] vs AI karşılaştırılıyor...")
         comparison = compare_with_human(pair, ai_result)
         
         if comparison:
@@ -446,7 +446,7 @@ def run_backtesting(days=30, limit=15):
             "ai_intent": ai_result["intent"].get("intent", "UNCLEAR"),
             "ai_confidence": ai_result["intent"].get("confidence", 0),
             "ai_draft_preview": ai_result["final_draft"][:300],
-            "human_reply_preview": pair["dolunay_reply"][:300],
+            "human_reply_preview": pair["[isim]_reply"][:300],
             "review_info": ai_result.get("review_info"),
             "comparison": comparison,
         }

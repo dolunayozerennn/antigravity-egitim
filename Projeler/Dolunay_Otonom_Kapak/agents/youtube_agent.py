@@ -299,7 +299,9 @@ def generate_concepts(video_name: str, script_text: str, count: int = 5) -> list
     === STEP 2: CREATE {count} DISTINCT CONCEPTS ===
     Each concept MUST be completely different in visual metaphor and composition.
     🚫 BANNED generic texts: "HERKES ŞAŞIRDI", "İNANILMAZ", "BUNU İZLE", "GELECEK BURADA", "TARİHİ CANLANDIR"
+    🚫 BANNED visuals: "person sitting at computer", "person holding a phone", "person looking at a screen". This is strictly forbidden.
     ✅ GOOD texts are HIGHLY PUNCHY, curiosity-inducing, and action-oriented: "BU KONSEPTİ ÇAL", "BU STRATEJİYİ ÇAL", "REKABET YOK", "YAPAY ZEKA GELİR"
+    ✅ GOOD visuals are STRONG PHYSICAL METAPHORS (e.g., standing on broken keyboards, pulling a glowing CV from a trash can).
     
     FORMAT: HORIZONTAL (16:9). Person on LEFT 1/3 or RIGHT 1/3.
     DESIGN RULES:
@@ -360,7 +362,7 @@ def review_thumbnail_with_gemini(image_path: str, expected_text: str) -> dict:
 
         === DESIGN RULES ===
         6. MINIMALISM CHECK: The image should have MAX 3 main elements (person + background + text). FAIL if there are excessive micro-details, cluttered small objects, or busy compositions.
-        7. NO HOLOGRAMS / NO NEON LIGHTS: FAIL if you see holographic effects, neon glow patterns, or overly futuristic scattered light effects that make the image look cluttered.
+        7. NO HOLOGRAMS / NO NEON LIGHTS / NO LAPTOPS: FAIL if you see holographic effects, glowing future lines, or cliché tropes like "person sitting at a laptop" or "person looking at phone". We want physical metaphors.
         8. SCREENSHOT USAGE: If a screenshot/website image is visible, it should be cleanly integrated (e.g., on a laptop screen, floating panel). FAIL if the screenshot is messily used as a raw wallpaper background behind the person.
         9. 160x90px TEST: Mentally shrink the image to a tiny YouTube feed thumbnail. Would you understand the main message? FAIL if it would look like an unreadable mess at small size.
 

@@ -40,7 +40,7 @@ Bu desenlere uyan her şey tespit edilip placeholder ile değiştirilmeli:
 | Bot Token (`\d{10}:AA...`) | Telegram Bot Token | `TELEGRAM_BOT_TOKEN_BURAYA` |
 | `client_id`, `client_secret` | OAuth credentials | `OAUTH_CLIENT_ID_BURAYA` |
 | E-posta adresleri (kişisel) | Gmail, iş e-postaları | `EMAIL_ADRESI_BURAYA` |
-| Kişisel URL'ler (dolunayozeren.com vb.) | Kişisel siteler | `KISISEL_WEBSITE_BURAYA` |
+| Kişisel URL'ler ([SOSYAL_MEDYA_KULLANICI].com vb.) | Kişisel siteler | `KISISEL_WEBSITE_BURAYA` |
 
 ### Kesinlikle Dahil Edilmemesi Gereken Dosyalar
 

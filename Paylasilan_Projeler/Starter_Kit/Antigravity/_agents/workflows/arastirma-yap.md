@@ -7,7 +7,7 @@ description: Dubai gayrimenkul piyasası hakkında internette araştırma yap
 Dubai gayrimenkul piyasası hakkında güncel araştırma yapma adımları.
 
 ## Bağlam
-- **Müşteri:** Çağrı Bozay — Dubai yatırım danışmanı
+- **Müşteri:** [MÜŞTERİ_ADI] — Dubai yatırım danışmanı
 - **Skill:** `_skills/kie-ai-video-production/SKILL.md`
 - **Kaynak Script'ler:** `Projeler/Dubai Emlak İçerik Yazarı/reference-scripts/`
 

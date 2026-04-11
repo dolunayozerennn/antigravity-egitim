@@ -79,11 +79,12 @@ def generate_blog(annotations_data, script_text):
 5. Ses tonu: samimi, bilgili, heyecanlı ama profesyonel (AI tarafından yazıldığı belli olmasın)
 {tool_rule}
 7. Paragraflar kısa olsun (2-3 cümle max)
-8. Blog sonunda "Sonuç" bölümü ekle
+8. Blog sonunda "Sonuç" bölümü yerine doğrudan toparlayıcı bir paragraf ekle ("Sonuç olarak", "Özetle" gibi kelimeler KESİNLİKLE KULLANMA)
 9. 1000-1500 kelime arası
 10. Türkçe yaz
 11. Meta description öner (160 karakter)
 12. 5-7 adet SEO keyword öner
+13. YASAKLI KELİMELER: "Dijital çağda", "Hızla gelişen teknoloji dünyasında", "Günümüzde", "Bu yazıda", "Görüldüğü üzere". Direkt konuya gir.
 
 SADECE blog yazısını ver, başka bir şey ekleme. Markdown formatında yaz."""
 

@@ -4,7 +4,7 @@
 # Ortak helper script — diğer scriptler tarafından kullanılır
 # ============================================
 
-KIE_API_KEY="97d226c568fea77abdeaedde37a6c6aa"
+KIE_API_KEY="BURAYA_KIE_API_KEY"
 KIE_BASE_URL="https://api.kie.ai/api/v1"
 
 # Görev durumunu sorgula ve sonucu bekle

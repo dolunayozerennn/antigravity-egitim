@@ -1,11 +1,11 @@
 # Dubai Emlak İçerik Yazarı — AI Agent
 
-Çağrı Bozay için Dubai gayrimenkul yatırımı konulu sosyal medya video scriptleri üreten AI agent sistemi.
+[MÜŞTERİ_ADI] için Dubai gayrimenkul yatırımı konulu sosyal medya video scriptleri üreten AI agent sistemi.
 
 ## Platformlar
-- Instagram: [@cagri.bozay](https://www.instagram.com/cagri.bozay/)
-- TikTok: [@cagri.bozay](https://www.tiktok.com/@cagri.bozay?lang=tr-TR)
-- YouTube: [Çağrı Bozay](https://www.youtube.com/@%C3%87a%C4%9Fr%C4%B1Bozay)
+- Instagram: [@[MÜŞTERİ_SOSYAL_MEDYA]](https://www.instagram.com/[MÜŞTERİ_SOSYAL_MEDYA]/)
+- TikTok: [@[MÜŞTERİ_SOSYAL_MEDYA]](https://www.tiktok.com/@[MÜŞTERİ_SOSYAL_MEDYA]?lang=tr-TR)
+- YouTube: [[MÜŞTERİ_ADI]](https://www.youtube.com/@[MÜŞTERİ_SOSYAL_MEDYA])
 
 ## Nasıl Kullanılır?
 
@@ -28,7 +28,7 @@
 1. `rakipler.md` dosyasına beğendiğin emlakçıları ekle
 2. Hangi rakipten ilham almak istediğini söyle
 3. AI agent profilini inceler, video seçer, transkript çıkarır
-4. Çağrı Bozay tarzında orijinal script üretir
+4. [MÜŞTERİ_ADI] tarzında orijinal script üretir
 
 ## Proje Yapısı
 

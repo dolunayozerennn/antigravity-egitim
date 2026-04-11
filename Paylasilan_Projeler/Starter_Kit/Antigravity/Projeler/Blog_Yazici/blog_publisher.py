@@ -6,7 +6,7 @@ Strateji:
   1. blog_ready.mdx dosyasını okur
   2. Cover image'ı okur (base64)
   3. Annotated step görsellerini okur (base64)
-  4. GitHub API ile Dolunay_AI_Website repo'suna tek commit ile push eder
+  4. GitHub API ile Ornek_AI_Website repo'suna tek commit ile push eder
   5. Netlify otomatik build tetikler → KISISEL_WEBSITE_BURAYA güncellenir
 
 Kullanım:
@@ -27,8 +27,8 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).parent.resolve()
 
 # ─── Config ───
-GITHUB_OWNER = "dolunayozerennn"
-GITHUB_REPO = "Dolunay_AI_Website"
+GITHUB_OWNER = "[GITHUB_KULLANICI]"
+GITHUB_REPO = "Ornek_AI_Website"
 GITHUB_BRANCH = "main"
 
 # Netlify Build Hook — push sonrası otomatik deploy tetikler

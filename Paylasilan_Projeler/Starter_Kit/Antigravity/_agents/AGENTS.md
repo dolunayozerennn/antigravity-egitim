@@ -64,8 +64,7 @@ Antigravity/
 ├── _agents/          ← Orkestrasyon agent'ları + workflow'lar
 ├── _skills/          ← Atomik beceriler (lead bulma, mail atma, video üretimi vb.)
 ├── _knowledge/       ← Merkezi bilgi bankası + credentials deposu
-├── Projeler/         ← Aktif projeler
-└── Paylasilan_Projeler/  ← Dışarıyla paylaşıma hazırlanan projeler
+└── Projeler/         ← Aktif projeler
 ```
 
 ---

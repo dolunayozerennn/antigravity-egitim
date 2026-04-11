@@ -1,5 +1,5 @@
 ---
-description: Rakip emlakçıların videolarından ilham alarak Çağrı Bozay tarzında script üret
+description: Rakip emlakçıların videolarından ilham alarak [MÜŞTERİ_ADI] tarzında script üret
 ---
 
 # İlham Al — Rakip Video Analizi
@@ -11,7 +11,7 @@ Rakip emlakçı videolarından ilham alarak orijinal script üretme adımları.
 
 ## Bağlam
 - **Agent:** `_agents/icerik-uretim/AGENT.md`
-- **Config:** `_agents/icerik-uretim/config/cagri-bozay.yaml`
+- **Config:** `_agents/icerik-uretim/config/ornek-marka.yaml`
 - **Skill:** `Projeler/Dubai Emlak İçerik Yazarı/skills/icerik-yazari/SKILL.md`
 - **Rakip Analiz Skill:** `_skills/rakip-analiz/SKILL.md`
 - **Transcript Aracı:** `Projeler/Dubai Emlak İçerik Yazarı/tools/transcript.py` (Supadata API)
@@ -36,10 +36,10 @@ Rakip emlakçı videolarından ilham alarak orijinal script üretme adımları.
    - Yapı nasıl? (soru-cevap, anlatı, tablo, vb.)
 
 4. **Config'den marka ayarlarını çek**
-   - `_agents/icerik-uretim/config/cagri-bozay.yaml`
-   - Çağrı Bozay tonunu ve yasak ifadeleri doğrula
+   - `_agents/icerik-uretim/config/ornek-marka.yaml`
+   - [MÜŞTERİ_ADI] tonunu ve yasak ifadeleri doğrula
 
-5. **Çağrı Bozay versiyonunu yaz**
+5. **[MÜŞTERİ_ADI] versiyonunu yaz**
    - SKILL.md → "İlham Alma Kuralları" bölümüne bak
    - Konuyu al, anlatımı **tamamen yeniden yaz**
    - Çağrı'nın sesini ve dilini kullan

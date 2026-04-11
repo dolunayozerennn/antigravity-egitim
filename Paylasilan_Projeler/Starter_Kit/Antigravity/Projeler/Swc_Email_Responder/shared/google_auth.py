@@ -23,7 +23,7 @@ Kullanım:
 
 Token dosyaları:
     _knowledge/credentials/oauth/gmail-outreach-token.json
-    _knowledge/credentials/oauth/gmail-swc-token.json
+    _knowledge/credentials/oauth/gmail-ek-hesap-token.json
 """
 
 import os
@@ -38,15 +38,15 @@ OAUTH_DIR = os.path.dirname(os.path.abspath(__file__))
 # Hesap → token dosyası eşlemesi
 TOKEN_FILES = {
     "outreach": "gmail-outreach-token.json",
-    "swc": "gmail-swc-token.json",
-    "dolunay_ai": "gmail-dolunay-ai-token.json",
+    "swc": "gmail-ek-hesap-token.json",
+    "[isim]_ai": "gmail-[isim]-ai-token.json",
 }
 
 # Hesap → Railway environment variable eşlemesi
 TOKEN_ENV_VARS = {
     "outreach": "GOOGLE_OUTREACH_TOKEN_JSON",
     "swc": "GOOGLE_SWC_TOKEN_JSON",
-    "dolunay_ai": "GOOGLE_DOLUNAY_AI_TOKEN_JSON",
+    "[isim]_ai": "GOOGLE_OUTREACH_TOKEN_JSON",
 }
 
 ALL_SCOPES = [
@@ -171,19 +171,19 @@ def sheets_swc():
     return get_sheets_service("swc")
 
 
-def gmail_dolunay_ai():
+def gmail_[isim]_ai():
     """EMAIL_ADRESI_BURAYA Gmail service — kısa yol."""
-    return get_gmail_service("dolunay_ai")
+    return get_gmail_service("[isim]_ai")
 
 
-def sheets_dolunay_ai():
+def sheets_[isim]_ai():
     """EMAIL_ADRESI_BURAYA Sheets service — kısa yol."""
-    return get_sheets_service("dolunay_ai")
+    return get_sheets_service("[isim]_ai")
 
 
-def drive_dolunay_ai():
+def drive_[isim]_ai():
     """EMAIL_ADRESI_BURAYA Drive service — kısa yol."""
-    return get_drive_service("dolunay_ai")
+    return get_drive_service("[isim]_ai")
 
 
 if __name__ == "__main__":

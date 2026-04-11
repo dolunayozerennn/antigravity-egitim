@@ -2,7 +2,7 @@
 """
 Dubai Gayrimenkul Yatırım Hesap Makinesi
 =========================================
-Çağrı Bozay içerik ekibi için yatırım senaryosu hesaplamaları.
+[MÜŞTERİ_ADI] içerik ekibi için yatırım senaryosu hesaplamaları.
 
 Varsayılan Metrikler:
   - Yıllık değer artışı: İlk 3 yıl %8, sonraki yıllar %7

@@ -124,7 +124,7 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 ## Gemini API
 
 ### Gemini Model Deprecated — `404 models/gemini-1.5-pro-latest is not found`
-- **Sorun:** `dolunay-reels-kapak` projesinde `autonomous_cover_agent.py` ve `revision_engine.py` dosyalarında `gemini-1.5-pro-latest` model adı kullanılıyordu. Google bu modeli deprecate etti ve API 404 dönmeye başladı.
+- **Sorun:** `[proje-adi]-reels-kapak` projesinde `autonomous_cover_agent.py` ve `revision_engine.py` dosyalarında `gemini-1.5-pro-latest` model adı kullanılıyordu. Google bu modeli deprecate etti ve API 404 dönmeye başladı.
 - **Etki:** Kapak üretim pipeline'ı Gemini Vision değerlendirmesi yapamıyordu. Evaluation hep `score: 0` dönüyordu.
 - **Çözüm:** Tüm `gemini-1.5-pro-latest` referansları `gemini-2.0-flash` ile değiştirildi (6 yerde: 4x autonomous_cover_agent.py, 2x revision_engine.py).
 - **Kural:** Gemini model adları deprecate olabilir. Üretim kodunda `-latest` suffix'li model adı KULLANMA — spesifik versiyon kullan. Deprecation durumunda `gemini-2.0-flash` veya `gemini-2.5-pro` gibi güncel modellere geçiş yap.
@@ -137,7 +137,7 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 ## Kod-Repo Senkronizasyon Hataları
 
 ### Config.DEDUP_WINDOW_DAYS AttributeError — Lokal ↔ Production Uyumsuzluğu (KRİTİK)
-- **Sorun:** `notion_writer.py` → `Config.DEDUP_WINDOW_DAYS` kullanıyordu ama `config.py`'da bu attribute henüz tanımlanmamıştı. Lokal'de güncellenmiş ama ayrı GitHub repo'suna (`dolunayozerennn/tele-satis-crm`) push edilmemişti. Railway eski commit (12a9d2b) üzerinden çalışıyordu.
+- **Sorun:** `notion_writer.py` → `Config.DEDUP_WINDOW_DAYS` kullanıyordu ama `config.py`'da bu attribute henüz tanımlanmamıştı. Lokal'de güncellenmiş ama ayrı GitHub repo'suna (`[GITHUB_KULLANICI]/tele-satis-crm`) push edilmemişti. Railway eski commit (12a9d2b) üzerinden çalışıyordu.
 - **Etki:** 1 gün boyunca lead'ler Notion'a yazılamadı → ciddi maddi kayıp
 - **Kök Neden (3 katman):**
   1. Lokal kod değiştirildi ama ayrı repo'ya push edilmedi
@@ -151,13 +151,13 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Tarih:** Mart 2026
 
 ### MİMARİ DEÐİŞİKLİK — Native Mono-Repo Geçişi (Lokal ↔ GitHub ↔ Railway)
-- **Eski Sorun:** Tüm projeler lokal'de `antigravity-egitim` mono-repo'sunun içinde yaşıyor (`Projeler/XXX/`). Ama geçmişte Railway her proje için ayrı bir GitHub reposu izliyordu (`dolunayozerennn/tele-satis-crm` vb.). Bu yüzden `/tmp/` dizinine klonlayıp dosyaları `cp` ile kopyaladığımız tehlikeli bir senkronizasyon workaround'umuz vardı. Bu durum `AttributeError` gibi cross-repo bağımlılık çöküşlerine ve veri kayıplarına (silinen dosyaların production'da silinmemesi) yol açıyordu.
+- **Eski Sorun:** Tüm projeler lokal'de `[REPO_ADI]` mono-repo'sunun içinde yaşıyor (`Projeler/XXX/`). Ama geçmişte Railway her proje için ayrı bir GitHub reposu izliyordu (`[GITHUB_KULLANICI]/tele-satis-crm` vb.). Bu yüzden `/tmp/` dizinine klonlayıp dosyaları `cp` ile kopyaladığımız tehlikeli bir senkronizasyon workaround'umuz vardı. Bu durum `AttributeError` gibi cross-repo bağımlılık çöküşlerine ve veri kayıplarına (silinen dosyaların production'da silinmemesi) yol açıyordu.
 - **Etki:** Güvenilmez deploys, git conflictleri ve çakışan history'ler.
 - **Kök Neden:** Sistemin "Mono-repo" geliştirme yapıp "Multi-repo" production beklemesi.
 - **ÇÖZÜM (YENİ MİMARİ): Native Mono-Repo Mimarisi**
   1. **Artık hiçbir projeyi dışarı taşıyıp ayrı repoya push KESİNLİKLE YAPILMIYOR.** Tamamen iptal edildi.
-  2. Tüm projenin ana omurgası `dolunayozerennn/antigravity-egitim` adlı **tek bir GitHub reposudur**.
-  3. Yeni bir Railway projesi/servisi kurulduğunda veya güncellendiğinde, bu TEK repo (`dolunayozerennn/antigravity-egitim`) Railway'e bağlanır.
+  2. Tüm projenin ana omurgası `[GITHUB_KULLANICI]/[REPO_ADI]` adlı **tek bir GitHub reposudur**.
+  3. Yeni bir Railway projesi/servisi kurulduğunda veya güncellendiğinde, bu TEK repo (`[GITHUB_KULLANICI]/[REPO_ADI]`) Railway'e bağlanır.
   4. Railway üzerindeki ilgili servisin ayarlarından **"Root Directory"** parametresi ilgili proje klasörü (örn: `Projeler/Tele_Satis_CRM`) olarak ayarlanır.
   5. Gereksiz trigger'ları (diğer projelerin de deploy edilmesini) engellemek için Watch Paths özelliğinde sadece o dizine izin verilir (`/Projeler/Tele_Satis_CRM/**`).
 - **Kural:** Herhangi bir proje için kod deploylanacaksa sadece `git push origin main` yapılır. Kopya `cp` scriptleri ASLA kullanılmaz.
@@ -265,8 +265,8 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 
 ### Notion MCP — Çift Workspace (İki Farklı Token) Karışıklığı
 - **Sorun:** Antigravity sisteminde iki ayrı Notion workspace var. MCP `notion-mcp-server` sadece **bir** workspace'e bağlı olabilir. Yanlış workspace'teki sayfaya erişmeye çalışınca 404 alınır.
-- **Mevcut MCP Bağlantısı:** `Dolunay Özeren's Notion` workspace'i (antigravity botu)
-- **Diğer Workspace:** `NOTION_SOCIAL_TOKEN` ile erişilen sosyal medya workspace'i (Ceren, Video İçerik Akışları vb.)
+- **Mevcut MCP Bağlantısı:** `[İSİM SOYAD]'s Notion` workspace'i (antigravity botu)
+- **Diğer Workspace:** `NOTION_SOCIAL_TOKEN` ile erişilen sosyal medya workspace'i (örn: İzleme Botları, Video İçerik Akışları vb.)
 - **Çözüm:** MCP ile erişilemeyen workspace'teki verilere `curl` + `NOTION_SOCIAL_TOKEN` ile ulaş (Python script veya `run_command`). MCP sadece antigravity botunun bağlı olduğu workspace'i görür.
 - **Kural:** `calisma-kurallari.md`'deki Notion Workspace Yapısı tablosuna bak — hangi DB'nin hangi workspace'te olduğunu kontrol et.
 - **Tarih:** Mart 2026
@@ -300,10 +300,10 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 ## Servis İzleyici — Self-Healer
 
 ### Cron Job'lar "unknown" Olarak Raporlanıyor
-- **Sorun:** `dolunay-reels-kapak` ve `revizyon-cron` servisleri Railway Cron Job'a geçirilmişti ama `deploy-registry.md`'deki platform bilgisi `railway` olarak kalmıştı. `health_check.py` sadece `platform == "railway"` olan servisleri kontrol ediyordu → `railway-cron` platformundaki servisler atlanıyordu → self-healer bunları "unknown" olarak raporluyordu.
+- **Sorun:** `[proje-adi]-reels-kapak` ve `revizyon-cron` servisleri Railway Cron Job'a geçirilmişti ama `deploy-registry.md`'deki platform bilgisi `railway` olarak kalmıştı. `health_check.py` sadece `platform == "railway"` olan servisleri kontrol ediyordu → `railway-cron` platformundaki servisler atlanıyordu → self-healer bunları "unknown" olarak raporluyordu.
 - **Kök Neden:** Railway Cron geçişi sırasında deploy-registry platformu güncellenmemiş + health_check.py filtresinde `railway-cron` eksikti.
 - **Çözüm (2 adım):**
-  1. `deploy-registry.md` → `dolunay-reels-kapak` ve `revizyon-cron` platformları `railway` → `railway-cron` olarak güncellendi
+  1. `deploy-registry.md` → `[proje-adi]-reels-kapak` ve `revizyon-cron` platformları `railway` → `railway-cron` olarak güncellendi
   2. `health_check.py` → satır 681: `p.get("platform") == "railway"` → `p.get("platform") in ("railway", "railway-cron")` olarak genişletildi
 - **Kural:** Bir servisi Railway Cron Job'a taşırken **mutlaka** `deploy-registry.md`'deki platform bilgisini `railway-cron` olarak güncelle.
 - **Tarih:** Mart 2026

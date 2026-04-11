@@ -36,14 +36,14 @@ class Config:
             self.OAUTH_TOKEN_PATH = path
         else:
             default_token_path = os.path.abspath(os.path.join(
-                os.path.dirname(__file__), "..", "..", "_knowledge", "credentials", "oauth", "gmail-dolunay-ai-token.json"
+                os.path.dirname(__file__), "..", "..", "_knowledge", "credentials", "oauth", "gmail-[isim]-ai-token.json"
             ))
             
             self.OAUTH_TOKEN_PATH = os.environ.get("OAUTH_TOKEN_PATH", default_token_path)
 
             if not os.path.exists(self.OAUTH_TOKEN_PATH):
                 # Fallback path if deployed or different layout
-                fallback = os.path.join(os.path.dirname(__file__), "..", "..", "..", "_knowledge", "credentials", "oauth", "gmail-dolunay-ai-token.json")
+                fallback = os.path.join(os.path.dirname(__file__), "..", "..", "..", "_knowledge", "credentials", "oauth", "gmail-[isim]-ai-token.json")
                 if os.path.exists(fallback):
                     self.OAUTH_TOKEN_PATH = fallback
 

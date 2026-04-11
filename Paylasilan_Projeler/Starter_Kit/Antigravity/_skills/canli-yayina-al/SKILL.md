@@ -256,7 +256,7 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 curl -s -X POST https://backboard.railway.app/graphql/v2 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer TOKEN" \
-  -d '{"query": "mutation { serviceCreate(input: { projectId: \"PROJE_ID\", name: \"SERVIS_ADI\", source: { repo: \"dolunayozerennn/REPO_ADI\" }, branch: \"main\" }) { id name } }"}'
+  -d '{"query": "mutation { serviceCreate(input: { projectId: \"PROJE_ID\", name: \"SERVIS_ADI\", source: { repo: \"[GITHUB_KULLANICI]/REPO_ADI\" }, branch: \"main\" }) { id name } }"}'
 ```
 
 > **⚠️ NOT:** Bu mutation direkt GitHub repo'yu Railway servisine bağlar.
@@ -417,7 +417,7 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 curl -s -X POST https://backboard.railway.app/graphql/v2 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer TOKEN" \
-  -d '{"query": "mutation { serviceCreate(input: { projectId: \"MEVCUT_PROJE_ID\", name: \"yeni-servis\", source: { repo: \"dolunayozerennn/repo-adi\" }, branch: \"main\" }) { id name } }"}'
+  -d '{"query": "mutation { serviceCreate(input: { projectId: \"MEVCUT_PROJE_ID\", name: \"yeni-servis\", source: { repo: \"[GITHUB_KULLANICI]/repo-adi\" }, branch: \"main\" }) { id name } }"}'
 
 # 3. Env variables ayarla (aynı environment ID kullanılır)
 # 4. Otomatik deploy başlar
@@ -435,7 +435,7 @@ Her başarılı deploy sonrası **`_knowledge/deploy-registry.md`** dosyasına k
 - **Railway Project ID:** `xxxxx-xxxx-xxxx`
 - **Service ID:** `xxxxx-xxxx-xxxx`
 - **Environment ID:** `xxxxx-xxxx-xxxx`
-- **GitHub Repo:** `dolunayozerennn/repo-adi`
+- **GitHub Repo:** `[GITHUB_KULLANICI]/repo-adi`
 - **Lokal Klasör:** `Projeler/Proje_Adi/`
 - **Start Komutu:** `python bot.py`
 - **Son Deploy:** YYYY-MM-DD
@@ -493,7 +493,7 @@ _skills/canli-yayina-al/
 ✅ Production Deploy Tamamlandı!
 
 📦 Proje: [Proje Adı]
-🔗 GitHub: github.com/dolunayozerennn/repo-adi (private)
+🔗 GitHub: github.com/[GITHUB_KULLANICI]/repo-adi (private)
 🚂 Railway: https://railway.app/project/PROJE_ID
 🔒 Güvenlik: API key'ler environment variable olarak ayarlandı
 

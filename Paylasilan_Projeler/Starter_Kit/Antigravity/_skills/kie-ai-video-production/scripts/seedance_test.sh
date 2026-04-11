@@ -2,7 +2,7 @@
 # Seedance 2.0 API Test Script
 # Tüm testler: 480p, 4 saniye (minimum maliyet)
 
-API_KEY="0bf01128b0840e22108b95e484b09f76"
+API_KEY="BURAYA_KIE_API_KEY"
 BASE_URL="https://api.kie.ai/api/v1"
 
 echo "============================================"

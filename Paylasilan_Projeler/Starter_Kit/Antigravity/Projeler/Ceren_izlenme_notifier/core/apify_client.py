@@ -95,7 +95,7 @@ def get_tiktok_data():
     videos = []
     try:
         tk_run_input = {
-            "profiles": ["dolunayozeren"],
+            "profiles": ["[SOSYAL_MEDYA_KULLANICI]"],
             "resultsPerPage": 7,
             "downloadVideo": False
         }
@@ -133,7 +133,7 @@ def get_youtube_data():
     videos = []
     try:
         yt_run_input = {
-            "searchKeywords": "dolunayozeren",
+            "searchKeywords": "[SOSYAL_MEDYA_KULLANICI]",
             "maxResults": 5,
             "maxResultStreams": 0
         }
@@ -162,7 +162,7 @@ def get_youtube_data():
             # Must be from our channel to be sure
             channel = item.get("channelName", "").lower()
             url_check = (item.get("url") or item.get("videoUrl") or "").lower()
-            if "dolunay" not in channel and "dolunay" not in url_check:
+            if "[isim]" not in channel and "[isim]" not in url_check:
                 logger.debug(f"Baska kanal videosu atlandi: {channel}")
                 continue
                 

@@ -21,7 +21,7 @@ description: Deploy sonrası kapsamlı stabilizasyon — projenin tüm potansiye
 Örnek:
 ```
 /stabilize Blog_Yazici
-/stabilize Dolunay_Reels_Kapak
+/stabilize Reels_Kapak
 /stabilize Marka_Isbirligi
 ```
 
@@ -191,7 +191,7 @@ Projenin kodunu aşağıdaki anti-pattern'ler için tara:
 | `except: pass` (sessiz hata yutma) | `except:` ardından `pass`, `continue` | Hata gizlenir → en azından logla |
 | `Path.parents[N]` güvensiz erişim | `parents[2]`, `parents[3]` vb. | Railway'de IndexError → uzunluk kontrolü ekle |
 | OAuth scope uyumsuzluğu | `SCOPES = [` listesini kontrol et | Token scope'u ile kod scope'u eşleşmeli |
-| hardcoded path (`/Users/`) | `/Users/dolunay`, `/home/` | Docker'da çalışmaz → relative path veya env var kullan |
+| hardcoded path (`/Users/`) | `/Users/[isim]`, `/home/` | Docker'da çalışmaz → relative path veya env var kullan |
 | `.gitignore`'da olup runtime'da lazım olan dosya | Kodda okunan ama `.gitignore`'da olan dosyalar | Railway ephemeral FS → auto-create mekanizması ekle |
 | SSL/Connection retry eksikliği | `requests.get(` veya `requests.post(` without retry | Railway'de SSL kopması yaygın → retry + reconnect ekle |
 
@@ -400,7 +400,7 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 Pipeline bir çıktı üretiyorsa (GitHub commit, Notion güncelleme, e-posta, vb.):
 - **Blog Yazıcı** → GitHub'da yeni blog post commit edildi mi? (`mcp_github-mcp-server_list_commits`)
 - **Lead Pipeline** → Notion'da yeni lead eklendi mi? (`mcp_notion-mcp-server_API-query-data-source`)
-- **Dolunay Reels Kapak** → Notion'da kapak URL'si güncellendi mi?
+- **[İSİM] Reels Kapak** → Notion'da kapak URL'si güncellendi mi?
 - **Marka İş Birliği** → CSV veya Notion'da outreach kaydı oluştu mu?
 - **Akilli Watchdog** → Sağlık raporu e-postası gönderildi mi?
 

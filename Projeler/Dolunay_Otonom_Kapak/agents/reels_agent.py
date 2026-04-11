@@ -178,10 +178,11 @@ def generate_cover_text_and_scene(video_name: str, script_text: str) -> dict:
     
     2. **scene_description**: A creative visual scene description (in English, 1-2 sentences) that DIRECTLY illustrates the cover_text meaning.
        CREATIVE RULES:
-       - The scene must visually match and reinforce the cover text with a strong METAPHOR or ACTION.
-       - AVOID the cliché of "person sitting at computer looking at screen". Be creative!
-       - For 3D tool videos: Show a giant 3D character coming alive, not just on a screen.
-       - For AI assistant videos: Show the person relaxing while AI handles work dramatically.
+       - The scene must visually match and reinforce the cover text with a strong PHYSICAL METAPHOR or ACTION.
+       - CRITICAL BAN: ABSOLUTELY NO "person sitting at a computer", "person holding a phone", or "looking at a screen". This is forbidden.
+       - GOLDEN STANDARDS: 
+         * Text: "KLAVYEYİ ÇÖPE AT" -> Scene: Person standing triumphantly on a mountain of broken keyboards.
+         * Text: "CV'Nİ KURTAR" -> Scene: Person pulling a glowing CV document out of a dark trash can.
        - Use dramatic, cinematic visuals — think movie poster, not stock photo.
        - The scene must be ACTIONABLE and SPECIFIC, not vague.
     
@@ -271,14 +272,14 @@ def generate_three_themes(video_name: str, script_text: str) -> list:
        - ALL CAPS, max 4 words.
        - Examples: "ANTRENÖRÜNÜ KOV", "AJANSA PARA VERME", "KOMİSYONA SON"
     3. **scene_description**: A creative, cinematic visual scene (in English) that DIRECTLY illustrates the cover_text.
-       - AVOID cliché "person at computer" scenes.
-       - Use dramatic metaphors, unexpected visuals, movie-poster quality.
+       - CRITICAL BAN: ABSOLUTELY NO "person sitting at a computer", "person holding a phone", or "looking at a screen". This is strictly forbidden.
+       - Use dramatic PHYSICAL METAPHORS (e.g. standing on broken keyboards, pulling a glowing document from trash).
        - Must be SPECIFIC and actionable.
        - CRITICAL: The scene MUST be SIMPLE and CLEAN with maximum 2-3 main visual elements.
          These covers will be viewed as tiny ~150px thumbnails on Instagram grid.
          Too many background elements create visual clutter. Think BOLD and SIMPLE, not detailed and complex.
-       - GOOD example: man + giant robot shadow on wall (2 elements, clean)
-       - BAD example: man surrounded by 7 characters in different costumes (too many elements, cluttered)
+       - GOOD example: man + giant robot shadow on wall, or man + broken keyboards on floor (2 elements, clean)
+       - BAD example: man sitting closely looking at laptop or phone (cliché, banned, cluttered)
     
     The 3 themes MUST be meaningfully different from each other:
     - Theme 1: Focus on SHOCK / PROVOCATIVE angle
@@ -379,8 +380,8 @@ def evaluate_image_with_vision(image_url: str, style_guide: str, expected_text: 
     9. **Visual-Text Consistency**: Does the scene/action in the image match what the text says?
        - The visual should reinforce the text message.
     10. **Visual Creativity**: Is the scene creative and original, or is it a cliché?
-        - Cliché: Person sitting at computer looking at a screen. PENALTY.
-        - Creative: Dramatic metaphors, real-life scale elements, unexpected perspectives. BONUS.
+        - Cliché: Person sitting at computer, typing on laptop, or looking at phone. MASSIVE PENALTY.
+        - Creative: Dramatic physical metaphors (e.g. standing on broken keyboards, pulling from trash, giant objects). BONUS.
     11. **Overall Aesthetic**: Cinematic, moody, professional look as per Rourke style guide.
     12. **Face Identity**: Does the person look consistent with the reference photo?
     13. **Background Simplicity (GRID TEST)**: Does the background have maximum 2-3 main visual elements?

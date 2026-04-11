@@ -1,7 +1,7 @@
 # 🛡️ GitHub Güvenlik Kontrol Listesi
 
 Bu dosya, herhangi bir projeyi GitHub'a push etmeden ÖNCE kontrol edilmesi gereken güvenlik adımlarını tanımlar.
-Hem Antigravity sahibi (Dolunay) hem de starter kit alanlar için geçerlidir.
+Hem Antigravity sahibi ([İSİM]) hem de starter kit alanlar için geçerlidir.
 
 ---
 

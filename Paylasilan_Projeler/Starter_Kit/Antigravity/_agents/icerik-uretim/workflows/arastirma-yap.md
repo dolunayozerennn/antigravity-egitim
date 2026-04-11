@@ -11,8 +11,8 @@ Dubai gayrimenkul piyasası hakkında güncel araştırma yapma adımları.
 
 ## Bağlam
 - **Agent:** `_agents/icerik-uretim/AGENT.md`
-- **Config:** `_agents/icerik-uretim/config/cagri-bozay.yaml`
-- **Müşteri:** Çağrı Bozay — Dubai yatırım danışmanı
+- **Config:** `_agents/icerik-uretim/config/ornek-marka.yaml`
+- **Müşteri:** [MÜŞTERİ_ADI] — Dubai yatırım danışmanı
 - **Skill:** `_skills/kie-ai-video-production/SKILL.md`
 - **Rakip Analiz Skill:** `_skills/rakip-analiz/SKILL.md`
 - **Kaynak Script'ler:** `Projeler/Dubai Emlak İçerik Yazarı/reference-scripts/`

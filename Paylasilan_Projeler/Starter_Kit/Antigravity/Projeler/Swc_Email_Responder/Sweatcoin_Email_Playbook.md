@@ -23,7 +23,7 @@ Bu sayede:
 ```
 Yeni Okunmamış E-posta
    │
-   ├─ @sweatco.in (Takım üyesi)
+   ├─ @[ŞİRKET_DOMAIN] (Takım üyesi)
    │   └─ IGNORE & OKUNMADI BIRAK (Manuel yanıtlanacak)
    │
    ├─ Sistem/Bot → IGNORE (Notion, Google, Apify vb.)
@@ -32,7 +32,7 @@ Yeni Okunmamış E-posta
    │   └─ OKUNDU OLARAK İŞARETLE, cevap verme
    │
    ├─ Ödeme/Çekim Şikâyeti (payment, withdrawal vb.)
-   │   └─ lola@sweatco.in'e FORWARD ET + OKUNDU işaretle
+   │   └─ [İSİM]@[ŞİRKET_DOMAIN]'e FORWARD ET + OKUNDU işaretle
    │
    ├─ Influencer Tip 1 (Creative Sourcing partneri)
    │   ├─ Tespit: 1) Bilinen e-posta listesi VEYA 2) Thread ilk mesaj içerik analizi
@@ -67,7 +67,7 @@ Yeni Okunmamış E-posta
 | Transactional | MailSuite Daily Report, Mailtrack vb. | Okundu, cevap yok |
 | Otomatik Yanıtlar | Out of Office, Tatil mesajları | Okundu, cevap yok (AI tarafından filtrelenir) |
 | Teslimat Hataları | Mail gitmedi, Bounce, Address not found | Okundu, cevap yok (AI tarafından filtrelenir) |
-| Takım (@sweatco.in) | Şirket içi yazışmalar | **Okunmadı** bırak, cevap yok (Manuel ilgilenilecek) |
+| Takım (@[ŞİRKET_DOMAIN]) | Şirket içi yazışmalar | **Okunmadı** bırak, cevap yok (Manuel ilgilenilecek) |
 | Influencerlar (Tip 1 & 2) | Tüm creative sourcing ve outreach iletişimleri | **DRAFT** oluşturulur, ASLA otomatik gönderilmez |
 
 ## Otomatik Yönlendirmeler
@@ -81,7 +81,7 @@ Yeni Okunmamış E-posta
 ## İletişim Stili
 
 - **Selamlama:** "Hi {İlk İsim},"
-- **İmza:** "Best,\nDolunay\nInfluencer & Affiliate Marketing – Sweatcoin"
+- **İmza:** "Best,\n[İSİM]\nInfluencer & Affiliate Marketing – Sweatcoin"
 - **Ton:** Sıcak, profesyonel, kısa (3-5 cümle)
 - **Dil:** Her koşulda tamamen **İngilizce**. Karşı taraf hangi dilde yazarsa yazsın (İspanyolca, Fransızca vb.), niyet (intent) AI tarafından çözülür ve taslak daima *İngilizce* şablonlarla oluşturulur.
 - **Asla:** "username" değil, "email address you used to sign up" istenir

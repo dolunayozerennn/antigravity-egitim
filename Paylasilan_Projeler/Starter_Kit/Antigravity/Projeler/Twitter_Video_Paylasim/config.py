@@ -29,7 +29,7 @@ class Config:
         self.X_ACCESS_TOKEN_SECRET = self._require_env("X_ACCESS_TOKEN_SECRET", "dummy" if self.IS_DRY_RUN else None)
         
         # App specific
-        self.TIKTOK_USERNAME = os.environ.get("TIKTOK_USERNAME", "dolunayozeren")
+        self.TIKTOK_USERNAME = os.environ.get("TIKTOK_USERNAME", "[SOSYAL_MEDYA_KULLANICI]")
         
     def _require_env(self, key, default=None):
         """Fetches an environment variable, raises error if missing."""

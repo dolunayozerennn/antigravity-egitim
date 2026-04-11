@@ -8,7 +8,7 @@ LLM-destekli pipeline sağlık kontrolü.
   3. Tele Satış Notifier (Sheets → Email zamanlı)
   4. Marka İş Birliği (Notion custom)
   5. Blog Yazıcı (Notion Operations Log)
-  6. Dolunay Reels Kapak (Notion)
+  6. [İSİM] Reels Kapak (Notion)
   7. İşbirliği Tahsilat Takip (Notion)
   8. LinkedIn Video Paylaşım (Notion)
   9. LinkedIn Text Paylaşım (Notion)
@@ -53,7 +53,7 @@ class Config:
     NOTION_API_TOKEN = os.environ.get("NOTION_API_TOKEN", "")
     NOTION_SOCIAL_TOKEN = os.environ.get("NOTION_SOCIAL_TOKEN", "")
     NOTION_DATABASE_ID = os.environ.get(
-        "NOTION_DATABASE_ID", "31226924bb82800e9adad6f16399eba0"
+        "NOTION_DATABASE_ID", "BURAYA_NOTION_DB_ID"
     )
 
     # Token registry — proje config'inde notion_token_key ile referans edilir
@@ -83,11 +83,11 @@ class Config:
             "notion_token_key": "NOTION_SOCIAL_TOKEN",
             "notion_db_id": os.environ.get(
                 "NOTION_DB_BRAND_REACHOUT",
-                "32f955140a328187870ff7651b2cf5fa"
+                "BURAYA_NOTION_DB_ID"
             ),
             "notion_properties": ["Marka Adı", "Email", "Outreach Status"],
             "expected_daily_activity": False,  # Pipeline runs 2 days a week
-            "railway_service_id": "997b869b-bd24-4be5-b37f-d5ff2f85232b",
+            "railway_service_id": "BURAYA_RAILWAY_SERVICE_ID",
         },
         # ── Yeni Projeler (Mart 2026) ────────────────────────
         {
@@ -98,13 +98,13 @@ class Config:
             "expected_column_keywords": [],
             "pipeline": "custom_notion",
             "notion_token_key": "NOTION_SOCIAL_TOKEN",
-            "notion_db_id": "32f955140a3281fe965bc2e227046837",
+            "notion_db_id": "BURAYA_NOTION_DB_ID",
             "notion_properties": ["Title", "Message", "Level", "Component", "Zaman"],
             "expected_daily_activity": False,  # Günlük cron ama her çalışmada yeni blog üretilmeyebilir
-            "railway_service_id": "bdaaa906-abed-477c-b67c-dacec39fe733",
+            "railway_service_id": "BURAYA_RAILWAY_SERVICE_ID",
         },
         {
-            "name": "Dolunay Reels Kapak",
+            "name": "[İSİM] Reels Kapak",
             "spreadsheet_id": "",
             "sheet_tabs": [],
             "expected_columns": [],
@@ -113,11 +113,11 @@ class Config:
             "notion_token_key": "NOTION_SOCIAL_TOKEN",
             "notion_db_id": os.environ.get(
                 "NOTION_DB_REELS_KAPAK",
-                "27b955140a32838589eb813222d532a2"
+                "BURAYA_NOTION_DB_ID"
             ),
             "notion_properties": ["Name", "Status"],
             "expected_daily_activity": False,  # Her çalışmada üretim olmayabilir
-            "railway_service_id": "98fa5736-7e6f-454a-a648-22e47a92c28a",
+            "railway_service_id": "BURAYA_RAILWAY_SERVICE_ID",
         },
         {
             "name": "İşbirliği Tahsilat Takip",
@@ -129,11 +129,11 @@ class Config:
             "notion_token_key": "NOTION_SOCIAL_TOKEN",
             "notion_db_id": os.environ.get(
                 "NOTION_DB_YOUTUBE_ISBIRLIKLERI",
-                "5bb955140a32821f98cc81605e4a971f"
+                "BURAYA_NOTION_DB_ID"
             ),
             "notion_properties": [],  # DB erişim + kayıt sayısı kontrolü yeterli
             "expected_daily_activity": False,  # Sadece vadesinde kontrol
-            "railway_service_id": "533f2a47-c8f6-4e3b-a5a1-0f5b2f9b8b8d",
+            "railway_service_id": "BURAYA_RAILWAY_SERVICE_ID",
         },
         {
             "name": "LinkedIn Video Paylaşım",
@@ -145,12 +145,12 @@ class Config:
             "notion_token_key": "NOTION_SOCIAL_TOKEN",
             "notion_db_id": os.environ.get(
                 "NOTION_LINKEDIN_DB_ID",
-                "32f955140a3281c88c1fc4b29a3abeb7"
+                "BURAYA_NOTION_DB_ID"
             ),
             "notion_properties": ["Video ID", "Status", "Platform", "TikTok URL", "LinkedIn URL", "Paylaşım Tarihi"],
             "expected_daily_activity": True,  # Günlük cron UTC 10:00
             "shared_notion_db_group": "social_media_db",  # Aynı DB'yi paylaşan projeler
-            "railway_service_id": "8e486d77-c5b1-4f70-9f29-55c8b59398f9",
+            "railway_service_id": "BURAYA_RAILWAY_SERVICE_ID",
         },
         {
             "name": "LinkedIn Text Paylaşım",
@@ -162,12 +162,12 @@ class Config:
             "notion_token_key": "NOTION_SOCIAL_TOKEN",
             "notion_db_id": os.environ.get(
                 "NOTION_LINKEDIN_DB_ID",
-                "32f955140a3281c88c1fc4b29a3abeb7"
+                "BURAYA_NOTION_DB_ID"
             ),
             "notion_properties": ["Video ID", "Status", "Platform", "Post Tipi"],
             "expected_daily_activity": False,  # Haftada 2 kez: Pazartesi + Perşembe
             "shared_notion_db_group": "social_media_db",
-            "railway_service_id": "c1b095f4-700b-4302-ac30-efe537d5935c",
+            "railway_service_id": "BURAYA_RAILWAY_SERVICE_ID",
         },
         {
             "name": "Twitter Video Paylaşım",
@@ -179,12 +179,12 @@ class Config:
             "notion_token_key": "NOTION_API_TOKEN",  # DİKKAT: Ana workspace token
             "notion_db_id": os.environ.get(
                 "NOTION_TWITTER_DB_ID",
-                "32f955140a3281c88c1fc4b29a3abeb7"
+                "BURAYA_NOTION_DB_ID"
             ),
             "notion_properties": ["Video ID", "Platform", "Status", "TikTok URL", "Twitter URL", "Paylaşım Tarihi"],
             "expected_daily_activity": True,  # Günde 3 kez: UTC 08/11/14
             "shared_notion_db_group": "social_media_db",
-            "railway_service_id": "55f76475-5b45-4050-93f7-723110ab470e",
+            "railway_service_id": "BURAYA_RAILWAY_SERVICE_ID",
         },
         {
             "name": "SWC Email Responder",
@@ -193,7 +193,7 @@ class Config:
             "expected_columns": [],
             "expected_column_keywords": [],
             "pipeline": "railway_only",  # Notion yok, sadece Railway health check
-            "railway_service_id": "08224222-4d79-43ec-b649-1a8ac4c8c8ad",
+            "railway_service_id": "BURAYA_RAILWAY_SERVICE_ID",
             "expected_daily_activity": True,
         },
     ]

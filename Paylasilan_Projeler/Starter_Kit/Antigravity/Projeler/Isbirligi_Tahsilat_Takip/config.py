@@ -37,5 +37,5 @@ if not NOTION_API_TOKEN:
     raise EnvironmentError("NOTION_API_TOKEN eksik, uygulama başlatılamıyor.")
 
 # Notion Database ID'leri — Yeni Workspace (Mart 2026+)
-YOUTUBE_DB_ID = "5bb95514-0a32-821f-98cc-81605e4a971f"
-REELS_DB_ID = "27b95514-0a32-8385-89eb-813222d532a2"
+YOUTUBE_DB_ID = "BURAYA_NOTION_YOUTUBE_DB_ID"
+REELS_DB_ID = "BURAYA_NOTION_REELS_DB_ID"

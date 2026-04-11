@@ -12,7 +12,7 @@ Kie AI modelleri kullanarak video ve görsel içerik üretme adımları.
 
 ## Bağlam
 - **Agent:** `_agents/icerik-uretim/AGENT.md`
-- **Config:** `_agents/icerik-uretim/config/cagri-bozay.yaml`
+- **Config:** `_agents/icerik-uretim/config/ornek-marka.yaml`
 - **Skill:** `_skills/kie-ai-video-production/SKILL.md` → ÖNCE OKU
 - **API:** `_knowledge/api-anahtarlari.md` → Kie AI bölümü
 - **API Dökümanları:** `Projeler/İçerik Otomasyon Test/api-docs/`

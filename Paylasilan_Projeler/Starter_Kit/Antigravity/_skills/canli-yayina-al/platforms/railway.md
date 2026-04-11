@@ -119,7 +119,7 @@ mutation {
   serviceCreate(input: {
     projectId: "PROJE_ID"
     name: "servis-adi"
-    source: { repo: "dolunayozerennn/repo-adi" }
+    source: { repo: "[GITHUB_KULLANICI]/repo-adi" }
     branch: "main"
   }) {
     id
@@ -138,7 +138,7 @@ mutation {
   serviceConnect(
     id: "SERVIS_ID"
     input: {
-      repo: "dolunayozerennn/repo-adi"
+      repo: "[GITHUB_KULLANICI]/repo-adi"
       branch: "main"
     }
   ) {

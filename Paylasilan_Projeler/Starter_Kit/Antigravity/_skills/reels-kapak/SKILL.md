@@ -1,16 +1,16 @@
 ---
 name: reels-kapak
 description: |
-  Dolunay'ın Instagram Reels/TikTok/Shorts videoları için AI destekli kapak fotoğrafı (thumbnail) üretimi.
+  [İSİM]'ın Instagram Reels/TikTok/Shorts videoları için AI destekli kapak fotoğrafı (thumbnail) üretimi.
   Kullanıcı "kapak üret", "thumbnail yap", "cover oluştur" gibi isteklerde bulunduğunda veya 
-  Dolunay_Reels_Kapak projesine referans verdiğinde BU SKILL kullanılmalıdır.
+  Reels_Kapak projesine referans verdiğinde BU SKILL kullanılmalıdır.
   ⚠️ KESİNLİKLE generate_image aracını KULLANMA — projenin kendi pipeline'ını (Kie AI + cutout + style guide) çalıştır.
   ⚠️ Notion verisi lazımsa KESİNLİKLE browser açma — Notion MCP araçlarını veya projenin notion_service.py'sini kullan.
 ---
 
 # 🎬 Reels Kapak Üretimi — Skill Talimatları
 
-Bu skill, Dolunay'ın sosyal medya videoları için kapak fotoğrafı üretimini yönetir.
+Bu skill, [İSİM]'ın sosyal medya videoları için kapak fotoğrafı üretimini yönetir.
 
 > ⚠️ **KRİTİK KURAL 1**: Kapak fotoğrafı üretmek için **ASLA** `generate_image` aracını kullanma!
 > Bu araç projenin modelini (Kie AI), style guide'ını, referans fotoğraflarını ve kalite değerlendirme
@@ -33,7 +33,7 @@ Bu skill, Dolunay'ın sosyal medya videoları için kapak fotoğrafı üretimini
 ## 📁 Proje Konumu
 
 ```
-./Projeler/Dolunay_Reels_Kapak/
+./Projeler/Reels_Kapak/
 ```
 
 ## 🔑 Temel Dosyalar
@@ -46,7 +46,7 @@ Bu skill, Dolunay'ın sosyal medya videoları için kapak fotoğrafı üretimini
 | `notion_service.py` | Notion API entegrasyonu |
 | `drive_service.py` | Google Drive yükleme |
 | `main.py` | Otomatik cron pipeline (deploy için) |
-| `assets/cutouts/` | Dolunay'ın arka planı kaldırılmış referans fotoğrafları (23 adet) |
+| `assets/cutouts/` | [İSİM]'ın arka planı kaldırılmış referans fotoğrafları (23 adet) |
 
 | `revision_engine.py` | Kapak revizyon motoru (feedback → analiz → revize üretim) |
 
@@ -91,7 +91,7 @@ Bu skill, Dolunay'ın sosyal medya videoları için kapak fotoğrafı üretimini
   - Sonra `get_page` veya `get_block_children` ile sayfa içeriğini (script) oku
 - **Yöntem B:** Projenin `notion_service.py`'sini çalıştır:
   ```bash
-  cd ./Projeler/Dolunay_Reels_Kapak
+  cd ./Projeler/Reels_Kapak
   source venv/bin/activate
   python3 -c "from notion_service import get_page_content; print(get_page_content('PAGE_ID'))"
   ```
@@ -103,7 +103,7 @@ Bu skill, Dolunay'ın sosyal medya videoları için kapak fotoğrafı üretimini
 **Adım 3 — Pipeline'ı çalıştır (3 Tema × 2 Varyasyon = 6 Kapak):**
 
 ```bash
-cd ./Projeler/Dolunay_Reels_Kapak
+cd ./Projeler/Reels_Kapak
 source venv/bin/activate
 python3 -c "
 import random, os
@@ -152,7 +152,7 @@ for t_idx, theme in enumerate(themes, 1):
 2. Yine 2 varyasyon üret (tek tema, kullanıcı tanımlı)
 
 ```bash
-cd ./Projeler/Dolunay_Reels_Kapak
+cd ./Projeler/Reels_Kapak
 source venv/bin/activate
 python3 -c "
 import random, os
@@ -197,7 +197,7 @@ for v_idx in range(1, 3):
 - Veya projenin `revision_engine.py`'sini çalıştır:
 
 ```bash
-cd ./Projeler/Dolunay_Reels_Kapak
+cd ./Projeler/Reels_Kapak
 source venv/bin/activate
 python3 revision_engine.py PAGE_ID [DRIVE_FOLDER_URL]
 ```
@@ -244,7 +244,7 @@ python3 revision_engine.py PAGE_ID [DRIVE_FOLDER_URL]
 
 ## 🔧 Ortam Gereksinimleri
 
-- **Python venv**: `./Projeler/Dolunay_Reels_Kapak/venv`
+- **Python venv**: `./Projeler/Reels_Kapak/venv`
 - **Env dosyası**: `.env` dosyasındaki API key'ler (GEMINI_API_KEY, KIE_API_KEY, IMGBB_API_KEY, NOTION_TOKEN)
 - **Google OAuth**: `credentials.json` + `token.json` (Drive erişimi için)
 
@@ -263,7 +263,7 @@ Kie AI'da görsel üretimi **anlık değildir**:
 
 Üretilen kapaklar şuraya kaydedilir:
 ```
-./Projeler/Dolunay_Reels_Kapak/outputs/
+./Projeler/Reels_Kapak/outputs/
 ```
 
 İsteğe bağlı olarak Google Drive'a da yüklenebilir (`drive_service.py` ile).

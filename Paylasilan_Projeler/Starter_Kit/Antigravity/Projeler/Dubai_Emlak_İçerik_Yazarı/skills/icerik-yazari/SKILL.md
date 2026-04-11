@@ -1,15 +1,15 @@
 ---
 name: Dubai Emlak İçerik Yazarı
-description: Çağrı Bozay için Dubai gayrimenkul yatırımı konulu sosyal medya video scriptleri üretir.
+description: [MÜŞTERİ_ADI] için Dubai gayrimenkul yatırımı konulu sosyal medya video scriptleri üretir.
 ---
 
 # Dubai Emlak İçerik Yazarı Skill
 
 ## Kim İçin?
 
-**Çağrı Bozay** — Türkiye'den Dubai'de gayrimenkul yatırımı yapmak isteyenler için yatırım danışmanlığı yapan kişi.
+**[MÜŞTERİ_ADI]** — Türkiye'den Dubai'de gayrimenkul yatırımı yapmak isteyenler için yatırım danışmanlığı yapan kişi.
 
-**Platformlar:** Instagram (@cagri.bozay), TikTok (@cagri.bozay), YouTube (Çağrı Bozay)
+**Platformlar:** Instagram (@[MÜŞTERİ_SOSYAL_MEDYA]), TikTok (@[MÜŞTERİ_SOSYAL_MEDYA]), YouTube ([MÜŞTERİ_ADI])
 
 **Hedef Kitle:** Türkiye'den Dubai'ye yatırım düşünen orta-üst gelir grubu.
 
@@ -145,7 +145,7 @@ Rakip emlakçıların videolarından ilham alırken:
 
 ### İlham → Script Dönüşüm Süreci
 1. Transkripti oku ve **konuyu** çıkar
-2. Çağrı Bozay **nasıl anlatırdı** diye düşün
+2. [MÜŞTERİ_ADI] **nasıl anlatırdı** diye düşün
 3. SKILL.md kurallarına uygun **orijinal script** yaz
 4. Rakipten farklılaştığından emin ol
 5. Sonuna ilham kaynağını not olarak ekle

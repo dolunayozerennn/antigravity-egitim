@@ -65,7 +65,7 @@ def job():
                 return
             
             # Step 8: Log Success
-            twitter_url = f"https://x.com/dolunayozeren/status/{tweet_id}"
+            twitter_url = f"https://x.com/[SOSYAL_MEDYA_KULLANICI]/status/{tweet_id}"
             logger_db.log_video(
                 video_id=video_id, 
                 platform="X (Twitter)", 

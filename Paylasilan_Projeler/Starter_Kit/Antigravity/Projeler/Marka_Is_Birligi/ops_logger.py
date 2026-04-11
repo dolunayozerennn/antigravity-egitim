@@ -38,7 +38,7 @@ def _get_env(key, default=""):
 
 
 NOTION_TOKEN = _get_env("NOTION_SOCIAL_TOKEN") or _get_env("NOTION_API_TOKEN")
-NOTION_DB_OPS_LOG = _get_env("NOTION_DB_OPS_LOG", "33095514-0a32-81b4-858a-ff81a77b6d48")
+NOTION_DB_OPS_LOG = _get_env("NOTION_DB_OPS_LOG", "BURAYA_NOTION_OPS_LOG_DB_ID")
 
 
 class _NotionLogWorker(threading.Thread):

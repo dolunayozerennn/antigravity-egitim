@@ -81,8 +81,8 @@ Marka iş birliği outreach sürecini uçtan uca yönetir: marka bulma, iletişi
 
 2. **Her marka için kişiselleştir:**
    - `{brand_name}` → Marka adı (CSV'den)
-   - `{portfolio_url}` → Dolunay'ın portfolyo linki
-   - Konu satırı: `"{marka_adi} x Dolunay Özeren | İş Birliği Teklifi"`
+   - `{portfolio_url}` → [İSİM]'ın portfolyo linki
+   - Konu satırı: `"{marka_adi} x [İSİM SOYAD] | İş Birliği Teklifi"`
 
 3. **Kişiselleştirme Kuralları** (Outreach SKILL'den):
    - Doğal Türkçe, çeviri kokmayan ifadeler
@@ -106,7 +106,7 @@ Marka iş birliği outreach sürecini uçtan uca yönetir: marka bulma, iletişi
    ```bash
    python3 _skills/eposta-gonderim/scripts/send_email.py \
      --to "{email}" \
-     --subject "{marka_adi} x Dolunay Özeren | İş Birliği Teklifi" \
+     --subject "{marka_adi} x [İSİM SOYAD] | İş Birliği Teklifi" \
      --body "{kisisellestirilmis_html}" \
      --csv "Projeler/Marka_Is_Birligi/data/markalar.csv" \
      --row_id {satir_no}

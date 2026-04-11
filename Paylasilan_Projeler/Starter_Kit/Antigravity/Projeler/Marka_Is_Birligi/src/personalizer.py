@@ -13,38 +13,38 @@ import requests
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# ── Dolunay profil bilgileri (template'lerde kullanılır) ────────────────────
-DOLUNAY_PROFILE = {
-    "name": "Dolunay Özeren",
+# ── [İSİM] profil bilgileri (template'lerde kullanılır) ────────────────────
+KULLANICI_PROFILE = {
+    "name": "[İSİM SOYAD]",
     "instagram": "INSTAGRAM_URL_BURAYA",
-    "tiktok": "https://www.tiktok.com/@dolunayozeren",
-    "youtube": "https://www.youtube.com/@dolunayozeren/",
+    "tiktok": "https://www.tiktok.com/@[SOSYAL_MEDYA_KULLANICI]",
+    "youtube": "https://www.youtube.com/@[SOSYAL_MEDYA_KULLANICI]/",
     "total_views": "100M+",
     "country": "Turkey",
     "recent_collabs": "Pixelcut, Nim AI, Aithor, TopView, Creatify, Lexi AI, ArtFlow, Temu, Printify, Syntx",
     "top_results": [
-        {"brand": "Pixelcut", "views": "19.7M", "url": "https://www.instagram.com/reel/DAdt0tUN-j9/"},
-        {"brand": "Nim AI", "views": "4M", "url": "https://www.instagram.com/reel/DKtuJ3cK-Yr/"},
-        {"brand": "Aithor", "views": "2M", "url": "https://www.instagram.com/reel/DKHLswaK4Tj/"},
+        {"brand": "Pixelcut", "views": "[GÖRÜNTÜLENME_1]", "url": "https://www.instagram.com/reel/ORNEK_REEL_ID_1/"},
+        {"brand": "Nim AI", "views": "4M", "url": "https://www.instagram.com/reel/ORNEK_REEL_ID_2/"},
+        {"brand": "Aithor", "views": "2M", "url": "https://www.instagram.com/reel/ORNEK_REEL_ID_3/"},
     ],
 }
 
 # ── Profesyonel Email Signature ────────────────────────────────────────────
 EMAIL_SIGNATURE_TEXT = """
 —
-Dolunay Özeren
+[İSİM SOYAD]
 AI Content Creator | 100M+ Organic Views
 📧 EMAIL_ADRESI_BURAYA
 🌐 KISISEL_WEBSITE_BURAYA
 📸 INSTAGRAM_URL_BURAYA
-▶️ youtube.com/@dolunayozeren
-🎵 tiktok.com/@dolunayozeren
+▶️ youtube.com/@[SOSYAL_MEDYA_KULLANICI]
+🎵 tiktok.com/@[SOSYAL_MEDYA_KULLANICI]
 """
 
 EMAIL_SIGNATURE_HTML = """
 <br><br>
 <p style="font-size: 13px; color: #555; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 16px;">
-  <strong>Dolunay Özeren</strong><br>
+  <strong>[İSİM SOYAD]</strong><br>
   AI Content Creator | 100M+ Organic Views<br>
   <a href="https://KISISEL_WEBSITE_BURAYA" style="color: #555; text-decoration: none;">KISISEL_WEBSITE_BURAYA</a>
 </p>
@@ -112,7 +112,7 @@ def _call_openai(prompt, system_prompt=None, model="gpt-4.1-nano"):
 # İLK OUTREACH
 # ═══════════════════════════════════════════════════════════════════════════
 
-OUTREACH_SYSTEM_PROMPT = """You are writing a cold outreach email from Dolunay Özeren, a content creator 
+OUTREACH_SYSTEM_PROMPT = """You are writing a cold outreach email from [İSİM SOYAD], a content creator 
 with 100M+ organic views in Turkey, to an AI/tech brand for a potential collaboration.
 
 Rules:
@@ -159,11 +159,11 @@ Brand info:
 - They work with Turkish influencers (found via competitor analysis)
 - Sample captions mentioning them: {json.dumps(collab_context[:2], ensure_ascii=False)}
 
-Dolunay's profile:
+[İSİM]'s profile:
 - 100M+ organic views across Instagram/TikTok/YouTube in Turkey
-- Top results: Pixelcut (19.7M views), Nim AI (4M views), Aithor (2M views)
-- Instagram: @INSTAGRAM_KULLANICI_ADI | TikTok: @dolunayozeren | YouTube: @dolunayozeren
-- Links: {json.dumps([r for r in DOLUNAY_PROFILE['top_results']], ensure_ascii=False)}
+- Top results: Pixelcut ([GÖRÜNTÜLENME_1] views), Nim AI (4M views), Aithor (2M views)
+- Instagram: @INSTAGRAM_KULLANICI_ADI | TikTok: @[SOSYAL_MEDYA_KULLANICI] | YouTube: @[SOSYAL_MEDYA_KULLANICI]
+- Links: {json.dumps([r for r in KULLANICI_PROFILE['top_results']], ensure_ascii=False)}
 
 Write a personalized email that references what {brand_name} does specifically."""
 
@@ -215,7 +215,7 @@ def _safe_parse_json(text):
 def _append_signature(email_dict):
     """Email dict'ine profesyonel signature ekler."""
     if "body_text" in email_dict:
-        # "Best, Dolunay" gibi kapatışları temizle ve signature ekle
+        # "Best, [İSİM]" gibi kapatışları temizle ve signature ekle
         email_dict["body_text"] = email_dict["body_text"].rstrip() + EMAIL_SIGNATURE_TEXT
     if "body_html" in email_dict:
         email_dict["body_html"] = email_dict["body_html"].rstrip() + EMAIL_SIGNATURE_HTML
@@ -228,12 +228,12 @@ def _fallback_outreach(brand_name, handle):
     
     results = "\n".join([
         f"- {r['brand']}: {r['views']} views — {r['url']}"
-        for r in DOLUNAY_PROFILE["top_results"]
+        for r in KULLANICI_PROFILE["top_results"]
     ])
     
     body_text = f"""Hi {brand_name} team,
 
-I'm Dolunay, a content creator focused on AI, tech, and digital tools. My content has reached over 100 million organic views in Turkey.
+I'm [İSİM], a content creator focused on AI, tech, and digital tools. My content has reached over 100 million organic views in Turkey.
 
 Recent results:
 {results}
@@ -245,9 +245,9 @@ If you're interested, just reply and I'll share the concept.
 
     body_html = f"""<p>Hi {brand_name} team,</p>
 
-<p>I'm Dolunay, a content creator focused on AI, tech, and digital tools. My content has reached over 100 million organic views in Turkey.</p>
+<p>I'm [İSİM], a content creator focused on AI, tech, and digital tools. My content has reached over 100 million organic views in Turkey.</p>
 
-<p>Recent results: {', '.join(f'{r["brand"]} ({r["views"]} views)' for r in DOLUNAY_PROFILE['top_results'])}</p>
+<p>Recent results: {', '.join(f'{r["brand"]} ({r["views"]} views)' for r in KULLANICI_PROFILE['top_results'])}</p>
 
 <p>I've been following @{handle} and I have a viral campaign idea that could make {brand_name} stand out in the Turkish market.</p>
 
@@ -261,7 +261,7 @@ If you're interested, just reply and I'll share the concept.
 # FOLLOW-UP (Seçenek A — Web + Sosyal Medya Analizi)
 # ═══════════════════════════════════════════════════════════════════════════
 
-FOLLOWUP_SYSTEM_PROMPT = """You are writing a follow-up email for Dolunay Özeren's brand collaboration outreach.
+FOLLOWUP_SYSTEM_PROMPT = """You are writing a follow-up email for [İSİM SOYAD]'s brand collaboration outreach.
 This email must be a REPLY to a previous email that got no response.
 
 Rules:
@@ -308,8 +308,8 @@ Previous email was a collaboration pitch sent 1 week ago with no reply.
 Brand context:{context_str if context_str else " No additional context available."}
 Brand website: {website}
 
-Dolunay recently achieved: Syntx campaign successfully completed (first brand from this outreach pipeline!).
-Dolunay's latest views: Pixelcut reel now at 19.7M views.
+[İSİM] recently achieved: Syntx campaign successfully completed (first brand from this outreach pipeline!).
+[İSİM]'s latest views: Pixelcut reel now at [GÖRÜNTÜLENME_1] views.
 
 Write a short, specific follow-up that gives them a reason to reply NOW."""
 

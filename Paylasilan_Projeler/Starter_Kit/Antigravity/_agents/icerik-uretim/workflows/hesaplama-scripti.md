@@ -11,7 +11,7 @@ Yatırım hesaplamalı video script üretme adımları.
 
 ## Bağlam
 - **Agent:** `_agents/icerik-uretim/AGENT.md`
-- **Config:** `_agents/icerik-uretim/config/cagri-bozay.yaml`
+- **Config:** `_agents/icerik-uretim/config/ornek-marka.yaml`
 - **Skill:** `Projeler/Dubai Emlak İçerik Yazarı/skills/icerik-yazari/SKILL.md`
 - **Hesap Makinesi:** `Projeler/Dubai Emlak İçerik Yazarı/tools/calculator.py`
 - **Kur Aracı:** `Projeler/Dubai Emlak İçerik Yazarı/tools/currency.py`
@@ -19,7 +19,7 @@ Yatırım hesaplamalı video script üretme adımları.
 
 ## Sabit Hesaplama Metrikleri
 
-> 📌 Bu değerler `_agents/icerik-uretim/config/cagri-bozay.yaml` → `hesaplama_metrikleri` bölümünden alınır.
+> 📌 Bu değerler `_agents/icerik-uretim/config/ornek-marka.yaml` → `hesaplama_metrikleri` bölümünden alınır.
 
 | Metrik | Değer |
 |--------|-------|
@@ -39,7 +39,7 @@ Yatırım hesaplamalı video script üretme adımları.
    - Kira geliri dahil mi?
 
 2. **Config'den metrikleri doğrula**
-   - `_agents/icerik-uretim/config/cagri-bozay.yaml` → `hesaplama_metrikleri`
+   - `_agents/icerik-uretim/config/ornek-marka.yaml` → `hesaplama_metrikleri`
    - Güncel değerler burada merkezi olarak yönetilir
 
 3. **Hesapla**

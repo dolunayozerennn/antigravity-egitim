@@ -6,7 +6,7 @@
 
 # --- 🏷️ KAMPANYA BİLGİLERİ ---
 kampanya_adi: "marka-isbirligi-2026"
-aciklama: "Dolunay Özeren markalarla influencer iş birliği outreach kampanyası"
+aciklama: "[İSİM SOYAD] markalarla influencer iş birliği outreach kampanyası"
 hedef_tip: "b2b_sirket"     # Markalar = B2B şirketler
 durum: "draft"               # draft | active | paused | completed
 

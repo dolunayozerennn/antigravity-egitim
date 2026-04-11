@@ -1,6 +1,6 @@
 # 🐦 Twitter_Video_Paylasim — TikTok → X Otomatik Video Paylaşım
 
-TikTok hesabındaki (@dolunayozeren) videoları otomatik olarak X (Twitter) hesabına cross-post eden otonom pipeline.
+TikTok hesabındaki (@[SOSYAL_MEDYA_KULLANICI]) videoları otomatik olarak X (Twitter) hesabına cross-post eden otonom pipeline.
 
 ## Workflow
 
@@ -50,4 +50,4 @@ TikTok hesabındaki (@dolunayozeren) videoları otomatik olarak X (Twitter) hesa
 
 - **Platform:** Railway Cron
 - **Cron:** `0 8,11,14 * * *` (UTC)
-- **Mono-repo:** `dolunayozerennn/antigravity-egitim` → Root Dir: `Projeler/Twitter_Video_Paylasim`
+- **Mono-repo:** `[GITHUB_KULLANICI]/[REPO_ADI]` → Root Dir: `Projeler/Twitter_Video_Paylasim`

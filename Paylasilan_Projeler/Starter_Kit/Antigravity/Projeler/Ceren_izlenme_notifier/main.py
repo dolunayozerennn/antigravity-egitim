@@ -7,7 +7,7 @@ from core.llm_helper import generate_report_summary
 logger = get_logger(__name__)
 
 def main():
-    logger.info(f"Ceren Sosyal Medya Performans Raporu Botu Baslatildi (ENV={settings.ENV}, DRY_RUN={settings.IS_DRY_RUN})")
+    logger.info(f"[TAKİP_EDİLEN_HESAP] Sosyal Medya Performans Raporu Botu Baslatildi (ENV={settings.ENV}, DRY_RUN={settings.IS_DRY_RUN})")
     try:
         videos, errors = fetch_all_social_media()
         
@@ -20,7 +20,7 @@ def main():
             summary = generate_report_summary(videos)
             send_performance_report(videos, report_summary=summary)
         else:
-            logger.info("Baraji asan hicbir video bulunamadi, Ceren'e e-posta gonderilmiyor.")
+            logger.info("Baraji asan hicbir video bulunamadi, [TAKİP_EDİLEN_HESAP]'a e-posta gonderilmiyor.")
             
         logger.info("Islem basariyla tamamlandi.")
     except Exception as e:

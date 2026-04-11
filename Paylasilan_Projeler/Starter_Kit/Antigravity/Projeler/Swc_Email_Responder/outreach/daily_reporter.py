@@ -4,7 +4,7 @@ Daily Reporter — Gunluk outreach raporu
 Outreach mailer ve status syncer sonuclarini derleyip
 EMAIL_ADRESI_BURAYA adresine rapor emaili gonderir.
 
-Gonderici: "swc" (d.ozeren@sweatco.in) — Railway'de token mevcut
+Gonderici: "swc" ([İŞ_EMAIL_ADRESI]) — Railway'de token mevcut
 Alici: EMAIL_ADRESI_BURAYA
 """
 
@@ -116,7 +116,7 @@ def run(mailer_stats, syncer_stats, tab_name="In EN, Roblox"):
         message = MIMEText(body)
         message['to'] = REPORT_RECIPIENT
         message['subject'] = subject
-        message['from'] = 'd.ozeren@sweatco.in'
+        message['from'] = '[İŞ_EMAIL_ADRESI]'
 
         raw = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
         gmail_service.users().messages().send(

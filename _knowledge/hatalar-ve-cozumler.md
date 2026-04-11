@@ -343,3 +343,34 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Kural:** Railway/Nixpacks'ta sistem binary'leri (`ffmpeg`, `imagemagick` vb.) her zaman `shutil.which()` ile resolve edilmiş absolute path ile çağrılmalı. Bare binary adı kullanma.
 - **Tarih:** 5 Nisan 2026
 
+### Nixpacks Docker Build Cache Hataları — `python311` Gereksinimi
+- **Sorun:** Railway `deploymentRedeploy` veya `serviceInstanceDeployV2` çağrılarında "Deployment does not have an associated build" dönerek FAILED olması, veya build loglarında nix garbage collection (GC) hatalarına (örneğin JSON decode hataları veya nix path'in temizlenmesi) rastlanması. 
+- **Kök Neden:** Nixpacks'ın standart Python desteğinde bazen paketler GC ile bozuluyor, bu da local runner'ın (Railway Build) container'ı doğru kuramamasına veya build'in direkt fail olmasına sebep oluyor.
+- **Çözüm:** `nixpacks.toml` dosyasında `nixPkgs` array'ine `python311` (veya kullanılan diğer sürüm) paketi EXPLICIT olarak eklenmelidir. Sonrasında sıfırdan (`usePreviousImageTag: false`) temiz bir deploy atılmalıdır.
+  ```toml
+  [phases.setup]
+  nixPkgs = ["...", "python311"]
+  ```
+- **Tarih:** 9 Nisan 2026
+
+---
+
+## Netlify / Hosting
+
+### Netlify Free Plan Kredi Tükenmesi — Blog Yazıcı Günlük Deploy (KRİTİK)
+- **Sorun:** Netlify free plan'da 300 kredi/ay var. Her production deploy 15 kredi. Blog Yazıcı günlük cron ile çalıştığında ayda ~30 deploy = 450 kredi → free limit aşılır → **site duraklatılır, ziyaretçiler erişemez**.
+- **Veri (Mart-Nisan 2026):** 14 deploy = 210 kredi (%92 toplam tüketim). Bandwidth (1.23 GB = 12.3 kredi) ve web requests (13K = 3.9 kredi) neredeyse maliyetsiz.
+- **Kök Neden:** Blog Yazıcı Railway cron'u günlük (`0 3 * * *`) idi. Her çalışmada başarılı blog = GitHub push → Netlify auto-deploy → 15 kredi.
+- **Çözüm:** Blog Yazıcı cron'u haftada 1'e çekildi (`0 3 * * 1` — Pazartesi). Aylık ~4 deploy = 60 kredi. Manuel deploylarla birlikte ~135 kredi/ay → free planda güvenle kalınır.
+- **Kural:**
+  1. Netlify auto-deploy açıkken, GitHub'a her push = 15 kredi. Gereksiz push'lardan kaçın.
+  2. Branch deploy ve preview deploy kredi harcamaz — test için onları kullan.
+  3. Kredi 300'ün %75'ine ulaştığında Netlify uyarı maili atar. O noktada deploy sıklığını kontrol et.
+- **Tarih:** 10 Nisan 2026
+
+### Cloudflare Pages Taşıma Denemesi — BAŞARISIZ
+- **Sorun:** Netlify alternatifi olarak Cloudflare Pages denenmiş, **sonuç hüsran** olmuştur.
+- **Karar:** dolunay.ai sitesi Netlify'da kalmaya devam edecek. Cloudflare Pages tekrar denenmeyecek.
+- **Kural:** Hosting değişikliği önerisi yapılırken Cloudflare Pages ÖNERİLMEZ. Kullanıcı daha önce denedi ve başarısız oldu.
+- **Tarih:** Nisan 2026
+

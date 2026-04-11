@@ -8,7 +8,7 @@ if not KIE_API_KEY:
     print("No KIE_API_KEY found.")
     sys.exit(1)
 
-task_id = "3fbe34e76f74a8ca66ee78518fb6ea8a"
+task_id = "ORNEK_TASK_ID"
 endpoints = [
     f"https://api.kie.ai/api/v1/jobs/recordInfo?taskId={task_id}",
     f"https://api.kie.ai/api/v1/jobs/recordInfo?id={task_id}",

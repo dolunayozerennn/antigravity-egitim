@@ -49,7 +49,7 @@ class Config:
     NOTION_API_TOKEN = os.environ.get("NOTION_API_TOKEN", "")
     NOTION_DATABASE_ID = os.environ.get(
         "NOTION_DATABASE_ID",
-        "31226924bb82800e9adad6f16399eba0"
+        "BURAYA_NOTION_DB_ID"
     )
     NOTION_RATE_LIMIT_DELAY = float(os.environ.get("NOTION_RATE_LIMIT_DELAY", "0.35"))
     NOTION_MAX_RETRIES = int(os.environ.get("NOTION_MAX_RETRIES", "3"))

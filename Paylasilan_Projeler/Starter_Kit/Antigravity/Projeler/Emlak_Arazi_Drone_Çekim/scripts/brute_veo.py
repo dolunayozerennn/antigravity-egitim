@@ -1,6 +1,6 @@
 import requests
 from src.config import KIE_AI_API_KEY
-tid = "a332745913901d58ba029ec223da50fb"
+tid = "ORNEK_TASK_ID"
 eps = [
     f"veo/recordInfo?taskId={tid}",
     f"veo/status?taskId={tid}",

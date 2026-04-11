@@ -75,14 +75,14 @@ Bu değişiklik başka projeleri etkiliyor mu? Özellikle kontrol et:
 |-----------------|-----------------|
 | Proje ismi değişti | Akilli_Watchdog (config.py izlenen projeler listesi) |
 | Google Sheet tab ismi değişti | Tele_Satis_CRM, Tele_Satis_Notifier, Akilli_Watchdog |
-| Notion DB yapısı değişti | Isbirligi_Tahsilat_Takip, Tele_Satis_CRM, Dolunay_Reels_Kapak |
+| Notion DB yapısı değişti | Isbirligi_Tahsilat_Takip, Tele_Satis_CRM, Reels_Kapak |
 | API key/token değişti | Tüm projeler (_knowledge/credentials/master.env) |
 
 Etkilenen proje varsa → O projede de gerekli güncellemeyi yap ve push et.
 
-## Adım 5.5 — i18n Kontrol (Dolunay_AI_Website İçin ZORUNLU)
+## Adım 5.5 — i18n Kontrol (Ornek_AI_Website İçin ZORUNLU)
 
-> Bu adım **sadece** `Dolunay_AI_Website` projesinde metin değişikliği yapıldığında uygulanır.
+> Bu adım **sadece** `Ornek_AI_Website` projesinde metin değişikliği yapıldığında uygulanır.
 
 1. **Locale dosyalarını kontrol et:** `src/i18n/locales/{tr,en,zh,es}.json` — değişen key'ler 4 dosyada da güncel mi?
 2. **Yeni key eklendiyse** 4 locale'in tümünde mevcut mu?
@@ -136,7 +136,7 @@ Kullanıcıya kısa rapor ver:
 - Syntax: ✅ Hatasız
 - Import: ✅ Tüm modüller yüklenebilir
 - README: ✅ Güncel
-- i18n: ✅ 4 dil güncel (Dolunay_AI_Website ise)
+- i18n: ✅ 4 dil güncel (Ornek_AI_Website ise)
 - Git Push: ✅ main branch'e push edildi
 - Deploy: ✅ Railway'de çalışıyor (sorunsuz)
 - Registry: ✅ deploy-registry.md güncellendi

@@ -861,7 +861,7 @@ def check_local_projects(projects: list) -> list:
 
 def check_stale_launch_agents() -> list:
     """
-    ~/Library/LaunchAgents/ içinde antigravity/dolunay ile ilgili
+    ~/Library/LaunchAgents/ içinde antigravity/[isim] ile ilgili
     ama geçersiz yola işaret eden plist dosyalarını bulur.
     """
     issues = []
@@ -872,7 +872,7 @@ def check_stale_launch_agents() -> list:
 
         for plist in la_dir.glob("com.antigravity.*.plist"):
             _check_plist(plist, issues)
-        for plist in la_dir.glob("com.dolunay.*.plist"):
+        for plist in la_dir.glob("com.[isim].*.plist"):
             _check_plist(plist, issues)
     except PermissionError:
         logging.info("  ℹ️  LaunchAgents klasörüne erişim izni yok (sandbox kısıtlaması)")

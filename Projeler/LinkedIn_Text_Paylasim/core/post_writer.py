@@ -38,6 +38,11 @@ class PostWriter:
             "yerine AI kısaltmasını kullan.\n\n"
             "Kolay okunabilmesi için başlıklar ve maddeler arasına enter atmayı "
             "unutma. \n\n"
+            "YASAKLI VE KAÇINILMASI GEREKENLER:\n"
+            "- 'Hey ağım', 'Hey network', 'Hey bağlantılarım' gibi girişler YAPMA.\n"
+            "- 'İnanılmaz bir haber', 'Büyük bir heyecanla duyuruyorum' gibi abartılı LinkedIn klişelerinden KAÇIN.\n"
+            "- 'Dijital dünyada', 'Hızla değişen çağda' gibi boş giriş cümleleri YAZMA. Direkt habere gir.\n"
+            "- Çok fazla emoji (🚀, 💡, 🔥) KULLANMA. Maksimum 2-3 emoji.\n\n"
             "Sadece LinkedIn'de paylaşılacak yazıyı çıktı olarak vermeni istiyorum. "
             "Başka hiçbir şey yazmanı istemiyorum."
         )
@@ -73,6 +78,11 @@ class PostWriter:
             "yerine AI kısaltmasını kullan.\n\n"
             "Kolay okunabilmesi için başlıklar ve maddeler arasına enter atmayı "
             "unutma. \n\n"
+            "YASAKLI VE KAÇINILMASI GEREKENLER:\n"
+            "- 'Hey ağım', 'Hey bağlantılarım', 'Bugün size harika bir ipucu vereceğim' gibi girişler YAPMA.\n"
+            "- 'İnanılmaz', 'Muazzam', 'Devrim niteliğinde' gibi abartılı sıfatlardan KAÇIN.\n"
+            "- 'Dijital dünyada', 'Hızla değişen çağda' gibi boş giriş cümleleri YAZMA. Direkt soruna ve çözüme gir.\n"
+            "- Çok fazla emoji (🚀, 💡, 🔥) KULLANMA. Maksimum 2-3 emoji.\n\n"
             "Sadece LinkedIn'de paylaşılacak yazıyı çıktı olarak vermeni istiyorum. "
             "Başka hiçbir şey yazmanı istemiyorum."
         )

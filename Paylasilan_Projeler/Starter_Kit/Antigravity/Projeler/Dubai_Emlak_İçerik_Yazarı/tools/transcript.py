@@ -26,7 +26,7 @@ except ImportError:
     SSL_CONTEXT = ssl._create_unverified_context()
 
 # ── API Ayarları ─────────────────────────────────────────────
-SUPADATA_API_KEY = "sd_8dd351e3d4ab96c757eb1f4ff4c6e9a3"
+SUPADATA_API_KEY = "BURAYA_SUPADATA_API_KEY"
 SUPADATA_BASE_URL = "https://api.supadata.ai/v1"
 
 

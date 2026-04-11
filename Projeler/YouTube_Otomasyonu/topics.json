@@ -1,0 +1,76 @@
+{
+  "channel_niche": "Space & Sci-Fi Bodycam",
+  "default_style": "bodycam POV footage, immersive first-person perspective",
+  "topics": [
+    {
+      "id": 1,
+      "category": "construction",
+      "title_hint": "Building on Mars",
+      "description": "Workers building a 7-star luxury hotel on Mars, massive skyscraper construction in low gravity, heavy machinery operating in Martian dust storms.",
+      "style_hints": ["bodycam POV", "dramatic red Martian sky", "construction site chaos"]
+    },
+    {
+      "id": 2,
+      "category": "mega_engineering",
+      "title_hint": "Moon-Earth Bridge",
+      "description": "Astronauts working on an impossibly massive bridge construction between the Moon and Earth, welding beams in zero gravity, Earth rising in the background.",
+      "style_hints": ["bodycam POV", "zero gravity welding sparks", "Earth in background"]
+    },
+    {
+      "id": 3,
+      "category": "space_maintenance",
+      "title_hint": "Saturn Orbit Repairs",
+      "description": "A spacecraft orbiting Saturn while an astronaut performs dangerous maintenance and repairs on its exterior, Saturn's rings reflecting light.",
+      "style_hints": ["bodycam POV", "Saturn rings visible", "tethered spacewalk"]
+    },
+    {
+      "id": 4,
+      "category": "atmospheric",
+      "title_hint": "Leaving the Atmosphere",
+      "description": "The intense gravitational change experienced when a spacecraft exits Earth's atmosphere, violent shaking transitioning to sudden zero-gravity calm.",
+      "style_hints": ["bodycam POV", "cockpit view", "vibration to stillness transition"]
+    },
+    {
+      "id": 5,
+      "category": "reentry",
+      "title_hint": "Pacific Ocean Landing",
+      "description": "A mini-documentary style descent showing the extreme external pressure when a spacecraft re-enters the atmosphere, heat shield glowing, speed indicators showing thousands of km/h. Landing in the Pacific Ocean.",
+      "style_hints": ["bodycam POV", "heat shield glow", "ocean splashdown"]
+    },
+    {
+      "id": 6,
+      "category": "deep_space",
+      "title_hint": "Deep Space Walk",
+      "description": "A lone astronaut performing a deep space walk outside a station orbiting Jupiter, massive gas giant filling the horizon, eerie silence of deep space.",
+      "style_hints": ["bodycam POV", "Jupiter atmosphere swirls", "isolation feeling"]
+    },
+    {
+      "id": 7,
+      "category": "asteroid_mining",
+      "title_hint": "Asteroid Mining Operation",
+      "description": "Workers operating heavy mining equipment on an asteroid surface, extracting rare minerals, micro-gravity making debris float in slow motion.",
+      "style_hints": ["bodycam POV", "drilling sparks in vacuum", "floating debris"]
+    },
+    {
+      "id": 8,
+      "category": "space_rescue",
+      "title_hint": "Emergency Space Rescue",
+      "description": "A dramatic space rescue mission where astronauts race against time to save a crew member from a damaged space station, alarms blaring, oxygen running low.",
+      "style_hints": ["bodycam POV", "flashing red alarms", "urgent movement"]
+    },
+    {
+      "id": 9,
+      "category": "lunar_base",
+      "title_hint": "Lunar Base Construction",
+      "description": "Construction crew building the first permanent human base on the Moon, 3D-printing habitats using lunar regolith, Earth visible in the dark sky.",
+      "style_hints": ["bodycam POV", "dust clouds in low gravity", "Earth in lunar sky"]
+    },
+    {
+      "id": 10,
+      "category": "space_dock",
+      "title_hint": "Orbital Shipyard",
+      "description": "Inside a massive orbital shipyard where the next generation of interplanetary vessels is being assembled, robotic arms and human workers cooperating in zero-G.",
+      "style_hints": ["bodycam POV", "welding in zero gravity", "massive scale engineering"]
+    }
+  ]
+}

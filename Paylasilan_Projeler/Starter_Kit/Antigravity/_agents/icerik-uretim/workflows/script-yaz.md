@@ -7,11 +7,11 @@ description: Video scripti üret — bölge analizi, gayrimenkul yatırımı vey
 > 🤖 **Agent:** Bu workflow `_agents/icerik-uretim/AGENT.md` agent'ının bir parçasıdır.
 > Bağımsız olarak da çalışabilir (`/script-yaz`), ancak tam pipeline için agent yönergesini takip et.
 
-Çağrı Bozay için sosyal medya video scripti üretme adımları.
+[MÜŞTERİ_ADI] için sosyal medya video scripti üretme adımları.
 
 ## Bağlam
 - **Agent:** `_agents/icerik-uretim/AGENT.md`
-- **Config:** `_agents/icerik-uretim/config/cagri-bozay.yaml`
+- **Config:** `_agents/icerik-uretim/config/ornek-marka.yaml`
 - **Skill:** `Projeler/Dubai Emlak İçerik Yazarı/skills/icerik-yazari/SKILL.md` → ÖNCE OKU
 - **Referans Scriptler:** `Projeler/Dubai Emlak İçerik Yazarı/reference-scripts/`
 - **Hesaplama:** `Projeler/Dubai Emlak İçerik Yazarı/tools/calculator.py`
@@ -23,7 +23,7 @@ description: Video scripti üret — bölge analizi, gayrimenkul yatırımı vey
    - Üslup kurallarını, format şablonlarını ve yasak ifadeleri öğren
 
 2. **Config'den marka ayarlarını çek**
-   - `_agents/icerik-uretim/config/cagri-bozay.yaml`
+   - `_agents/icerik-uretim/config/ornek-marka.yaml`
    - Ton, hedef kitle, yasak ifadeler ve format yapısını doğrula
 
 3. **Script türünü belirle**

@@ -8,12 +8,12 @@ Hi {{ Your Brand }} team,
 
 I’m reaching out via your general contact email, and I’d really appreciate it if you could **forward this to the right person** (Influencer Marketing / Partnerships / Growth / PR) or share the best collaboration contact.
 
-I’m Dolunay, a content creator focused on AI, tech, and digital tools. My videos have reached over **100 million organic views** in Turkey.
+I’m [İSİM], a content creator focused on AI, tech, and digital tools. My videos have reached over **100 million organic views** in Turkey.
 
 My profiles:
 - [Instagram](INSTAGRAM_URL_BURAYA)
-- [TikTok](https://www.tiktok.com/@dolunayozeren)
-- [YouTube](https://www.youtube.com/@dolunayozeren)
+- [TikTok](https://www.tiktok.com/@[SOSYAL_MEDYA_KULLANICI])
+- [YouTube](https://www.youtube.com/@[SOSYAL_MEDYA_KULLANICI])
 
 I’ve collaborated with brands like Pixelcut, Nim AI, Aithor, TopView, Creatify, Lexi AI, ArtFlow, Temu, and Printify.
 
@@ -27,4 +27,4 @@ I have a viral campaign idea that could make **{{ Your Brand }}** stand out 🚀
 If you’re interested, just reply to this email and I’ll share the details.
 
 Best,
-Dolunay
+[İSİM]

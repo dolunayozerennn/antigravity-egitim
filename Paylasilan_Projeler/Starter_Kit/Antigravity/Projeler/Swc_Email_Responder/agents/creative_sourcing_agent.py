@@ -4,14 +4,14 @@ Creative Sourcing Agent 🎬
 Creator'larla video/içerik iş birliği iletişimi.
 
 ÖNEMLİ — GERÇEK İŞ MODELİ (Backtesting'den Öğrenildi):
-Dolunay'ın gerçek yanıtları analiz edildiğinde, CS thread'lerde bile
+[İSİM]'ın gerçek yanıtları analiz edildiğinde, CS thread'lerde bile
 performance-based modeli açıkladığı ve upfront ödeme yapmadığı görüldü.
 
 Bu agent:
 - Başlangıçta video iş birliği teklifiyle gidilmiş olsa da
 - Yanıtlarda genellikle "no upfront budget, performance basis" açıklanıyor
 - Eğer ileride ücretli model aktive edilirse knowledge base güncellenmeli
-- ŞİMDİLİK: Dolunay'ın gerçek davranışını taklit ediyoruz
+- ŞİMDİLİK: [İSİM]'ın gerçek davranışını taklit ediyoruz
 
 Yanıt tipleri:
 - Fiyat soran / ücretli istek → "Performance-based, no upfront budget" açıklaması
@@ -40,7 +40,7 @@ BUSINESS: Sweatcoin Creative Sourcing — Creator iş birliği iletişimi.
 - ASLA takipçi sayısına göre fiyat teklif etmeyin
 - Eğer creator fiyat sorarsa: "Performance-based, no upfront budget" deyin
 
-DOLUNAY'IN GERÇEK YAKLAŞIMI (backtesting'den öğrenildi):
+[İSİM]'IN GERÇEK YAKLAŞIMI (backtesting'den öğrenildi):
 - Çoğu CS thread'de: "Our program operates purely on a performance basis (per install),
   and we do not have an upfront budget for sponsored integrations."
 - Performans modelinin avantajını açıklıyor: bazı creator'lar 4 haneli kazanıyor
@@ -57,7 +57,7 @@ TON KURALLARI:
 - Kısa cümleler, max 3-5 cümle
 - Bullet/numbered list kullan
 - ASLA "four-figure payouts" gibi abartılı pazarlama dili kullanma
-- İmza: Best,\nDolunay\nInfluencer & Affiliate Marketing – Sweatcoin
+- İmza: Best,\n[İSİM]\nInfluencer & Affiliate Marketing – Sweatcoin
 """
 
 # ══════════════════════════════════════════════════════
@@ -73,7 +73,7 @@ Currently, our program operates purely on a performance basis (per install), and
 If you ever decide to try it out on a performance basis, I'd be happy to set you up. Just let me know.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "COUNTER_OFFER": """Hi {name},
@@ -85,7 +85,7 @@ Currently, our program operates purely on a performance basis (per install), and
 If you ever decide to try it out on a performance basis, I'd be happy to set you up. Just let me know.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "VIDEO_SENT": """Hi {name},
@@ -95,7 +95,7 @@ Thank you for sending the video over! I have received it and will forward it to 
 I'll reach out to you once we have some initial feedback on its performance.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "CONTRACT_QUESTION": """Hi {name},
@@ -106,7 +106,7 @@ https://na4.documents.adobe.com/public/esignWidget?wid=CBFCIBAA3AAABLblqZhCYtPlh
 Please review and fill in all the details (including your PayPal email) at your earliest convenience so we can proceed.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "INTERESTED": """Hi {name},
@@ -121,7 +121,7 @@ Once you provide your sign-up email, I will activate your Influencer Hub so you 
 Let me know if you have any questions.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "QUESTION": """Hi {name},
@@ -133,7 +133,7 @@ Currently, our program operates purely on a performance basis (per install), and
 If you ever decide to try it out on a performance basis, I'd be happy to set you up. Just let me know.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "NOT_INTERESTED": """Hi {name},
@@ -141,7 +141,7 @@ Influencer & Affiliate Marketing – Sweatcoin""",
 No worries at all, thank you for letting me know! Feel free to reach out if you change your mind in the future.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 
     "GENERAL": """Hi {name},
@@ -153,7 +153,7 @@ Currently, our program operates purely on a performance basis (per install), and
 If you ever decide to try it out on a performance basis, I'd be happy to set you up. Just let me know.
 
 Best,
-Dolunay
+[İSİM]
 Influencer & Affiliate Marketing – Sweatcoin""",
 }
 

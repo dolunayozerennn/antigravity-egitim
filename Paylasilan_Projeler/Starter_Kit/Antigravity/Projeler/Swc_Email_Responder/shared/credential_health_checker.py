@@ -6,7 +6,7 @@ Tüm bağlı servislerin bağlantı sağlığını kontrol eder ve sorun varsa
 Email → Telegram fallback ile bildirim gönderir.
 
 Kontrol kapsamı:
-  1. 🔐 Google OAuth Token'ları (3 hesap: outreach, swc, dolunay_ai)
+  1. 🔐 Google OAuth Token'ları (3 hesap: outreach, swc, [isim]_ai)
   2. 🤖 Telegram Bot bağlantısı
   3. 📋 Notion API bağlantısı
   4. 🚀 Railway API bağlantısı
@@ -62,13 +62,13 @@ GOOGLE_ACCOUNTS = {
     },
     "swc": {
         "email": "EMAIL_ADRESI_BURAYA",
-        "token_file": "gmail-swc-token.json",
+        "token_file": "gmail-ek-hesap-token.json",
         "env_var": "GOOGLE_SWC_TOKEN_JSON",
     },
-    "dolunay_ai": {
+    "[isim]_ai": {
         "email": "EMAIL_ADRESI_BURAYA",
-        "token_file": "gmail-dolunay-ai-token.json",
-        "env_var": "GOOGLE_DOLUNAY_AI_TOKEN_JSON",
+        "token_file": "gmail-[isim]-ai-token.json",
+        "env_var": "GOOGLE_OUTREACH_TOKEN_JSON",
     },
 }
 

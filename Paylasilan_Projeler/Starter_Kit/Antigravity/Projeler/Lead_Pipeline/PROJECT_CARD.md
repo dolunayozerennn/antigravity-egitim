@@ -7,7 +7,7 @@
 | **Start Command** | `python main.py` |
 | **Cron Schedule** | `*/10 * * * *` (10 dakikada bir) |
 | **Root Directory** | `Projeler/Lead_Pipeline` |
-| **GitHub Repo** | `dolunayozerennn/antigravity-egitim` (mono-repo) |
+| **GitHub Repo** | `[GITHUB_KULLANICI]/[REPO_ADI]` (mono-repo) |
 
 ## Env Variables
 | Variable | Kaynak | Açıklama |

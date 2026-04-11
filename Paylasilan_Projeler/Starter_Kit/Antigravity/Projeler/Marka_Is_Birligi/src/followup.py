@@ -253,7 +253,7 @@ def _generate_final_followup(brand_info):
 
     brand_name = brand_info.get("marka_adi", "Brand")
 
-    system_prompt = """You are writing a FINAL follow-up email for Dolunay Özeren.
+    system_prompt = """You are writing a FINAL follow-up email for [İSİM SOYAD].
 This is the last email in a 3-email sequence. No response was received to the previous 2 emails.
 
 Rules:

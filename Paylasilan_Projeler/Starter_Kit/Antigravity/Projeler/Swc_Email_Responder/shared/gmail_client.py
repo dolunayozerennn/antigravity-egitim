@@ -71,7 +71,7 @@ def create_draft(service, thread_id, to_address, subject, in_reply_to, body_text
 
 # forward_email() fonksiyonu 2026-03-16'da kaldırıldı.
 # Sebep: Yanlış forward riski — keyword-based filtre iş ortağı mailini
-# ödeme şikâyeti olarak sınıflandırıp Lola'ya otomatik göndermişti.
+# ödeme şikâyeti olarak sınıflandırıp [İŞ_ARKADAŞI]'na otomatik göndermişti.
 # Artık LLM tabanlı classify_email_relevance() kullanılıyor (sadece mark as read).
 
 

@@ -2,13 +2,13 @@
 
 Markalarla iş birliği kurma, kişiselleştirilmiş outreach gönderimi ve follow-up yönetim sistemi.
 
-**Repo:** [github.com/dolunayozerennn/marka-is-birligi](https://github.com/dolunayozerennn/marka-is-birligi)
+**Repo:** [github.com/[GITHUB_KULLANICI]/marka-is-birligi](https://github.com/[GITHUB_KULLANICI]/marka-is-birligi)
 
 ---
 
 ## 📌 Amaç
 
-Dolunay Özeren'in influencer olarak AI/teknoloji markalarıyla iş birliği kurmak için kullandığı **tam otomatik outreach pipeline'ıdır**. Rakip influencer'ların reels'lerini analiz ederek yeni markaları keşfeder, iletişim bilgilerini bulur, GPT-4.1 ile kişiselleştirilmiş email üretir ve 3 adımlı email sequence ile takip eder.
+[İSİM SOYAD]'in influencer olarak AI/teknoloji markalarıyla iş birliği kurmak için kullandığı **tam otomatik outreach pipeline'ıdır**. Rakip influencer'ların reels'lerini analiz ederek yeni markaları keşfeder, iletişim bilgilerini bulur, GPT-4.1 ile kişiselleştirilmiş email üretir ve 3 adımlı email sequence ile takip eder.
 
 ## 🔄 Pipeline Akışı
 
@@ -90,7 +90,7 @@ Marka_Is_Birligi/
 │   ├── eski-markalar                  ← Geçmiş marka listesi
 │   └── marka-isimleri                 ← Aktif marka isimleri
 │
-└── dolunay-tanitim                    ← Influencer tanıtım dosyası
+└── [isim]-tanitim                    ← Influencer tanıtım dosyası
 ```
 
 ---
@@ -134,7 +134,7 @@ Railway health check endpoint'i `GET /` üzerinden JSON durum bilgisi döndürü
 | **Apollo.io** | `APOLLO_API_KEY` | Kişi arama (pozisyon bazlı) |
 | **Hunter.io** | `HUNTER_API_KEY` | Email bulma + doğrulama |
 | **OpenAI** | `OPENAI_API_KEY` | GPT-4.1-nano ile kişiselleştirme |
-| **Gmail OAuth** | `GOOGLE_DOLUNAY_AI_TOKEN_JSON` | Email gönderim (Railway'de base64 encoded) |
+| **Gmail OAuth** | `GOOGLE_OUTREACH_TOKEN_JSON` | Email gönderim (Railway'de base64 encoded) |
 | **Telegram** | `TELEGRAM_BOT_TOKEN` | Haftalık rapor bildirimi |
 
 > Token'lar merkezi depoda: `_knowledge/credentials/master.env`

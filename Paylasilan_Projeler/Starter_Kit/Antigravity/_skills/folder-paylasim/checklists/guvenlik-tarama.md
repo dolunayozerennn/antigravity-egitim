@@ -53,11 +53,11 @@ Aşağıdaki desenler dosya içeriklerinde aranmalı:
 
 ### E-posta Adresleri
 - **Desen:** Kullanıcının bilinen e-postaları (profil.md'den al)
-- **Genel desen:** `dolunay[a-z]*@[a-z]+\.[a-z]+`
+- **Genel desen:** `[isim][a-z]*@[a-z]+\.[a-z]+`
 - **Placeholder:** `EMAIL_ADRESI_BURAYA`
 
 ### Kişisel URL'ler
-- **Desen:** `dolunayozeren\.com`, `instagram\.com/INSTAGRAM_KULLANICI_ADI` vb.
+- **Desen:** `[SOSYAL_MEDYA_KULLANICI]\.com`, `instagram\.com/INSTAGRAM_KULLANICI_ADI` vb.
 - **Placeholder:** `KISISEL_URL_BURAYA`
 
 ### Dosya Sistemi Yolları

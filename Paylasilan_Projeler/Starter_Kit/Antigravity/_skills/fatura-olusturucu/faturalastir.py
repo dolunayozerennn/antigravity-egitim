@@ -40,7 +40,7 @@ def generate_invoice(brand_name, company_name, company_email, company_address, a
         
         pdf.set_font("Roboto", "B", 10)
         # Row 1
-        pdf.cell(col1_w, 8, "Vendor Name: Dolunay Özeren", border="LTR", new_x=XPos.RIGHT, new_y=YPos.TOP)
+        pdf.cell(col1_w, 8, "Vendor Name: [İSİM SOYAD]", border="LTR", new_x=XPos.RIGHT, new_y=YPos.TOP)
         pdf.cell(col2_w, 8, f"Invoice No: {invoice_number}", border="LTR", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         # Row 2
@@ -155,7 +155,7 @@ def generate_invoice(brand_name, company_name, company_email, company_address, a
         payment_row("SWIFT CODE", "FCNSUS32")
         payment_row("IBAN", "")
         payment_row("Routing Number", "061120084")
-        payment_row("Beneficiary Name", "Dolunay ozeren")
+        payment_row("Beneficiary Name", "[İSİM SOYAD]")
         
         # Last row has terms on left and auth signatory on right
         pdf.set_font("Roboto", "B", 10)

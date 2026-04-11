@@ -1,5 +1,5 @@
 ---
-description: Rakip emlakçıların videolarından ilham alarak Çağrı Bozay tarzında script üret
+description: Rakip emlakçıların videolarından ilham alarak [MÜŞTERİ_ADI] tarzında script üret
 ---
 
 # İlham Al — Rakip Video Analizi
@@ -29,7 +29,7 @@ Rakip emlakçı videolarından ilham alarak orijinal script üretme adımları.
    - Hangi veriler/rakamlar var?
    - Yapı nasıl? (soru-cevap, anlatı, tablo, vb.)
 
-4. **Çağrı Bozay versiyonunu yaz**
+4. **[MÜŞTERİ_ADI] versiyonunu yaz**
    - SKILL.md → "İlham Alma Kuralları" bölümüne bak
    - Konuyu al, anlatımı **tamamen yeniden yaz**
    - Çağrı'nın sesini ve dilini kullan

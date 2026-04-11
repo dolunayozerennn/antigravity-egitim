@@ -13,6 +13,7 @@ config.env
 # OAuth Token dosyaları
 token.json
 credentials.json
+*credentials.json
 *.pickle
 *.pickle.DEPRECATED
 *.DEPRECATED

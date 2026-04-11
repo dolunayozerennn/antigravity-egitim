@@ -19,7 +19,7 @@ Bu dosyayı oku ve talimatları harfiyen uygula.
 ## Adım 1: Deploy Türünü Belirle
 
 1. `_knowledge/deploy-registry.md` dosyasını oku → proje daha önce deploy edilmiş mi?
-2. GitHub MCP → `get_file_contents(owner: "dolunayozerennn", repo: "REPO_ADI")` → repo var mı?
+2. GitHub MCP → `get_file_contents(owner: "[GITHUB_KULLANICI]", repo: "REPO_ADI")` → repo var mı?
 3. Railway GraphQL → projeleri listele → Railway'de proje var mı?
 
 **Sonuç:**
@@ -161,7 +161,7 @@ Re-deploy ise:
 
 ## Adım 3: GitHub'a Push (Native Mono-Repo)
 
-> **DİKKAT:** Sistemin mimarisi Native Mono-Repo'ya geçmiştir. Railway için ayrı GitHub reposu OLUŞTURULMAZ. Tüm kod `dolunayozerennn/antigravity-egitim` üzerinde yaşar.
+> **DİKKAT:** Sistemin mimarisi Native Mono-Repo'ya geçmiştir. Railway için ayrı GitHub reposu OLUŞTURULMAZ. Tüm kod `[GITHUB_KULLANICI]/[REPO_ADI]` üzerinde yaşar.
 
 1. **Değişiklikleri Ana Repoya Pushla:**
    ```bash
@@ -194,11 +194,11 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 
 ```bash
 # 5.1 — GitHub repo'dan servis oluştur
-# DİKKAT: repo her zaman "dolunayozerennn/antigravity-egitim" olmalıdır.
+# DİKKAT: repo her zaman "[GITHUB_KULLANICI]/[REPO_ADI]" olmalıdır.
 curl -s -X POST https://backboard.railway.app/graphql/v2 \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"query": "mutation { serviceCreate(input: { projectId: \"PROJE_ID\", name: \"SERVIS_ADI\", source: { repo: \"dolunayozerennn/antigravity-egitim\" }, branch: \"main\" }) { id name } }"}'
+  -d '{"query": "mutation { serviceCreate(input: { projectId: \"PROJE_ID\", name: \"SERVIS_ADI\", source: { repo: \"[GITHUB_KULLANICI]/[REPO_ADI]\" }, branch: \"main\" }) { id name } }"}'
 
 # Response'dan al:
 # SERVIS_ID = data.serviceCreate.id
@@ -216,7 +216,7 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
   -d '{"query": "mutation { variableCollectionUpsert(input: { projectId: \"PROJE_ID\", environmentId: \"ENV_ID\", serviceId: \"SERVIS_ID\", variables: { KEY1: \"VALUE1\" } }) }"}'
 
 # 5.4 — Root Directory ve Watch Paths Ayarla (ÇOK ÖNEMLİ!)
-# DİKKAT: Ana repo (antigravity-egitim) bağlandığı için projenin alt klasörde olduğunu belirtmek ZORUNLUDUR.
+# DİKKAT: Ana repo ([REPO_ADI]) bağlandığı için projenin alt klasörde olduğunu belirtmek ZORUNLUDUR.
 # Railway Dashboard -> Settings -> General -> Root Directory -> `Projeler/PROJE_ADI`
 # Watch Paths -> `Projeler/PROJE_ADI/**` (Sadece bu klasör değiştiğinde otomatik deploy yapar).
 # Bu işlemi API ile `builder { rootDirectory }` update atarak da yapabilirsiniz.
@@ -231,7 +231,7 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 2. **Adım 2.5'i çalıştır** — Kod sağlık kontrolü (ZORUNLU!)
 3. **⚠️ MONO-REPO SYNC (KRİTİK — ATLANMAZ!):**
    - Eski kopuk (multi-repo) mimariden **Native Mono-Repo**'ya geçilmiştir.
-   - Tüm projeler `dolunayozerennn/antigravity-egitim` ana reposundan çalışır. 
+   - Tüm projeler `[GITHUB_KULLANICI]/[REPO_ADI]` ana reposundan çalışır. 
    - Ana repoyu commit et ve pushla:
      ```bash
      # Sadece lokal repoyu push etmek yeterlidir
@@ -300,7 +300,7 @@ curl -s -X POST https://backboard.railway.app/graphql/v2 \
 ✅ Production Deploy Tamamlandı!
 
 📦 Proje: [Proje Adı]
-🔗 GitHub: github.com/dolunayozerennn/repo-adi (private)
+🔗 GitHub: github.com/[GITHUB_KULLANICI]/repo-adi (private)
 🚂 Railway: https://railway.app/project/PROJE_ID
 🔒 Güvenlik: API key'ler environment variable olarak ayarlandı
 🧪 Testler: X/X geçti

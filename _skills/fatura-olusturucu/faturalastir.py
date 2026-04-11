@@ -53,7 +53,7 @@ def generate_invoice(brand_name, company_name, company_email, company_address, a
         pdf.cell(col2_w, 6, "", border="LR", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         # Row 3
-        pdf.cell(col1_w, 8, "TIN: N/A (W8BEN on file)", border="LR", new_x=XPos.RIGHT, new_y=YPos.TOP)
+        pdf.cell(col1_w, 8, "TIN: N/A", border="LR", new_x=XPos.RIGHT, new_y=YPos.TOP)
         pdf.cell(col2_w, 8, "", border="LR", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         # Row 4
@@ -132,36 +132,12 @@ def generate_invoice(brand_name, company_name, company_email, company_address, a
         
         pdf.ln(5)
         
-        # Payment Details
-        pdf.set_font("Roboto", "B", 10)
-        payment_width = w_sno + w_desc + w_qty + w_rate + w_amt
-        pdf.cell(payment_width, 8, "Payment Details:", border="LTR", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        
-        pdf.set_font("Roboto", "", 10)
-        
-        def payment_row(label, value, is_last=False):
-            b_left = "L"
-            b_right = "R"
-            if is_last:
-                b_left = "LB"
-                b_right = "RB"
-            pdf.cell(50, 8, f"{label}", border=b_left, align="L", new_x=XPos.RIGHT, new_y=YPos.TOP)
-            pdf.cell(payment_width - 50, 8, f"{value}", border=b_right, align="L", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-
-        payment_row("Bank Name", "First Century Bank")
-        payment_row("Bank Address", "1731 N Elm St Commerce, GA 30529 USA")
-        payment_row("Account Type", "CHECKING")
-        payment_row("Account Number", "4020503005274")
-        payment_row("SWIFT CODE", "FCNSUS32")
-        payment_row("IBAN", "")
-        payment_row("Routing Number", "061120084")
-        payment_row("Beneficiary Name", "Dolunay ozeren")
-        
         # Last row has terms on left and auth signatory on right
+        payment_width = w_sno + w_desc + w_qty + w_rate + w_amt
         pdf.set_font("Roboto", "B", 10)
-        pdf.cell(100, 15, "Payment Terms: ", border="LB", align="L", new_x=XPos.RIGHT, new_y=YPos.TOP)
+        pdf.cell(100, 15, "Payment Terms: Due upon receipt", border="LTB", align="L", new_x=XPos.RIGHT, new_y=YPos.TOP)
         pdf.set_font("Roboto", "", 10)
-        pdf.cell(payment_width - 100, 15, "Authorised Signatory (Name & Sign)      ", border="RB", align="R", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.cell(payment_width - 100, 15, "Authorised Signatory (Name & Sign)      ", border="TRB", align="R", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         pdf.output(output_path)
         

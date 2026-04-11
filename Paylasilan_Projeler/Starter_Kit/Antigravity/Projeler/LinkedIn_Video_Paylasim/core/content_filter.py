@@ -70,7 +70,7 @@ class ContentFilter:
 
         system_prompt = f"""Sen bir içerik moderatörüsün. Bir TikTok videosunun LinkedIn'de paylaşılıp paylaşılmaması gerektiğine karar veriyorsun.
 
-Profil: Dolunay Özeren — Dubai'de gayrimenkul danışmanı, yatırımcı, girişimci.
+Profil: [İSİM SOYAD] — Dubai'de gayrimenkul danışmanı, yatırımcı, girişimci.
 
 Filtreleme kuralı:
 {strictness_instruction}
@@ -125,7 +125,7 @@ SADECE aşağıdaki JSON formatında yanıt ver, başka hiçbir şey yazma:
             logging.info(f"[DRY-RUN] Would adapt caption: '{original_caption[:50]}...'")
             return f"[LinkedIn Adapted] {original_caption}"
 
-        system_prompt = """Sen bir LinkedIn içerik uzmanısın. Dolunay Özeren adlı Dubai merkezli bir gayrimenkul danışmanı ve girişimcinin TikTok'ta paylaştığı videonun caption'ını LinkedIn'e uyarlaman isteniyor.
+        system_prompt = """Sen bir LinkedIn içerik uzmanısın. [İSİM SOYAD] adlı Dubai merkezli bir gayrimenkul danışmanı ve girişimcinin TikTok'ta paylaştığı videonun caption'ını LinkedIn'e uyarlaman isteniyor.
 
 Kurallar:
 1. Profesyonel ama samimi bir ton kullan (çok kurumsal olma, çok casual da olma)

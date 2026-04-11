@@ -6,7 +6,7 @@ Google Sheets Client — Outreach sheet okuma/yazma
 - Statü güncelle (email sent, replied vb.)
 - Email template'ini oku ("Email Copies" sekmesinden)
 
-Spreadsheet: https://docs.google.com/spreadsheets/d/1PpQFY7ybHkJXB6x_L_Sa58EdN714bJlbexJHA4kuir4
+Spreadsheet: https://docs.google.com/spreadsheets/d/BURAYA_KENDI_SHEET_ID_YAZIN
 
 GERÇEK SHEET YAPISI (In EN, Roblox):
   A = Channel URL
