@@ -1,6 +1,6 @@
 """
-YouTube Otomasyonu — Fail-Fast Config
-Antigravity V2 Starter tabanlı.
+YouTube Otomasyonu V2 — Fail-Fast Config
+Chat-based Telegram Bot mimarisi.
 Tüm gerekli env variable'ları boot time'da doğrular.
 """
 import os
@@ -19,33 +19,51 @@ class Config:
             default="sk-test-placeholder" if self.IS_DRY_RUN else None
         )
 
-        # ── Video Üretimi ──
+        # ── Video Üretimi (Kie AI) ──
         self.KIE_API_KEY = self._require_env(
             "KIE_API_KEY",
             default="test-kie-key" if self.IS_DRY_RUN else None
         )
         self.KIE_BASE_URL = os.environ.get("KIE_BASE_URL", "https://api.kie.ai/api/v1")
 
-        # ── Seedance 2.0 Parametreleri ──
-        self.VIDEO_MODEL = os.environ.get("VIDEO_MODEL", "bytedance/seedance-2")
-        self.VIDEO_DURATION = int(os.environ.get("VIDEO_DURATION", "10"))
-        self.VIDEO_ASPECT_RATIO = os.environ.get("VIDEO_ASPECT_RATIO", "9:16")
-        self.VIDEO_RESOLUTION = os.environ.get("VIDEO_RESOLUTION", "720p")
-        self.GENERATE_AUDIO = os.environ.get("GENERATE_AUDIO", "true").lower() == "true"
+        # ── Video Birleştirme (Replicate) ──
+        self.REPLICATE_API_TOKEN = self._require_env(
+            "REPLICATE_API_TOKEN",
+            default="test-replicate-token" if self.IS_DRY_RUN else None
+        )
+        self.REPLICATE_MERGE_VERSION = os.environ.get(
+            "REPLICATE_MERGE_VERSION",
+            "14273448a57117b5d424410e2e79700ecde6cc7d60bf522a769b9c7cf989eba7"
+        )
+
+        # ── Default Üretim Parametreleri ──
+        self.DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "seedance-2")  # veya "veo3.1"
+        self.DEFAULT_ORIENTATION = os.environ.get("DEFAULT_ORIENTATION", "portrait")  # portrait=9:16, landscape=16:9
+        self.DEFAULT_CLIP_COUNT = int(os.environ.get("DEFAULT_CLIP_COUNT", "1"))
+        self.DEFAULT_AUDIO = os.environ.get("DEFAULT_AUDIO", "true").lower() == "true"
+        self.DEFAULT_DURATION = int(os.environ.get("DEFAULT_DURATION", "10"))
+        self.DEFAULT_RESOLUTION = os.environ.get("DEFAULT_RESOLUTION", "720p")
 
         # ── YouTube Upload ──
         self.YOUTUBE_CLIENT_ID = os.environ.get("YOUTUBE_CLIENT_ID", "")
         self.YOUTUBE_CLIENT_SECRET = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
         self.YOUTUBE_CATEGORY_ID = os.environ.get("YOUTUBE_CATEGORY_ID", "28")  # Science & Technology
-        self.YOUTUBE_PRIVACY = os.environ.get("YOUTUBE_PRIVACY", "public")
+        self.YOUTUBE_PRIVACY = os.environ.get("YOUTUBE_PRIVACY", "unlisted")  # unlisted for safety
         self.YOUTUBE_ENABLED = os.environ.get("YOUTUBE_ENABLED", "false").lower() == "true"
 
-        # ── Telegram ──
-        self.TELEGRAM_BOT_TOKEN = self._require_env(
-            "TELEGRAM_BOT_TOKEN",
-            default="test-telegram-token" if self.IS_DRY_RUN else None
+        # ── Telegram Bot (V2 — Chat-based) ──
+        self.TELEGRAM_YOUTUBE_BOT_TOKEN = self._require_env(
+            "TELEGRAM_YOUTUBE_BOT_TOKEN",
+            default="test-telegram-yt-bot-token" if self.IS_DRY_RUN else None
         )
-        self.TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "1238877494")
+        self.TELEGRAM_ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "1238877494")
+
+        # Notification bot (ayrı — eski pipeline uyumluluğu)
+        self.TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", self.TELEGRAM_YOUTUBE_BOT_TOKEN)
+
+        # Access control — sadece admin
+        _allowed_raw = os.environ.get("ALLOWED_USER_IDS", "1238877494")
+        self.ALLOWED_USER_IDS = [int(uid.strip()) for uid in _allowed_raw.split(",") if uid.strip()]
 
         # ── Notion ──
         self.NOTION_TOKEN = os.environ.get(
@@ -55,14 +73,14 @@ class Config:
         self.NOTION_DB_ID = os.environ.get("NOTION_DB_YOUTUBE_OTOMASYON", "")
         self.NOTION_ENABLED = bool(self.NOTION_TOKEN and self.NOTION_DB_ID)
 
-        # ── Polling Ayarları ──
-        self.POLL_INITIAL_WAIT = int(os.environ.get("POLL_INITIAL_WAIT", "90"))
+        # ── Polling Ayarları (Kie AI video üretimi) ──
+        self.POLL_INITIAL_WAIT = int(os.environ.get("POLL_INITIAL_WAIT", "60"))
         self.POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "15"))
         self.POLL_MAX_ATTEMPTS = int(os.environ.get("POLL_MAX_ATTEMPTS", "40"))
 
         # ── Sistem Bağımlılıkları ──
-        # ffmpeg şu an gerekli değil ama ileride gerekebilir
-        # self._check_system_deps(["ffmpeg"])
+        if not self.IS_DRY_RUN:
+            self._check_system_deps(["ffmpeg"])
 
     def _require_env(self, key, default=None):
         """Gerekli env variable'ı al, yoksa çök."""
@@ -79,7 +97,7 @@ class Config:
             if not shutil.which(binary):
                 raise EnvironmentError(
                     f"CRITICAL STARTUP FAILURE: Sistem bağımlılığı '{binary}' bulunamadı! "
-                    f"nixpacks.toml dosyasına nixPkgs = [\"{binary}\"] eklenmeli."
+                    f"nixpacks.toml dosyasına aptPkgs = [\"{binary}\"] eklenmeli."
                 )
 
 

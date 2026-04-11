@@ -66,10 +66,10 @@ def _send_telegram(message: str):
         log.info(f"🧪 DRY-RUN Telegram mesajı:\n{message}")
         return
 
-    url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
+    url = f"https://api.telegram.org/bot{settings.TELEGRAM_YOUTUBE_BOT_TOKEN}/sendMessage"
 
     payload = {
-        "chat_id": settings.TELEGRAM_CHAT_ID,
+        "chat_id": settings.TELEGRAM_ADMIN_CHAT_ID,
         "text": message,
         "parse_mode": "Markdown",
         "disable_web_page_preview": True

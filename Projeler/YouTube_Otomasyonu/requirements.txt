@@ -1,5 +1,9 @@
-openai==1.68.2
-requests==2.31.0
-google-auth==2.29.0
-google-auth-oauthlib==1.2.0
-google-api-python-client==2.127.0
+python-telegram-bot==21.10
+openai==1.82.0
+httpx==0.28.1
+requests==2.32.3
+replicate==1.0.4
+python-dotenv==1.1.0
+google-auth==2.38.0
+google-auth-oauthlib==1.2.1
+google-api-python-client==2.165.0

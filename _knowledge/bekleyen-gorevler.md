@@ -48,7 +48,7 @@
 ### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu
 - **Deploy tarihi:** 2026-04-11 (ilk deploy — SUCCESS)
 - **İzleme bitiş:** 2026-04-13
-- **Kontrol 1:** ⏳ (2026-04-12 — Telegram botu aktif mi? /start komutu yanıt veriyor mu?)
+- **Kontrol 1:** ✅ (2026-04-11 20:37 — Bot aktif, /start karşılama mesajı doğru çalışıyor)
 - **Kontrol 2:** ⏳ (2026-04-13 — ikinci kontrol)
 - **Sonuç:** 2 temiz kontrol → arşive taşı
 

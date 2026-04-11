@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# YouTube OAuth Tokenları — ASLA GitHub'a push edilmez!
+youtube_token.json
+youtube_credentials.json
+
+# Environment
+.env
+*.env
+
+# Auto config (kullanıcı-spesifik ayarlar)
+auto_config.json
+
+# Temp dosyalar
+*.mp4
+*.webm
+/tmp/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

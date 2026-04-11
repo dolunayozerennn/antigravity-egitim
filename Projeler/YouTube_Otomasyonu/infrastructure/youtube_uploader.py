@@ -1,61 +1,52 @@
 """
-YouTube Uploader — YouTube Data API v3 ile video yükleme.
+YouTube Uploader V2 — YouTube Data API v3 ile video yükleme.
+Shorts (#Shorts tag) ve Long-form desteği.
 OAuth2 authentication, resumable upload, dry-run desteği.
-
-NOT: İlk çalıştırmada OAuth2 token'ı oluşturmak için tarayıcı gerekir.
-Sonraki çalıştırmalarda token otomatik yenilenir.
 """
 import os
 import json
+import asyncio
+import logging
 from config import settings
-from logger import get_logger
 
-log = get_logger("YouTubeUploader")
+log = logging.getLogger("YouTubeUploader")
 
-# YouTube API scopes
 YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 
 
-def upload_to_youtube(video_path: str, content: dict) -> str:
+async def upload_to_youtube(video_path: str, prompt_data: dict, is_shorts: bool = True) -> str:
     """
     Videoyu YouTube'a yükler.
-    
+
     Args:
         video_path: Yerel video dosyasının yolu
-        content: {title, description, tags} — prompt_generator'dan gelen veri
-        
+        prompt_data: {youtube_title, youtube_description, tags}
+        is_shorts: True ise #Shorts tag eklenir
+
     Returns:
         str: YouTube video URL'si (veya dry-run'da mock URL)
-        
-    Raises:
-        RuntimeError: Upload başarısız olduğunda
     """
     if settings.IS_DRY_RUN:
         log.info("🧪 DRY-RUN: YouTube upload simüle ediliyor...")
-        log.info(f"   Başlık: {content.get('title', 'N/A')}")
+        log.info(f"   Başlık: {prompt_data.get('youtube_title', 'N/A')}")
         log.info(f"   Dosya: {video_path}")
         return "https://youtube.com/shorts/DRY-RUN-MOCK-ID"
 
     if not settings.YOUTUBE_ENABLED:
         log.warning("⚠️ YouTube upload devre dışı (YOUTUBE_ENABLED=false)")
-        log.info("   Video sadece indirildi, YouTube'a yüklenmedi.")
         return ""
 
-    # Lazy import — sadece gerçek upload'da yükle
+    # Lazy import
     try:
         from google.oauth2.credentials import Credentials
-        from google_auth_oauthlib.flow import InstalledAppFlow
         from google.auth.transport.requests import Request
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaFileUpload
     except ImportError as e:
         log.error(f"❌ Google API kütüphaneleri yüklü değil: {e}")
-        raise RuntimeError(
-            "YouTube upload için gerekli kütüphaneler eksik. "
-            "pip install google-auth google-auth-oauthlib google-api-python-client"
-        )
+        raise RuntimeError("YouTube upload için Google API kütüphaneleri gerekli.")
 
     # ── OAuth2 Credentials ──
     creds = _get_credentials()
@@ -64,9 +55,12 @@ def upload_to_youtube(video_path: str, content: dict) -> str:
     youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=creds)
 
     # ── Video Metadata ──
-    title = content.get("title", "AI Generated Video")[:100]  # YouTube max 100 char
-    description = _build_description(content)
-    tags = content.get("tags", ["ai", "shorts", "space"])
+    title = prompt_data.get("youtube_title", "AI Generated Video")[:100]
+    description = _build_description(prompt_data, is_shorts)
+    tags = prompt_data.get("tags", ["ai", "shorts"])
+
+    if is_shorts:
+        tags = list(set(tags + ["Shorts"]))
 
     body = {
         "snippet": {
@@ -79,34 +73,41 @@ def upload_to_youtube(video_path: str, content: dict) -> str:
             "privacyStatus": settings.YOUTUBE_PRIVACY,
             "selfDeclaredMadeForKids": False,
             "embeddable": True,
-        }
+        },
     }
 
-    # ── Resumable Upload ──
-    log.info(f"📺 YouTube'a yükleniyor: \"{title}\"")
+    # ── Upload (sync — thread'de çalıştır) ──
+    def _do_upload():
+        media = MediaFileUpload(
+            video_path,
+            chunksize=1024 * 1024,  # 1MB chunks
+            resumable=True,
+            mimetype="video/mp4",
+        )
 
-    media = MediaFileUpload(
-        video_path,
-        chunksize=1024 * 1024,  # 1MB chunks
-        resumable=True,
-        mimetype="video/mp4"
-    )
+        request = youtube.videos().insert(
+            part=",".join(body.keys()),
+            body=body,
+            media_body=media,
+        )
 
-    request = youtube.videos().insert(
-        part=",".join(body.keys()),
-        body=body,
-        media_body=media
-    )
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                progress = int(status.progress() * 100)
+                log.info(f"   Upload: {progress}%")
 
-    response = None
-    while response is None:
-        status, response = request.next_chunk()
-        if status:
-            progress = int(status.progress() * 100)
-            log.info(f"   Upload: {progress}%")
+        return response
+
+    log.info(f"📺 YouTube'a yükleniyor: \"{title}\" ({'Shorts' if is_shorts else 'Long-form'})")
+    response = await asyncio.to_thread(_do_upload)
 
     video_id = response.get("id", "")
-    video_url = f"https://youtube.com/shorts/{video_id}"
+    if is_shorts:
+        video_url = f"https://youtube.com/shorts/{video_id}"
+    else:
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
 
     log.info(f"✅ YouTube'a yüklendi!")
     log.info(f"   URL: {video_url}")
@@ -126,11 +127,9 @@ def _get_credentials():
 
     creds = None
 
-    # Mevcut token'ı yükle
     if os.path.exists(token_path):
         creds = Credentials.from_authorized_user_file(token_path, [YOUTUBE_UPLOAD_SCOPE])
 
-    # Token geçersiz veya expired ise yenile
     if creds and creds.expired and creds.refresh_token:
         log.info("🔄 YouTube token yenileniyor...")
         creds.refresh(Request())
@@ -139,12 +138,10 @@ def _get_credentials():
         log.info("✅ Token yenilendi.")
 
     elif not creds or not creds.valid:
-        # İlk kez — tarayıcı ile OAuth akışı
         if not os.path.exists(creds_path):
-            # Credentials dosyası yoksa, config'den oluştur
             _create_credentials_file(creds_path)
 
-        log.info("🔐 YouTube OAuth2 akışı başlatılıyor (tarayıcı açılacak)...")
+        log.info("🔐 YouTube OAuth2 akışı başlatılıyor...")
         flow = InstalledAppFlow.from_client_secrets_file(creds_path, [YOUTUBE_UPLOAD_SCOPE])
         creds = flow.run_local_server(port=0)
 
@@ -159,8 +156,7 @@ def _create_credentials_file(creds_path: str):
     """Config'deki Client ID/Secret'tan credentials.json oluşturur."""
     if not settings.YOUTUBE_CLIENT_ID or not settings.YOUTUBE_CLIENT_SECRET:
         raise RuntimeError(
-            "YouTube upload için YOUTUBE_CLIENT_ID ve YOUTUBE_CLIENT_SECRET "
-            "ortam değişkenleri gerekli!"
+            "YouTube upload için YOUTUBE_CLIENT_ID ve YOUTUBE_CLIENT_SECRET gerekli!"
         )
 
     credentials_data = {
@@ -169,7 +165,7 @@ def _create_credentials_file(creds_path: str):
             "client_secret": settings.YOUTUBE_CLIENT_SECRET,
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": ["http://localhost"]
+            "redirect_uris": ["http://localhost"],
         }
     }
 
@@ -179,17 +175,21 @@ def _create_credentials_file(creds_path: str):
     log.info(f"📝 YouTube credentials dosyası oluşturuldu: {creds_path}")
 
 
-def _build_description(content: dict) -> str:
+def _build_description(prompt_data: dict, is_shorts: bool) -> str:
     """YouTube video açıklaması oluşturur."""
-    desc = content.get("description", "")
-    tags = content.get("tags", [])
+    desc = prompt_data.get("youtube_description", "")
+    tags = prompt_data.get("tags", [])
 
     hashtags = " ".join(f"#{tag}" for tag in tags[:5])
 
-    return f"""{desc}
+    lines = [desc]
 
-🤖 This video was generated using AI (Seedance 2.0)
-📹 Bodycam POV | AI-Generated Content
+    if is_shorts:
+        lines.append("\n🤖 AI-Generated Short | Powered by Antigravity")
+    else:
+        lines.append("\n🤖 AI-Generated Video | Powered by Antigravity")
 
-{hashtags}
-#shorts #ai #aiart #seedance #space"""
+    lines.append(f"\n{hashtags}")
+    lines.append("#ai #aiart #aigeneratedvideo")
+
+    return "\n".join(lines)
