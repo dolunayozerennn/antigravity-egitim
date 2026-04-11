@@ -78,9 +78,13 @@ class Config:
         self.POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "15"))
         self.POLL_MAX_ATTEMPTS = int(os.environ.get("POLL_MAX_ATTEMPTS", "40"))
 
-        # ── Sistem Bağımlılıkları ──
-        if not self.IS_DRY_RUN:
-            self._check_system_deps(["ffmpeg"])
+        # ── Sistem Bağımlılıkları (Opsiyonel — FFmpeg sadece fallback) ──
+        self.FFMPEG_AVAILABLE = bool(shutil.which("ffmpeg"))
+        if not self.FFMPEG_AVAILABLE and not self.IS_DRY_RUN:
+            import logging
+            logging.getLogger("Config").warning(
+                "⚠️ FFmpeg bulunamadı — video birleştirme sadece Replicate ile yapılacak."
+            )
 
     def _require_env(self, key, default=None):
         """Gerekli env variable'ı al, yoksa çök."""
