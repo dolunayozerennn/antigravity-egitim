@@ -40,18 +40,29 @@ class OpenAIService:
         """
         try:
             # GPT-5 Mini sadece temperature=1 destekler, parametre gönderme
+            # GPT-5 Mini çok kısa max_tokens'da boş content döndürebilir — minimum 100
+            effective_max_tokens = max(max_tokens, 100)
             create_kwargs = {
                 "model": self.model,
                 "messages": messages,
-                "max_completion_tokens": max_tokens,
+                "max_completion_tokens": effective_max_tokens,
             }
             # GPT-5 Mini bazen boş content döndürüyor — retry mekanizması
+            content = ""
             for attempt in range(3):
                 response = self.client.chat.completions.create(**create_kwargs)
                 content = response.choices[0].message.content or ""
                 if content.strip():
                     break
                 log.warning(f"OpenAI boş content döndürdü (deneme {attempt+1}/3)")
+                if attempt < 2:
+                    import time
+                    time.sleep(0.5)  # Kısa bekleme — rate limit / cache sorunlarını aşmak için
+
+            if not content.strip():
+                log.error("OpenAI 3 denemede de boş content döndürdü (chat)")
+                raise RuntimeError("OpenAI API 3 denemede de boş yanıt döndürdü. Lütfen tekrar deneyin.")
+
             log.info(f"Chat yanıt alındı — {len(content)} karakter, "
                      f"tokens: {response.usage.total_tokens}")
             return content
@@ -159,23 +170,29 @@ class OpenAIService:
         """
         try:
             # GPT-5 Mini sadece temperature=1 destekler, parametre gönderme
+            # GPT-5 Mini çok kısa max_tokens'da boş content döndürebilir — minimum 200
+            effective_max_tokens = max(max_tokens, 200)
             create_kwargs = {
                 "model": self.model,
                 "messages": messages,
-                "max_completion_tokens": max_tokens,
+                "max_completion_tokens": effective_max_tokens,
                 "response_format": {"type": "json_object"},
             }
             # GPT-5 Mini bazen boş content döndürüyor — retry mekanizması
+            content = ""
             for attempt in range(3):
                 response = self.client.chat.completions.create(**create_kwargs)
                 content = response.choices[0].message.content or ""
                 if content.strip():
                     break
                 log.warning(f"OpenAI JSON boş content döndürdü (deneme {attempt+1}/3)")
+                if attempt < 2:
+                    import time
+                    time.sleep(0.5)
             log.info(f"JSON yanıt alındı — tokens: {response.usage.total_tokens}")
             if not content.strip():
-                log.warning("OpenAI 3 denemede de boş content döndürdü — boş dict dönülecek")
-                return {}
+                log.error("OpenAI JSON 3 denemede de boş content döndürdü")
+                raise RuntimeError("OpenAI API 3 denemede de boş JSON yanıt döndürdü.")
             return json.loads(content)
 
         except json.JSONDecodeError:

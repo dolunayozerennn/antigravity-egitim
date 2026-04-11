@@ -250,6 +250,13 @@ class ConversationManager:
 
         try:
             response = self.openai.chat_json(messages, temperature=0.7, max_tokens=1500)
+        except RuntimeError as e:
+            log.warning(f"OpenAI boş yanıt döndü: {e}")
+            return {
+                "reply": "⚠️ AI şu an meşgul, tekrar dene.",
+                "state": session.state,
+                "ready_for_research": False,
+            }
         except Exception:
             log.error("Chat yanıt hatası", exc_info=True)
             return {
