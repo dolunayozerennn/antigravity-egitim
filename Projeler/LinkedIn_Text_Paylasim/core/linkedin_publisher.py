@@ -93,14 +93,14 @@ class LinkedInPublisher:
 
             resp = requests.put(upload_url, headers=upload_headers, data=image_data, timeout=60)
             if resp.status_code not in (200, 201):
-                ops.error(f"Görsel yükleme hatası: {resp.status_code} - {resp.text[:300]}")
+                ops.error("Görsel Yükleme Hatası", message=f"HTTP {resp.status_code} — {resp.text[:500]}")
                 return None
 
             ops.info(f"Görsel LinkedIn'e yüklendi: {asset}")
             return asset
 
         except Exception as e:
-            ops.error(f"LinkedIn görsel yükleme hatası: {e}", exception=e)
+            ops.error("LinkedIn Görsel Yükleme Hatası", exception=e, message=str(e)[:500])
             return None
 
     def _create_post(self, text: str, image_urn: str = None) -> str:
@@ -143,8 +143,8 @@ class LinkedInPublisher:
                 ops.info(f"LinkedIn post başarıyla oluşturuldu! Post URN: {post_urn}")
                 return post_urn
             else:
-                ops.error(f"LinkedIn post oluşturma hatası: {resp.status_code} - {resp.text[:500]}")
+                ops.error("LinkedIn Post Oluşturma Hatası", message=f"HTTP {resp.status_code} — {resp.text[:500]}")
                 return None
         except Exception as e:
-            ops.error(f"LinkedIn post hatası: {e}", exception=e)
+            ops.error("LinkedIn Post Hatası", exception=e, message=str(e)[:500])
             return None

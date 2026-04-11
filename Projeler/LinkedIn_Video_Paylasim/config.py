@@ -23,7 +23,8 @@ class Config:
         self.LINKEDIN_PERSON_URN = self._require_env("LINKEDIN_PERSON_URN")
 
         # Content Filter Strictness: "relaxed", "moderate", "strict"
-        self.LINKEDIN_FILTER_STRICTNESS = os.environ.get("LINKEDIN_FILTER_STRICTNESS", "relaxed")
+        # Moderate prompt is tuned for Dolunay's profile — permits lifestyle/education content
+        self.LINKEDIN_FILTER_STRICTNESS = os.environ.get("LINKEDIN_FILTER_STRICTNESS", "moderate")
 
         # Groq (LLM - Content Filter & Caption Adaptation)
         self.GROQ_API_KEY = self._require_env("GROQ_API_KEY")

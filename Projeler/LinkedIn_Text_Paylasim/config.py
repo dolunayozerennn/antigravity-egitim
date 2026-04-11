@@ -20,8 +20,8 @@ class Config:
         # OpenAI — Post yazma (GPT-4.1) + Görsel prompt (GPT-4.1-mini)
         self.OPENAI_API_KEY = self._require_env("OPENAI_API_KEY")
 
-        # Gemini — Görsel üretme (gemini-2.0-flash-exp veya gemini-2.0-flash-preview-image-generation)
-        self.GEMINI_API_KEY = self._require_env("GEMINI_API_KEY")
+        # Kie AI — Görsel üretme (Nano Banana 2)
+        self.KIE_API_KEY = self._require_env("KIE_API_KEY")
 
         # LinkedIn API
         self.LINKEDIN_ACCESS_TOKEN = self._require_env("LINKEDIN_ACCESS_TOKEN")

@@ -185,7 +185,7 @@ if __name__ == "__main__":
     setup_logging()
 
     import os
-    from datetime import datetime
+    from datetime import datetime, timezone
     mode = os.environ.get("RUN_MODE", "cron").lower()
 
     if mode == "schedule":
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     else:
         # Railway Cron modu: container açılır, gün kontrolü yapar, ilgili job çalışır, exit.
         # Cron: 0 5 * * 1,4 (UTC 05:00 Pazartesi+Perşembe = TR 08:00)
-        today = datetime.utcnow().weekday()  # 0=Monday, 3=Thursday
+        today = datetime.now(timezone.utc).weekday()  # 0=Monday, 3=Thursday
         ops.info("Başlatıldı", f"CRON mode — weekday={today}")
 
         if today == 0:  # Monday

@@ -31,7 +31,9 @@ class VideoProcessor:
 
         # FFmpeg command using resolved absolute path:
         # -map_metadata -1 : removes global metadata
-        # -vf scale=-2:1080 : ensure 1080p output, maintain aspect ratio
+        # -fflags +bitexact : removes encoder-specific metadata
+        # scale=trunc(iw/2)*2:1080 : ensure 1080p output with even-pixel width
+        #   (using trunc instead of -2 to avoid errors with odd-dimension sources)
         # Re-encoding with libx264 to strip all TikTok fingerprinting
         ops.info(f"Using ffmpeg binary: {_FFMPEG_BIN}")
         cmd = [
@@ -39,12 +41,14 @@ class VideoProcessor:
             "-y",
             "-i", input_path,
             "-map_metadata", "-1",
-            "-vf", "scale=-2:1080",
+            "-fflags", "+bitexact",
+            "-vf", "scale=trunc(iw/2)*2:1080",
             "-c:v", "libx264",
             "-crf", "23",
             "-preset", "fast",
             "-c:a", "aac",
             "-b:a", "128k",
+            "-movflags", "+faststart",
             output_path
         ]
 
