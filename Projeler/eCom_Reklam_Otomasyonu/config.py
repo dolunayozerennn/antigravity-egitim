@@ -21,9 +21,9 @@ class Config:
         self.ADMIN_CHAT_ID = int(self._require_env("TELEGRAM_ADMIN_CHAT_ID"))
         self.ALLOWED_USER_IDS = [self.ADMIN_CHAT_ID]
 
-        # ── OpenAI (GPT-5 Mini — Chat + Vision) ──
+        # ── OpenAI (GPT-4.1 Mini — Chat + Vision) ──
         self.OPENAI_API_KEY = self._require_env("OPENAI_API_KEY")
-        self.OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5-mini")
+        self.OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
 
         # ── Perplexity (Marka Araştırması) ──
         self.PERPLEXITY_API_KEY = self._require_env("PERPLEXITY_API_KEY")

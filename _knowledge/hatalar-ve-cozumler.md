@@ -152,6 +152,18 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Kural:** OpenAI model değişikliğinde **API parametre uyumluluğunu kontrol et**. GPT-5 Mini artık `max_completion_tokens` kullanıyor ve `temperature` sadece default destekliyor.
 - **Tarih:** 11 Nisan 2026
 
+### GPT-5 Mini Non-JSON Modda Boş Content (Empty Response) Sorunu
+- **Sorun:** `openai_service.py` içinde `chat()` metodu (json_object formatı OLMADAN) kısa system prompt'larda 3 denemeye rağmen sürekli boş content döndürüyordu. Aynı mesajla `chat_json()` (json_object formatı İLE) sorunsuz çalışıyordu.
+- **Kök Neden:** GPT-5 Mini, `response_format: json_object` belirtilmediğinde ve çok kısa/minimalist system prompt verildiğinde empty content döndürebiliyor. Bu özellikle `max_tokens < 100` olan çağrılarda belirgin.
+- **Etki:** Bot akışında minimal — çünkü bot kullanıcı mesajlarını `chat_json()` ile işliyor, `chat()` yalnızca `analyze_image()` içinde kullanılıyor.
+- **Çözüm (3 katman):**
+  1. `openai_service.py` → `chat()` ve `chat_json()` metodlarına `effective_max_tokens = max(max_tokens, 100/200)` minimum token sınırı eklendi
+  2. Retry döngüsüne 0.5s bekleme eklendi — rate limit / cache sorunlarını aşmak için
+  3. 3 denemede de boş content gelirse `RuntimeError` fırlatılıyor (sessiz boş string dönmek yerine)
+  4. `conversation_manager.py` → `RuntimeError` yakalanıp kullanıcıya "AI şu an meşgul, tekrar dene" mesajı veriliyor
+- **Kural:** GPT-5 Mini ile `chat()` çağrılarında system prompt'u detaylı tut ve `max_tokens >= 100` kullan. Mümkünse `json_object` formatını tercih et — bu modda empty content sorunu gözlemlenmedi.
+- **Tarih:** 11 Nisan 2026
+
 ### ElevenLabs Rachel Sesi Kaldırıldı — Voice Deprecation
 - **Sorun:** `eCom_Reklam_Otomasyonu` projesinde TTS üretimi başarısız — "Rachel" sesi ElevenLabs API'den kaldırılmış.
 - **Çözüm:** Tüm "Rachel" referansları "Sarah" ile değiştirildi (4 dosya). Voice lookup'a fallback prefix matching eklendi.
@@ -461,3 +473,15 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
   2. Bir fonksiyonun **çağrı noktasını** (caller) değiştirirken, **tanımını** (callee) da güncelle
   3. Bir fonksiyonun **tanımını** değiştirirken, **tüm çağrı noktalarını** `grep` ile bul ve uyumlu olduğunu doğrula
 - **Tarih:** 11 Nisan 2026
+
+### Lokal Fix Push Edilmemiş — Production Eski Kodla Çalışıyor (KRİTİK TEKRARLAYAN)
+- **Sorun:** `eCom_Reklam_Otomasyonu` botuna mesaj gönderildiğinde `⚠️ Bir hata oluştu, tekrar dene.` yanıtı geliyordu. Railway loglarında `openai.BadRequestError: 400 — 'max_tokens' is not supported` hatası görüldü.
+- **Kök Neden:** `openai_service.py` ve `conversation_manager.py` dosyalarında `max_tokens → max_completion_tokens` fix'i lokalde yapılmıştı ama **GitHub'a push edilmemişti**. `git status` 3 modified dosya gösteriyordu. Railway auto-deploy eski commit'i çalıştırıyordu.
+- **Etki:** Bot deploy'dan bu yana hiçbir kullanıcı mesajını işleyemedi — her metin mesajında OpenAI 400 hatası, error_handler devreye girip generic hata mesajı döndü.
+- **Çözüm:** 3 dosya (`openai_service.py`, `conversation_manager.py`, `test_bot.py`) commit + push + Railway redeploy.
+- **Kural (ZORUNLU POST-FIX CHECKLİST):**
+  1. Fix yapıldıktan sonra **her zaman** `git status` kontrol et — modified dosya varsa push et
+  2. Push sonrası Railway'de yeni deployment oluştuğunu doğrula (auto-deploy tetiklenmediyse `serviceInstanceRedeploy`)
+  3. `/canli-yayina-al` workflow'u kullanılmasa bile push + deploy + smoke test zinciri ZORUNLU
+- **Tarih:** 11 Nisan 2026
+

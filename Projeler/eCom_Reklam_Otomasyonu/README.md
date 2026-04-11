@@ -14,8 +14,8 @@
 Kullanıcı Telegram'dan bir ürün ve marka bilgisi paylaşır → Bot doğal sohbetle bilgi toplar → Marka araştırması yapar → AI ile reklam senaryosu üretir → Maliyet hesaplar → Onay sonrası sinematik reklam videosu üretir.
 
 ### Pipeline Adımları:
-1. **Bilgi Toplama** — GPT-5 Mini ile doğal sohbet (form doldurmak yok)
-2. **Araştırma** — Perplexity ile marka analizi + GPT-5 Vision ile ürün görseli analizi
+1. **Bilgi Toplama** — GPT-4.1 Mini ile doğal sohbet (form doldurmak yok)
+2. **Araştırma** — Perplexity ile marka analizi + GPT-4.1 Vision ile ürün görseli analizi
 3. **Senaryo** — AI ile shot listesi, dış ses metni, maliyet hesaplama
 4. **Görsel** — Nano Banana 2 ile sinematik giriş karesi
 5. **Video** — Seedance 2.0 ile reklam videosu üretimi
@@ -44,7 +44,7 @@ eCom_Reklam_Otomasyonu/
 │   └── production_pipeline.py   ← Video üretim orchestrator
 └── services/
     ├── __init__.py
-    ├── openai_service.py        ← GPT-5 Mini (chat + vision)
+    ├── openai_service.py        ← GPT-4.1 Mini (chat + vision)
     ├── perplexity_service.py    ← Marka araştırması
     ├── imgbb_service.py         ← Görsel → Public URL
     ├── kie_api.py               ← Seedance 2.0 + Nano Banana 2
@@ -98,9 +98,9 @@ ENV=production                    # development = dry-run
 TELEGRAM_ECOM_BOT_TOKEN=...
 TELEGRAM_ADMIN_CHAT_ID=1238877494
 
-# OpenAI (GPT-5 Mini)
+# OpenAI (GPT-4.1 Mini)
 OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-5-mini
+OPENAI_MODEL=gpt-4.1-mini
 
 # Perplexity
 PERPLEXITY_API_KEY=...
@@ -176,7 +176,7 @@ python test_bot.py
 |------|------------|----------|
 | İmport & Config | 18 | Tüm modüllerin import testi + config doğrulama |
 | State Machine | 7 | `/start`, session reset, fotoğraf, state koruması |
-| LLM Bilgi Çıkarma | 15 | GPT-5 Mini ile doğal sohbet + JSON çıkarma |
+| LLM Bilgi Çıkarma | 15 | GPT-4.1 Mini ile doğal sohbet + JSON çıkarma |
 | Senaryo Engine | 8 | Maliyet hesabı, senaryo özeti formatı |
 | Servis Bağlantıları | 6 | OpenAI, Perplexity, Kie AI, ElevenLabs gerçek API |
 | Edge Cases | 7 | Uzun mesaj, emoji, İngilizce, çoklu /start |
@@ -190,7 +190,7 @@ python test_bot.py
 
 ## 📝 Bilinen Konular & Notlar
 
-- **GPT-5 Mini boş content:** Model intermittent olarak boş yanıt döndürebilir. 3 deneme retry mekanizması ile ele alınır.
+- **Model:** GPT-4.1 Mini kullanılıyor (GPT-5 Mini reasoning modelindeki boş content sorunu nedeniyle geçiş yapıldı). Retry mekanizması korunuyor.
 - **ElevenLabs ses değişiklikleri:** Sesler kaldırılabilir. Varsayılan ses: **Sarah** (Kadın, olgun, güven verici).
 - **DRY-RUN:** `ENV=development` veya `DRY_RUN=1` ayarlandığında pipeline gerçek API çağrısı yapmaz, simülasyon döner.
 
@@ -205,4 +205,5 @@ python test_bot.py
 | 2026-04-11 | Boş content retry mekanizması (3 deneme) |
 | 2026-04-11 | ElevenLabs Rachel→Sarah ses güncellemesi |
 | 2026-04-11 | 68 testlik otonom test suite eklendi |
+| 2026-04-11 | Model değişikliği: GPT-5 Mini → GPT-4.1 Mini (reasoning model boş content sorunu) |
 
