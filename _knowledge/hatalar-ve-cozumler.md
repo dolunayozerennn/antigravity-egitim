@@ -130,6 +130,34 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Kural:** Gemini model adları deprecate olabilir. Üretim kodunda `-latest` suffix'li model adı KULLANMA — spesifik versiyon kullan. Deprecation durumunda `gemini-2.0-flash` veya `gemini-2.5-pro` gibi güncel modellere geçiş yap.
 - **Tarih:** Mart 2026
 
+### get_logger() TypeError — V2 Geçişi API Uyumsuzluğu
+- **Sorun:** `Dolunay_Otonom_Kapak` V2 deploy sonrası cron çalışırken `TypeError: get_logger() got an unexpected keyword argument 'level'` ile CRASH oldu.
+- **Kök Neden:** `main.py` satır 227'de `get_logger("Otonom_Kapak", level="INFO")` çağrılıyor ama `core/logger.py`'deki `get_logger(name)` fonksiyonu sadece tek parametre (`name`) kabul ediyordu. V2 geçişinde `main.py` güncellenip `level` parametresi eklendi ama `logger.py`'deki fonksiyon imzası güncellenmedi.
+- **Etki:** Her iki servis de (reels-kapak, youtube-kapak) 21 saat boyunca CRASHED kaldı. Pipeline hiçbir kapak üretemedi.
+- **Çözüm:** `core/logger.py` → `get_logger(name, level="INFO")` olarak güncellendi. `level` parametresi opsiyonel, default değeri `"INFO"`.
+- **Kural:** Bir fonksiyonun **çağrı noktasını** değiştirirken, fonksiyonun **tanımını** da kontrol et. Caller ↔ Callee uyumsuzluğu en sık crash nedenidir. Deploy öncesi `python3 -c "from modül import fonksiyon"` testi bunu yakalar.
+- **Tarih:** 11 Nisan 2026
+
+### GPT-5 Mini API Parametre Uyumsuzluğu — max_tokens + temperature (KRİTİK)
+- **Sorun:** `eCom_Reklam_Otomasyonu` projesinde tüm OpenAI API çağrıları `400 Bad Request` ile CRASH oluyordu.
+- **Kök Neden (2 ayrı sorun):**
+  1. GPT-5 Mini modeli `max_tokens` parametresini kabul etmiyor, `max_completion_tokens` kullanmak ZORUNLU
+  2. GPT-5 Mini modeli `temperature` parametresinde sadece default değer (1.0) kabul ediyor, özel değer gönderilirse hata veriyor
+- **Ek Sorun:** GPT-5 Mini intermittent olarak boş content (empty string) döndürüyor (~%30). Bu durumda `json.loads("")` → `JSONDecodeError` crash oluyor.
+- **Çözüm:**
+  1. Tüm `max_tokens` → `max_completion_tokens` olarak değiştirildi
+  2. `temperature` parametresi API çağrılarından kaldırıldı
+  3. Boş content için 3 deneme retry mekanizması + null guard eklendi
+  4. 3 denemede de boşsa graceful olarak `{}` dönüyor
+- **Kural:** OpenAI model değişikliğinde **API parametre uyumluluğunu kontrol et**. GPT-5 Mini artık `max_completion_tokens` kullanıyor ve `temperature` sadece default destekliyor.
+- **Tarih:** 11 Nisan 2026
+
+### ElevenLabs Rachel Sesi Kaldırıldı — Voice Deprecation
+- **Sorun:** `eCom_Reklam_Otomasyonu` projesinde TTS üretimi başarısız — "Rachel" sesi ElevenLabs API'den kaldırılmış.
+- **Çözüm:** Tüm "Rachel" referansları "Sarah" ile değiştirildi (4 dosya). Voice lookup'a fallback prefix matching eklendi.
+- **Kural:** ElevenLabs sesleri kaldırılabilir. API'den güncel ses listesini çekerek doğrulama yap. Hardcoded voice name kullanma, voice ID tercih et.
+- **Tarih:** 11 Nisan 2026
+
 > *(Yeni hata karşılaşıldığında bu dosyaya ekle)*
 
 ---

@@ -157,3 +157,52 @@ Her üretim Notion database'ine kaydedilir:
 - Durum (Üretiliyor / Tamamlandı / Hata)
 - Video URL, Hata Mesajı
 - Tarih
+
+---
+
+## 🧪 Test Suite
+
+Proje, 68 otonom test içeren kapsamlı bir test altyapısına sahiptir.
+
+### Çalıştırma:
+```bash
+# Önce env değişkenlerini yükle (master.env veya Railway env)
+source .venv/bin/activate
+python test_bot.py
+```
+
+### Test Grupları:
+| Grup | Test Sayısı | Açıklama |
+|------|------------|----------|
+| İmport & Config | 18 | Tüm modüllerin import testi + config doğrulama |
+| State Machine | 7 | `/start`, session reset, fotoğraf, state koruması |
+| LLM Bilgi Çıkarma | 15 | GPT-5 Mini ile doğal sohbet + JSON çıkarma |
+| Senaryo Engine | 8 | Maliyet hesabı, senaryo özeti formatı |
+| Servis Bağlantıları | 6 | OpenAI, Perplexity, Kie AI, ElevenLabs gerçek API |
+| Edge Cases | 7 | Uzun mesaj, emoji, İngilizce, çoklu /start |
+| Pipeline DRY-RUN | 3 | Tam production pipeline simülasyonu |
+| Notion Çıkarma | 3 | URL → Page ID dönüşümü |
+| Voiceover Tahmini | 2 | TTS süre hesabı |
+
+> **Not:** Test suite gerçek API çağrıları yapar. Env değişkenleri (OPENAI_API_KEY, KIE_API_KEY vb.) tanımlı olmalıdır.
+
+---
+
+## 📝 Bilinen Konular & Notlar
+
+- **GPT-5 Mini boş content:** Model intermittent olarak boş yanıt döndürebilir. 3 deneme retry mekanizması ile ele alınır.
+- **ElevenLabs ses değişiklikleri:** Sesler kaldırılabilir. Varsayılan ses: **Sarah** (Kadın, olgun, güven verici).
+- **DRY-RUN:** `ENV=development` veya `DRY_RUN=1` ayarlandığında pipeline gerçek API çağrısı yapmaz, simülasyon döner.
+
+---
+
+## 📋 Değişiklik Geçmişi
+
+| Tarih | Değişiklik |
+|-------|-----------|
+| 2026-04-11 | İlk deploy → Railway SUCCESS |
+| 2026-04-11 | GPT-5 Mini API uyumluluğu: `max_tokens`→`max_completion_tokens`, `temperature` kaldırıldı |
+| 2026-04-11 | Boş content retry mekanizması (3 deneme) |
+| 2026-04-11 | ElevenLabs Rachel→Sarah ses güncellemesi |
+| 2026-04-11 | 68 testlik otonom test suite eklendi |
+
