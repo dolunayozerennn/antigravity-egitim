@@ -3,7 +3,7 @@
 Blog Generator Pipeline — Step 3: Write Blog
 1. Reads annotated frames data from annotate_v3.py (annotations_v3.json)
 2. Reads script text from <video_dir>/script.txt (if available)
-3. Uses Gemini 2.5 Pro to generate a high-quality blog article
+3. Uses OpenAI GPT-4.1 to generate a high-quality blog article
 4. Saves the output to blog_draft.md
 """
 import json
@@ -12,11 +12,13 @@ import sys
 import requests
 
 # ─── Config ───
-from env_loader import require_env
+from env_loader import get_env, require_env
 
-GEMINI_API_KEY = require_env("GEMINI_API_KEY")
+# Dolunay AI hesabı öncelikli, yoksa ana hesaba fallback
+OPENAI_API_KEY = get_env("OPENAI_API_KEY_DOLUNAY_AI") or require_env("OPENAI_API_KEY")
 
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent"
+OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_MODEL = "gpt-4.1"
 
 VIDEO_DIR = sys.argv[1] if len(sys.argv) > 1 else "/Users/dolunayozeren/Desktop/Antigravity/Projeler/Blog_Yazici/typeless5"
 OUTPUT_DIR = VIDEO_DIR
@@ -36,9 +38,9 @@ def load_script(video_dir):
         return None
 
 def generate_blog(annotations_data, script_text):
-    """Gemini 2.5 Pro ile blog taslağı üret"""
+    """OpenAI GPT-4.1 ile blog taslağı üret"""
     print(f"\n{'='*50}")
-    print(f"ADIM 2/3: Blog Yazımı (Gemini 2.5 Pro)")
+    print(f"ADIM 2/3: Blog Yazımı (OpenAI GPT-4.1)")
     
     # Adım listesini oluştur (annotate_v3'ten gelen verileri kullanarak)
     steps_description = "\n".join([
@@ -63,9 +65,9 @@ def generate_blog(annotations_data, script_text):
         context_note = "Aşağıda bir ekran kaydı videosunun frame'lerinin adım adım analizi var. Bu analizlerden profesyonel bir blog yazısı üret. Orijinal video scripti mevcut olmadığı için ekran görüntüsü açıklamalarından yola çıkarak aracın ne yaptığını, kimlere hitap ettiğini ve nasıl kullanıldığını çıkar."
         tool_rule = "6. Aracın ne olduğunu ve kimlere hitap ettiğini ekran görüntülerinden çıkarım yaparak detaylıca anlat"
     
-    prompt = f"""Sen dolunay.ai'nin kurucusu Dolunay Özeren'in blog yazılarını yazan bir teknoloji blog yazarısın. Dolunay, yapay zeka araçlarını tanıtan Türkiye'nin en büyük Instagram sayfalarından birini yönetiyor.
+    system_prompt = "Sen dolunay.ai'nin kurucusu Dolunay Özeren'in blog yazılarını yazan bir teknoloji blog yazarısın. Dolunay, yapay zeka araçlarını tanıtan Türkiye'nin en büyük Instagram sayfalarından birini yönetiyor."
 
-{context_note}
+    user_prompt = f"""{context_note}
 
 {script_section}
 
@@ -86,63 +88,57 @@ def generate_blog(annotations_data, script_text):
 SADECE blog yazısını ver, başka bir şey ekleme. Markdown formatında yaz."""
 
     headers = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {OPENAI_API_KEY}"
     }
     
     payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }],
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 4000
-        }
+        "model": OPENAI_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 4000
     }
     
-    url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
-    
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=120)
+        response = requests.post(OPENAI_API_URL, headers=headers, json=payload, timeout=120)
         response.raise_for_status()
         result = response.json()
         
-        # ── Defensive: Gemini boş/güvenlik-filtreli yanıt kontrolü ──
-        candidates = result.get("candidates", [])
-        if not candidates:
-            block_reason = result.get("promptFeedback", {}).get("blockReason", "UNKNOWN")
-            print(f"  ❌ Gemini boş yanıt döndü! blockReason: {block_reason}")
-            print(f"  ℹ️  promptFeedback: {result.get('promptFeedback', {})}")
+        # ── Defensive: boş yanıt kontrolü ──
+        choices = result.get("choices", [])
+        if not choices:
+            print(f"  ❌ OpenAI boş yanıt döndü!")
+            print(f"  ℹ️  Response: {json.dumps(result, ensure_ascii=False)[:500]}")
             return None, {}
         
-        candidate = candidates[0]
-        finish_reason = candidate.get("finishReason", "")
-        if finish_reason == "SAFETY":
-            safety_ratings = candidate.get("safetyRatings", [])
-            print(f"  ❌ Gemini içerik güvenlik filtresine takıldı!")
-            print(f"  ℹ️  safetyRatings: {safety_ratings}")
+        choice = choices[0]
+        finish_reason = choice.get("finish_reason", "")
+        if finish_reason == "content_filter":
+            print(f"  ❌ OpenAI içerik güvenlik filtresine takıldı!")
             return None, {}
         
-        content = candidate.get("content", {})
-        parts = content.get("parts", [])
-        if not parts or not parts[0].get("text"):
-            print(f"  ❌ Gemini yanıtında metin bulunamadı! finishReason: {finish_reason}")
+        message = choice.get("message", {})
+        blog_text = message.get("content", "")
+        if not blog_text:
+            print(f"  ❌ OpenAI yanıtında metin bulunamadı! finish_reason: {finish_reason}")
             return None, {}
-        
-        blog_text = parts[0]["text"]
         
         # Token kullanımı
-        usage = result.get("usageMetadata", {})
-        input_tokens = usage.get("promptTokenCount", 0)
-        output_tokens = usage.get("candidatesTokenCount", 0)
+        usage = result.get("usage", {})
+        input_tokens = usage.get("prompt_tokens", 0)
+        output_tokens = usage.get("completion_tokens", 0)
         
         print(f"  Tokens — Input: {input_tokens}, Output: {output_tokens}")
-        print(f"  Maliyet — ~${input_tokens * 0.30 / 1_000_000 + output_tokens * 2.50 / 1_000_000:.4f}")
+        print(f"  Maliyet — ~${input_tokens * 2.00 / 1_000_000 + output_tokens * 8.00 / 1_000_000:.4f}")
         print(f"  Blog uzunluğu: {len(blog_text)} karakter, ~{len(blog_text.split())} kelime")
         
         return blog_text, usage
     
     except Exception as e:
-        print(f"  ❌ Gemini hatası: {e}")
+        print(f"  ❌ OpenAI hatası: {e}")
         if hasattr(e, 'response') and e.response is not None:
             print(f"  Response: {e.response.text[:500]}")
         return None, {}

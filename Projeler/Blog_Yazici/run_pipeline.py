@@ -282,7 +282,7 @@ def run_from_notion(args):
          [PYTHON_BIN, str(SCRIPT_DIR / "vision_analyzer.py"), frames_dir]),
         ("Adım 3/4: Annotation (Dinamik Mod)",
          [PYTHON_BIN, str(SCRIPT_DIR / "annotate_v3.py"), video_dir]),
-        ("Adım 4/4: Blog Üretimi (Gemini 2.5 Pro)",
+        ("Adım 4/4: Blog Üretimi (OpenAI GPT-4.1)",
          [PYTHON_BIN, str(SCRIPT_DIR / "generate_blog.py"), video_dir]),
     ]
 

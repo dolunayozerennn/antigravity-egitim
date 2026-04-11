@@ -20,7 +20,7 @@ Notion "Yayınlandı" Videoları
   → Vision LLM Analiz (vision_analyzer.py — Groq Llama 4 Scout)
   → Dinamik Annotation (annotate_v3.py — 2x supersampling, auto-highlight)
   → Self-Review ve Auto-Fix (Groq Vision)
-  → Blog Metni Üretimi (generate_blog.py — Gemini 2.5 Pro)
+  → Blog Metni Üretimi (generate_blog.py — OpenAI GPT-4.1)
   → Kapak Görseli Üretimi (cover_generator.py — Apify Flux)
   → Netlify & GitHub Deploy (blog_publisher.py)
   → Yayına Hazır Blog Yazısı
@@ -42,7 +42,7 @@ Blog_Yazici/
 ├── extract_frames.py             ← Adım 1: Video → Frame çıkarma (OpenCV)
 ├── vision_analyzer.py            ← Adım 2: Frame analizi (Groq Llama 4 Scout)
 ├── annotate_v3.py                ← Adım 3: Annotation (dinamik/hardcoded)
-├── generate_blog.py              ← Adım 4: Blog metni üretimi (Gemini 2.5 Pro)
+├── generate_blog.py              ← Adım 4: Blog metni üretimi (OpenAI GPT-4.1)
 ├── cover_generator.py            ← Adım 5: 16:9 Kapak görseli üretimi (Apify Flux)
 ├── blog_publisher.py             ← Adım 6: MDX ve görselleri GitHub'a pushlar (Netlify)
 ├── notion_logger.py              ← 📊 Pipeline adımlarını Notion DB'ye asenkron loglar
@@ -91,7 +91,7 @@ python3 run_pipeline.py typeless5
 # 1. extract_frames.py  → Frame çıkarma
 # 2. vision_analyzer.py → Groq ile frame analizi
 # 3. annotate_v3.py     → Annotation (dinamik/hardcoded)
-# 4. generate_blog.py   → Gemini 2.5 Pro ile blog üretimi
+# 4. generate_blog.py   → OpenAI GPT-4.1 ile blog üretimi
 ```
 
 ---
@@ -103,7 +103,7 @@ python3 run_pipeline.py typeless5
 | Notion | `master.env` → `NOTION_SOCIAL_TOKEN` | Video listesi çekme ve Log Yazma |
 | Notion DB | `master.env` → `NOTION_DB_BLOG_LOGS` | Logların yazılacağı veritabanı ID'si |
 | Groq | `master.env` → `GROQ_API_KEY` | Vision analizi + Self-Review |
-| Gemini | `master.env` → `GEMINI_API_KEY` | Blog metni üretimi |
+| OpenAI | `master.env` → `OPENAI_API_KEY_DOLUNAY_AI` | Blog metni üretimi (GPT-4.1) |
 | Drive SA | `google-service-account.json` | Ekran kaydı indirme |
 
 ---
@@ -112,7 +112,7 @@ python3 run_pipeline.py typeless5
 
 - [x] Frame çıkarma pipeline'ı (extract_frames.py)
 - [x] Vision analizi (vision_analyzer.py — Groq Llama 4 Scout)
-- [x] Blog metni üretimi (generate_blog.py — Gemini 2.5 Pro)
+- [x] Blog metni üretimi (generate_blog.py — OpenAI GPT-4.1)
 - [x] Pilot blog metni üretildi ve beğenildi
 - [x] Annotation v3: 2x supersampling, 900px tutarlı boyut, tematik renkler, caption bar
 - [x] Self-Review Sistemi (Groq Vision ile auto-fix, max 2 iterasyon)
