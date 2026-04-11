@@ -146,7 +146,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 10 * * *` (Günlük, UTC 10:00 = TR 13:00)
-- **Son Deploy:** 2026-04-05 (auto-deploy — SUCCESS doğrulandı)
+- **Son Deploy:** 2026-04-11 (fix: content filter moderate prompt Dolunay profiline uyarlandı + FFmpeg scale fix)
 - **Durum:** ✅ Aktif (TikTok→LinkedIn video pipeline, günde 1 kez)
 - **Env Vars:** LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
 
@@ -161,9 +161,9 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Text_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 8 * * 1,4` (Haftada 2, UTC 08:00 Pazartesi+Perşembe = TR 11:00)
-- **Son Deploy:** 2026-04-07 (auto-deploy — SUCCESS doğrulandı)
+- **Son Deploy:** 2026-04-11 (fix: Gemini→Kie AI Nano Banana 2 görsel geçişi + hata loglaması iyileştirildi)
 - **Durum:** ✅ Aktif (Haftalık AI Haberleri + AI Tavsiyesi LinkedIn postu)
-- **Env Vars:** PERPLEXITY_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
+- **Env Vars:** PERPLEXITY_API_KEY, OPENAI_API_KEY, KIE_API_KEY, LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID
 
 ---
 
