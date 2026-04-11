@@ -215,6 +215,21 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 
 
+### ecom-reklam-otomasyonu (Worker — Telegram Polling)
+- **Platform:** `railway`
+- **Railway Project ID:** `8797307d-7b80-41cb-add0-976c09eaeed4`
+- **Service ID:** `98a3be1e-f6f4-4ca2-8780-2b88bbd2125a`
+- **Environment ID:** `b8353ac5-0ec4-4785-8d72-7aae17f18e56`
+- **Deployment ID:** `9d157686-4bb2-4a02-9682-f93debf2d5c2`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
+- **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
+- **Start Komutu:** `python main.py`
+- **Son Deploy:** 2026-04-11 (ilk deploy — SUCCESS)
+- **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
+- **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM
+
+---
+
 ## 📌 Askıda / Geliştirme Aşamasındaki Projeler (Deploy Yok)
 
 | Proje | Klasör | Platform | Son Değişiklik | Durum | Not |

@@ -4,13 +4,31 @@
 > Yarım kalan işler, TODO'lar ve takip gereken konular burada tutulur.
 > Görev tamamlandığında bu dosyadan silinir.
 
-**Son güncelleme:** 10 Nisan 2026
+**Son güncelleme:** 11 Nisan 2026
 
 ---
 
 ## Aktif TODO'lar
 
-_Şu an bekleyen görev bulunmamaktadır._
+### 🟡 YouTube Otomasyonu V2 — Deploy Bekliyor
+- **Kaynak:** Konuşma `c5b5ac89` → Implementation `930ed4b8`
+- **Plan dosyası:** `.gemini/antigravity/brain/c5b5ac89-6c9f-4719-8698-ebb8473f77ee/implementation_plan.md`
+- **Açıklama:** Chat-based Telegram bot ile video üretim otomasyon sistemi. Tüm kod yazıldı, test geçti.
+- **Öncelik:** Yüksek
+- **Durum:** ✅ Implementation tamamlandı — Deploy öncesi adımlar bekliyor
+
+#### ✅ Tamamlanan İşler (11 Nisan 2026 akşam):
+- 4 yeni dosya: `conversation_manager.py`, `kie_client.py`, `replicate_merger.py`, README
+- 5 rewrite: `main.py`, `config.py`, `prompt_generator.py`, `notion_logger.py`, `youtube_uploader.py`
+- 3 güncelleme: `requirements.txt`, `nixpacks.toml`, `telegram_notifier.py`
+- Syntax testi: 11/11 ✅ | Import testi: 12/12 ✅
+
+#### Deploy Öncesi Gereken Adımlar:
+1. 🔑 `YOUTUBE_CLIENT_SECRET` → Google Cloud Console'dan al (YouTube upload istemiyorsan atlayabilirsin)
+2. 📋 Notion inline database oluştur (V2 property'leri ile) veya atla
+3. 🚀 Railway Worker deploy + env vars ayarla
+
+### ~~🟡 eCom Reklam Otomasyonu~~ → ✅ Tamamlandı, arşive taşındı (11 Nisan 2026 akşam)
 
 ---
 
@@ -20,10 +38,18 @@ _Şu an bekleyen görev bulunmamaktadır._
 > Her konuşma başında bu bölüm kontrol edilir — izleme süresi dolmuş ve 2 temiz kontrol geçilmişse arşive taşınır.
 
 ### 🟡 48-Saat İzleme — Dolunay_Otonom_Kapak (Reels + YouTube)
-- **Deploy tarihi:** 2026-04-10
-- **İzleme bitiş:** 2026-04-12
-- **Kontrol 1:** ⏳ (2026-04-11 — cron çalışması bekleniyor)
-- **Kontrol 2:** ⏳ (2026-04-12 — ikinci cron çalışması)
+- **Deploy tarihi:** 2026-04-10 → **Re-deploy:** 2026-04-11 (crash fix)
+- **İzleme bitiş:** 2026-04-13
+- **Kontrol 1:** ❌ (2026-04-11 — CRASHED: `get_logger() got unexpected keyword argument 'level'` → FIX: `core/logger.py`'ye `level` parametresi eklendi, redeploy SUCCESS)
+- **Kontrol 2:** ⏳ (2026-04-12 — cron çalışması bekleniyor, UTC 06:00 / 07:00)
+- **Kontrol 3:** ⏳ (2026-04-13 — ikinci cron çalışması)
+- **Sonuç:** 2 temiz kontrol → arşive taşı
+
+### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu
+- **Deploy tarihi:** 2026-04-11 (ilk deploy — SUCCESS)
+- **İzleme bitiş:** 2026-04-13
+- **Kontrol 1:** ⏳ (2026-04-12 — Telegram botu aktif mi? /start komutu yanıt veriyor mu?)
+- **Kontrol 2:** ⏳ (2026-04-13 — ikinci kontrol)
 - **Sonuç:** 2 temiz kontrol → arşive taşı
 
 ---
@@ -31,6 +57,15 @@ _Şu an bekleyen görev bulunmamaktadır._
 ## Tamamlanan TODO'lar (Arşiv)
 
 > Aşağıdaki görevler tamamlanmış ve referans amaçlı saklanmaktadır.
+
+### ✅ eCom Reklam Otomasyonu — Full Deploy (11 Nisan 2026)
+- **Kaynak:** Konuşma `3c02fadd` → `8e258f23` → `637879f6` → `359dd649`
+- **Yapılanlar:**
+  1. Parça 1-4: Altyapı, 7 servis, 3 core modül, Telegram bot entry point, README
+  2. Parça 5: Syntax (15/15 ✅), Import (12/12 ✅), Güvenlik taraması (temiz), GitHub push, Railway deploy (SUCCESS)
+  3. 20 dosya, 3076 satır kod, 13 env variable
+- **Railway:** Project `8797307d`, Service `98a3be1e`, Worker (7/24 polling)
+- **48-saat izleme başlatıldı**
 
 ### ✅ Ekosistem Geneli Anti-Klişe Prompt Optimizasyonu (11 Nisan 2026)
 - **Kaynak:** Kullanıcı Talebi — Otonom Kapak ve diğer metin jeneratörleri
