@@ -15,6 +15,7 @@ v2.0 — Fotoğraf opsiyonel, URL'den fotoğraf çekme + teyit mekanizması
 
 import json
 import re
+import threading
 from enum import Enum, auto
 
 from logger import get_logger
@@ -246,15 +247,17 @@ class ConversationManager:
     def __init__(self, openai_service):
         self.openai = openai_service
         self.sessions: dict[int, UserSession] = {}
+        self._lock = threading.Lock()  # Thread-safe session erişimi
 
     def get_session(self, user_id: int, user_name: str = "") -> UserSession:
-        """Kullanıcı session'ını getir veya oluştur."""
-        if user_id not in self.sessions:
-            self.sessions[user_id] = UserSession(user_id, user_name)
-        session = self.sessions[user_id]
-        if user_name:
-            session.user_name = user_name
-        return session
+        """Kullanıcı session'ını getir veya oluştur. Thread-safe."""
+        with self._lock:
+            if user_id not in self.sessions:
+                self.sessions[user_id] = UserSession(user_id, user_name)
+            session = self.sessions[user_id]
+            if user_name:
+                session.user_name = user_name
+            return session
 
     # ── STATE: IDLE → CHATTING ──
 

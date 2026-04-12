@@ -101,28 +101,29 @@ async def _cleanup_idle_sessions():
             import time as _time
             now = _time.time()
             to_delete = []
-            for uid, session in conversation_mgr.sessions.items():
-                if not hasattr(session, '_last_activity'):
-                    continue
-                idle_seconds = now - session._last_activity
-                state_name = session.state.name
+            with conversation_mgr._lock:
+                for uid, session in conversation_mgr.sessions.items():
+                    if not hasattr(session, '_last_activity'):
+                        continue
+                    idle_seconds = now - session._last_activity
+                    state_name = session.state.name
 
-                # PRODUCING ve RESEARCHING korunur (aktif pipeline olabilir)
-                if state_name in ("PRODUCING", "RESEARCHING"):
-                    # 1 saatten eski bile olsa çalışıyor olabilir — 2 saat sınır
-                    if idle_seconds > 7200:
+                    # PRODUCING ve RESEARCHING korunur (aktif pipeline olabilir)
+                    if state_name in ("PRODUCING", "RESEARCHING"):
+                        # 1 saatten eski bile olsa çalışıyor olabilir — 2 saat sınır
+                        if idle_seconds > 7200:
+                            to_delete.append(uid)
+                        continue
+
+                    # IDLE/DELIVERED → 10 dakika sonra temizle
+                    if state_name in ("IDLE", "DELIVERED") and idle_seconds > 600:
                         to_delete.append(uid)
-                    continue
+                    # CHATTING/PHOTO_CONFIRMATION/SCENARIO_APPROVAL → 30 dakika sonra temizle
+                    elif state_name in ("CHATTING", "PHOTO_CONFIRMATION", "SCENARIO_APPROVAL") and idle_seconds > 1800:
+                        to_delete.append(uid)
 
-                # IDLE/DELIVERED → 10 dakika sonra temizle
-                if state_name in ("IDLE", "DELIVERED") and idle_seconds > 600:
-                    to_delete.append(uid)
-                # CHATTING/PHOTO_CONFIRMATION/SCENARIO_APPROVAL → 30 dakika sonra temizle
-                elif state_name in ("CHATTING", "PHOTO_CONFIRMATION", "SCENARIO_APPROVAL") and idle_seconds > 1800:
-                    to_delete.append(uid)
-
-            for uid in to_delete:
-                del conversation_mgr.sessions[uid]
+                for uid in to_delete:
+                    del conversation_mgr.sessions[uid]
             if to_delete:
                 log.info(f"Session temizliği: {len(to_delete)} session kaldırıldı, "
                          f"kalan: {len(conversation_mgr.sessions)}")
@@ -720,17 +721,44 @@ async def _run_production(message, user_id: int):
             await message.reply_text(delivery_msg, parse_mode="Markdown")
 
             # Video dosyasını doğrudan Telegram'a göndermeyi dene
+            # stream=True ile chunk'lı indirme — RAM spike'ı önler
             try:
                 import requests as req
-                video_resp = await asyncio.to_thread(req.get, video_url, timeout=120)
-                if video_resp.status_code == 200 and len(video_resp.content) < 50 * 1024 * 1024:
-                    video_io = io.BytesIO(video_resp.content)
+                MAX_VIDEO_SIZE = 50 * 1024 * 1024  # 50MB Telegram limiti
+                CHUNK_SIZE = 1024 * 1024  # 1MB chunk
+
+                def _download_video_streamed(url: str) -> io.BytesIO | None:
+                    """Video'yu stream ile indirir, 50MB'ı aşarsa None döner."""
+                    resp = req.get(url, timeout=120, stream=True)
+                    resp.raise_for_status()
+                    # Content-Length varsa önce boyut kontrolü
+                    content_length = resp.headers.get("Content-Length")
+                    if content_length and int(content_length) > MAX_VIDEO_SIZE:
+                        resp.close()
+                        return None
+                    buf = io.BytesIO()
+                    downloaded = 0
+                    for chunk in resp.iter_content(chunk_size=CHUNK_SIZE):
+                        downloaded += len(chunk)
+                        if downloaded > MAX_VIDEO_SIZE:
+                            resp.close()
+                            buf.close()
+                            return None
+                        buf.write(chunk)
+                    buf.seek(0)
+                    return buf
+
+                video_io = await asyncio.to_thread(_download_video_streamed, video_url)
+                if video_io is not None:
                     video_io.name = "reklam_videosu.mp4"
                     await message.reply_video(
                         video=InputFile(video_io),
                         caption=f"🎬 {session.collected_data.get('brand_name', '')} — "
                                 f"{session.collected_data.get('product_name', '')}",
                     )
+                    video_io.close()
+                else:
+                    log.warning("Video 50MB'ı aşıyor — Telegram'a gönderilemedi, URL paylaşıldı")
             except Exception:
                 log.warning("Video dosyası Telegram'a gönderilemedi — URL paylaşıldı", exc_info=True)
 

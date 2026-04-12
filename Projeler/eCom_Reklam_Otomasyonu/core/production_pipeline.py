@@ -105,6 +105,33 @@ class ProductionPipeline:
             result["first_frame_url"] = "https://example.com/dry-run-frame.png"
             return result
 
+        # ── KIE AI KREDİ BAKİYE KONTROLÜ ──
+        try:
+            credit_data = await asyncio.to_thread(self.kie.get_credit_balance)
+            credit_balance = 0.0
+            if credit_data and isinstance(credit_data, dict):
+                # API yapısına göre bakiyeyi çek
+                data_block = credit_data.get("data", credit_data)
+                credit_balance = float(
+                    data_block.get("balance", data_block.get("credit", 0))
+                )
+            MIN_CREDIT_THRESHOLD = 0.50  # Minimum $0.50 bakiye gerekli
+            if 0 < credit_balance < MIN_CREDIT_THRESHOLD:
+                error_msg = (
+                    f"Kie AI kredi bakiyesi yetersiz: ${credit_balance:.2f} "
+                    f"(minimum ${MIN_CREDIT_THRESHOLD:.2f} gerekli)"
+                )
+                log.error(error_msg)
+                result["error"] = error_msg
+                if progress_callback:
+                    await progress_callback("credit_error", f"💰 {error_msg}")
+                return result
+            if credit_balance > 0:
+                log.info(f"Kie AI kredi bakiyesi: ${credit_balance:.2f} — yeterli")
+        except Exception:
+            # Kredi sorgulama hatası pipeline'ı durdurmasın — devam et
+            log.warning("Kie AI kredi bakiyesi sorgulanamadı — pipeline devam ediyor", exc_info=True)
+
         # ── NOTION LOG — "Üretiliyor" ──
         notion_page_url = None
         try:
