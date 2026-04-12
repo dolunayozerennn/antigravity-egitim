@@ -19,6 +19,7 @@ import traceback
 # Proje kök dizinini Python path'ine ekle
 sys.path.insert(0, os.path.dirname(__file__))
 
+from infrastructure.chat_logger import chat_tracker
 from telegram import Update, BotCommand
 from telegram.ext import (
     ApplicationBuilder,
@@ -166,6 +167,14 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             log.warning("Yanıt gönderilemedi (her iki parse mode da başarısız)")
 
+    # Chat'i günlüğe kaydet
+    await chat_tracker.log_interaction(
+        session_id=str(user.id),
+        user_msg=text,
+        bot_reply=reply,
+        bot_name="YouTube Bot"
+    )
+
     # Pipeline tetikleme
     if action == "start_pipeline" and config:
         # Race condition koruması: flag'i pipeline başlamadan ÖNCE set et
@@ -198,6 +207,14 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         config = result.get("config")
 
         await waiting_msg.edit_text(reply, parse_mode="Markdown")
+
+        # Chat'i günlüğe kaydet
+        await chat_tracker.log_interaction(
+            session_id=str(user.id),
+            user_msg="[🎤 Sesli Mesaj]",
+            bot_reply=reply,
+            bot_name="YouTube Bot"
+        )
 
         if action == "start_pipeline" and config:
             # Race condition koruması: flag'i pipeline başlamadan ÖNCE set et
