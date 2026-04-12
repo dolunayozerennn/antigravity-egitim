@@ -13,6 +13,7 @@ import time
 import requests
 
 from logger import get_logger
+from utils.retry import retry_api_call
 
 log = get_logger("kie_api")
 
@@ -250,6 +251,7 @@ class KieAIService:
     # 🔧 INTERNAL
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+    @retry_api_call(max_retries=2, base_delay=2.0, operation_name="Kie AI createTask")
     def _create_task(self, payload: dict) -> str:
         """
         createTask endpoint'ine istek gönderir.
@@ -262,27 +264,18 @@ class KieAIService:
         """
         url = f"{self.base_url}/jobs/createTask"
 
-        try:
-            response = requests.post(
-                url,
-                headers=self.headers,
-                json=payload,
-                timeout=REQUEST_TIMEOUT,
-            )
-            response.raise_for_status()
-            data = response.json()
+        response = requests.post(
+            url,
+            headers=self.headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+        data = response.json()
 
-            if data.get("code") != 200:
-                error_msg = data.get("msg", "Bilinmeyen hata")
-                raise ValueError(f"Kie AI createTask hatası: {error_msg} (code={data.get('code')})")
+        if data.get("code") != 200:
+            error_msg = data.get("msg", "Bilinmeyen hata")
+            raise ValueError(f"Kie AI createTask hatası: {error_msg} (code={data.get('code')})")
 
-            task_id = data["data"]["taskId"]
-            return task_id
-
-        except requests.exceptions.HTTPError as e:
-            status = e.response.status_code if e.response else "?"
-            log.error(f"Kie AI HTTP hatası ({status}): {e}", exc_info=True)
-            raise
-        except Exception:
-            log.error("Kie AI createTask genel hatası", exc_info=True)
-            raise
+        task_id = data["data"]["taskId"]
+        return task_id

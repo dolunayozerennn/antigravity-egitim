@@ -11,6 +11,7 @@ Plandaki karar: Doğrudan ElevenLabs API ile üretim.
 import requests
 
 from logger import get_logger
+from utils.retry import retry_api_call
 
 log = get_logger("elevenlabs_service")
 
@@ -98,43 +99,71 @@ class ElevenLabsService:
             },
         }
 
-        try:
-            response = requests.post(
-                url,
-                headers=self.headers,
-                json=payload,
-                timeout=REQUEST_TIMEOUT,
-            )
-            response.raise_for_status()
+        return self._call_tts_api(url, payload)
 
-            audio_bytes = response.content
-            log.info(
-                f"ElevenLabs TTS tamamlandı: voice={voice_name}, "
-                f"{len(text)} char → {len(audio_bytes)} bytes"
-            )
-            return audio_bytes
+    @retry_api_call(max_retries=2, base_delay=2.0, operation_name="ElevenLabs TTS")
+    def _call_tts_api(self, url: str, payload: dict) -> bytes:
+        """TTS API çağrısı — retry mekanizmalı."""
+        response = requests.post(
+            url,
+            headers=self.headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
 
-        except requests.exceptions.HTTPError as e:
-            status = e.response.status_code if e.response else "?"
-            log.error(f"ElevenLabs HTTP hatası ({status}): {e}", exc_info=True)
-            raise
-        except Exception:
-            log.error("ElevenLabs TTS genel hatası", exc_info=True)
-            raise
+        audio_bytes = response.content
+        if len(audio_bytes) < 100:
+            raise RuntimeError("ElevenLabs boş/çok kısa ses döndürdü")
+        log.info(
+            f"ElevenLabs TTS tamamlandı: "
+            f"{len(audio_bytes)} bytes"
+        )
+        return audio_bytes
 
-    def upload_audio_to_hosting(self, audio_bytes: bytes) -> str:
+    def upload_audio_to_hosting(self, audio_bytes: bytes, imgbb_api_key: str = "") -> str:
         """
         Ses dosyasını Replicate'in erişebileceği bir URL'e yükler.
 
         NOT: Replicate video-audio-merge modeli doğrudan URL bekler.
-        Bu fonksiyon ses dosyasını geçici hosting'e atar.
-        Birincil: tmpfiles.org (24 saat TTL)
-        Fallback: file.io (tek kullanımlık)
+
+        Sıralama:
+        1. ImgBB (base64 — kalıcı, güvenilir)
+        2. tmpfiles.org fallback (24 saat TTL)
+
+        Args:
+            audio_bytes: MP3 ses verisi
+            imgbb_api_key: ImgBB API anahtarı (pipeline'dan geçilir)
 
         Returns:
             str: Public erişimli audio URL
         """
-        # ── 1. tmpfiles.org (birincil) ──
+        import base64
+
+        # ── 1. ImgBB (birincil — kalıcı hosting) ──
+        # ImgBB aslında görsel servisi ama base64 ile her türlü dosya yüklenebilir
+        if imgbb_api_key:
+            try:
+                b64 = base64.b64encode(audio_bytes).decode("utf-8")
+                response = requests.post(
+                    "https://api.imgbb.com/1/upload",
+                    data={
+                        "key": imgbb_api_key,
+                        "image": b64,
+                        "name": "voiceover_audio",
+                    },
+                    timeout=REQUEST_TIMEOUT,
+                )
+                response.raise_for_status()
+                data = response.json()
+                if data.get("success"):
+                    direct_url = data["data"]["url"]
+                    log.info(f"Ses dosyası yüklendi (ImgBB): {direct_url} ({len(audio_bytes)} bytes)")
+                    return direct_url
+            except Exception:
+                log.warning("ImgBB audio upload başarısız, tmpfiles fallback...", exc_info=True)
+
+        # ── 2. tmpfiles.org (fallback) ──
         try:
             response = requests.post(
                 "https://tmpfiles.org/api/v1/upload",
@@ -143,19 +172,15 @@ class ElevenLabsService:
             )
             response.raise_for_status()
             data = response.json()
-
-            # tmpfiles.org URL formatını doğrudan erişime çevir
             tmp_url = data["data"]["url"]
-            # https://tmpfiles.org/12345/file.mp3 → https://tmpfiles.org/dl/12345/file.mp3
             direct_url = tmp_url.replace("tmpfiles.org/", "tmpfiles.org/dl/")
-
             log.info(f"Ses dosyası yüklendi (tmpfiles): {direct_url} ({len(audio_bytes)} bytes)")
             return direct_url
 
         except Exception:
-            log.warning("tmpfiles.org başarısız, file.io fallback deneniyor...", exc_info=True)
+            log.warning("tmpfiles.org başarısız, file.io deneniyor...", exc_info=True)
 
-        # ── 2. file.io (fallback) ──
+        # ── 3. file.io (son çare) ──
         try:
             response = requests.post(
                 "https://file.io",
@@ -164,15 +189,13 @@ class ElevenLabsService:
             )
             response.raise_for_status()
             data = response.json()
-
             if data.get("success"):
                 direct_url = data["link"]
                 log.info(f"Ses dosyası yüklendi (file.io): {direct_url} ({len(audio_bytes)} bytes)")
                 return direct_url
             raise ValueError(f"file.io upload failed: {data}")
-
         except Exception:
-            log.error("Ses dosyası hosting hatası (tüm yöntemler başarısız)", exc_info=True)
+            log.error("Ses dosyası hosting hatası (3 yöntem de başarısız)", exc_info=True)
             raise
 
     def list_voices(self) -> list[dict]:

@@ -8,6 +8,7 @@ Sonuçları yapılandırılmış formatta döndürür.
 import requests
 
 from logger import get_logger
+from utils.retry import retry_api_call
 
 log = get_logger("perplexity_service")
 
@@ -53,43 +54,43 @@ class PerplexityService:
             f"{lang_note}"
         )
 
-        try:
-            payload = {
-                "model": "sonar",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": (
-                            "Sen bir marka araştırma asistanısın. Verilen marka hakkında "
-                            "güncel, doğrulanmış bilgiler sun. Özgün bilgi yoksa bunu belirt."
-                        ),
-                    },
-                    {"role": "user", "content": query},
-                ],
-                "temperature": 0.3,
-                "max_tokens": 1500,
-            }
+        payload = {
+            "model": "sonar",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "Sen bir marka araştırma asistanısın. Verilen marka hakkında "
+                        "güncel, doğrulanmış bilgiler sun. Özgün bilgi yoksa bunu belirt."
+                    ),
+                },
+                {"role": "user", "content": query},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 1500,
+        }
 
-            response = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=self.headers,
-                json=payload,
-                timeout=REQUEST_TIMEOUT,
-            )
-            response.raise_for_status()
+        return self._call_perplexity(payload, brand_name)
 
-            data = response.json()
-            content = data["choices"][0]["message"]["content"]
+    @retry_api_call(max_retries=2, base_delay=2.0, operation_name="Perplexity research")
+    def _call_perplexity(self, payload: dict, brand_name: str) -> str:
+        """Perplexity API çağrısı — retry mekanizmalı."""
+        response = requests.post(
+            f"{self.base_url}/chat/completions",
+            headers=self.headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
 
-            log.info(f"Marka araştırması tamamlandı: '{brand_name}' — {len(content)} karakter")
-            return content
+        data = response.json()
+        # Güvenli erişim — eksik key'lerde KeyError önlenir
+        choices = data.get("choices", [])
+        if not choices:
+            raise RuntimeError(f"Perplexity boş yanıt döndü: {brand_name}")
+        content = choices[0].get("message", {}).get("content", "")
+        if not content.strip():
+            raise RuntimeError(f"Perplexity boş content döndü: {brand_name}")
 
-        except requests.exceptions.Timeout:
-            log.error(f"Perplexity timeout: '{brand_name}'")
-            raise RuntimeError(f"Marka araştırması zaman aşımına uğradı: {brand_name}")
-        except requests.exceptions.HTTPError as e:
-            log.error(f"Perplexity HTTP hatası: {e}", exc_info=True)
-            raise RuntimeError(f"Marka araştırmasında HTTP hatası: {e}")
-        except Exception:
-            log.error("Perplexity genel hata", exc_info=True)
-            raise RuntimeError("Marka araştırması yapılamadı.")
+        log.info(f"Marka araştırması tamamlandı: '{brand_name}' — {len(content)} karakter")
+        return content

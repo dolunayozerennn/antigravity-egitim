@@ -257,7 +257,18 @@ class OpenAIService:
             return json.loads(content)
 
         except json.JSONDecodeError:
-            log.error("OpenAI JSON parse hatası", exc_info=True)
+            # GPT bazen JSON'u markdown code fence içinde döndürebilir
+            # ```json {...} ``` → JSON bloğu çıkart
+            import re
+            match = re.search(r'\{[\s\S]*\}', content)
+            if match:
+                try:
+                    recovered = json.loads(match.group())
+                    log.warning("JSON markdown code fence'den kurtarıldı")
+                    return recovered
+                except json.JSONDecodeError:
+                    pass
+            log.error("OpenAI JSON parse hatası (kurtarılamadı)", exc_info=True)
             raise
         except Exception:
             log.error("OpenAI JSON chat hatası", exc_info=True)

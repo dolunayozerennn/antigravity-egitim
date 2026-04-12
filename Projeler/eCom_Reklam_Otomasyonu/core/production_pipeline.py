@@ -122,6 +122,9 @@ class ProductionPipeline:
                 user_name=user_name,
             )
             result["notion_page_url"] = notion_page_url or ""
+            # Page ID'yi doğrudan sakla (Önerildi: URL parse'dan daha güvenilir)
+            if isinstance(notion_page_url, str) and notion_page_url:
+                result["_notion_page_id"] = self._extract_page_id(notion_page_url)
         except Exception:
             log.error("Notion log oluşturulamadı", exc_info=True)
             # Notion hatası pipeline'ı durdurmasın
@@ -213,10 +216,47 @@ class ProductionPipeline:
 
             if video_result["status"] != "success" or not video_result.get("urls"):
                 error_msg = video_result.get("error", "Video üretimi başarısız")
-                raise RuntimeError(f"Seedance 2.0 hatası: {error_msg}")
+                
+                # P1-4: Safety filter — prompt rewrite ile tekrar dene
+                if any(keyword in error_msg.lower() for keyword in ["safety", "sensitive", "content policy", "nsfw"]):
+                    log.warning(f"Safety filter tetiklendi: {error_msg[:100]}. Prompt yeniden yazılıyor...")
+                    if progress_callback:
+                        await progress_callback("retry_safety", "⚠️ Güvenlik filtresi tetiklendi — prompt yeniden yazılıyor...")
+                    
+                    try:
+                        rewritten_prompt = await self._rewrite_prompt_for_safety(video_prompt)
+                        if rewritten_prompt and rewritten_prompt != video_prompt:
+                            log.info(f"Prompt yeniden yazıldı: {len(video_prompt)} -> {len(rewritten_prompt)} karakter")
+                            video_task2 = await asyncio.to_thread(
+                                self.kie.create_video,
+                                prompt=rewritten_prompt,
+                                duration=duration,
+                                resolution=resolution,
+                                aspect_ratio=aspect_ratio,
+                                generate_audio=generate_audio,
+                                first_frame_url=first_frame_url,
+                            )
+                            video_result2 = await asyncio.to_thread(self.kie.poll_task, video_task2)
+                            if video_result2["status"] == "success" and video_result2.get("urls"):
+                                raw_video_url = video_result2["urls"][0]
+                                result["raw_video_url"] = raw_video_url
+                                log.info(f"Safety rewrite başarılı: {raw_video_url[:60]}...")
+                                # Normal akışa devam — aşağıdaki adımlara geç
+                            else:
+                                raise RuntimeError(f"Seedance 2.0 safety rewrite de başarısız: {video_result2.get('error', '?')}")
+                        else:
+                            raise RuntimeError(f"Seedance 2.0 hatası: {error_msg}")
+                    except RuntimeError:
+                        raise
+                    except Exception as rewrite_err:
+                        log.error(f"Prompt rewrite hatası: {rewrite_err}", exc_info=True)
+                        raise RuntimeError(f"Seedance 2.0 hatası (safety): {error_msg}")
+                else:
+                    raise RuntimeError(f"Seedance 2.0 hatası: {error_msg}")
+            else:
+                raw_video_url = video_result["urls"][0]
+                result["raw_video_url"] = raw_video_url
 
-            raw_video_url = video_result["urls"][0]
-            result["raw_video_url"] = raw_video_url
             log.info(f"Video üretildi: {raw_video_url[:60]}...")
 
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -258,10 +298,11 @@ class ProductionPipeline:
                         style=0.4,
                     )
 
-                    # Ses dosyasını hosting'e yükle (Replicate erişebilsin)
+                    # Ses dosyasını hosting'e yükle (ImgBB birincil, tmpfiles yedek)
                     audio_url = await asyncio.to_thread(
                         self.elevenlabs.upload_audio_to_hosting,
                         audio_bytes,
+                        imgbb_api_key=self.imgbb.api_key,
                     )
                     result["audio_url"] = audio_url
                     log.info(f"Dış ses hazır: {audio_url[:60]}...")
@@ -294,15 +335,17 @@ class ProductionPipeline:
             # ADIM 5: Notion güncelle — "Tamamlandı"
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             if notion_page_url:
-                # Notion page ID'yi URL'den çıkar
-                page_id = self._extract_page_id(notion_page_url)
+                page_id = result.get("_notion_page_id") or self._extract_page_id(notion_page_url)
                 if page_id:
-                    await asyncio.to_thread(
-                        self.notion.update_production_status,
-                        page_id=page_id,
-                        status="Tamamlandı",
-                        video_url=final_video_url,
-                    )
+                    try:
+                        await asyncio.to_thread(
+                            self.notion.update_production_status,
+                            page_id=page_id,
+                            status="Tamamlandı",
+                            video_url=final_video_url,
+                        )
+                    except Exception:
+                        log.error("Notion 'Tamamlandı' güncellemesi başarısız", exc_info=True)
 
             if progress_callback:
                 await progress_callback("complete", "✅ Video başarıyla üretildi!")
@@ -317,16 +360,18 @@ class ProductionPipeline:
             result["error"] = error_msg
             log.error(f"Pipeline hatası: {error_msg}", exc_info=True)
 
-            # Notion güncelle — "Hata"
             if notion_page_url:
-                page_id = self._extract_page_id(notion_page_url)
+                page_id = result.get("_notion_page_id") or self._extract_page_id(notion_page_url)
                 if page_id:
-                    await asyncio.to_thread(
-                        self.notion.update_production_status,
-                        page_id=page_id,
-                        status="Hata",
-                        error_message=error_msg,
-                    )
+                    try:
+                        await asyncio.to_thread(
+                            self.notion.update_production_status,
+                            page_id=page_id,
+                            status="Hata",
+                            error_message=error_msg,
+                        )
+                    except Exception:
+                        log.error("Notion 'Hata' güncellemesi başarısız", exc_info=True)
 
             if progress_callback:
                 await progress_callback("error", f"❌ Üretim hatası: {error_msg[:200]}")
@@ -341,12 +386,8 @@ class ProductionPipeline:
         if not notion_url:
             return None
         try:
-            # URL formatı: https://www.notion.so/Title-abc123def456...
-            # Son 32 karakter (tire olmadan) page ID
             clean = notion_url.rstrip("/").split("?")[0]
             last_part = clean.split("-")[-1] if "-" in clean else clean.split("/")[-1]
-
-            # 32 hex karakter → UUID formatına çevir
             if len(last_part) == 32:
                 return (
                     f"{last_part[:8]}-{last_part[8:12]}-{last_part[12:16]}-"
@@ -355,3 +396,38 @@ class ProductionPipeline:
             return last_part
         except Exception:
             return None
+
+    @staticmethod
+    async def _rewrite_prompt_for_safety(original_prompt: str) -> str:
+        """
+        Safety filter'a takılan prompt'u daha güvenli hale yeniden yazar.
+        GPT-4.1 Mini kullanır.
+        """
+        import openai
+        import os
+        try:
+            client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
+            response = client.chat.completions.create(
+                model="gpt-4.1-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a prompt rewriting assistant. The following video generation prompt "
+                            "was rejected by a content safety filter. Rewrite it to be safe while "
+                            "preserving the creative intent. Remove any potentially sensitive "
+                            "references to human bodies, violence, or controversial topics. "
+                            "Focus on product features, aesthetics, and cinematic quality. "
+                            "Return ONLY the rewritten prompt, nothing else."
+                        ),
+                    },
+                    {"role": "user", "content": f"Original prompt:\n{original_prompt}"},
+                ],
+                max_completion_tokens=800,
+            )
+            rewritten = response.choices[0].message.content or ""
+            return rewritten.strip()
+        except Exception as e:
+            from logger import get_logger
+            get_logger("production_pipeline").error(f"Prompt rewrite hatası: {e}", exc_info=True)
+            return ""

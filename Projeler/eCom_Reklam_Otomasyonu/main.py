@@ -94,7 +94,7 @@ def _handle_task_exception(task: asyncio.Task):
 
 
 async def _cleanup_idle_sessions():
-    """Bellek sızıntısını önle — DELIVERED/IDLE session'ları periyodik temizle."""
+    """Bellek sızıntısını önle — inaktif session'ları periyodik temizle."""
     while True:
         await asyncio.sleep(300)  # 5 dakikada bir kontrol et
         try:
@@ -102,15 +102,30 @@ async def _cleanup_idle_sessions():
             now = _time.time()
             to_delete = []
             for uid, session in conversation_mgr.sessions.items():
-                # 10 dakikadan eski IDLE veya DELIVERED session'ları temizle
-                if hasattr(session, '_last_activity'):
-                    if now - session._last_activity > 600:
-                        if session.state.name in ("IDLE", "DELIVERED"):
-                            to_delete.append(uid)
+                if not hasattr(session, '_last_activity'):
+                    continue
+                idle_seconds = now - session._last_activity
+                state_name = session.state.name
+
+                # PRODUCING ve RESEARCHING korunur (aktif pipeline olabilir)
+                if state_name in ("PRODUCING", "RESEARCHING"):
+                    # 1 saatten eski bile olsa çalışıyor olabilir — 2 saat sınır
+                    if idle_seconds > 7200:
+                        to_delete.append(uid)
+                    continue
+
+                # IDLE/DELIVERED → 10 dakika sonra temizle
+                if state_name in ("IDLE", "DELIVERED") and idle_seconds > 600:
+                    to_delete.append(uid)
+                # CHATTING/PHOTO_CONFIRMATION/SCENARIO_APPROVAL → 30 dakika sonra temizle
+                elif state_name in ("CHATTING", "PHOTO_CONFIRMATION", "SCENARIO_APPROVAL") and idle_seconds > 1800:
+                    to_delete.append(uid)
+
             for uid in to_delete:
                 del conversation_mgr.sessions[uid]
             if to_delete:
-                log.info(f"Session temizliği: {len(to_delete)} session kaldırıldı")
+                log.info(f"Session temizliği: {len(to_delete)} session kaldırıldı, "
+                         f"kalan: {len(conversation_mgr.sessions)}")
         except Exception:
             log.error("Session temizleme hatası", exc_info=True)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

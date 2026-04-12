@@ -69,10 +69,17 @@ class ReplicateService:
 
                 if prediction.status == "succeeded":
                     output_url = prediction.output
+                    if output_url is None:
+                        raise RuntimeError(f"Replicate succeeded ama output None: {prediction.id}")
                     if isinstance(output_url, list):
-                        output_url = output_url[0]
+                        output_url = output_url[0] if output_url else None
+                    if output_url is None:
+                        raise RuntimeError(f"Replicate succeeded ama output boş liste: {prediction.id}")
                     # Replicate SDK v1.x FileOutput objesi dönebilir — str cast
                     output_url = str(output_url)
+                    # URL validasyonu
+                    if not output_url.startswith("http"):
+                        raise RuntimeError(f"Replicate geçersiz output URL: {output_url[:100]}")
                     log.info(
                         f"Video+ses birleştirme tamamlandı: {prediction.id} "
                         f"({attempt} deneme)"
