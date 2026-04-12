@@ -237,6 +237,9 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
     video_paths = []
     start_time = time.time()
 
+    async def progress_update(msg: str):
+        await _safe_edit(status_msg, f"🎬 Video üretiliyor... {msg}")
+
     try:
         # ── ADIM 1: Notion Entry ──
         await asyncio.to_thread(tracker.create_entry, config, trigger="telegram")
@@ -269,6 +272,7 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
                 duration=scenes[0].get("duration", settings.DEFAULT_DURATION),
                 audio=config.get("audio", True),
                 resolution=settings.DEFAULT_RESOLUTION,
+                progress_callback=progress_update,
             )
             video_urls = [video_url]
         else:
@@ -279,6 +283,7 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
                 orientation=config.get("orientation", "portrait"),
                 audio=config.get("audio", True),
                 resolution=settings.DEFAULT_RESOLUTION,
+                progress_callback=progress_update,
             )
 
         await asyncio.to_thread(tracker.update_with_video, video_urls[0])
@@ -307,7 +312,7 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
 
         # ── ADIM 5: Video İndir ──
         await _safe_edit(status_msg, "📥 Video indiriliyor...")
-        video_path = download_video(final_video_url)
+        video_path = await asyncio.to_thread(download_video, final_video_url)
         video_paths.append(video_path)
 
         # ── ADIM 6: YouTube Upload ──
@@ -336,6 +341,28 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
         success_lines.append(f"\n📊 Model: {model} | Sahneler: {clip_count}")
 
         await _safe_edit(status_msg, "\n".join(success_lines), parse_mode="Markdown")
+
+        # Videoyu kullanıcıya gönder (50MB Limitine dikkat)
+        if video_path and os.path.exists(video_path):
+            file_size_mb = os.path.getsize(video_path) / (1024 * 1024)
+            if file_size_mb < 49:
+                try:
+                    await _safe_edit(status_msg, "\n".join(success_lines) + "\n\n📤 Video Telegram'a yükleniyor...", parse_mode="Markdown")
+                    with open(video_path, "rb") as video_file:
+                        await update.message.reply_video(
+                            video=video_file, 
+                            caption=f"İşte videonuz! 🎬\n*{prompt_data.get('youtube_title', 'Video')}*",
+                            parse_mode="Markdown",
+                            read_timeout=120,
+                            write_timeout=120,
+                            connect_timeout=60
+                        )
+                    await _safe_edit(status_msg, "\n".join(success_lines) + "\n\n✅ Video Telegram'a gönderildi!", parse_mode="Markdown")
+                except Exception as e:
+                    log.error(f"Telegram video gönderme hatası: {e}")
+                    await _safe_edit(status_msg, "\n".join(success_lines) + f"\n\n⚠️ Video Telegram'a gönderilemedi: `{str(e)[:50]}`", parse_mode="Markdown")
+            else:
+                log.warning(f"Video dosya boyutu çok büyük ({file_size_mb:.1f}MB), Telegram'a gönderilmedi.")
 
         if not youtube_url:
             if settings.YOUTUBE_ENABLED:

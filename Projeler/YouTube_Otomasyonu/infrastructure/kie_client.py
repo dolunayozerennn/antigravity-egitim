@@ -72,6 +72,7 @@ class KieClient:
         duration: int = 10,
         audio: bool = True,
         resolution: str = "720p",
+        progress_callback: callable = None,
     ) -> str:
         """
         Tek bir video üretir — 4 katmanlı içerik güvenliği ile.
@@ -134,7 +135,7 @@ class KieClient:
                 await asyncio.sleep(initial_wait)
 
                 # ── Polling ──
-                video_url = await self._poll_for_result(cfg, task_id)
+                video_url = await self._poll_for_result(cfg, task_id, progress_callback)
                 return video_url
 
             except ContentFilterError as cfe:
@@ -176,7 +177,7 @@ class KieClient:
                             log.info(f"⏳ Fallback bekleme: {initial_wait} saniye...")
                             await asyncio.sleep(initial_wait)
 
-                            video_url = await self._poll_for_result(fallback_cfg, task_id)
+                            video_url = await self._poll_for_result(fallback_cfg, task_id, progress_callback)
                             log.info(f"✅ Fallback model ({fallback_model}) başarılı!")
                             return video_url
 
@@ -194,6 +195,7 @@ class KieClient:
         orientation: str = "portrait",
         audio: bool = True,
         resolution: str = "720p",
+        progress_callback: callable = None,
     ) -> list[str]:
         """
         Çoklu sahne üretimi — sıralı olarak üretir (paralel değil, rate limit'e uyar).
@@ -216,6 +218,7 @@ class KieClient:
                 duration=scene.get("duration", settings.DEFAULT_DURATION),
                 audio=audio,
                 resolution=resolution,
+                progress_callback=progress_callback,
             )
             video_urls.append(url)
             log.info(f"✅ Sahne {i}/{total} tamamlandı: {url[:60]}...")
@@ -287,7 +290,7 @@ class KieClient:
 
         return task_id
 
-    async def _poll_for_result(self, cfg: dict, task_id: str) -> str:
+    async def _poll_for_result(self, cfg: dict, task_id: str, progress_callback: callable = None) -> str:
         """Task durumunu sorgular ve video URL'sini döndürür."""
         url = f"{self._base_url}{cfg['poll_url']}"
         interval = settings.POLL_INTERVAL
@@ -339,7 +342,13 @@ class KieClient:
                             raise RuntimeError(f"Video üretimi başarısız: {fail_msg}")
 
                     else:
+                        msg_str = f"Durum: {state} ({attempt}/{max_attempts})"
                         log.info(f"   [{attempt}/{max_attempts}] Durum: {state}... ({interval}s sonra tekrar)")
+                        if progress_callback:
+                            try:
+                                await progress_callback(msg_str)
+                            except Exception as e:
+                                log.debug(f"Progress callback hatası: {e}")
                         await asyncio.sleep(interval)
 
                 except httpx.RequestError as e:
