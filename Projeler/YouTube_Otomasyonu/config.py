@@ -73,6 +73,7 @@ class Config:
             os.environ.get("NOTION_API_TOKEN", "")
         )
         self.NOTION_DB_ID = os.environ.get("NOTION_DB_YOUTUBE_OTOMASYON", "")
+        self.NOTION_CHAT_DB_ID = os.environ.get("NOTION_CHAT_DB_ID", "34095514-0a32-81c9-94a6-f269b060c377")
         self.NOTION_ENABLED = bool(self.NOTION_TOKEN and self.NOTION_DB_ID)
 
         # ── Polling Ayarları (Kie AI video üretimi) ──

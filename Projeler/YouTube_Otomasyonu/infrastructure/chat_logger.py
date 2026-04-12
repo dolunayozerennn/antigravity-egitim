@@ -16,7 +16,7 @@ class ChatTracker:
     def __init__(self):
         # Bu tablo Social Token üzerine yaratıldı, bu sebeple öncelikli onu kontrol et.
         self.token = os.environ.get("NOTION_SOCIAL_TOKEN", settings.NOTION_TOKEN)
-        self.db_id = os.environ.get("NOTION_CHAT_DB_ID")
+        self.db_id = os.environ.get("NOTION_CHAT_DB_ID", getattr(settings, "NOTION_CHAT_DB_ID", ""))
         self.enabled = bool(self.token and self.db_id)
 
     async def log_interaction(self, session_id: str, user_msg: str, bot_reply: str, bot_name: str = "YouTube Bot"):
