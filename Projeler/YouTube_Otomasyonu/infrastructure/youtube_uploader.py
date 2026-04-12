@@ -157,7 +157,14 @@ def _get_credentials():
             return creds
         except Exception as e:
             log.error(f"❌ ENV-based token refresh başarısız: {e}", exc_info=True)
-            # Lokal fallback'e düş
+            # Production'da lokal fallback ÇALIŞMAZ — direkt fail et
+            if settings.ENV == "production":
+                raise RuntimeError(
+                    f"YouTube OAuth2 token refresh başarısız (Railway): {e}. "
+                    "YOUTUBE_REFRESH_TOKEN, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET "
+                    "env variable'larını kontrol edin."
+                )
+            # Lokal fallback'e düş (sadece development)
 
     # ── Yöntem 2: Lokal Dosyadan Oku (Geliştirme) ──
     token_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "youtube_token.json")

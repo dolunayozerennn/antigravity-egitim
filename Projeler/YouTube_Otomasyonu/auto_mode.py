@@ -200,16 +200,12 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
 
         # Telegram bildirimi
         if config.get("notify_telegram"):
-            summary = {
-                "topic": selected_topic,
+            content = {
                 "title": prompt_data.get("youtube_title", ""),
-                "model": model,
-                "clips": actual_clips,
-                "video_url": final_video_url,
-                "youtube_url": youtube_url,
-                "elapsed": elapsed,
+                "description": prompt_data.get("youtube_description", ""),
+                "prompt": scenes[0].get("prompt", "") if scenes else "",
             }
-            await notify_success(summary)
+            notify_success(content, video_url=final_video_url, youtube_url=youtube_url)
 
         return {
             "success": True,
@@ -225,7 +221,7 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
         tracker.update_with_error(str(e))
 
         if config.get("notify_telegram"):
-            await notify_error(selected_topic, str(e))
+            notify_error("auto_pipeline", str(e), topic_info=selected_topic)
 
         return {"success": False, "error": str(e)}
 

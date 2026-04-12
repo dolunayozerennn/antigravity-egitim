@@ -5,6 +5,7 @@ Tüm gerekli env variable'ları boot time'da doğrular.
 """
 import os
 import sys
+import logging
 import shutil
 
 
@@ -110,5 +111,5 @@ class Config:
 try:
     settings = Config()
 except EnvironmentError as e:
-    print(f"BOOT ERROR: {e}")
+    logging.critical(f"BOOT ERROR: {e}", exc_info=True)
     sys.exit(1)

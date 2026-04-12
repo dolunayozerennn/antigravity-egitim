@@ -5,6 +5,8 @@ Seedance 2.0 ile profesyonel ürün reklam videoları üreten
 Telegram bot. Doğal sohbet ile bilgi toplar, senaryo üretir,
 video üretim pipeline'ını çalıştırır.
 
+v2.0 — Fotoğraf opsiyonel, URL'den fotoğraf çekme + teyit mekanizması
+
 Author: Antigravity Ecosystem
 """
 
@@ -40,6 +42,7 @@ from services.kie_api import KieAIService
 from services.elevenlabs_service import ElevenLabsService
 from services.replicate_service import ReplicateService
 from services.notion_service import NotionService
+from services.web_scraper_service import WebScraperService
 
 # ── Core Logic ──
 from core.conversation_manager import ConversationManager, ConversationState
@@ -61,6 +64,7 @@ kie_svc = KieAIService(api_key=settings.KIE_API_KEY, base_url=settings.KIE_BASE_
 elevenlabs_svc = ElevenLabsService(api_key=settings.ELEVENLABS_API_KEY, model_id=settings.ELEVENLABS_MODEL)
 replicate_svc = ReplicateService(api_token=settings.REPLICATE_API_TOKEN)
 notion_svc = NotionService(token=settings.NOTION_TOKEN, database_id=settings.NOTION_DB_ID)
+web_scraper_svc = WebScraperService()
 
 # Core modüller — DI ile servisler enjekte edilir
 conversation_mgr = ConversationManager(openai_service=openai_svc)
@@ -130,6 +134,7 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state_labels = {
         ConversationState.IDLE: "⚪ Boşta",
         ConversationState.CHATTING: "💬 Bilgi toplama",
+        ConversationState.PHOTO_CONFIRMATION: "📸 Fotoğraf teyidi",
         ConversationState.RESEARCHING: "🔍 Araştırma",
         ConversationState.SCENARIO_APPROVAL: "📋 Senaryo onayı",
         ConversationState.PRODUCING: "🎬 Video üretimi",
@@ -139,13 +144,15 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = f"📊 **Durum:** {status_text}\n"
     if session.state == ConversationState.CHATTING:
-        missing = session.get_missing_fields()
+        missing = session.get_missing_required_fields()
         if missing:
             msg += f"📋 Eksik bilgiler: {', '.join(missing)}\n"
-        if session.collected_data.get("product_image"):
+        if session.has_photo():
             msg += "📸 Ürün fotoğrafı: ✅\n"
+        elif session.has_url():
+            msg += "🔗 Ürün URL: ✅ (fotoğraf çekilecek)\n"
         else:
-            msg += "📸 Ürün fotoğrafı: ❌\n"
+            msg += "📸 Ürün fotoğrafı: ❌ (text-to-video)\n"
 
     mode = "🏜️ DRY-RUN" if settings.IS_DRY_RUN else "🟢 PRODUCTION"
     msg += f"\n⚙️ **Mod:** {mode}"
@@ -170,10 +177,37 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = user.first_name or user.username or ""
     result = conversation_mgr.handle_text_message(user.id, text, user_name)
 
-    await update.message.reply_text(result["reply"], parse_mode="Markdown")
+    # ── SCENARIO_APPROVAL: Metin tabanlı onay ──
+    if result.get("action") == "approve":
+        session = conversation_mgr.get_session(user.id)
+        session.state = ConversationState.PRODUCING
+        await update.message.reply_text(
+            "🚀 **Üretim başlıyor!**\n"
+            "Her adımda bildirim alacaksın.",
+            parse_mode="Markdown",
+        )
+        asyncio.create_task(
+            _run_production(update.effective_message, user.id)
+        )
+        return
 
-    # Tüm bilgiler toplandı → araştırma ve senaryo üretimine geç
-    if result["ready_for_research"]:
+    # ── PHOTO_CONFIRMATION: Sonraki fotoğrafı göster ──
+    if result.get("action") == "show_next_photo":
+        next_photo = result.get("_next_photo")
+        if next_photo:
+            await _send_photo_for_confirmation(
+                update.effective_message, user.id, next_photo
+            )
+            return
+
+    # ── Normal yanıt ──
+    if result.get("reply"):
+        await update.message.reply_text(result["reply"], parse_mode="Markdown")
+
+    # ── Tüm bilgiler toplandı: URL scrape mi yoksa araştırma mı? ──
+    if result.get("needs_url_scrape"):
+        await _run_url_scrape(update, context)
+    elif result.get("ready_for_research"):
         await _run_research_and_scenario(update, context)
 
 
@@ -184,6 +218,12 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await unauthorized_reply(update)
 
     user_name = user.first_name or user.username or ""
+
+    # PHOTO_CONFIRMATION state'inde fotoğraf geldiyse — kullanıcı kendi fotoğrafını gönderiyor
+    session = conversation_mgr.get_session(user.id)
+    if session.state == ConversationState.PHOTO_CONFIRMATION:
+        # Teyit akışını kır — kullanıcının kendi fotoğrafını kullan
+        pass  # Devam et, aşağıda handle_photo ile işlenecek
 
     # En yüksek çözünürlüklü fotoğrafı al
     photo = update.message.photo[-1]
@@ -211,7 +251,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(result["reply"], parse_mode="Markdown")
 
     # Tüm bilgiler toplandıysa araştırmaya geç
-    if result["ready_for_research"]:
+    if result.get("ready_for_research"):
         await _run_research_and_scenario(update, context)
 
 
@@ -250,8 +290,105 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     result = conversation_mgr.handle_photo(user.id, photo_url, user_name)
     await update.message.reply_text(result["reply"], parse_mode="Markdown")
 
-    if result["ready_for_research"]:
+    if result.get("ready_for_research"):
         await _run_research_and_scenario(update, context)
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 📸 URL'DEN FOTOĞRAF ÇEKME + TEYİT
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async def _run_url_scrape(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """URL'den ürün fotoğraflarını çeker ve teyit akışını başlatır."""
+    user = update.effective_user
+    session = conversation_mgr.get_session(user.id)
+    product_url = session.collected_data.get("product_url")
+
+    if not product_url:
+        log.error("URL scrape istendi ama product_url boş!")
+        await update.effective_message.reply_text(
+            "⚠️ URL bulunamadı. Lütfen ürün sayfasının linkini paylaş.",
+            parse_mode="Markdown",
+        )
+        return
+
+    await update.effective_message.reply_text(
+        f"🔍 Ürün fotoğrafı aranıyor...\n`{product_url[:60]}{'...' if len(product_url) > 60 else ''}`",
+        parse_mode="Markdown",
+    )
+
+    try:
+        images = web_scraper_svc.scrape_product_images(product_url, max_images=5)
+    except Exception:
+        log.error("URL scrape hatası", exc_info=True)
+        images = []
+
+    if not images:
+        # Fotoğraf bulunamadı
+        await update.effective_message.reply_text(
+            "😓 Bu sayfada uygun ürün fotoğrafı bulamadım.\n\n"
+            "Şu seçeneklerin var:\n"
+            "• Doğrudan **ürün fotoğrafı gönder** 📤\n"
+            "• **Fotoğrafsız devam et** yaz — text-to-video ile çalışırız",
+            parse_mode="Markdown",
+        )
+        # State'i CHATTING'de bırak — kullanıcı fotoğraf gönderebilir veya devamını söyleyebilir
+        return
+
+    # Fotoğraflar bulundu — teyit akışını başlat
+    conversation_mgr.start_photo_confirmation(user.id, images)
+
+    # İlk fotoğrafı göster
+    first_img = images[0]
+    await _send_photo_for_confirmation(
+        update.effective_message, user.id, first_img,
+        total=len(images), current=1,
+    )
+
+
+async def _send_photo_for_confirmation(
+    message, user_id: int, image: dict,
+    total: int | None = None, current: int | None = None,
+):
+    """Fotoğrafı inline butonlarla birlikte Telegram'a gönderir."""
+    session = conversation_mgr.get_session(user_id)
+
+    if total is None:
+        total = len(session.scraped_images)
+    if current is None:
+        current = session.current_photo_index + 1
+
+    caption = f"📸 **Fotoğraf {current}/{total}**"
+    if image.get("alt"):
+        caption += f"\n_{image['alt']}_"
+
+    # Butonlar
+    buttons = [
+        InlineKeyboardButton("✅ Bu doğru", callback_data="photo_confirm"),
+    ]
+    if current < total:
+        buttons.append(InlineKeyboardButton("➡️ Sonraki", callback_data="photo_next"))
+    buttons.append(InlineKeyboardButton("⏭ Fotoğrafsız devam", callback_data="photo_skip"))
+
+    keyboard = InlineKeyboardMarkup([buttons])
+
+    try:
+        # Fotoğrafı doğrudan URL ile gönder
+        await message.reply_photo(
+            photo=image["url"],
+            caption=caption,
+            parse_mode="Markdown",
+            reply_markup=keyboard,
+        )
+    except Exception:
+        log.warning(f"Fotoğraf URL ile gönderilemedi: {image['url'][:60]}", exc_info=True)
+        # Fallback: URL'yi metin olarak gönder
+        await message.reply_text(
+            f"{caption}\n\n🔗 {image['url']}\n\n"
+            "_(Fotoğraf doğrudan gösterilemedi, linke tıklayarak görebilirsin)_",
+            parse_mode="Markdown",
+            reply_markup=keyboard,
+        )
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -266,14 +403,18 @@ async def _run_research_and_scenario(update: Update, context: ContextTypes.DEFAU
     # State güncelle
     conversation_mgr.mark_researching(user.id)
 
+    # Video modu bilgisi
+    mode_info = "🖼️ image-to-video" if session.has_photo() else "✍️ text-to-video"
+
     await update.effective_message.reply_text(
-        "🔍 **Marka ve ürün araştırılıyor...**\n"
-        "Bu 15-30 saniye sürebilir.",
+        f"🔍 **Marka ve ürün araştırılıyor...**\n"
+        f"Mod: {mode_info}\n"
+        f"Bu 15-30 saniye sürebilir.",
         parse_mode="Markdown",
     )
 
     try:
-        # Araştırma (Perplexity + GPT-5 Vision)
+        # Araştırma (Perplexity + GPT Vision)
         research_data = scenario_engine.research(session.collected_data)
 
         # Senaryo üretimi
@@ -314,7 +455,7 @@ async def _run_research_and_scenario(update: Update, context: ContextTypes.DEFAU
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Senaryo onay/düzelt/iptal inline butonları."""
+    """Senaryo onay/düzelt/iptal + fotoğraf teyit inline butonları."""
     query = update.callback_query
     await query.answer()
 
@@ -325,6 +466,47 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = query.data
 
+    # ── FOTOĞRAF TEYİT BUTONLARI ──
+    if data.startswith("photo_"):
+        result = conversation_mgr.handle_photo_confirmation(user.id, data)
+
+        if data == "photo_confirm":
+            # Fotoğraf onaylandı — araştırmaya geç
+            await query.edit_message_reply_markup(reply_markup=None)
+            await query.message.reply_text(
+                result["reply"],
+                parse_mode="Markdown",
+            )
+            if result.get("ready_for_research"):
+                # Fake update — araştırma tetiklemek için
+                await _run_research_and_scenario_from_callback(query.message, user.id)
+
+        elif data == "photo_next":
+            if result.get("show_next_photo") and result.get("next_photo"):
+                await query.edit_message_reply_markup(reply_markup=None)
+                await _send_photo_for_confirmation(
+                    query.message, user.id, result["next_photo"]
+                )
+            else:
+                # Tüm fotoğraflar bitti
+                await query.edit_message_reply_markup(reply_markup=None)
+                await query.message.reply_text(
+                    result["reply"],
+                    parse_mode="Markdown",
+                )
+
+        elif data == "photo_skip":
+            await query.edit_message_reply_markup(reply_markup=None)
+            await query.message.reply_text(
+                result["reply"],
+                parse_mode="Markdown",
+            )
+            if result.get("ready_for_research"):
+                await _run_research_and_scenario_from_callback(query.message, user.id)
+
+        return
+
+    # ── SENARYO BUTONLARI ──
     if data == "scenario_approve":
         result = conversation_mgr.handle_scenario_response(user.id, "approve")
 
@@ -354,6 +536,59 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_reply_markup(reply_markup=None)
         await query.message.reply_text(
             result.get("reply", "❌ İptal edildi."),
+            parse_mode="Markdown",
+        )
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 🔍 ARAŞTIRMA (CALLBACK'DEN TETİKLEME)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async def _run_research_and_scenario_from_callback(message, user_id: int):
+    """Callback handler'dan araştırma tetikleme (Update objesi yok)."""
+    session = conversation_mgr.get_session(user_id)
+
+    # State güncelle
+    conversation_mgr.mark_researching(user_id)
+
+    mode_info = "🖼️ image-to-video" if session.has_photo() else "✍️ text-to-video"
+
+    await message.reply_text(
+        f"🔍 **Marka ve ürün araştırılıyor...**\n"
+        f"Mod: {mode_info}\n"
+        f"Bu 15-30 saniye sürebilir.",
+        parse_mode="Markdown",
+    )
+
+    try:
+        research_data = scenario_engine.research(session.collected_data)
+        scenario = scenario_engine.generate_scenario(session.collected_data, research_data)
+        session.scenario = scenario
+
+        summary = ScenarioEngine.format_scenario_summary(scenario)
+
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("✅ Onayla", callback_data="scenario_approve"),
+                InlineKeyboardButton("✏️ Düzelt", callback_data="scenario_edit"),
+                InlineKeyboardButton("❌ İptal", callback_data="scenario_cancel"),
+            ]
+        ])
+
+        conversation_mgr.mark_scenario_approval(user_id)
+
+        await message.reply_text(
+            summary,
+            parse_mode="Markdown",
+            reply_markup=keyboard,
+        )
+
+    except Exception:
+        log.error("Araştırma/senaryo hatası (callback)", exc_info=True)
+        session.state = ConversationState.CHATTING
+        await message.reply_text(
+            "⚠️ Senaryo üretiminde bir hata oluştu. Bilgileri düzeltip tekrar deneyelim.\n"
+            "Hangi bilgiyi değiştirmek istersin?",
             parse_mode="Markdown",
         )
 
@@ -469,7 +704,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     """Bot'u başlat ve polling modunda çalıştır."""
     mode = "🏜️ DRY-RUN" if settings.IS_DRY_RUN else "🟢 PRODUCTION"
-    log.info(f"🚀 eCom Reklam Otomasyonu başlatılıyor... [Mod: {mode}]")
+    log.info(f"🚀 eCom Reklam Otomasyonu v2.0 başlatılıyor... [Mod: {mode}]")
     log.info(f"📊 Model: {settings.OPENAI_MODEL}")
     log.info(f"👤 İzinli kullanıcılar: {settings.ALLOWED_USER_IDS}")
 

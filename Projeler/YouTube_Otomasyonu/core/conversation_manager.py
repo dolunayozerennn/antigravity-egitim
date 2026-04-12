@@ -4,12 +4,17 @@ GPT-4.1 ile kullanıcı mesajlarını analiz eder, video üretim bilgilerini top
 hazır olunca pipeline'ı tetikler.
 """
 import json
+import time
 import logging
 from dataclasses import dataclass, field, asdict
 from openai import OpenAI
 from config import settings
 
 log = logging.getLogger("ConversationManager")
+
+# ── Bellek güvenliği sabitleri ──
+MAX_MESSAGES_PER_USER = 20   # Mesaj geçmişi üst sınırı (GPT context window kontrolü)
+STATE_TTL_SECONDS = 1800     # 30 dakika — boş kalan state otomatik temizlenir
 
 # ── Model bilgileri ──
 MODEL_INFO = {
@@ -87,6 +92,7 @@ class ConversationState:
     orientation: str = "portrait"
     audio: bool = True
     pipeline_running: bool = False
+    last_activity: float = field(default_factory=time.time)  # TTL için
 
 
 class ConversationManager:
@@ -102,9 +108,26 @@ class ConversationManager:
         return self._client
 
     def get_state(self, user_id: int) -> ConversationState:
+        # Stale state temizliği (TTL geçmiş olanları sil)
+        self._cleanup_stale_states()
+
         if user_id not in self._states:
             self._states[user_id] = ConversationState(user_id=user_id)
-        return self._states[user_id]
+        state = self._states[user_id]
+        state.last_activity = time.time()
+        return state
+
+    def _cleanup_stale_states(self):
+        """TTL süresi dolmuş (30dk+ idle) state'leri temizler → bellek koruması."""
+        now = time.time()
+        stale_ids = [
+            uid for uid, st in self._states.items()
+            if (now - st.last_activity) > STATE_TTL_SECONDS and not st.pipeline_running
+        ]
+        for uid in stale_ids:
+            del self._states[uid]
+        if stale_ids:
+            log.info(f"🧹 {len(stale_ids)} idle state temizlendi (TTL={STATE_TTL_SECONDS}s)")
 
     def reset_state(self, user_id: int):
         """Konuşma durumunu sıfırla (yeni video üretimi için)."""
@@ -133,6 +156,11 @@ class ConversationManager:
 
         # Mesajı sohbet geçmişine ekle
         state.messages.append({"role": "user", "content": text})
+
+        # Mesaj geçmişi sınırı — çok uzun geçmiş GPT context'ini şişirir + bellek tüketir
+        if len(state.messages) > MAX_MESSAGES_PER_USER:
+            state.messages = state.messages[-MAX_MESSAGES_PER_USER:]
+            log.info(f"✂️ Mesaj geçmişi kırpıldı → son {MAX_MESSAGES_PER_USER} mesaj")
 
         # GPT'ye gönder
         try:

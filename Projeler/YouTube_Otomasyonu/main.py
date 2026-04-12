@@ -310,14 +310,24 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
 
         # Kullanıcıya bildir
         try:
+            # Hata mesajındaki Markdown özel karakterleri temizle
+            safe_error = error_msg[:200].replace('`', "'").replace('*', '').replace('_', ' ')
             await update.message.reply_text(
                 f"❌ **Video üretimi başarısız oldu.**\n\n"
-                f"Hata: `{error_msg[:200]}`\n\n"
+                f"Hata: `{safe_error}`\n\n"
                 f"/yeni komutuyla tekrar deneyebilirsin.",
                 parse_mode="Markdown"
             )
         except Exception:
-            pass
+            # Markdown parse tamamen başarısız → düz text olarak gönder
+            try:
+                await update.message.reply_text(
+                    f"❌ Video üretimi başarısız oldu.\n\n"
+                    f"Hata: {error_msg[:200]}\n\n"
+                    f"/yeni komutuyla tekrar deneyebilirsin."
+                )
+            except Exception:
+                pass  # Son çare — bildirim gönderilemiyorsa devam et
 
         # Notion'a hata kaydı
         tracker.update_with_error(error_msg)

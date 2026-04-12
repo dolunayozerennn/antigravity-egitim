@@ -87,8 +87,12 @@ def _send_telegram(message: str):
 
 
 def _escape_md(text: str) -> str:
-    """Markdown özel karakterlerini escape eder."""
-    special_chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
-    for char in special_chars:
+    """Markdown V1 özel karakterlerini escape eder.
+    
+    NOT: parse_mode='Markdown' (V1) kullanıldığı için sadece V1 özel karakterleri escape edilir.
+    V2 karakterleri (\\~, \\|, \\., \\!) escape etmek V1'de mesajı BOZAR.
+    """
+    # MarkdownV1 özel karakterler: _ * ` [
+    for char in ['_', '*', '`', '[']:
         text = text.replace(char, f"\\{char}")
     return text

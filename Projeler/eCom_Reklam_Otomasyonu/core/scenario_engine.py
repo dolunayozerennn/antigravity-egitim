@@ -149,8 +149,13 @@ class ScenarioEngine:
         concept = collected_data.get("ad_concept", "")
         duration = collected_data.get("video_duration", 10)
         aspect_ratio = collected_data.get("aspect_ratio", "9:16")
+        resolution = collected_data.get("resolution", "720p")
         language = collected_data.get("language", "Türkçe")
         has_image = bool(collected_data.get("product_image"))
+
+        # Resolution doğrulama
+        if resolution not in ("480p", "720p"):
+            resolution = "720p"
 
         user_brief = (
             f"## Proje Bilgileri:\n"
@@ -159,6 +164,7 @@ class ScenarioEngine:
             f"- Konsept: {concept}\n"
             f"- Video Süresi: {duration} saniye\n"
             f"- Format: {aspect_ratio}\n"
+            f"- Çözünürlük: {resolution}\n"
             f"- Dil: {language}\n"
             f"- Ürün Fotoğrafı: {'Var (image-to-video kullanılacak)' if has_image else 'Yok (text-to-video)'}\n\n"
             f"## Marka Araştırması:\n{research_data.get('brand_research', 'N/A')}\n\n"
@@ -178,11 +184,7 @@ class ScenarioEngine:
             log.error("Senaryo üretimi hatası", exc_info=True)
             raise
 
-        # Resolution'ı senaryodan al veya varsayılanı kullan
-        resolution = scenario.get("resolution", "720p")
-        if resolution not in ("480p", "720p"):
-            resolution = "720p"
-
+        # Kullanıcının seçtiği resolution'ı kullan (senaryodaki override edilir)
         # Maliyet hesapla
         cost = self.calculate_cost(duration, resolution, has_image)
 

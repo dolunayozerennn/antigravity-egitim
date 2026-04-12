@@ -199,6 +199,7 @@ class KieClient:
         url = f"{self._base_url}{cfg['poll_url']}"
         interval = settings.POLL_INTERVAL
         max_attempts = settings.POLL_MAX_ATTEMPTS
+        consecutive_429 = 0  # Exponential backoff sayacı
 
         for attempt in range(1, max_attempts + 1):
             try:
@@ -210,10 +211,14 @@ class KieClient:
                     )
 
                 if response.status_code == 429:
-                    wait_time = min(interval * 2, 60)
-                    log.warning(f"⚠️ Rate limit! {wait_time}s bekleniyor...")
+                    consecutive_429 += 1
+                    wait_time = min(interval * (2 ** consecutive_429), 120)  # Max 120s
+                    log.warning(f"⚠️ Rate limit! Exponential backoff: {wait_time}s (#{consecutive_429})...")
                     await asyncio.sleep(wait_time)
                     continue
+
+                # 429 olmayan başarılı yanıt → sayacı sıfırla
+                consecutive_429 = 0
 
                 resp_data = response.json()
                 data = resp_data.get("data", {})

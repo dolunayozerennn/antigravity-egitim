@@ -31,5 +31,5 @@ auto_config.json
 # n8n workflow dosyaları (referans — commit edilmez)
 *.json
 !topics.json
-!youtube_credentials.json
-!auto_config.json
+# ⚠️ youtube_credentials.json ASLA GitHub'a push edilmez (OAuth client secret içerir)
+# !youtube_credentials.json  ← KALDIRILDI — güvenlik riski

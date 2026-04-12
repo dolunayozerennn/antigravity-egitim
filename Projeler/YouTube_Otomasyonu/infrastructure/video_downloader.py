@@ -16,7 +16,8 @@ def download_video(video_url: str) -> str:
     Video URL'sini indirir ve geçici dosyaya kaydeder.
     
     Args:
-        video_url: İndirilecek videonun URL'si
+        video_url: İndirilecek videonun URL'si veya lokal dosya yolu
+                   (FFmpeg merge sonucu lokal yol gelebilir)
         
     Returns:
         str: İndirilen dosyanın yerel yolu
@@ -24,6 +25,11 @@ def download_video(video_url: str) -> str:
     Raises:
         RuntimeError: İndirme başarısız olduğunda
     """
+    # FFmpeg fallback'ten lokal dosya yolu gelmiş olabilir — direkt döndür
+    if video_url and not video_url.startswith("http") and os.path.exists(video_url):
+        log.info(f"📂 Lokal dosya yolu tespit edildi, indirme atlanıyor: {video_url}")
+        return video_url
+
     if settings.IS_DRY_RUN:
         log.info("🧪 DRY-RUN: Mock video dosyası oluşturuluyor...")
         # Gerçekçi bir dosya yolu döndür (ama dosya oluşturma)
