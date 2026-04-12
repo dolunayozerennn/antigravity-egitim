@@ -188,7 +188,8 @@ Bu workflow, syntax/import kontrolü, README güncelliği, git sync, deploy smok
 1. `python3 -m py_compile *.py` — syntax kontrolü
 2. Tüm .py dosyalarını `importlib.import_module()` ile import et
 3. `tests/` veya `run_test.py` varsa çalıştır
-4. Hata varsa → ❌ PUSH YAPMA
+4. **Caller ↔ Callee imza doğrulaması** — AST ile entry point'teki fonksiyon çağrı argümanlarının, tanımlarıyla uyumlu olduğunu doğrula (import testi bunu YAKALAMAZ)
+5. Hata varsa → ❌ PUSH YAPMA
 
 ### Deploy Sonrası:
 1. SUCCESS olduktan sonra 60 saniye bekle

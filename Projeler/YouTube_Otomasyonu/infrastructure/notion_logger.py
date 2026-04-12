@@ -146,7 +146,10 @@ def _notion_request(method: str, url: str, **kwargs) -> dict:
         "Content-Type": "application/json",
     }
 
-    response = requests.request(method, url, headers=headers, timeout=15, **kwargs)
+    try:
+        response = requests.request(method, url, headers=headers, timeout=15, **kwargs)
+    except requests.RequestException as e:
+        raise RuntimeError(f"Notion API bağlantı hatası: {e}")
 
     if response.status_code not in (200, 201):
         raise RuntimeError(f"Notion API hatası: {response.status_code} — {response.text[:200]}")

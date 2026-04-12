@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 """
-OpenAI Service — GPT-5 Mini Chat + Vision
-==========================================
+OpenAI Service — GPT-4.1 Mini Chat + Vision
+=============================================
 Kullanıcıyla doğal sohbet yönetimi ve ürün görseli analizi.
 Senaryo üretimi, bilgi çıkarma, prompt oluşturma.
 """
@@ -18,9 +18,9 @@ log = get_logger("openai_service")
 
 
 class OpenAIService:
-    """GPT-5 Mini tabanlı chat + vision servisi."""
+    """GPT-4.1 Mini tabanlı chat + vision servisi."""
 
-    def __init__(self, api_key: str, model: str = "gpt-5-mini"):
+    def __init__(self, api_key: str, model: str = "gpt-4.1-mini"):
         self.client = openai.OpenAI(api_key=api_key)
         self.model = model
 
@@ -32,22 +32,22 @@ class OpenAIService:
 
         Args:
             messages: OpenAI format mesaj listesi [{"role": "...", "content": "..."}]
-            temperature: Yaratıcılık seviyesi (NOT: GPT-5 Mini sadece 1.0 destekler)
+            temperature: Yaratıcılık seviyesi (geçmişe dönük uyumluluk için tutuldu)
             max_tokens: Maximum yanıt uzunluğu
 
         Returns:
             str: Modelin yanıtı
         """
         try:
-            # GPT-5 Mini sadece temperature=1 destekler, parametre gönderme
-            # GPT-5 Mini çok kısa max_tokens'da boş content döndürebilir — minimum 100
+            # temperature parametresi gönderilmiyor (model uyumu)
+            # Çok kısa max_tokens'da boş content döndürebilir — minimum 100
             effective_max_tokens = max(max_tokens, 100)
             create_kwargs = {
                 "model": self.model,
                 "messages": messages,
                 "max_completion_tokens": effective_max_tokens,
             }
-            # GPT-5 Mini bazen boş content döndürüyor — retry mekanizması
+            # Bazen boş content döndürebiliyor — retry mekanizması
             content = ""
             for attempt in range(3):
                 response = self.client.chat.completions.create(**create_kwargs)
@@ -78,7 +78,7 @@ class OpenAIService:
 
     def analyze_image(self, image_url: str, prompt: str, max_tokens: int = 1500) -> str:
         """
-        Ürün görselini GPT-5 Mini Vision ile analiz eder.
+        Ürün görselini GPT-4.1 Mini Vision ile analiz eder.
 
         Args:
             image_url: Public erişimli görsel URL'i
@@ -189,8 +189,8 @@ class OpenAIService:
             dict: Parse edilmiş JSON yanıt
         """
         try:
-            # GPT-5 Mini sadece temperature=1 destekler, parametre gönderme
-            # GPT-5 Mini çok kısa max_tokens'da boş content döndürebilir — minimum 200
+            # temperature parametresi gönderilmiyor (model uyumu)
+            # Çok kısa max_tokens'da boş content döndürebilir — minimum 200
             effective_max_tokens = max(max_tokens, 200)
             create_kwargs = {
                 "model": self.model,
@@ -198,7 +198,7 @@ class OpenAIService:
                 "max_completion_tokens": effective_max_tokens,
                 "response_format": {"type": "json_object"},
             }
-            # GPT-5 Mini bazen boş content döndürüyor — retry mekanizması
+            # Bazen boş content döndürebiliyor — retry mekanizması
             content = ""
             for attempt in range(3):
                 response = self.client.chat.completions.create(**create_kwargs)

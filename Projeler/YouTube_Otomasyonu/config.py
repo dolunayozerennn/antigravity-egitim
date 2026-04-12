@@ -83,7 +83,6 @@ class Config:
         # ── Sistem Bağımlılıkları (Opsiyonel — FFmpeg sadece fallback) ──
         self.FFMPEG_AVAILABLE = bool(shutil.which("ffmpeg"))
         if not self.FFMPEG_AVAILABLE and not self.IS_DRY_RUN:
-            import logging
             logging.getLogger("Config").warning(
                 "⚠️ FFmpeg bulunamadı — video birleştirme sadece Replicate ile yapılacak."
             )

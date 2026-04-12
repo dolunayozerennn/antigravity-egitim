@@ -16,6 +16,9 @@ youtube_credentials.json
 # Auto config (kullanıcı-spesifik ayarlar)
 auto_config.json
 
+# Topic geçmişi (runtime state)
+.topic_history.json
+
 # Temp dosyalar
 *.mp4
 *.webm
@@ -27,9 +30,3 @@ auto_config.json
 
 # OS
 .DS_Store
-
-# n8n workflow dosyaları (referans — commit edilmez)
-*.json
-!topics.json
-# ⚠️ youtube_credentials.json ASLA GitHub'a push edilmez (OAuth client secret içerir)
-# !youtube_credentials.json  ← KALDIRILDI — güvenlik riski

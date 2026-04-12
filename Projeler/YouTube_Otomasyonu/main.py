@@ -157,11 +157,20 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply = result.get("reply", "🤖 Bir hata oluştu.")
     config = result.get("config")
 
-    # Yanıtı gönder
-    await update.message.reply_text(reply, parse_mode="Markdown")
+    # Yanıtı gönder — Markdown parse hatası olursa düz metin fallback
+    try:
+        await update.message.reply_text(reply, parse_mode="Markdown")
+    except Exception:
+        try:
+            await update.message.reply_text(reply)
+        except Exception:
+            log.warning("Yanıt gönderilemedi (her iki parse mode da başarısız)")
 
     # Pipeline tetikleme
     if action == "start_pipeline" and config:
+        # Race condition koruması: flag'i pipeline başlamadan ÖNCE set et
+        pre_state = conversation.get_state(user.id)
+        pre_state.pipeline_running = True
         await _run_pipeline(update, context, config)
 
 
@@ -191,6 +200,9 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await waiting_msg.edit_text(reply, parse_mode="Markdown")
 
         if action == "start_pipeline" and config:
+            # Race condition koruması: flag'i pipeline başlamadan ÖNCE set et
+            voice_state = conversation.get_state(user.id)
+            voice_state.pipeline_running = True
             await _run_pipeline(update, context, config)
 
     except Exception:
@@ -202,11 +214,24 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ⚙️ PIPELINE ORKESTRATÖRÜ
 # ────────────────────────────────────────
 
+async def _safe_edit(msg, text, **kwargs):
+    """Telegram status mesajını güvenli şekilde günceller — hata pipeline'ı durdurmaz."""
+    try:
+        await msg.edit_text(text, **kwargs)
+    except Exception:
+        # Markdown parse hatası olabilir → düz metin fallback
+        try:
+            clean_kwargs = {k: v for k, v in kwargs.items() if k != "parse_mode"}
+            await msg.edit_text(text, **clean_kwargs)
+        except Exception as e:
+            log.warning(f"⚠️ Status mesajı güncellenemedi: {e}")
+
+
 async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, config: dict):
     """Video üretim pipeline'ını çalıştırır."""
     user = update.effective_user
     state = conversation.get_state(user.id)
-    state.pipeline_running = True
+    # pipeline_running zaten handle_text/handle_voice tarafından set edildi (race condition koruması)
 
     tracker = NotionTracker()
     video_paths = []
@@ -214,25 +239,26 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
 
     try:
         # ── ADIM 1: Notion Entry ──
-        tracker.create_entry(config, trigger="telegram")
+        await asyncio.to_thread(tracker.create_entry, config, trigger="telegram")
 
         # ── ADIM 2: Prompt Üret ──
         status_msg = await update.message.reply_text("📋 Prompt(lar) yazılıyor...")
 
         prompt_data = await generate_prompts(config)
-        tracker.update_with_prompts(prompt_data)
+        await asyncio.to_thread(tracker.update_with_prompts, prompt_data)
 
         scenes = prompt_data.get("scenes", [])
         model = config.get("model", settings.DEFAULT_MODEL)
         clip_count = len(scenes)
 
-        await status_msg.edit_text(
+        await _safe_edit(
+            status_msg,
             f"✅ {clip_count} sahne promptu hazır!\n"
             f"🎬 Video üretimi başlıyor ({model})..."
         )
 
         # ── ADIM 3: Video Üret ──
-        tracker.update_status("Video Üretiliyor")
+        await asyncio.to_thread(tracker.update_status, "Video Üretiliyor")
 
         if clip_count == 1:
             # Tek klip
@@ -255,32 +281,33 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
                 resolution=settings.DEFAULT_RESOLUTION,
             )
 
-        tracker.update_with_video(video_urls[0])
-        await status_msg.edit_text(f"✅ {len(video_urls)} video hazır!")
+        await asyncio.to_thread(tracker.update_with_video, video_urls[0])
+        await _safe_edit(status_msg, f"✅ {len(video_urls)} video hazır!")
 
         # ── ADIM 4: Birleştirme (gerekliyse) ──
         final_video_url = video_urls[0]
 
         if len(video_urls) > 1:
-            await status_msg.edit_text("🎞️ Videolar birleştiriliyor...")
-            tracker.update_status("Birleştiriliyor")
+            await _safe_edit(status_msg, "🎞️ Videolar birleştiriliyor...")
+            await asyncio.to_thread(tracker.update_status, "Birleştiriliyor")
             final_video_url = await merge_videos(video_urls, keep_audio=config.get("audio", True))
 
         # ── ADIM 5: Video İndir ──
-        await status_msg.edit_text("📥 Video indiriliyor...")
+        await _safe_edit(status_msg, "📥 Video indiriliyor...")
         video_path = download_video(final_video_url)
         video_paths.append(video_path)
 
         # ── ADIM 6: YouTube Upload ──
-        is_shorts = clip_count == 1
+        # Shorts = tek klip VE dikey format (yatay tek klip Long-form olarak yüklenmeli)
+        is_shorts = clip_count == 1 and config.get("orientation", "portrait") == "portrait"
         youtube_url = ""
 
         if settings.YOUTUBE_ENABLED:
-            await status_msg.edit_text("📺 YouTube'a yükleniyor...")
-            tracker.update_status("Yükleniyor")
+            await _safe_edit(status_msg, "📺 YouTube'a yükleniyor...")
+            await asyncio.to_thread(tracker.update_status, "Yükleniyor")
             youtube_url = await upload_to_youtube(video_path, prompt_data, is_shorts=is_shorts)
             if youtube_url:
-                tracker.update_with_youtube(youtube_url)
+                await asyncio.to_thread(tracker.update_with_youtube, youtube_url)
 
         # ── ADIM 7: Tamamlandı ──
         elapsed = time.time() - start_time
@@ -295,11 +322,13 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
             success_lines.append(f"🔗 Video: {final_video_url[:80]}...")
         success_lines.append(f"\n📊 Model: {model} | Sahneler: {clip_count}")
 
-        await status_msg.edit_text("\n".join(success_lines), parse_mode="Markdown")
+        await _safe_edit(status_msg, "\n".join(success_lines), parse_mode="Markdown")
 
         if not youtube_url:
-            tracker.update_with_youtube("")
-            tracker.update_status("✅ Tamamlandı")
+            if settings.YOUTUBE_ENABLED:
+                await asyncio.to_thread(tracker.update_status, "✅ Tamamlandı (Upload Başarısız)")
+            else:
+                await asyncio.to_thread(tracker.update_status, "✅ Tamamlandı (YouTube Kapalı)")
 
         log.info(f"✅ Pipeline tamamlandı! ({elapsed:.1f}s)")
 
@@ -330,7 +359,14 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
                 pass  # Son çare — bildirim gönderilemiyorsa devam et
 
         # Notion'a hata kaydı
-        tracker.update_with_error(error_msg)
+        await asyncio.to_thread(tracker.update_with_error, error_msg)
+
+        # Admin'e P1 bildirim (auto_mode ile tutarlılık)
+        try:
+            from infrastructure.telegram_notifier import notify_error
+            await asyncio.to_thread(notify_error, "pipeline", error_msg, config.get("topic", ""))
+        except Exception:
+            pass  # Bildirim hatası pipeline'ı durdurmaz
 
     finally:
         # State sıfırla

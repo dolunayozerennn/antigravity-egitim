@@ -5,7 +5,7 @@ Scenario Engine — Senaryo Üretimi + Maliyet Hesaplama
 =======================================================
 Toplanan bilgilerle:
 1. Perplexity ile marka/ürün araştırır
-2. GPT-5 Mini Vision ile ürün görselini analiz eder
+2. GPT-4.1 Mini Vision ile ürün görselini analiz eder
 3. LLM ile reklam senaryosu (shot listesi + dış ses metni) üretir
 4. Maliyet hesaplar
 """

@@ -171,7 +171,7 @@ class KieClient:
         log.info(f"🎬 {cfg['model_id']} task oluşturuluyor...")
         log.info(f"   Aspect: {aspect_ratio} | Duration: {duration}s | Audio: {audio}")
 
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(url, json=payload, headers=self._headers())
 
         if response.status_code != 200:

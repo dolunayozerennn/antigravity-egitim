@@ -6,7 +6,7 @@ hazır olunca pipeline'ı tetikler.
 import json
 import time
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from openai import OpenAI
 from config import settings
 
@@ -236,7 +236,23 @@ class ConversationManager:
         )
 
         raw = response.choices[0].message.content
-        result = json.loads(raw)
+
+        try:
+            result = json.loads(raw)
+        except json.JSONDecodeError:
+            # GPT bazen JSON'u Markdown code block içinde döndürebilir
+            log.warning(f"GPT yanıtı direkt JSON parse edilemedi, temizleme deneniyor...")
+            import re
+            json_match = re.search(r'\{[\s\S]*?\}', raw)
+            if json_match:
+                try:
+                    result = json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    log.error(f"GPT yanıtı JSON olarak parse edilemedi: {raw[:200]}")
+                    return {"action": "chat", "reply": "🤖 Bir hata oluştu, tekrar dener misin?", "config": None}
+            else:
+                log.error(f"GPT yanıtında JSON bulunamadı: {raw[:200]}")
+                return {"action": "chat", "reply": raw if raw else "🤖 Bir hata oluştu.", "config": None}
 
         # Zorunlu alanları doğrula
         if "action" not in result or "reply" not in result:

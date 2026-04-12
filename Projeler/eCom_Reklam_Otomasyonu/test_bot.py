@@ -394,7 +394,7 @@ class BotTestSuite:
 
         # NOT: Bot akışında kullanıcı mesajları chat_json ile işlenir.
         # chat() yalnızca analyze_image'da kullanılır (kısa system prompt problemi).
-        # GPT-5 Mini non-JSON modda kısa prompt'larda empty content döndürebilir.
+        # GPT-4.1 Mini non-JSON modda kısa prompt'larda empty content döndürebilir.
         try:
             result = svc.chat(
                 messages=[
@@ -409,11 +409,11 @@ class BotTestSuite:
                 f"Response: {result[:80]}"
             )
         except RuntimeError:
-            # GPT-5 Mini bilinen davranış — bot akışı chat_json kullandığından sorun yok
+            # GPT-4.1 Mini bilinen davranış — bot akışı chat_json kullandığından sorun yok
             self._record(
                 "OpenAI: Chat bağlantısı (non-JSON)",
                 True,  # Bilinen davranış — bot akışını etkilemiyor
-                "GPT-5 Mini non-JSON modda boş dönebiliyor (bilinen davranış, chat_json çalışıyor)"
+                "GPT-4.1 Mini non-JSON modda boş dönebiliyor (bilinen davranış, chat_json çalışıyor)"
             )
         except Exception as e:
             self._record("OpenAI: Chat bağlantısı (non-JSON)", False, error=str(e))

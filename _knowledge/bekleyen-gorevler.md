@@ -4,7 +4,7 @@
 > Yarım kalan işler, TODO'lar ve takip gereken konular burada tutulur.
 > Görev tamamlandığında bu dosyadan silinir.
 
-**Son güncelleme:** 11 Nisan 2026
+**Son güncelleme:** 12 Nisan 2026
 
 ---
 
@@ -32,18 +32,22 @@
 - **Kontrol 3:** ⏳ (2026-04-13 — ikinci cron çalışması)
 - **Sonuç:** 2 temiz kontrol → arşive taşı
 
-### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu
-- **Deploy tarihi:** 2026-04-11 (ilk deploy — SUCCESS)
-- **İzleme bitiş:** 2026-04-13
-- **Kontrol 1:** ✅ (2026-04-11 20:37 — Bot aktif, /start karşılama mesajı doğru çalışıyor)
-- **Kontrol 2:** ⏳ (2026-04-13 — ikinci kontrol)
+### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu v2.0
+- **Deploy tarihi:** 2026-04-12 (v2.0 — 6 kritik bug fix + fotoğraf opsiyonel + URL scrape + teyit mekanizması)
+- **İzleme bitiş:** 2026-04-14
+- **Kontrol 1:** ✅ (2026-04-12 10:28 — Bot aktif, polling çalışıyor, fatal error YOK, model gpt-4.1-mini doğru)
+- **Kontrol 2:** ⏳ (2026-04-14 — ikinci kontrol)
+- **Fix özeti:** product_image opsiyonel, URL scrape + teyit, metin onay, resolution REQUIRED, state-aware context, PHOTO_CONFIRMATION state
 - **Sonuç:** 2 temiz kontrol → arşive taşı
 
-### 🟡 48-Saat İzleme — YouTube_Otomasyonu_V2
-- **Deploy tarihi:** 2026-04-11 (ilk deploy — SUCCESS)
-- **İzleme bitiş:** 2026-04-13
-- **Kontrol 1:** ✅ (2026-04-11 21:26 — Bot aktif, polling çalışıyor, smoke test geçti)
-- **Kontrol 2:** ⏳ (2026-04-13 — ikinci kontrol)
+### 🟡 48-Saat İzleme — YouTube_Otomasyonu_V2.2
+- **Deploy tarihi:** 2026-04-12 (V2.2 stabilizasyon — 14 bug fix + stabilizasyon 2. tur)
+- **Re-deploy:** 2026-04-12 (stabilizasyon fix: FFmpeg PATH resolve, video download retry, README düzeltme)
+- **İzleme bitiş:** 2026-04-14
+- **Kontrol 1:** ✅ (2026-04-12 10:27 — Bot aktif, polling çalışıyor, smoke test geçti, fatal error YOK)
+- **Kontrol 2:** ⏳ (2026-04-14 — ikinci kontrol)
+- **Fix özeti (1. tur):** auto_mode crash (await sync), bellek sızıntısı (TTL+msg limit), .gitignore güvenlik, exponential backoff, Markdown V1 uyumu, YouTube fail-fast, hata mesajı güvenliği
+- **Fix özeti (2. tur):** FFmpeg shutil.which() ile absolute PATH resolve, video_downloader 3x retry + exponential backoff, README topic_picker.py referansı kaldırıldı
 - **Sonuç:** 2 temiz kontrol → arşive taşı
 
 ### 🟡 48-Saat İzleme — LinkedIn Otomasyonu (Text + Video)

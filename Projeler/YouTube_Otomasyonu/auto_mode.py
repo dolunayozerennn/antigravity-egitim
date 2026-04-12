@@ -101,9 +101,13 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
         log.info("⏸️ Auto mode devre dışı (auto_config.json → enabled: false)")
         return
 
-    # Override'lar
+    # Override'lar — settings singleton'ı doğrudan güncelle
+    # (os.environ değiştirmek yetersiz: Config zaten boot time'da instantiate olmuş)
     if dry_run:
-        os.environ["ENV"] = "development"
+        # GÜVENLİ: auto_mode.py her zaman ayrı process olarak çalışır (CLI/CronJob)
+        # Bu mutation sadece bu process'i etkiler, Telegram bot'a dokunmaz
+        settings.IS_DRY_RUN = True
+        settings.ENV = "development"
 
     # Konu seç
     selected_topic = topic or pick_topic(config)
@@ -133,12 +137,12 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
 
     try:
         # ── 1. Notion ──
-        tracker.create_entry(pipeline_config, trigger="auto")
+        await asyncio.to_thread(tracker.create_entry, pipeline_config, trigger="auto")
 
         # ── 2. Prompt ──
         log.info("📋 Promptlar üretiliyor...")
         prompt_data = await generate_prompts(pipeline_config)
-        tracker.update_with_prompts(prompt_data)
+        await asyncio.to_thread(tracker.update_with_prompts, prompt_data)
 
         scenes = prompt_data.get("scenes", [])
         actual_clips = len(scenes)
@@ -146,7 +150,7 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
 
         # ── 3. Video üret ──
         log.info(f"🎬 Video üretimi başlıyor ({model})...")
-        tracker.update_status("Video Üretiliyor")
+        await asyncio.to_thread(tracker.update_status, "Video Üretiliyor")
 
         if actual_clips == 1:
             video_url = await kie.create_video(
@@ -167,14 +171,14 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
                 resolution=settings.DEFAULT_RESOLUTION,
             )
 
-        tracker.update_with_video(video_urls[0])
+        await asyncio.to_thread(tracker.update_with_video, video_urls[0])
         log.info(f"✅ {len(video_urls)} video hazır")
 
         # ── 4. Birleştir ──
         final_video_url = video_urls[0]
         if len(video_urls) > 1:
             log.info("🎞️ Videolar birleştiriliyor...")
-            tracker.update_status("Birleştiriliyor")
+            await asyncio.to_thread(tracker.update_status, "Birleştiriliyor")
             final_video_url = await merge_videos(video_urls, keep_audio=audio)
 
         # ── 5. İndir ──
@@ -185,18 +189,18 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
         youtube_url = ""
         if config.get("youtube_upload") and settings.YOUTUBE_ENABLED:
             log.info("📺 YouTube'a yükleniyor...")
-            tracker.update_status("Yükleniyor")
+            await asyncio.to_thread(tracker.update_status, "Yükleniyor")
             youtube_url = await upload_to_youtube(video_path, prompt_data, is_shorts=is_shorts)
             if youtube_url:
-                tracker.update_with_youtube(youtube_url)
+                await asyncio.to_thread(tracker.update_with_youtube, youtube_url)
 
         # ── 7. Tamamlandı ──
         elapsed = time.time() - start_time
         log.info(f"✅ Otonom üretim tamamlandı! ({elapsed:.0f}s)")
 
         if not youtube_url:
-            tracker.update_with_youtube("")
-            tracker.update_status("✅ Tamamlandı")
+            await asyncio.to_thread(tracker.update_with_youtube, "")
+            await asyncio.to_thread(tracker.update_status, "✅ Tamamlandı")
 
         # Telegram bildirimi
         if config.get("notify_telegram"):
@@ -218,7 +222,7 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
     except Exception as e:
         elapsed = time.time() - start_time
         log.error(f"❌ Otonom üretim HATASI ({elapsed:.1f}s): {e}", exc_info=True)
-        tracker.update_with_error(str(e))
+        await asyncio.to_thread(tracker.update_with_error, str(e))
 
         if config.get("notify_telegram"):
             notify_error("auto_pipeline", str(e), topic_info=selected_topic)

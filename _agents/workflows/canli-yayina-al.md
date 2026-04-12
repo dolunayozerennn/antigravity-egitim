@@ -157,6 +157,90 @@ Re-deploy ise:
 3. Lokal'de değişmiş ama GitHub'a push edilmemiş dosya varsa → UYAR ve bunları da push et
 ```
 
+### 2.5.9 — Caller ↔ Callee İmza Doğrulaması (KRİTİK!)
+
+> **Import testi (2.5.2) bunu YAKALAMAZ.** Import testi modülün yüklenebildiğini kontrol eder,
+> ama çağrı sırasındaki argüman uyumsuzluğunu (TypeError) ancak runtime'da görürsün.
+> Bu adım, `main.py` (veya entry point) içindeki fonksiyon çağrılarının gerçek tanımlarıyla
+> uyumlu olup olmadığını statik olarak doğrular.
+
+```bash
+cd PROJE_KLASÖRÜ
+python3 -c "
+import ast, sys, os
+
+errors = []
+sys.path.insert(0, '.')
+
+# Entry point'i bul
+entry = 'main.py' if os.path.exists('main.py') else None
+if not entry:
+    for f in os.listdir('.'):
+        if f.endswith('.py') and '__' not in f:
+            entry = f; break
+
+if not entry:
+    print('⚠️ Entry point bulunamadı, atlanıyor'); sys.exit(0)
+
+tree = ast.parse(open(entry).read())
+
+# Tüm fonksiyon çağrılarını bul
+for node in ast.walk(tree):
+    if not isinstance(node, ast.Call):
+        continue
+    # SADECE bare function çağrılarını kontrol et: func_name(...)
+    # Obje metod çağrıları (obj.method()) atlanır — false positive önleme
+    if isinstance(node.func, ast.Name):
+        func_name = node.func.id
+    else:
+        continue  # obj.method() çağrıları atlanır
+
+    call_kwargs = [kw.arg for kw in node.keywords if kw.arg]
+    if not call_kwargs:
+        continue
+
+    # Aynı projedeki modüllerde + core/ alt dizininde bu fonksiyonun tanımını ara
+    search_dirs = [('.', '')]
+    if os.path.isdir('core'):
+        search_dirs.append(('core', 'core/'))
+
+    for search_dir, prefix in search_dirs:
+        for pyfile in os.listdir(search_dir):
+            if not pyfile.endswith('.py'):
+                continue
+            fpath = os.path.join(search_dir, pyfile)
+            try:
+                ftree = ast.parse(open(fpath).read())
+                for fnode in ast.walk(ftree):
+                    if isinstance(fnode, ast.FunctionDef) and fnode.name == func_name:
+                        defined_args = [a.arg for a in fnode.args.args]
+                        defined_kwargs = [a.arg for a in (fnode.args.kwonlyargs or [])]
+                        all_params = set(defined_args + defined_kwargs)
+                        has_kwargs = fnode.args.kwarg is not None
+
+                        if not has_kwargs:
+                            for kwarg in call_kwargs:
+                                if kwarg not in all_params:
+                                    errors.append(
+                                        f'{entry}:{node.lineno} → {func_name}({kwarg}=...) çağrılıyor '
+                                        f'ama {prefix}{pyfile}:{fnode.lineno} tanımında \\\"{kwarg}\\\" parametresi YOK!'
+                                    )
+            except (SyntaxError, OSError):
+                pass
+
+if errors:
+    print('❌ CALLER ↔ CALLEE UYUMSUZLUKLARI:')
+    for e in errors:
+        print(f'  {e}')
+    sys.exit(1)
+else:
+    print('✅ Fonksiyon çağrı imzaları uyumlu')
+"
+```
+- `TypeError: got an unexpected keyword argument` hatalarını **deploy'dan ÖNCE** yakalar
+- Bu test `get_logger(level=...)` gibi uyumsuzlukları tespit eder
+- Hata varsa → ❌ PUSH YAPMA, fonksiyon tanımını güncelle
+
 **⚠️ BU ADIM ATLANILAMAZ. HER PUSH'TAN ÖNCE ÇALIŞTIRILMALIDIR.**
 
 ## Adım 2.9: 🐳 DOCKER SİMÜLASYON TESTİ (ÖNERİLEN)

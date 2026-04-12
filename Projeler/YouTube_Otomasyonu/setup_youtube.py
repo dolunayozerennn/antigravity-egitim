@@ -64,8 +64,8 @@ def main():
         print("   master.env dosyasını veya env variable'ları kontrol et.")
         sys.exit(1)
 
-    print(f"\n✅ Client ID: {client_id[:30]}...")
-    print(f"✅ Client Secret: {client_secret[:10]}...")
+    print(f"\n✅ Client ID: {client_id[:20]}...")
+    print(f"✅ Client Secret: {client_secret[:4]}{'*' * 10}")
 
     # ── 3. credentials.json oluştur ──
     credentials_data = {

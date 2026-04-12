@@ -66,8 +66,7 @@ YouTube_Otomasyonu/
 ├── nixpacks.toml                    ← Railway build config
 ├── core/
 │   ├── conversation_manager.py      ← Chat-based sohbet motoru (GPT-4.1)
-│   ├── prompt_generator.py          ← Model-spesifik prompt üretimi
-│   └── topic_picker.py              ← İlham konuları (opsiyonel)
+│   └── prompt_generator.py          ← Viral-optimized prompt üretimi
 ├── infrastructure/
 │   ├── kie_client.py                ← Seedance + Veo unified client
 │   ├── replicate_merger.py          ← Video birleştirme (Replicate + FFmpeg)

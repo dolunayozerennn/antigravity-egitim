@@ -8,10 +8,14 @@ import json
 import asyncio
 import tempfile
 import logging
+import shutil
 import httpx
 from config import settings
 
 log = logging.getLogger("ReplicateMerger")
+
+# FFmpeg absolute path — Nixpacks PATH kaybı sorununu önler
+_FFMPEG_BIN = shutil.which("ffmpeg") or "ffmpeg"
 
 
 async def merge_videos(video_urls: list[str], keep_audio: bool = True) -> str:
@@ -123,13 +127,14 @@ async def _merge_via_ffmpeg(video_urls: list[str]) -> str:
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             for i, url in enumerate(video_urls):
-                log.info(f"   📥 Video {i+1}/{len(video_urls)} indiriliyor...")
-                resp = await client.get(url)
-                resp.raise_for_status()
+                log.info(f"   📥 Video {i+1}/{len(video_urls)} indiriliyor (streaming)...")
 
                 temp_path = os.path.join(tempfile.gettempdir(), f"merge_input_{i}_{int(time.time())}.mp4")
-                with open(temp_path, "wb") as f:
-                    f.write(resp.content)
+                async with client.stream("GET", url) as resp:
+                    resp.raise_for_status()
+                    with open(temp_path, "wb") as f:
+                        async for chunk in resp.aiter_bytes(chunk_size=65536):
+                            f.write(chunk)
                 temp_files.append(temp_path)
 
         # concat file oluştur
@@ -141,8 +146,8 @@ async def _merge_via_ffmpeg(video_urls: list[str]) -> str:
         # FFmpeg ile birleştir
         output_path = os.path.join(tempfile.gettempdir(), f"merged_{int(time.time())}.mp4")
 
-        cmd = f'ffmpeg -f concat -safe 0 -i "{concat_path}" -c copy -y "{output_path}"'
-        log.info(f"   🎞️ FFmpeg çalıştırılıyor: {cmd}")
+        cmd = f'{_FFMPEG_BIN} -f concat -safe 0 -i "{concat_path}" -c copy -y "{output_path}"'
+        log.info(f"   🎞️ FFmpeg çalıştırılıyor: {_FFMPEG_BIN}")
 
         proc = await asyncio.create_subprocess_shell(
             cmd,

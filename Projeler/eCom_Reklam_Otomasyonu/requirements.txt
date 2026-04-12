@@ -4,7 +4,7 @@
 # Telegram Bot Framework
 python-telegram-bot==21.10
 
-# OpenAI (GPT-5 Mini — Chat + Vision)
+# OpenAI (GPT-4.1 Mini — Chat + Vision)
 openai==1.68.2
 
 # HTTP İstekleri (Kie AI, ElevenLabs, ImgBB, Replicate, Perplexity)

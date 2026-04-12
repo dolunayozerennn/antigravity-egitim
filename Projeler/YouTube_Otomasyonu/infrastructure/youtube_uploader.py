@@ -175,10 +175,14 @@ def _get_credentials():
 
         if creds and creds.expired and creds.refresh_token:
             log.info("🔄 YouTube token yenileniyor...")
-            creds.refresh(Request())
-            with open(token_path, "w") as f:
-                f.write(creds.to_json())
-            log.info("✅ Token yenilendi ve kaydedildi.")
+            try:
+                creds.refresh(Request())
+                with open(token_path, "w") as f:
+                    f.write(creds.to_json())
+                log.info("✅ Token yenilendi ve kaydedildi.")
+            except Exception as e:
+                log.error(f"❌ Lokal token refresh başarısız: {e}", exc_info=True)
+                creds = None  # Sonraki yetkilendirme yoluna düş
 
         if creds and creds.valid:
             return creds

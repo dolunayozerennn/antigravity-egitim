@@ -170,7 +170,19 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Kural:** ElevenLabs sesleri kaldırılabilir. API'den güncel ses listesini çekerek doğrulama yap. Hardcoded voice name kullanma, voice ID tercih et.
 - **Tarih:** 11 Nisan 2026
 
-> *(Yeni hata karşılaşıldığında bu dosyaya ekle)*
+### Video Download Retry Eksikliği — SSL/Network Timeout Crash
+- **Sorun:** `YouTube_Otomasyonu` pipeline'ında Kie AI CDN'den video indirirken tek denemeli `requests.get()` kullanılıyordu. Railway ağında SSL EOF, connection reset veya timeout oluştuğunda pipeline direkt crash oluyordu.
+- **Kök Neden:** `video_downloader.py`'de retry mekanizması yoktu. Tek başarısız denemede `RuntimeError` fırlatılıp tüm pipeline sonlanıyordu.
+- **Çözüm:** 3 deneme + exponential backoff (2s, 4s) eklendi. Her başarısız denemede yarım kalmış dosya temizlenip tekrar deneniyor. Son denemede de başarısız olursa `RuntimeError` fırlatılıyor.
+- **Kural:** CDN/dış servislerden büyük dosya (video, görsel) indiren fonksiyonlara **mutlaka** retry + cleanup mekanizması ekle. Network hataları geçici olabilir.
+- **Tarih:** 12 Nisan 2026
+
+### FFmpeg subprocess PATH Kaybı — Nixpacks Child Process (TEKRARLAYAN)
+- **Sorun:** `replicate_merger.py`'de `ffmpeg` subprocess çağrısı bare binary adıyla (`"ffmpeg"`) yapılıyordu. Railway Nixpacks ortamında parent process PATH'i görür ama subprocess child PATH'i göremeyebilir.
+- **Kök Neden:** Nixpacks, ffmpeg'i `/root/.nix-profile/bin/` altına kuruyor. `shutil.which()` bu PATH'i görebilir ama `subprocess.run`/`create_subprocess_shell` child process her zaman miras alamıyor.
+- **Çözüm:** Modül seviyesinde `_FFMPEG_BIN = shutil.which("ffmpeg") or "ffmpeg"` ile absolute path resolve edilip subprocess çağrılarında bu değişken kullanıldı.
+- **Kural:** **Bu pattern `hatalar-ve-cozumler.md`'de 3. kez tekrarlıyor** (Twitter, LinkedIn, YouTube). Nixpacks'ta sistem binary'leri her zaman `shutil.which()` ile resolve edilmeli. Template'e eklenmiş durumda.
+- **Tarih:** 12 Nisan 2026
 
 ---
 

@@ -12,6 +12,7 @@ import json
 import random
 import asyncio
 import logging
+import threading
 from openai import OpenAI
 from config import settings
 
@@ -140,38 +141,40 @@ OUTPUT FORMAT (STRICT JSON):
 # ── Kullanılan senaryo geçmişi (tekrar önleme) ──
 _used_scenarios: list[str] = []
 _MAX_HISTORY = 10
+_scenario_lock = threading.Lock()  # Thread safety — concurrent_updates(True) koruması
 
 
 def _pick_random_scenario() -> tuple[str, str, str]:
     """
     Senaryo havuzundan rastgele bir senaryo seçer.
-    Tekrar etmemeye çalışır.
+    Tekrar etmemeye çalışır. Thread-safe.
 
     Returns:
         (camera_type, camera_directive, scenario_text)
     """
     global _used_scenarios
 
-    # Tüm senaryoları düzleştir
-    all_options = []
-    for cam_type, data in SCENARIO_POOLS.items():
-        for scenario in data["scenarios"]:
-            if scenario not in _used_scenarios:
-                all_options.append((cam_type, data["camera_directive"], scenario))
-
-    # Tümü kullanıldıysa geçmişi sıfırla
-    if not all_options:
-        _used_scenarios.clear()
+    with _scenario_lock:
+        # Tüm senaryoları düzleştir
+        all_options = []
         for cam_type, data in SCENARIO_POOLS.items():
             for scenario in data["scenarios"]:
-                all_options.append((cam_type, data["camera_directive"], scenario))
+                if scenario not in _used_scenarios:
+                    all_options.append((cam_type, data["camera_directive"], scenario))
 
-    choice = random.choice(all_options)
-    _used_scenarios.append(choice[2])
+        # Tümü kullanıldıysa geçmişi sıfırla
+        if not all_options:
+            _used_scenarios.clear()
+            for cam_type, data in SCENARIO_POOLS.items():
+                for scenario in data["scenarios"]:
+                    all_options.append((cam_type, data["camera_directive"], scenario))
 
-    # Geçmiş çok büyürse kırp
-    if len(_used_scenarios) > _MAX_HISTORY:
-        _used_scenarios = _used_scenarios[-_MAX_HISTORY:]
+        choice = random.choice(all_options)
+        _used_scenarios.append(choice[2])
+
+        # Geçmiş çok büyürse kırp
+        if len(_used_scenarios) > _MAX_HISTORY:
+            _used_scenarios = _used_scenarios[-_MAX_HISTORY:]
 
     return choice
 
@@ -277,12 +280,27 @@ Pick the most fitting camera type (bodycam, ring camera, home camera, CCTV, smar
     return await _call_gpt(CUSTOM_TOPIC_SYSTEM, user_message, config)
 
 
+# ── OpenAI Client Singleton (TCP bağlantı yeniden kullanımı) ──
+_openai_client: OpenAI | None = None
+_openai_lock = threading.Lock()
+
+
+def _get_openai_client() -> OpenAI:
+    """OpenAI client singleton — her çağrıda yeni bağlantı açmaz."""
+    global _openai_client
+    if _openai_client is None:
+        with _openai_lock:
+            if _openai_client is None:  # Double-check locking
+                _openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    return _openai_client
+
+
 async def _call_gpt(system_prompt: str, user_message: str, config: dict) -> dict:
     """GPT-4.1'i çağır ve yanıtı parse et."""
     log.info("🤖 GPT-4.1'e prompt üretim isteği gönderiliyor...")
 
     try:
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        client = _get_openai_client()
         response = await asyncio.to_thread(
             client.chat.completions.create,
             model="gpt-4.1",

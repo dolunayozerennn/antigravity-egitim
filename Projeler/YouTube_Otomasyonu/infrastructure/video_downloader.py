@@ -46,32 +46,60 @@ def download_video(video_url: str) -> str:
 
     log.info(f"📥 Video indiriliyor: {video_url[:80]}...")
 
-    try:
-        response = requests.get(video_url, stream=True, timeout=120)
-        response.raise_for_status()
+    max_attempts = 3
+    last_error = None
 
-        total_size = 0
-        with open(filepath, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-                    total_size += len(chunk)
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = requests.get(video_url, stream=True, timeout=(10, 120))
+            response.raise_for_status()
 
-        size_mb = total_size / (1024 * 1024)
-        log.info(f"✅ Video indirildi: {filepath} ({size_mb:.1f} MB)")
+            # Content-Type doğrulama — HTML error page veya JSON hata body'si olabilir
+            content_type = response.headers.get("Content-Type", "")
+            if content_type and "video" not in content_type and "octet-stream" not in content_type:
+                raise RuntimeError(
+                    f"Beklenmeyen Content-Type: {content_type}. "
+                    f"Video yerine hata sayfası dönmüş olabilir."
+                )
 
-        # Dosya bütünlük kontrolü
-        if total_size < 10000:  # 10KB'dan küçükse muhtemelen hatalı
-            log.warning(f"⚠️ İndirilen dosya çok küçük ({total_size} bytes). Bozuk olabilir!")
+            total_size = 0
+            with open(filepath, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        total_size += len(chunk)
 
-        return filepath
+            size_mb = total_size / (1024 * 1024)
+            log.info(f"✅ Video indirildi: {filepath} ({size_mb:.1f} MB)")
 
-    except requests.RequestException as e:
-        log.error(f"❌ Video indirme hatası: {e}", exc_info=True)
-        # Yarım kalmış dosyayı temizle
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        raise RuntimeError(f"Video indirilemedi: {e}")
+            # Dosya bütünlük kontrolü — 100KB'dan küçükse muhtemelen hatalı
+            if total_size < 100_000:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                raise RuntimeError(
+                    f"İndirilen dosya çok küçük ({total_size} bytes / {size_mb:.2f} MB). "
+                    f"Bozuk video veya hata yanıtı olabilir."
+                )
+
+            return filepath
+
+        except (requests.RequestException, RuntimeError) as e:
+            last_error = e
+            # Yarım kalmış dosyayı temizle
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except OSError:
+                    pass
+
+            if attempt < max_attempts:
+                wait = 2 ** attempt  # 2s, 4s
+                log.warning(f"⚠️ Video indirme hatası (deneme {attempt}/{max_attempts}): {e}. {wait}s sonra tekrar...")
+                time.sleep(wait)
+            else:
+                log.error(f"❌ Video indirme başarısız ({max_attempts} deneme): {e}", exc_info=True)
+
+    raise RuntimeError(f"Video indirilemedi ({max_attempts} deneme): {last_error}")
 
 
 def cleanup_video(filepath: str):
