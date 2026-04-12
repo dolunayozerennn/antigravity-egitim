@@ -151,7 +151,7 @@ class ProductionPipeline:
                             resolution="2k",
                             image_input=[product_image],
                         )
-                        nb2_result = await asyncio.to_thread(self.kie.poll_task, nb2_task)
+                        nb2_result = await self.kie.async_poll_task(nb2_task)
 
                         if nb2_result["status"] == "success" and nb2_result["urls"]:
                             first_frame_url = nb2_result["urls"][0]
@@ -174,7 +174,7 @@ class ProductionPipeline:
                             aspect_ratio=aspect_ratio,
                             resolution="2k",
                         )
-                        nb2_result = await asyncio.to_thread(self.kie.poll_task, nb2_task)
+                        nb2_result = await self.kie.async_poll_task(nb2_task)
                         if nb2_result["status"] == "success" and nb2_result["urls"]:
                             first_frame_url = nb2_result["urls"][0]
                         else:
@@ -211,8 +211,8 @@ class ProductionPipeline:
 
             log.info(f"Seedance 2.0 video görevi: {video_task}")
 
-            # Polling — event loop'u bloke etmemek için thread'de çalıştır
-            video_result = await asyncio.to_thread(self.kie.poll_task, video_task)
+            # Async polling — event loop'u bloke etmez
+            video_result = await self.kie.async_poll_task(video_task)
 
             if video_result["status"] != "success" or not video_result.get("urls"):
                 error_msg = video_result.get("error", "Video üretimi başarısız")
@@ -236,7 +236,7 @@ class ProductionPipeline:
                                 generate_audio=generate_audio,
                                 first_frame_url=first_frame_url,
                             )
-                            video_result2 = await asyncio.to_thread(self.kie.poll_task, video_task2)
+                            video_result2 = await self.kie.async_poll_task(video_task2)
                             if video_result2["status"] == "success" and video_result2.get("urls"):
                                 raw_video_url = video_result2["urls"][0]
                                 result["raw_video_url"] = raw_video_url
@@ -316,8 +316,8 @@ class ProductionPipeline:
                             "🔀 Video ve dış ses birleştiriliyor (Replicate)..."
                         )
 
-                    final_video_url = await asyncio.to_thread(
-                        self.replicate.merge_video_audio,
+                    # Async merge — event loop'u bloke etmez
+                    final_video_url = await self.replicate.async_merge_video_audio(
                         video_url=raw_video_url,
                         audio_url=audio_url,
                         replace_audio=False,

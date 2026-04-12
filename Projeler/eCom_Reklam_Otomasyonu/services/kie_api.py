@@ -225,6 +225,71 @@ class KieAIService:
         log.error(f"Polling timeout: {task_id} — {MAX_POLL_ATTEMPTS} deneme aşıldı")
         return {"status": "failed", "error": "Polling timeout — görev süre aşımına uğradı"}
 
+    async def async_poll_task(self, task_id: str, callback=None) -> dict:
+        """
+        Görev tamamlanana kadar async polling yapar.
+        
+        time.sleep() yerine asyncio.sleep() kullanır →
+        event loop'u BLOKE ETMEZ, thread pool tüketmez.
+        
+        Production pipeline bu metodu doğrudan (await ile) çağırmalı.
+        asyncio.to_thread() ile sarmalamanıza GEREK YOKTUR.
+
+        Args:
+            task_id: Görev ID'si
+            callback: Her polling iterasyonunda çağrılacak fonksiyon
+                      callback(attempt, state) şeklinde
+
+        Returns:
+            dict: {"status": "success", "urls": [...]} veya
+                  {"status": "failed", "error": "..."}
+        """
+        import asyncio as _asyncio
+        url = f"{self.base_url}/jobs/recordInfo"
+
+        for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
+            try:
+                # HTTP isteği kısa süreli — thread'de çalıştır
+                response = await _asyncio.to_thread(
+                    requests.get,
+                    url,
+                    params={"taskId": task_id},
+                    headers=self.headers,
+                    timeout=REQUEST_TIMEOUT,
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                state = data.get("data", {}).get("state", "unknown")
+
+                if callback:
+                    callback(attempt, state)
+
+                if state == "success":
+                    result_json = data["data"].get("resultJson", "{}")
+                    parsed = json.loads(result_json) if isinstance(result_json, str) else result_json
+                    urls = parsed.get("resultUrls", [])
+                    log.info(f"Görev tamamlandı: {task_id} — {len(urls)} çıktı, "
+                             f"{attempt} polling denemesi")
+                    return {"status": "success", "urls": urls}
+
+                if state in ("failed", "fail"):
+                    fail_msg = data["data"].get("failMsg", "Bilinmeyen hata")
+                    log.error(f"Görev başarısız: {task_id} — {fail_msg}")
+                    return {"status": "failed", "error": fail_msg}
+
+                # processing / waiting — devam et
+                log.info(f"Polling {task_id}: [{attempt}/{MAX_POLL_ATTEMPTS}] state={state}")
+
+            except Exception:
+                log.error(f"Polling hatası ({attempt}): {task_id}", exc_info=True)
+
+            # ✅ asyncio.sleep — event loop'u bloke etmez
+            await _asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+        log.error(f"Async polling timeout: {task_id} — {MAX_POLL_ATTEMPTS} deneme aşıldı")
+        return {"status": "failed", "error": "Polling timeout — görev süre aşımına uğradı"}
+
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 💰 KREDİ SORGULAMA
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

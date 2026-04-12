@@ -111,6 +111,93 @@ class ReplicateService:
             log.error("Replicate birleştirme genel hatası", exc_info=True)
             raise
 
+    async def async_merge_video_audio(
+        self,
+        video_url: str,
+        audio_url: str,
+        replace_audio: bool = False,
+    ) -> str:
+        """
+        Video ve ses dosyalarını async olarak birleştirir.
+        
+        time.sleep() yerine asyncio.sleep() kullanır →
+        event loop'u BLOKE ETMEZ, thread pool tüketmez.
+        
+        Production pipeline bu metodu doğrudan (await ile) çağırmalı.
+        asyncio.to_thread() ile sarmalamanıza GEREK YOKTUR.
+
+        Returns:
+            str: Birleştirilmiş video URL'i
+        """
+        import asyncio as _asyncio
+
+        try:
+            log.info(
+                f"Async video+ses birleştirme başlatılıyor: "
+                f"replace_audio={replace_audio}"
+            )
+
+            # prediction oluşturma kısa süreli — thread'de çalıştır
+            prediction = await _asyncio.to_thread(
+                self.client.predictions.create,
+                model="lucataco/video-audio-merge",
+                input={
+                    "video": video_url,
+                    "audio": audio_url,
+                    "replace_audio": replace_audio,
+                },
+            )
+
+            log.info(f"Replicate prediction oluşturuldu: {prediction.id}")
+
+            # Async Polling
+            for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
+                # reload() kısa süreli HTTP isteği — thread'de çalıştır
+                await _asyncio.to_thread(prediction.reload)
+
+                if prediction.status == "succeeded":
+                    output_url = prediction.output
+                    if output_url is None:
+                        raise RuntimeError(f"Replicate succeeded ama output None: {prediction.id}")
+                    if isinstance(output_url, list):
+                        output_url = output_url[0] if output_url else None
+                    if output_url is None:
+                        raise RuntimeError(f"Replicate succeeded ama output boş liste: {prediction.id}")
+                    output_url = str(output_url)
+                    if not output_url.startswith("http"):
+                        raise RuntimeError(f"Replicate geçersiz output URL: {output_url[:100]}")
+                    log.info(
+                        f"Video+ses birleştirme tamamlandı: {prediction.id} "
+                        f"({attempt} deneme)"
+                    )
+                    return output_url
+
+                if prediction.status == "failed":
+                    error = prediction.error or "Bilinmeyen hata"
+                    log.error(f"Replicate başarısız: {prediction.id} — {error}")
+                    raise RuntimeError(f"Replicate merge başarısız: {error}")
+
+                if prediction.status == "canceled":
+                    raise RuntimeError("Replicate görev iptal edildi")
+
+                log.info(
+                    f"Replicate polling [{attempt}/{MAX_POLL_ATTEMPTS}]: "
+                    f"status={prediction.status}"
+                )
+                # ✅ asyncio.sleep — event loop'u bloke etmez
+                await _asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+            raise TimeoutError(
+                f"Replicate timeout: {prediction.id} — "
+                f"{MAX_POLL_ATTEMPTS} deneme aşıldı"
+            )
+
+        except (RuntimeError, TimeoutError):
+            raise
+        except Exception:
+            log.error("Replicate async birleştirme genel hatası", exc_info=True)
+            raise
+
     def get_prediction_status(self, prediction_id: str) -> dict:
         """
         Mevcut prediction durumunu sorgular.
