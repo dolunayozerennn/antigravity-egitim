@@ -74,7 +74,13 @@ class KieClient:
         resolution: str = "720p",
     ) -> str:
         """
-        Tek bir video üretir.
+        Tek bir video üretir — 4 katmanlı içerik güvenliği ile.
+
+        Savunma derinliği:
+          1. GPT Pre-flight Check (~2s) — riskli promptu Kie AI'a göndermeden yakalar
+          2. ContentFilterError → GPT Rewrite (~2s) — rejection reason ile akıllı yeniden yazma
+          3. 2. retry → farklı GPT rewrite (daha agresif)
+          4. Model Fallback — tüm retry'lar başarısızsa alternatif modeli dene
 
         Args:
             model: "seedance-2" veya "veo3.1"
@@ -98,10 +104,23 @@ class KieClient:
 
         aspect_ratio = ORIENTATION_MAP.get(orientation, "9:16")
 
-        # ── Content Filter Retry Mekanizması ──
-        # Reddedilirse prompt'u yumuşatıp tekrar dener (max 2 retry)
+        # ════════════════════════════════════════════
+        # KATMAN 1: GPT Pre-flight Check (~2s)
+        # ════════════════════════════════════════════
+        from core.prompt_sanitizer import gpt_preflight_check
+        current_prompt, was_rewritten, preflight_meta = await gpt_preflight_check(prompt)
+
+        if was_rewritten:
+            log.info(f"🛡️ GPT Pre-flight prompt'u yeniden yazdı (risk: {preflight_meta.get('risk_score', '?')}/10)")
+
+        # Güvenlik telemetrisi kayıt
+        self._last_preflight_meta = preflight_meta
+
+        # ════════════════════════════════════════════
+        # KATMAN 2+3: Content Filter Retry (GPT-Powered)
+        # ════════════════════════════════════════════
         max_content_retries = 2
-        current_prompt = prompt
+        last_rejection_reason = ""
 
         for content_attempt in range(max_content_retries + 1):
             try:
@@ -119,20 +138,54 @@ class KieClient:
                 return video_url
 
             except ContentFilterError as cfe:
+                last_rejection_reason = str(cfe)
                 if content_attempt < max_content_retries:
                     log.warning(
                         f"⚠️ İçerik filtresi reddetti (deneme {content_attempt + 1}/{max_content_retries + 1}). "
-                        f"Prompt yumuşatılıp tekrar denenecek..."
+                        f"GPT ile yeniden yazılacak..."
                     )
-                    # Prompt'u sanitize et (giderek daha agresif)
-                    from core.prompt_sanitizer import sanitize_prompt, create_softened_prompt
-                    if content_attempt == 0:
-                        current_prompt, _ = sanitize_prompt(current_prompt)
-                    else:
-                        current_prompt = create_softened_prompt(current_prompt)
+                    # ── GPT-Powered Retry Rewrite ──
+                    from core.prompt_sanitizer import gpt_rewrite_rejected_prompt
+                    current_prompt = await gpt_rewrite_rejected_prompt(
+                        original_prompt=current_prompt,
+                        rejection_reason=last_rejection_reason,
+                    )
+                    log.info(f"   ✏️ GPT rewrite sonucu: {current_prompt[:100]}...")
                 else:
-                    log.error(f"❌ İçerik filtresi {max_content_retries + 1} denemede de reddetti.")
-                    raise  # Son deneme de başarısız → yukarı fırlat
+                    log.error(f"❌ İçerik filtresi {max_content_retries + 1} denemede de reddetti ({model}).")
+
+                    # ════════════════════════════════════════
+                    # KATMAN 4: Model Fallback
+                    # ════════════════════════════════════════
+                    fallback_model = "veo3.1" if model == "seedance-2" else "seedance-2"
+                    fallback_cfg = MODEL_CONFIG.get(fallback_model)
+
+                    if fallback_cfg:
+                        log.warning(
+                            f"🔄 Model fallback: {model} → {fallback_model} deneniyor "
+                            f"(farklı güvenlik eşiği olabilir)..."
+                        )
+                        try:
+                            task_id = await self._create_task(
+                                fallback_cfg, current_prompt, aspect_ratio,
+                                duration, audio, resolution
+                            )
+                            log.info(f"📋 Fallback task oluşturuldu ({fallback_cfg['model_id']}): {task_id}")
+
+                            initial_wait = settings.POLL_INITIAL_WAIT
+                            log.info(f"⏳ Fallback bekleme: {initial_wait} saniye...")
+                            await asyncio.sleep(initial_wait)
+
+                            video_url = await self._poll_for_result(fallback_cfg, task_id)
+                            log.info(f"✅ Fallback model ({fallback_model}) başarılı!")
+                            return video_url
+
+                        except ContentFilterError:
+                            log.error(f"❌ Fallback model ({fallback_model}) de reddetti.")
+                        except Exception as e:
+                            log.error(f"❌ Fallback model ({fallback_model}) hatası: {e}")
+
+                    raise  # Son deneme + fallback da başarısız → yukarı fırlat
 
     async def create_videos_batch(
         self,

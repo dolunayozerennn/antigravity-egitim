@@ -284,6 +284,19 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
         await asyncio.to_thread(tracker.update_with_video, video_urls[0])
         await _safe_edit(status_msg, f"✅ {len(video_urls)} video hazır!")
 
+        # ── Güvenlik Telemetrisi ──
+        try:
+            preflight_meta = getattr(kie, '_last_preflight_meta', {})
+            if preflight_meta and preflight_meta.get('risk_score', 0) > 0:
+                safety_data = {
+                    "preflight_risk_score": preflight_meta.get('risk_score', 0),
+                    "preflight_rewritten": preflight_meta.get('rewritten', False),
+                    "rejection_reasons": preflight_meta.get('risk_reasons', []),
+                }
+                await asyncio.to_thread(tracker.update_with_safety_info, safety_data)
+        except Exception as e:
+            log.debug(f"Güvenlik telemetrisi hatası (önemsiz): {e}")
+
         # ── ADIM 4: Birleştirme (gerekliyse) ──
         final_video_url = video_urls[0]
 

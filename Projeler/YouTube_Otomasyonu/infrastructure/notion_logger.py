@@ -137,6 +137,59 @@ class NotionTracker:
         }
         self.update_status(STATUS_ERROR, extra)
 
+    def update_with_safety_info(self, safety_data: dict):
+        """
+        İçerik güvenliği telemetrisi — pre-flight, retry ve fallback bilgilerini kaydeder.
+
+        Args:
+            safety_data: {
+                "preflight_risk_score": 1-10,
+                "preflight_rewritten": True/False,
+                "content_retries": 0-3,
+                "model_fallback_used": True/False,
+                "rejection_reasons": ["reason1", ...],
+                "original_prompt": "...",
+                "final_prompt": "...",
+            }
+        """
+        if not self.enabled or not self.page_id:
+            return
+
+        if settings.IS_DRY_RUN:
+            log.info(f"🧪 DRY-RUN Notion güvenlik telemetrisi: {safety_data}")
+            return
+
+        # Güvenlik bilgilerini tek bir metin alanında birleştir
+        parts = []
+        risk_score = safety_data.get("preflight_risk_score", 0)
+        if risk_score > 0:
+            parts.append(f"Pre-flight Risk: {risk_score}/10")
+        if safety_data.get("preflight_rewritten"):
+            parts.append("Pre-flight: GPT Rewrite uygulandı")
+        retries = safety_data.get("content_retries", 0)
+        if retries > 0:
+            parts.append(f"Content Filter Retry: {retries}x")
+        if safety_data.get("model_fallback_used"):
+            parts.append("Model Fallback kullanıldı")
+        reasons = safety_data.get("rejection_reasons", [])
+        if reasons:
+            parts.append(f"Ret sebepleri: {', '.join(reasons[:3])}")
+
+        if not parts:
+            return  # Güvenlik olayı yok — güncelleme gerek yok
+
+        safety_text = " | ".join(parts)
+
+        extra = {
+            "Güvenlik": {"rich_text": [{"text": {"content": safety_text[:2000]}}]},
+        }
+
+        try:
+            _notion_request("PATCH", f"{NOTION_API_URL}/pages/{self.page_id}", json={"properties": extra})
+            log.info(f"📋 Notion güvenlik telemetrisi kaydedildi: {safety_text[:80]}")
+        except Exception as e:
+            log.warning(f"⚠️ Notion güvenlik telemetrisi hatası: {e}")
+
 
 def _notion_request(method: str, url: str, **kwargs) -> dict:
     """Notion API'ye istek gönderir — geçici ağ hataları için retry mekanizmalı."""
