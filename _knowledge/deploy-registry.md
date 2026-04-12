@@ -235,7 +235,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `87e24335-52c9-460f-8b2e-0f481f5501bd`
 - **Service ID:** `d17abb9e-3ef1-4f50-98c1-f4290bb2f090`
 - **Environment ID:** `30bb2f27-0297-4148-88f0-d28f2ac58a6c`
-- **Deployment ID:** `669aa42e-114d-4c95-91aa-dd63031b666e`
+- **Deployment ID:** `daf47055-105f-4e9f-85c4-a228f0eca0b5`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/YouTube_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/YouTube_Otomasyonu/`
 - **Start Komutu:** `python main.py`

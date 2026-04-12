@@ -138,7 +138,7 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Kural:** Bir fonksiyonun **çağrı noktasını** değiştirirken, fonksiyonun **tanımını** da kontrol et. Caller ↔ Callee uyumsuzluğu en sık crash nedenidir. Deploy öncesi `python3 -c "from modül import fonksiyon"` testi bunu yakalar.
 - **Tarih:** 11 Nisan 2026
 
-### GPT-5 Mini API Parametre Uyumsuzluğu — max_tokens + temperature (KRİTİK)
+### GPT-5 Mini → GPT-4.1 Mini API Geçişi — max_tokens + temperature (KRİTİK)
 - **Sorun:** `eCom_Reklam_Otomasyonu` projesinde tüm OpenAI API çağrıları `400 Bad Request` ile CRASH oluyordu.
 - **Kök Neden (2 ayrı sorun):**
   1. GPT-5 Mini modeli `max_tokens` parametresini kabul etmiyor, `max_completion_tokens` kullanmak ZORUNLU
@@ -149,19 +149,20 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
   2. `temperature` parametresi API çağrılarından kaldırıldı
   3. Boş content için 3 deneme retry mekanizması + null guard eklendi
   4. 3 denemede de boşsa graceful olarak `{}` dönüyor
-- **Kural:** OpenAI model değişikliğinde **API parametre uyumluluğunu kontrol et**. GPT-5 Mini artık `max_completion_tokens` kullanıyor ve `temperature` sadece default destekliyor.
+  5. **Model GPT-4.1 Mini'ye geçirildi** — boş content sorunu çözüldü
+- **Kural:** OpenAI model değişikliğinde **API parametre uyumluluğunu kontrol et**. Model değişikliği sonrası tüm dosyalardaki referansları güncelle.
 - **Tarih:** 11 Nisan 2026
 
-### GPT-5 Mini Non-JSON Modda Boş Content (Empty Response) Sorunu
+### GPT-4.1 Mini Non-JSON Modda Boş Content (Empty Response) Sorunu
 - **Sorun:** `openai_service.py` içinde `chat()` metodu (json_object formatı OLMADAN) kısa system prompt'larda 3 denemeye rağmen sürekli boş content döndürüyordu. Aynı mesajla `chat_json()` (json_object formatı İLE) sorunsuz çalışıyordu.
-- **Kök Neden:** GPT-5 Mini, `response_format: json_object` belirtilmediğinde ve çok kısa/minimalist system prompt verildiğinde empty content döndürebiliyor. Bu özellikle `max_tokens < 100` olan çağrılarda belirgin.
+- **Kök Neden:** Non-JSON modunda ve çok kısa/minimalist system prompt verildiğinde empty content döndürebiliyor. Bu özellikle `max_tokens < 100` olan çağrılarda belirgin.
 - **Etki:** Bot akışında minimal — çünkü bot kullanıcı mesajlarını `chat_json()` ile işliyor, `chat()` yalnızca `analyze_image()` içinde kullanılıyor.
 - **Çözüm (3 katman):**
   1. `openai_service.py` → `chat()` ve `chat_json()` metodlarına `effective_max_tokens = max(max_tokens, 100/200)` minimum token sınırı eklendi
   2. Retry döngüsüne 0.5s bekleme eklendi — rate limit / cache sorunlarını aşmak için
   3. 3 denemede de boş content gelirse `RuntimeError` fırlatılıyor (sessiz boş string dönmek yerine)
   4. `conversation_manager.py` → `RuntimeError` yakalanıp kullanıcıya "AI şu an meşgul, tekrar dene" mesajı veriliyor
-- **Kural:** GPT-5 Mini ile `chat()` çağrılarında system prompt'u detaylı tut ve `max_tokens >= 100` kullan. Mümkünse `json_object` formatını tercih et — bu modda empty content sorunu gözlemlenmedi.
+- **Kural:** `chat()` çağrılarında system prompt'u detaylı tut ve `max_tokens >= 100` kullan. Mümkünse `json_object` formatını tercih et.
 - **Tarih:** 11 Nisan 2026
 
 ### ElevenLabs Rachel Sesi Kaldırıldı — Voice Deprecation
@@ -497,3 +498,18 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
   3. `/canli-yayina-al` workflow'u kullanılmasa bile push + deploy + smoke test zinciri ZORUNLU
 - **Tarih:** 11 Nisan 2026
 
+### eCom Reklam Otomasyonu v2.1 — 24 Bug Fix Stabilizasyon
+- **Sorun:** Proje 24/7 otonom çalışırken birden fazla crash noktası vardı.
+- **Kök Nedenler ve Çözümler:**
+  1. **Event Loop Blocking (P0):** Tüm senkron API çağrıları (requests, Replicate SDK) `asyncio.to_thread()` ile sarımlanarak async event loop'un bloklanması önlendi
+  2. **Bellek Sızıntısı (P0):** `UserSession` objeleri hiç temizlenmiyordu. 10dk idle timeout + `_session_cleanup_task` + 20 mesaj chat_history limiti eklendi
+  3. **Vision API NoneType (P1):** `analyze_image()` ve `analyze_image_bytes()` null content döndürüyordu. NoneType guard + 3 deneme retry eklendi
+  4. **Telegram Markdown Parse (P1):** LLM çıktılarındaki özel karakterler parse hatası veriyordu. `parse_mode=None` fallback eklendi
+  5. **Perplexity Exception Handling (P1):** String dönmek yerine `RuntimeError` fırlatılıyor, ScenarioEngine fallback ile yakalıyor
+  6. **Replicate FileOutput (P1):** SDK `FileOutput` objesi döndürüyordu, `str()` cast eklendi
+  7. **Input Validasyonu (P1):** `aspect_ratio`, `resolution`, `video_duration` için normalize + valid set kontrolü eklendi
+  8. **Audio Hosting (P2):** imgbb_api_key bağımlılığı kaldırıldı, tmpfiles.org (birincil) + file.io (fallback) eklendi
+  9. **Voiceover Süre Kontrolü (P3):** Ses metni video süresini aşarsa otomatik kırpılıyor
+  10. **asyncio.create_task Hata Yutma (P0):** `_handle_task_exception` done callback eklenerek fire-and-forget task hataları loglanıyor
+- **Kural:** Async Python projelerinde senkron API çağrıları **mutlaka** `asyncio.to_thread()` ile sarımlanmalı. Session objeleri için idle TTL zorunlu.
+- **Tarih:** 12 Nisan 2026
