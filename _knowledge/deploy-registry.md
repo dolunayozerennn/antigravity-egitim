@@ -239,7 +239,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/YouTube_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/YouTube_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-12 (V2.2 Stabilizasyon — 14 bug fix + 2. tur: FFmpeg PATH resolve, video download retry, README düzeltme)
+- **Son Deploy:** 2026-04-12 (V2.3 Stabilizasyon 3. tur — 5 fix: event loop blocking, HTTP client TCP reuse, Notion retry mekanizması, nixpacks temizliği)
 - **YouTube Kanalı:** Pets Got Talent (UCvj1A1gds6jZUgsPbhF3Muw) — OAuth2 bağlı
 - **Durum:** ✅ Aktif (7/24 Telegram bot — YouTube video üretim otomasyonu)
 - **Env Vars:** ENV, OPENAI_API_KEY, KIE_API_KEY, REPLICATE_API_TOKEN, TELEGRAM_YOUTUBE_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, ALLOWED_USER_IDS, NOTION_SOCIAL_TOKEN, NOTION_DB_YOUTUBE_OTOMASYON, DEFAULT_MODEL, YOUTUBE_ENABLED, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, YOUTUBE_CATEGORY_ID, YOUTUBE_PRIVACY

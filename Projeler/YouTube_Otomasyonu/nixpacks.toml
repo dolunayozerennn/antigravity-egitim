@@ -1,7 +1,5 @@
 [phases.setup]
-nixPkgs = ["ffmpeg"]
-aptPkgs = ["ffmpeg"]
+nixPkgs = ["ffmpeg", "python311"]
 
 [start]
 cmd = "python main.py"
-# Force rebuild Sat Apr 11 21:16:49 +03 2026

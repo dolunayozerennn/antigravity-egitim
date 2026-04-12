@@ -87,33 +87,33 @@ async def _merge_via_replicate(video_urls: list[str], keep_audio: bool) -> str:
     log.info(f"📋 Replicate prediction oluşturuldu: {prediction_id}")
 
     # ── Polling ──
-    for attempt in range(1, 61):
-        await asyncio.sleep(10)
+    async with httpx.AsyncClient(timeout=30) as client:
+        for attempt in range(1, 61):
+            await asyncio.sleep(10)
 
-        async with httpx.AsyncClient(timeout=30) as client:
             poll_resp = await client.get(poll_url, headers=headers)
 
-        poll_data = poll_resp.json()
-        status = poll_data.get("status", "unknown")
+            poll_data = poll_resp.json()
+            status = poll_data.get("status", "unknown")
 
-        if status == "succeeded":
-            output = poll_data.get("output")
-            if isinstance(output, str):
-                return output
-            elif isinstance(output, list) and output:
-                return output[0]
+            if status == "succeeded":
+                output = poll_data.get("output")
+                if isinstance(output, str):
+                    return output
+                elif isinstance(output, list) and output:
+                    return output[0]
+                else:
+                    raise RuntimeError(f"Replicate output formatı beklenmiyor: {output}")
+
+            elif status == "failed":
+                error = poll_data.get("error", "Bilinmeyen hata")
+                raise RuntimeError(f"Replicate merge başarısız: {error}")
+
+            elif status == "canceled":
+                raise RuntimeError("Replicate merge iptal edildi")
+
             else:
-                raise RuntimeError(f"Replicate output formatı beklenmiyor: {output}")
-
-        elif status == "failed":
-            error = poll_data.get("error", "Bilinmeyen hata")
-            raise RuntimeError(f"Replicate merge başarısız: {error}")
-
-        elif status == "canceled":
-            raise RuntimeError("Replicate merge iptal edildi")
-
-        else:
-            log.info(f"   [{attempt}/60] Replicate durum: {status}...")
+                log.info(f"   [{attempt}/60] Replicate durum: {status}...")
 
     raise RuntimeError("Replicate merge zaman aşımı (60 deneme)")
 

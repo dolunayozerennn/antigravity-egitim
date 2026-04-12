@@ -32,22 +32,25 @@
 - **Kontrol 3:** ⏳ (2026-04-13 — ikinci cron çalışması)
 - **Sonuç:** 2 temiz kontrol → arşive taşı
 
-### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu v2.0
-- **Deploy tarihi:** 2026-04-12 (v2.0 — 6 kritik bug fix + fotoğraf opsiyonel + URL scrape + teyit mekanizması)
+### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu v2.1
+- **Deploy tarihi:** 2026-04-12 (v2.1 Stabilizasyon — 24 bug fix)
 - **İzleme bitiş:** 2026-04-14
 - **Kontrol 1:** ✅ (2026-04-12 10:28 — Bot aktif, polling çalışıyor, fatal error YOK, model gpt-4.1-mini doğru)
-- **Kontrol 2:** ⏳ (2026-04-14 — ikinci kontrol)
-- **Fix özeti:** product_image opsiyonel, URL scrape + teyit, metin onay, resolution REQUIRED, state-aware context, PHOTO_CONFIRMATION state
+- **Kontrol 2:** ✅ (2026-04-12 11:25 — v2.1 redeploy SUCCESS, smoke test temiz)
+- **Kontrol 3:** ⏳ (2026-04-14 — izleme bitiş kontrolü)
+- **v2.0 fix özeti:** product_image opsiyonel, URL scrape + teyit, metin onay, resolution REQUIRED, state-aware context, PHOTO_CONFIRMATION state
+- **v2.1 fix özeti:** event loop blocking (asyncio.to_thread), Vision API NoneType retry, session bellek sızıntısı TTL cleanup, Markdown parse fallback, Perplexity exception handling, aspect_ratio/resolution validasyonu, voiceover süre kontrolü, tmpfiles.org fallback, Replicate FileOutput cast, asyncio task hata yutma fix
 - **Sonuç:** 2 temiz kontrol → arşive taşı
 
-### 🟡 48-Saat İzleme — YouTube_Otomasyonu_V2.2
+### 🟡 48-Saat İzleme — YouTube_Otomasyonu_V2.3
 - **Deploy tarihi:** 2026-04-12 (V2.2 stabilizasyon — 14 bug fix + stabilizasyon 2. tur)
-- **Re-deploy:** 2026-04-12 (stabilizasyon fix: FFmpeg PATH resolve, video download retry, README düzeltme)
+- **Re-deploy:** 2026-04-12 (V2.3 — 3. tur stabilizasyon: 5 ek fix)
 - **İzleme bitiş:** 2026-04-14
 - **Kontrol 1:** ✅ (2026-04-12 10:27 — Bot aktif, polling çalışıyor, smoke test geçti, fatal error YOK)
 - **Kontrol 2:** ⏳ (2026-04-14 — ikinci kontrol)
 - **Fix özeti (1. tur):** auto_mode crash (await sync), bellek sızıntısı (TTL+msg limit), .gitignore güvenlik, exponential backoff, Markdown V1 uyumu, YouTube fail-fast, hata mesajı güvenliği
 - **Fix özeti (2. tur):** FFmpeg shutil.which() ile absolute PATH resolve, video_downloader 3x retry + exponential backoff, README topic_picker.py referansı kaldırıldı
+- **Fix özeti (3. tur):** auto_mode notify asyncio.to_thread(), kie_client TCP reuse, replicate_merger TCP reuse, notion_logger 3x retry + exponential backoff, nixpacks.toml temizlik (aptPkgs kaldırıldı, python311 eklendi)
 - **Sonuç:** 2 temiz kontrol → arşive taşı
 
 ### 🟡 48-Saat İzleme — LinkedIn Otomasyonu (Text + Video)

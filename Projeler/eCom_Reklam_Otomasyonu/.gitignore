@@ -5,6 +5,8 @@
 master.env
 *.key
 *.pem
+token.json
+credentials.json
 
 # Python
 __pycache__/

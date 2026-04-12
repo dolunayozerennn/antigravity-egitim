@@ -201,50 +201,50 @@ class KieClient:
         max_attempts = settings.POLL_MAX_ATTEMPTS
         consecutive_429 = 0  # Exponential backoff sayacı
 
-        for attempt in range(1, max_attempts + 1):
-            try:
-                async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=30) as client:
+            for attempt in range(1, max_attempts + 1):
+                try:
                     response = await client.get(
                         url,
                         params={"taskId": task_id},
                         headers=self._headers(),
                     )
 
-                if response.status_code == 429:
-                    consecutive_429 += 1
-                    wait_time = min(interval * (2 ** consecutive_429), 120)  # Max 120s
-                    log.warning(f"⚠️ Rate limit! Exponential backoff: {wait_time}s (#{consecutive_429})...")
-                    await asyncio.sleep(wait_time)
-                    continue
+                    if response.status_code == 429:
+                        consecutive_429 += 1
+                        wait_time = min(interval * (2 ** consecutive_429), 120)  # Max 120s
+                        log.warning(f"⚠️ Rate limit! Exponential backoff: {wait_time}s (#{consecutive_429})...")
+                        await asyncio.sleep(wait_time)
+                        continue
 
-                # 429 olmayan başarılı yanıt → sayacı sıfırla
-                consecutive_429 = 0
+                    # 429 olmayan başarılı yanıt → sayacı sıfırla
+                    consecutive_429 = 0
 
-                resp_data = response.json()
-                data = resp_data.get("data", {})
-                state = data.get("state", "unknown")
+                    resp_data = response.json()
+                    data = resp_data.get("data", {})
+                    state = data.get("state", "unknown")
 
-                if state in ("success", "completed"):
-                    video_url = self._extract_video_url(data)
-                    if not video_url:
-                        raise RuntimeError(f"Video URL bulunamadı. data: {data}")
+                    if state in ("success", "completed"):
+                        video_url = self._extract_video_url(data)
+                        if not video_url:
+                            raise RuntimeError(f"Video URL bulunamadı. data: {data}")
 
-                    log.info(f"✅ Video hazır! ({attempt} deneme)")
-                    log.info(f"   URL: {video_url[:80]}...")
-                    return video_url
+                        log.info(f"✅ Video hazır! ({attempt} deneme)")
+                        log.info(f"   URL: {video_url[:80]}...")
+                        return video_url
 
-                elif state in ("failed", "fail"):
-                    fail_msg = data.get("failMsg", "Bilinmeyen hata")
-                    log.error(f"❌ Video üretimi başarısız: {fail_msg}")
-                    raise RuntimeError(f"Video üretimi başarısız: {fail_msg}")
+                    elif state in ("failed", "fail"):
+                        fail_msg = data.get("failMsg", "Bilinmeyen hata")
+                        log.error(f"❌ Video üretimi başarısız: {fail_msg}")
+                        raise RuntimeError(f"Video üretimi başarısız: {fail_msg}")
 
-                else:
-                    log.info(f"   [{attempt}/{max_attempts}] Durum: {state}... ({interval}s sonra tekrar)")
+                    else:
+                        log.info(f"   [{attempt}/{max_attempts}] Durum: {state}... ({interval}s sonra tekrar)")
+                        await asyncio.sleep(interval)
+
+                except httpx.RequestError as e:
+                    log.warning(f"⚠️ Polling ağ hatası (deneme {attempt}): {e}")
                     await asyncio.sleep(interval)
-
-            except httpx.RequestError as e:
-                log.warning(f"⚠️ Polling ağ hatası (deneme {attempt}): {e}")
-                await asyncio.sleep(interval)
 
         raise RuntimeError(
             f"Video üretimi zaman aşımı! {max_attempts} deneme sonunda tamamlanmadı. "

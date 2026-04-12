@@ -139,19 +139,31 @@ class NotionTracker:
 
 
 def _notion_request(method: str, url: str, **kwargs) -> dict:
-    """Notion API'ye istek gönderir."""
+    """Notion API'ye istek gönderir — geçici ağ hataları için retry mekanizmalı."""
     headers = {
         "Authorization": f"Bearer {settings.NOTION_TOKEN}",
         "Notion-Version": NOTION_VERSION,
         "Content-Type": "application/json",
     }
 
-    try:
-        response = requests.request(method, url, headers=headers, timeout=15, **kwargs)
-    except requests.RequestException as e:
-        raise RuntimeError(f"Notion API bağlantı hatası: {e}")
+    _TRANSIENT_KEYWORDS = ("eof", "ssl", "broken pipe", "connection reset", "timeout", "connection aborted")
+    max_retries = 3
 
-    if response.status_code not in (200, 201):
-        raise RuntimeError(f"Notion API hatası: {response.status_code} — {response.text[:200]}")
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.request(method, url, headers=headers, timeout=15, **kwargs)
+        except requests.RequestException as e:
+            err_lower = str(e).lower()
+            if attempt < max_retries and any(kw in err_lower for kw in _TRANSIENT_KEYWORDS):
+                wait = 2 ** attempt
+                log.warning(f"⚠️ Notion geçici ağ hatası (deneme {attempt}/{max_retries}): {e} — {wait}s bekliyor...")
+                time.sleep(wait)
+                continue
+            raise RuntimeError(f"Notion API bağlantı hatası: {e}")
 
-    return response.json()
+        if response.status_code not in (200, 201):
+            raise RuntimeError(f"Notion API hatası: {response.status_code} — {response.text[:200]}")
+
+        return response.json()
+
+    raise RuntimeError(f"Notion API {max_retries} denemede de başarısız")

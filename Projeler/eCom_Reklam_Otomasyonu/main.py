@@ -209,7 +209,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     user_name = user.first_name or user.username or ""
-    result = conversation_mgr.handle_text_message(user.id, text, user_name)
+    result = await asyncio.to_thread(
+        conversation_mgr.handle_text_message, user.id, text, user_name
+    )
 
     # ── SCENARIO_APPROVAL: Metin tabanlı onay ──
     if result.get("action") == "approve":
@@ -276,7 +278,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # ImgBB'ye yükle
         await update.message.reply_text("📤 Fotoğraf yükleniyor...", parse_mode="Markdown")
-        upload_result = imgbb_svc.upload_image_bytes(bytes(file_bytes), name="product_ecom")
+        upload_result = await asyncio.to_thread(
+            imgbb_svc.upload_image_bytes, bytes(file_bytes), "product_ecom"
+        )
         photo_url = upload_result["url"]
 
     except Exception:
@@ -317,7 +321,9 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         file_bytes = await file.download_as_bytearray()
 
         await update.message.reply_text("📤 Görsel yükleniyor...", parse_mode="Markdown")
-        upload_result = imgbb_svc.upload_image_bytes(bytes(file_bytes), name="product_ecom_doc")
+        upload_result = await asyncio.to_thread(
+            imgbb_svc.upload_image_bytes, bytes(file_bytes), "product_ecom_doc"
+        )
         photo_url = upload_result["url"]
 
     except Exception:
@@ -359,7 +365,9 @@ async def _run_url_scrape(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     try:
-        images = web_scraper_svc.scrape_product_images(product_url, max_images=5)
+        images = await asyncio.to_thread(
+            web_scraper_svc.scrape_product_images, product_url, 5
+        )
     except Exception:
         log.error("URL scrape hatası", exc_info=True)
         images = []
@@ -456,10 +464,14 @@ async def _run_research_and_scenario(update: Update, context: ContextTypes.DEFAU
 
     try:
         # Araştırma (Perplexity + GPT Vision)
-        research_data = scenario_engine.research(session.collected_data)
+        research_data = await asyncio.to_thread(
+            scenario_engine.research, session.collected_data
+        )
 
         # Senaryo üretimi
-        scenario = scenario_engine.generate_scenario(session.collected_data, research_data)
+        scenario = await asyncio.to_thread(
+            scenario_engine.generate_scenario, session.collected_data, research_data
+        )
         session.scenario = scenario
 
         # Senaryo özeti + onay butonları
@@ -608,8 +620,12 @@ async def _run_research_and_scenario_from_callback(message, user_id: int):
     )
 
     try:
-        research_data = scenario_engine.research(session.collected_data)
-        scenario = scenario_engine.generate_scenario(session.collected_data, research_data)
+        research_data = await asyncio.to_thread(
+            scenario_engine.research, session.collected_data
+        )
+        scenario = await asyncio.to_thread(
+            scenario_engine.generate_scenario, session.collected_data, research_data
+        )
         session.scenario = scenario
 
         summary = ScenarioEngine.format_scenario_summary(scenario)
@@ -691,7 +707,7 @@ async def _run_production(message, user_id: int):
             # Video dosyasını doğrudan Telegram'a göndermeyi dene
             try:
                 import requests as req
-                video_resp = req.get(video_url, timeout=120)
+                video_resp = await asyncio.to_thread(req.get, video_url, timeout=120)
                 if video_resp.status_code == 200 and len(video_resp.content) < 50 * 1024 * 1024:
                     video_io = io.BytesIO(video_resp.content)
                     video_io.name = "reklam_videosu.mp4"

@@ -209,7 +209,7 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
                 "description": prompt_data.get("youtube_description", ""),
                 "prompt": scenes[0].get("prompt", "") if scenes else "",
             }
-            notify_success(content, video_url=final_video_url, youtube_url=youtube_url)
+            await asyncio.to_thread(notify_success, content, video_url=final_video_url, youtube_url=youtube_url)
 
         return {
             "success": True,
@@ -225,7 +225,7 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
         await asyncio.to_thread(tracker.update_with_error, str(e))
 
         if config.get("notify_telegram"):
-            notify_error("auto_pipeline", str(e), topic_info=selected_topic)
+            await asyncio.to_thread(notify_error, "auto_pipeline", str(e), topic_info=selected_topic)
 
         return {"success": False, "error": str(e)}
 

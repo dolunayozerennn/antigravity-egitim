@@ -1,4 +1,4 @@
-# YouTube Otomasyonu V2
+# YouTube Otomasyonu V2.3
 
 > Chat-based Telegram bot ile otonom video üretimi sistemi.
 > **Pets Got Talent** kanalı — 7/24 otonom çalışır.
@@ -90,6 +90,14 @@ python main.py
 export ENV=production
 python main.py
 ```
+
+## 🛡️ Stabilizasyon Geçmişi
+
+| Tur | Tarih | Fix Sayısı | Öne Çıkan |
+|-----|-------|------------|----------|
+| V2.1 | 11 Nisan 2026 | 14 | Viral prompt engine, ENV-based YouTube upload |
+| V2.2 | 12 Nisan 2026 | 2 | FFmpeg PATH resolve, video download retry |
+| V2.3 | 12 Nisan 2026 | 5 | Event loop blocking fix, HTTP client reuse, Notion retry, nixpacks temizliği |
 
 ---
 
