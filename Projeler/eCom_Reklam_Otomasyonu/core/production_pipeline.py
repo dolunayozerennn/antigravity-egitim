@@ -140,35 +140,44 @@ class ProductionPipeline:
                 # Ürün fotoğrafı varsa — doğrudan kullan veya NB2 ile zenginleştir
                 if image_prompt:
                     log.info("Nano Banana 2 ile giriş görseli üretiliyor...")
-                    nb2_task = await asyncio.to_thread(
-                        self.kie.create_image,
-                        prompt=image_prompt,
-                        aspect_ratio=aspect_ratio,
-                        resolution="2k",
-                        image_input=[product_image],
-                    )
-                    nb2_result = await asyncio.to_thread(self.kie.poll_task, nb2_task)
+                    try:
+                        nb2_task = await asyncio.to_thread(
+                            self.kie.create_image,
+                            prompt=image_prompt,
+                            aspect_ratio=aspect_ratio,
+                            resolution="2k",
+                            image_input=[product_image],
+                        )
+                        nb2_result = await asyncio.to_thread(self.kie.poll_task, nb2_task)
 
-                    if nb2_result["status"] == "success" and nb2_result["urls"]:
-                        first_frame_url = nb2_result["urls"][0]
-                        log.info(f"NB2 giriş görseli hazır: {first_frame_url[:60]}...")
-                    else:
-                        log.warning("NB2 başarısız — ürün fotoğrafı doğrudan kullanılacak")
+                        if nb2_result["status"] == "success" and nb2_result["urls"]:
+                            first_frame_url = nb2_result["urls"][0]
+                            log.info(f"NB2 giriş görseli hazır: {first_frame_url[:60]}...")
+                        else:
+                            log.warning("NB2 başarısız — ürün fotoğrafı doğrudan kullanılacak")
+                            first_frame_url = product_image
+                    except Exception as e:
+                        log.warning(f"NB2 görsel üretim hatası — fallback: product_image: {e}")
                         first_frame_url = product_image
                 else:
                     first_frame_url = product_image
             else:
                 # Ürün fotoğrafı yok — sıfırdan NB2 görsel üret
                 if image_prompt:
-                    nb2_task = await asyncio.to_thread(
-                        self.kie.create_image,
-                        prompt=image_prompt,
-                        aspect_ratio=aspect_ratio,
-                        resolution="2k",
-                    )
-                    nb2_result = await asyncio.to_thread(self.kie.poll_task, nb2_task)
-                    if nb2_result["status"] == "success" and nb2_result["urls"]:
-                        first_frame_url = nb2_result["urls"][0]
+                    try:
+                        nb2_task = await asyncio.to_thread(
+                            self.kie.create_image,
+                            prompt=image_prompt,
+                            aspect_ratio=aspect_ratio,
+                            resolution="2k",
+                        )
+                        nb2_result = await asyncio.to_thread(self.kie.poll_task, nb2_task)
+                        if nb2_result["status"] == "success" and nb2_result["urls"]:
+                            first_frame_url = nb2_result["urls"][0]
+                        else:
+                            log.warning("NB2 text-to-image başarısız — first_frame olmadan devam ediliyor")
+                    except Exception as e:
+                        log.warning(f"NB2 text-to-image hatası — first_frame olmadan devam: {e}")
 
             result["first_frame_url"] = first_frame_url or ""
 

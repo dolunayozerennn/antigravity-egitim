@@ -106,21 +106,30 @@ class ScenarioEngine:
             log.warning(f"Marka araştırması başarısız, fallback kullanılıyor: {e}")
             brand_research = f"{brand} — {product} hakkında araştırma bilgisi alınamadı."
 
-        # 2. GPT-4.1 Mini Vision — ürün görseli analizi
+        # 2. GPT-4.1 Mini Vision — ürün görseli analizi (OPSİYONEL — hata pipeline'ı DURDURMASIN)
         image_analysis = ""
         if image_url:
             log.info(f"Ürün görseli analiz ediliyor: {image_url[:60]}...")
-            image_analysis = self.openai.analyze_image(
-                image_url=image_url,
-                prompt=(
-                    "Bu ürün fotoğrafını analiz et. Şunları belirt:\n"
-                    "1. Ürün türü ve renkleri\n"
-                    "2. Ürünün dikkat çeken özellikleri\n"
-                    "3. Reklam videosu için önerilen görsel tema\n"
-                    "4. Arka plan ve ışık önerileri\n"
-                    "Kısa ve öz yanıt ver."
-                ),
-            )
+            try:
+                image_analysis = self.openai.analyze_image(
+                    image_url=image_url,
+                    prompt=(
+                        "Bu ürün fotoğrafını analiz et. Şunları belirt:\n"
+                        "1. Ürün türü ve renkleri\n"
+                        "2. Ürünün dikkat çeken özellikleri\n"
+                        "3. Reklam videosu için önerilen görsel tema\n"
+                        "4. Arka plan ve ışık önerileri\n"
+                        "Kısa ve öz yanıt ver."
+                    ),
+                )
+            except Exception as e:
+                log.warning(
+                    f"Görsel analiz başarısız — araştırma görselsiz devam edecek: {e}"
+                )
+                image_analysis = (
+                    f"(Görsel analiz yapılamadı — URL formatı desteklenmiyor olabilir. "
+                    f"Senaryo ürün bilgilerine ve marka araştırmasına göre üretilecek.)"
+                )
 
         log.info(
             f"Araştırma tamamlandı: brand_research={len(brand_research)} chars, "

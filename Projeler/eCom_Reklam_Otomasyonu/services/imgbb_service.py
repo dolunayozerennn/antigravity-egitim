@@ -116,3 +116,45 @@ class ImgBBService:
         except Exception:
             log.error("ImgBB URL upload hatası", exc_info=True)
             raise
+
+    def rehost_image_url(self, image_url: str, name: str = "rehosted") -> dict:
+        """
+        URL'den görseli indirip ImgBB'ye yeniden yükler.
+        
+        Bu işlem:
+        1. Format normalizasyonu sağlar (ImgBB JPEG/PNG'ye dönüştürür)
+        2. Geçici/kısa ömürlü URL'leri kalıcı hale getirir
+        3. OpenAI Vision API ile uyumsuz formatları (avif vb.) çözer
+        
+        Args:
+            image_url: Kaynak görsel URL'i (herhangi format)
+            name: Görsel adı
+            
+        Returns:
+            dict: {"url": "...", "display_url": "...", "delete_url": "...", "size": ...}
+            
+        Raises:
+            Exception: İndirme veya yükleme başarısız olursa
+        """
+        try:
+            # Görseli indir
+            response = requests.get(image_url, timeout=REQUEST_TIMEOUT, stream=True)
+            response.raise_for_status()
+            
+            # Content-Type kontrolü
+            content_type = response.headers.get("Content-Type", "")
+            if not content_type.startswith("image/"):
+                raise ValueError(f"URL bir görsel döndürmedi: Content-Type={content_type}")
+            
+            image_bytes = response.content
+            if len(image_bytes) < 1000:
+                raise ValueError(f"Görsel çok küçük ({len(image_bytes)} bytes) — geçersiz olabilir")
+            
+            # ImgBB'ye yükle (bytes olarak — format dönüştürme otomatik)
+            result = self.upload_image_bytes(image_bytes, name)
+            log.info(f"Görsel rehost edildi: {image_url[:60]}... → {result['url']}")
+            return result
+            
+        except Exception:
+            log.error(f"Görsel rehost hatası: {image_url[:80]}", exc_info=True)
+            raise

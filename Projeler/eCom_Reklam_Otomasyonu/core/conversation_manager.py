@@ -187,6 +187,18 @@ class UserSession:
                     valid_resolutions = {"480p", "720p"}
                     if value not in valid_resolutions:
                         value = "720p"  # Varsayılan
+                # product_url validasyonu — sadece geçerli URL'leri kabul et
+                if field == "product_url":
+                    if isinstance(value, str) and not value.startswith("http"):
+                        log.warning(f"Geçersiz product_url reddedildi: {str(value)[:80]}")
+                        continue  # Bu değeri atla
+                # product_image — desteklenmeyen formatları reddet
+                if field == "product_image" and isinstance(value, str):
+                    unsupported_exts = {".avif", ".svg", ".bmp", ".tiff", ".tif", ".ico", ".heic"}
+                    url_path = value.lower().split("?")[0]
+                    if any(url_path.endswith(ext) for ext in unsupported_exts):
+                        log.warning(f"Desteklenmeyen görsel formatı reddedildi: {value[:80]}")
+                        continue  # Bu değeri atla
                 self.collected_data[field] = value
         import time as _time
         self._last_activity = _time.time()

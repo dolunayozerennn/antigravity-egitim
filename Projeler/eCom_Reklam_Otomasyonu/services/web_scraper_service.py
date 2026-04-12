@@ -23,6 +23,10 @@ SKIP_PATTERNS = [
     "linkedin", "pinterest", "tiktok", "whatsapp",
 ]
 
+# OpenAI Vision API tarafından desteklenmeyen görsel formatları
+# Bu formatlardaki URL'ler scrape sonuçlarından filtrelenir
+UNSUPPORTED_IMAGE_FORMATS = {".avif", ".svg", ".bmp", ".tiff", ".tif", ".ico", ".heic", ".heif"}
+
 REQUEST_TIMEOUT = 15
 
 
@@ -150,8 +154,17 @@ class WebScraperService:
             })
             seen_urls.add(img_url)
 
-        result = images[:max_images]
-        log.info(f"URL'den {len(result)} ürün fotoğrafı bulundu: {url[:80]}")
+        # ── Desteklenmeyen görsel formatlarını filtrele ──
+        filtered = []
+        for img in images:
+            img_path = img["url"].lower().split("?")[0]  # Query parametrelerini kaldır
+            if any(img_path.endswith(fmt) for fmt in UNSUPPORTED_IMAGE_FORMATS):
+                log.info(f"Desteklenmeyen format filtrelendi: {img['url'][:80]}")
+                continue
+            filtered.append(img)
+
+        result = filtered[:max_images]
+        log.info(f"URL'den {len(result)} ürün fotoğrafı bulundu ({len(images) - len(filtered)} filtrelendi): {url[:80]}")
         return result
 
     def _extract_jsonld_images(

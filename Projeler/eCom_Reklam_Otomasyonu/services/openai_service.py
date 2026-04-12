@@ -74,6 +74,35 @@ class OpenAIService:
             log.error(f"OpenAI API hatası: {e}", exc_info=True)
             raise
 
+    # ── Görsel URL Validasyonu ──
+
+    # OpenAI Vision API desteklenen formatlar
+    SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+    UNSUPPORTED_IMAGE_EXTENSIONS = {".avif", ".svg", ".bmp", ".tiff", ".tif", ".ico", ".heic", ".heif"}
+
+    @staticmethod
+    def _validate_image_url(image_url: str) -> bool:
+        """
+        Görsel URL'nin OpenAI Vision API tarafından desteklenip desteklenmediğini kontrol eder.
+        
+        CDN URL'lerinde query parametreleri olabilir — sadece path kısmına bakılır.
+        Uzantısı belirsizse (örn: CDN hash URL) kabul edilir — OpenAI API'nin kendi
+        validasyonuna bırakılır.
+        """
+        from urllib.parse import urlparse
+        try:
+            parsed = urlparse(image_url)
+            path = parsed.path.lower()
+            
+            # Bilinen desteklenmeyen formatları reddet
+            for ext in OpenAIService.UNSUPPORTED_IMAGE_EXTENSIONS:
+                if path.endswith(ext):
+                    return False
+            
+            return True
+        except Exception:
+            return False
+
     # ── Vision (Görsel Analiz) ──
 
     def analyze_image(self, image_url: str, prompt: str, max_tokens: int = 1500) -> str:
@@ -86,7 +115,17 @@ class OpenAIService:
 
         Returns:
             str: Modelin görsel analiz yanıtı
+
+        Raises:
+            ValueError: Desteklenmeyen görsel formatı
         """
+        # URL format validasyonu — desteklenmeyen formatları erken reddet
+        if not self._validate_image_url(image_url):
+            raise ValueError(
+                f"Desteklenmeyen görsel formatı: {image_url[:80]}... "
+                f"OpenAI Vision API sadece PNG, JPEG, GIF ve WebP destekler."
+            )
+
         try:
             messages = [
                 {
@@ -120,6 +159,8 @@ class OpenAIService:
             log.info(f"Vision analiz tamamlandı — {len(content)} karakter")
             return content
 
+        except ValueError:
+            raise  # URL validasyon hatası — tekrar fırlatma
         except Exception:
             log.error("Görsel analiz hatası", exc_info=True)
             raise
