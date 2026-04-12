@@ -193,7 +193,7 @@ class BotTestSuite:
         self._record(
             "Photo: ready_for_research = False (eksik alanlar var)",
             photo_result["ready_for_research"] is False,
-            f"Missing fields: {session3.get_missing_fields()}"
+            f"Missing fields: {session3.get_missing_required_fields()}"
         )
 
         # Test: Yetki kontrolü state kontrolü

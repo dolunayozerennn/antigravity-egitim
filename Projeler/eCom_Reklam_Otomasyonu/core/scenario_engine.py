@@ -11,7 +11,6 @@ Toplanan bilgilerle:
 """
 
 import json
-import math
 
 from logger import get_logger
 
@@ -101,9 +100,13 @@ class ScenarioEngine:
         # 1. Perplexity marka araştırması
         lang_code = "tr" if language == "Türkçe" else "en"
         log.info(f"Marka araştırması başlıyor: {brand} — {product}")
-        brand_research = self.perplexity.research_brand(brand, product, lang_code)
+        try:
+            brand_research = self.perplexity.research_brand(brand, product, lang_code)
+        except RuntimeError as e:
+            log.warning(f"Marka araştırması başarısız, fallback kullanılıyor: {e}")
+            brand_research = f"{brand} — {product} hakkında araştırma bilgisi alınamadı."
 
-        # 2. GPT-5 Mini Vision — ürün görseli analizi
+        # 2. GPT-4.1 Mini Vision — ürün görseli analizi
         image_analysis = ""
         if image_url:
             log.info(f"Ürün görseli analiz ediliyor: {image_url[:60]}...")
@@ -147,7 +150,11 @@ class ScenarioEngine:
         brand = collected_data.get("brand_name", "")
         product = collected_data.get("product_name", "")
         concept = collected_data.get("ad_concept", "")
-        duration = collected_data.get("video_duration", 10)
+        # GPT bazen string döndürebilir — int zorlaması
+        try:
+            duration = int(collected_data.get("video_duration", 10))
+        except (ValueError, TypeError):
+            duration = 10
         aspect_ratio = collected_data.get("aspect_ratio", "9:16")
         resolution = collected_data.get("resolution", "720p")
         language = collected_data.get("language", "Türkçe")

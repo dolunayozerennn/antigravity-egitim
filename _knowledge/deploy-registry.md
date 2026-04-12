@@ -220,11 +220,11 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `8797307d-7b80-41cb-add0-976c09eaeed4`
 - **Service ID:** `98a3be1e-f6f4-4ca2-8780-2b88bbd2125a`
 - **Environment ID:** `b8353ac5-0ec4-4785-8d72-7aae17f18e56`
-- **Deployment ID:** `0af2c090-496f-4eb8-bd48-719667cb605d`
+- **Deployment ID:** `fa43beac-a0e0-4258-8f26-2f104f37e3bb`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-11 (model: GPT-5 Mini → GPT-4.1 Mini — reasoning model boş content sorunu çözüldü)
+- **Son Deploy:** 2026-04-12 (v2.1 Stabilizasyon — 24 bug fix: event loop blocking, Vision NoneType, bellek sızıntısı, Markdown parse, Perplexity exception, input validasyonu, voiceover süre kontrolü)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM
 
@@ -235,14 +235,14 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `87e24335-52c9-460f-8b2e-0f481f5501bd`
 - **Service ID:** `d17abb9e-3ef1-4f50-98c1-f4290bb2f090`
 - **Environment ID:** `30bb2f27-0297-4148-88f0-d28f2ac58a6c`
-- **Deployment ID:** `4cf818f0-d2d3-482a-bef6-8e97595432a5`
+- **Deployment ID:** `669aa42e-114d-4c95-91aa-dd63031b666e`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/YouTube_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/YouTube_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-11 (V2 ilk deploy — Chat-based Telegram bot + Seedance 2.0 / Veo 3.1 + Otonom mod)
+- **Son Deploy:** 2026-04-12 (V2.2 — 14 bug fix: auto_mode crash, bellek sızıntısı, güvenlik, exponential backoff, Markdown V1 uyumu, YouTube fail-fast)
 - **YouTube Kanalı:** Pets Got Talent (UCvj1A1gds6jZUgsPbhF3Muw) — OAuth2 bağlı
 - **Durum:** ✅ Aktif (7/24 Telegram bot — YouTube video üretim otomasyonu)
-- **Env Vars:** ENV, OPENAI_API_KEY, KIE_API_KEY, REPLICATE_API_TOKEN, TELEGRAM_YOUTUBE_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, ALLOWED_USER_IDS, NOTION_SOCIAL_TOKEN, NOTION_DB_YOUTUBE_OTOMASYON, DEFAULT_MODEL, YOUTUBE_ENABLED
+- **Env Vars:** ENV, OPENAI_API_KEY, KIE_API_KEY, REPLICATE_API_TOKEN, TELEGRAM_YOUTUBE_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, ALLOWED_USER_IDS, NOTION_SOCIAL_TOKEN, NOTION_DB_YOUTUBE_OTOMASYON, DEFAULT_MODEL, YOUTUBE_ENABLED, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, YOUTUBE_CATEGORY_ID, YOUTUBE_PRIVACY
 
 ---
 

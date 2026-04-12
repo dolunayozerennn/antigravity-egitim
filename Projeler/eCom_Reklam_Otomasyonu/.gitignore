@@ -32,5 +32,5 @@ Thumbs.db
 *.log
 
 # Storyboard / demo dosyaları
-*.json
-!package.json
+storyboard*.json
+demo*.json

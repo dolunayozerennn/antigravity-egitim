@@ -143,6 +143,9 @@ class UserSession:
         # Fotoğraf teyit akışı
         self.scraped_images: list[dict] = []         # Web'den çekilen fotoğraflar
         self.current_photo_index: int = 0            # Şu an gösterilen fotoğraf index'i
+        # Bellek yönetimi
+        import time as _time
+        self._last_activity: float = _time.time()
 
     def reset(self):
         """Konuşmayı sıfırla — yeni video için hazırla."""
@@ -154,12 +157,39 @@ class UserSession:
         self.production_result = None
         self.scraped_images = []
         self.current_photo_index = 0
+        import time as _time
+        self._last_activity = _time.time()
 
     def update_fields(self, extracted: dict):
         """Çıkarılan bilgilerle mevcut veriyi güncelle. None olanları atla."""
         for field, value in extracted.items():
             if value is not None and field in self.collected_data:
+                # video_duration her zaman int olmalı — GPT bazen string döndürür
+                if field == "video_duration":
+                    try:
+                        value = int(value)
+                    except (ValueError, TypeError):
+                        value = 10  # Varsayılan
+                # aspect_ratio validasyonu — Seedance 2.0 desteklenen formatlar
+                if field == "aspect_ratio":
+                    valid_ratios = {"9:16", "16:9", "1:1"}
+                    if value not in valid_ratios:
+                        # Yaygın alternatifler → normalize et
+                        ratio_map = {
+                            "vertical": "9:16", "dikey": "9:16",
+                            "horizontal": "16:9", "yatay": "16:9",
+                            "square": "1:1", "kare": "1:1",
+                            "4:3": "16:9", "3:4": "9:16",
+                        }
+                        value = ratio_map.get(str(value).lower(), "9:16")
+                # resolution validasyonu
+                if field == "resolution":
+                    valid_resolutions = {"480p", "720p"}
+                    if value not in valid_resolutions:
+                        value = "720p"  # Varsayılan
                 self.collected_data[field] = value
+        import time as _time
+        self._last_activity = _time.time()
 
     def get_missing_required_fields(self) -> list[str]:
         """Henüz toplanmamış zorunlu alanları döndür."""
@@ -312,6 +342,9 @@ class ConversationManager:
 
         # Chat history'e ekle
         session.chat_history.append({"role": "user", "content": text})
+        # Bellek sızıntısını önle — son 20 mesajı tut
+        if len(session.chat_history) > 20:
+            session.chat_history = session.chat_history[-20:]
 
         # Mevcut toplanan bilgilerle context oluştur
         context = self._build_context(session)

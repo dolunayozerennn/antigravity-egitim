@@ -193,13 +193,18 @@ python test_bot.py
 - **Model:** GPT-4.1 Mini kullanılıyor (GPT-5 Mini reasoning modelindeki boş content sorunu nedeniyle geçiş yapıldı). Retry mekanizması korunuyor.
 - **ElevenLabs ses değişiklikleri:** Sesler kaldırılabilir. Varsayılan ses: **Sarah** (Kadın, olgun, güven verici).
 - **DRY-RUN:** `ENV=development` veya `DRY_RUN=1` ayarlandığında pipeline gerçek API çağrısı yapmaz, simülasyon döner.
+- **Async/Sync dengesi:** Proje asyncio tabanlı; dış servisler senkron `requests` kullanır. Tüm blocking API çağrıları `asyncio.to_thread()` ile sarmalanır.
+- **Audio hosting:** Birincil: tmpfiles.org (24 saat TTL), fallback: file.io (tek kullanımlık).
+- **Bellek yönetimi:** Session'lar 10dk inaktivite sonrası temizlenir, chat geçmişi 20 mesajla sınırlıdır.
+- **Input validasyonu:** aspect_ratio ("9:16", "16:9", "1:1"), resolution ("480p", "720p"), video_duration (int cast) otomatik normalize edilir.
 
 ---
 
 ## 📋 Değişiklik Geçmişi
 
 | Tarih | Değişiklik |
-|-------|-----------|
+|----------|------------|
+| 2026-04-12 | **v2.1 Stabilizasyon** — 24 bug fix: event loop blocking aşıldı (asyncio.to_thread), Vision API NoneType retry, session bellek sızıntısı TTL cleanup, Markdown parse fallback, Perplexity exception handling, aspect_ratio/resolution validasyonu, voiceover süre kontrolü, tmpfiles.org fallback, Replicate FileOutput cast, asyncio task hata yutma fix'i |
 | 2026-04-11 | İlk deploy → Railway SUCCESS |
 | 2026-04-11 | GPT-5 Mini API uyumluluğu: `max_tokens`→`max_completion_tokens`, `temperature` kaldırıldı |
 | 2026-04-11 | Boş content retry mekanizması (3 deneme) |

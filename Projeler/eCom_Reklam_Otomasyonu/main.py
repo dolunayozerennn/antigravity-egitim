@@ -80,6 +80,40 @@ pipeline = ProductionPipeline(
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 🛡️ ASYNC TASK HATA YÖNETİMİ
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def _handle_task_exception(task: asyncio.Task):
+    """asyncio.create_task ile oluşturulan task'ların sessizce çökmesini önler."""
+    try:
+        exc = task.exception()
+        if exc:
+            log.error(f"Background task çöktü: {task.get_name()}", exc_info=exc)
+    except asyncio.CancelledError:
+        pass
+
+
+async def _cleanup_idle_sessions():
+    """Bellek sızıntısını önle — DELIVERED/IDLE session'ları periyodik temizle."""
+    while True:
+        await asyncio.sleep(300)  # 5 dakikada bir kontrol et
+        try:
+            import time as _time
+            now = _time.time()
+            to_delete = []
+            for uid, session in conversation_mgr.sessions.items():
+                # 10 dakikadan eski IDLE veya DELIVERED session'ları temizle
+                if hasattr(session, '_last_activity'):
+                    if now - session._last_activity > 600:
+                        if session.state.name in ("IDLE", "DELIVERED"):
+                            to_delete.append(uid)
+            for uid in to_delete:
+                del conversation_mgr.sessions[uid]
+            if to_delete:
+                log.info(f"Session temizliği: {len(to_delete)} session kaldırıldı")
+        except Exception:
+            log.error("Session temizleme hatası", exc_info=True)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 🛡️ ERİŞİM KONTROLÜ
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -186,9 +220,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Her adımda bildirim alacaksın.",
             parse_mode="Markdown",
         )
-        asyncio.create_task(
+        task = asyncio.create_task(
             _run_production(update.effective_message, user.id)
         )
+        task.add_done_callback(_handle_task_exception)
         return
 
     # ── PHOTO_CONFIRMATION: Sonraki fotoğrafı göster ──
@@ -202,7 +237,13 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ── Normal yanıt ──
     if result.get("reply"):
-        await update.message.reply_text(result["reply"], parse_mode="Markdown")
+        # GPT'den gelen dinamik yanıtlar Markdown özel karakter içerebilir
+        # parse_mode=None ile gönder (parse hatasını önle)
+        try:
+            await update.message.reply_text(result["reply"], parse_mode="Markdown")
+        except Exception:
+            log.warning("Markdown parse hatası — parse_mode=None ile tekrar deneniyor")
+            await update.message.reply_text(result["reply"])
 
     # ── Tüm bilgiler toplandı: URL scrape mi yoksa araştırma mı? ──
     if result.get("needs_url_scrape"):
@@ -519,9 +560,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         # Pipeline'ı arka planda çalıştır
-        asyncio.create_task(
+        task = asyncio.create_task(
             _run_production(query.message, user.id)
         )
+        task.add_done_callback(_handle_task_exception)
 
     elif data == "scenario_edit":
         result = conversation_mgr.handle_scenario_response(user.id, "edit")
@@ -538,6 +580,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             result.get("reply", "❌ İptal edildi."),
             parse_mode="Markdown",
         )
+
+    else:
+        # Bilinmeyen callback data — eski mesaj butonları
+        log.warning(f"Bilinmeyen callback data: {data}")
+        await query.edit_message_reply_markup(reply_markup=None)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -734,6 +781,11 @@ def main():
 
     # Global hata handler
     app.add_error_handler(error_handler)
+
+    # Session bellek temizleme task'ını başlat
+    async def _start_cleanup(app_instance):
+        asyncio.create_task(_cleanup_idle_sessions())
+    app.post_init = _start_cleanup
 
     # Polling başlat
     log.info("🤖 Telegram polling başlatılıyor...")

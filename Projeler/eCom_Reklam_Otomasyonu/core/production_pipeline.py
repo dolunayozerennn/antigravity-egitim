@@ -14,6 +14,8 @@ Onaylanan senaryoyu alıp aşama aşama video üretir:
 Her aşamada progress callback ile Telegram'a bildirim gönderilir.
 """
 
+import asyncio
+
 from logger import get_logger
 
 log = get_logger("production_pipeline")
@@ -106,7 +108,8 @@ class ProductionPipeline:
         # ── NOTION LOG — "Üretiliyor" ──
         notion_page_url = None
         try:
-            notion_page_url = self.notion.log_production(
+            notion_page_url = await asyncio.to_thread(
+                self.notion.log_production,
                 brand=brand,
                 product=product,
                 concept=concept[:200],
@@ -137,13 +140,14 @@ class ProductionPipeline:
                 # Ürün fotoğrafı varsa — doğrudan kullan veya NB2 ile zenginleştir
                 if image_prompt:
                     log.info("Nano Banana 2 ile giriş görseli üretiliyor...")
-                    nb2_task = self.kie.create_image(
+                    nb2_task = await asyncio.to_thread(
+                        self.kie.create_image,
                         prompt=image_prompt,
                         aspect_ratio=aspect_ratio,
                         resolution="2k",
                         image_input=[product_image],
                     )
-                    nb2_result = self.kie.poll_task(nb2_task)
+                    nb2_result = await asyncio.to_thread(self.kie.poll_task, nb2_task)
 
                     if nb2_result["status"] == "success" and nb2_result["urls"]:
                         first_frame_url = nb2_result["urls"][0]
@@ -156,12 +160,13 @@ class ProductionPipeline:
             else:
                 # Ürün fotoğrafı yok — sıfırdan NB2 görsel üret
                 if image_prompt:
-                    nb2_task = self.kie.create_image(
+                    nb2_task = await asyncio.to_thread(
+                        self.kie.create_image,
                         prompt=image_prompt,
                         aspect_ratio=aspect_ratio,
                         resolution="2k",
                     )
-                    nb2_result = self.kie.poll_task(nb2_task)
+                    nb2_result = await asyncio.to_thread(self.kie.poll_task, nb2_task)
                     if nb2_result["status"] == "success" and nb2_result["urls"]:
                         first_frame_url = nb2_result["urls"][0]
 
@@ -182,7 +187,8 @@ class ProductionPipeline:
             # Generate audio: İngilizce ise True, Türkçe ise False
             generate_audio = language != "Türkçe"
 
-            video_task = self.kie.create_video(
+            video_task = await asyncio.to_thread(
+                self.kie.create_video,
                 prompt=video_prompt,
                 duration=duration,
                 resolution=resolution,
@@ -193,28 +199,8 @@ class ProductionPipeline:
 
             log.info(f"Seedance 2.0 video görevi: {video_task}")
 
-            # Polling callback — Telegram'a ilerleme bildirimi
-            poll_update_count = 0
-
-            def video_poll_callback(attempt, state):
-                nonlocal poll_update_count
-                poll_update_count += 1
-                # Her 3. polling'de Telegram'a bildir (spam önleme)
-                if poll_update_count % 3 == 0 and progress_callback:
-                    import asyncio
-                    try:
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
-                            loop.create_task(
-                                progress_callback(
-                                    "step_2_progress",
-                                    f"⏳ Video üretiliyor... ({attempt * 10}s geçti, durum: {state})"
-                                )
-                            )
-                    except Exception:
-                        pass  # Polling callback hatası pipeline'ı durdurmasın
-
-            video_result = self.kie.poll_task(video_task, callback=video_poll_callback)
+            # Polling — event loop'u bloke etmemek için thread'de çalıştır
+            video_result = await asyncio.to_thread(self.kie.poll_task, video_task)
 
             if video_result["status"] != "success" or not video_result.get("urls"):
                 error_msg = video_result.get("error", "Video üretimi başarısız")
@@ -239,9 +225,23 @@ class ProductionPipeline:
                             "🎙️ Türkçe dış ses üretiliyor (ElevenLabs)..."
                         )
 
+                    # Dış ses süre kontrolü — video süresini aşarsa metni kırp
+                    from services.elevenlabs_service import ElevenLabsService
+                    est_duration = ElevenLabsService.estimate_duration_seconds(voiceover_text)
+                    if est_duration > duration + 2:  # 2 saniye tolerans
+                        target_words = int(duration * 2.5)  # ~2.5 kelime/saniye
+                        words = voiceover_text.split()
+                        if len(words) > target_words:
+                            voiceover_text = " ".join(words[:target_words])
+                            log.warning(
+                                f"Dış ses metni kırpıldı: {est_duration:.1f}s → ~{duration}s "
+                                f"({len(words)} → {target_words} kelime)"
+                            )
+
                     # ElevenLabs TTS
                     log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
-                    audio_bytes = self.elevenlabs.generate_speech(
+                    audio_bytes = await asyncio.to_thread(
+                        self.elevenlabs.generate_speech,
                         text=voiceover_text,
                         voice_name="Sarah",
                         stability=0.5,
@@ -250,8 +250,9 @@ class ProductionPipeline:
                     )
 
                     # Ses dosyasını hosting'e yükle (Replicate erişebilsin)
-                    audio_url = self.elevenlabs.upload_audio_to_hosting(
-                        audio_bytes, ""
+                    audio_url = await asyncio.to_thread(
+                        self.elevenlabs.upload_audio_to_hosting,
+                        audio_bytes,
                     )
                     result["audio_url"] = audio_url
                     log.info(f"Dış ses hazır: {audio_url[:60]}...")
@@ -265,10 +266,11 @@ class ProductionPipeline:
                             "🔀 Video ve dış ses birleştiriliyor (Replicate)..."
                         )
 
-                    final_video_url = self.replicate.merge_video_audio(
+                    final_video_url = await asyncio.to_thread(
+                        self.replicate.merge_video_audio,
                         video_url=raw_video_url,
                         audio_url=audio_url,
-                        replace_audio=False,  # Ambient sesi koru, dış sesi üzerine ekle
+                        replace_audio=False,
                     )
                     log.info(f"Video+ses birleştirildi: {final_video_url[:60]}...")
                 else:
@@ -286,7 +288,8 @@ class ProductionPipeline:
                 # Notion page ID'yi URL'den çıkar
                 page_id = self._extract_page_id(notion_page_url)
                 if page_id:
-                    self.notion.update_production_status(
+                    await asyncio.to_thread(
+                        self.notion.update_production_status,
                         page_id=page_id,
                         status="Tamamlandı",
                         video_url=final_video_url,
@@ -309,7 +312,8 @@ class ProductionPipeline:
             if notion_page_url:
                 page_id = self._extract_page_id(notion_page_url)
                 if page_id:
-                    self.notion.update_production_status(
+                    await asyncio.to_thread(
+                        self.notion.update_production_status,
                         page_id=page_id,
                         status="Hata",
                         error_message=error_msg,

@@ -122,19 +122,19 @@ class ElevenLabsService:
             log.error("ElevenLabs TTS genel hatası", exc_info=True)
             raise
 
-    def upload_audio_to_hosting(self, audio_bytes: bytes, imgbb_api_key: str) -> str:
+    def upload_audio_to_hosting(self, audio_bytes: bytes) -> str:
         """
         Ses dosyasını Replicate'in erişebileceği bir URL'e yükler.
-        ImgBB görsel destekli olduğundan, bunun yerine geçici bir file
-        hosting servisi kullanılır.
 
         NOT: Replicate video-audio-merge modeli doğrudan URL bekler.
         Bu fonksiyon ses dosyasını geçici hosting'e atar.
+        Birincil: tmpfiles.org (24 saat TTL)
+        Fallback: file.io (tek kullanımlık)
 
         Returns:
             str: Public erişimli audio URL
         """
-        # tmpfiles.org üzerinden geçici hosting (24 saat geçerli)
+        # ── 1. tmpfiles.org (birincil) ──
         try:
             response = requests.post(
                 "https://tmpfiles.org/api/v1/upload",
@@ -149,11 +149,30 @@ class ElevenLabsService:
             # https://tmpfiles.org/12345/file.mp3 → https://tmpfiles.org/dl/12345/file.mp3
             direct_url = tmp_url.replace("tmpfiles.org/", "tmpfiles.org/dl/")
 
-            log.info(f"Ses dosyası yüklendi: {direct_url} ({len(audio_bytes)} bytes)")
+            log.info(f"Ses dosyası yüklendi (tmpfiles): {direct_url} ({len(audio_bytes)} bytes)")
             return direct_url
 
         except Exception:
-            log.error("Ses dosyası hosting hatası", exc_info=True)
+            log.warning("tmpfiles.org başarısız, file.io fallback deneniyor...", exc_info=True)
+
+        # ── 2. file.io (fallback) ──
+        try:
+            response = requests.post(
+                "https://file.io",
+                files={"file": ("voiceover.mp3", audio_bytes, "audio/mpeg")},
+                timeout=REQUEST_TIMEOUT,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            if data.get("success"):
+                direct_url = data["link"]
+                log.info(f"Ses dosyası yüklendi (file.io): {direct_url} ({len(audio_bytes)} bytes)")
+                return direct_url
+            raise ValueError(f"file.io upload failed: {data}")
+
+        except Exception:
+            log.error("Ses dosyası hosting hatası (tüm yöntemler başarısız)", exc_info=True)
             raise
 
     def list_voices(self) -> list[dict]:

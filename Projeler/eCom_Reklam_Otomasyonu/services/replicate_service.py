@@ -71,6 +71,8 @@ class ReplicateService:
                     output_url = prediction.output
                     if isinstance(output_url, list):
                         output_url = output_url[0]
+                    # Replicate SDK v1.x FileOutput objesi dönebilir — str cast
+                    output_url = str(output_url)
                     log.info(
                         f"Video+ses birleştirme tamamlandı: {prediction.id} "
                         f"({attempt} deneme)"

@@ -107,6 +107,16 @@ class OpenAIService:
                 max_completion_tokens=max_tokens,
             )
             content = response.choices[0].message.content
+            if not content:
+                log.warning("Vision API boş yanıt döndü — retry")
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    max_completion_tokens=max_tokens,
+                )
+                content = response.choices[0].message.content
+                if not content:
+                    raise RuntimeError("Vision API 2 denemede de boş yanıt döndü")
             log.info(f"Vision analiz tamamlandı — {len(content)} karakter")
             return content
 
@@ -151,6 +161,16 @@ class OpenAIService:
                 max_completion_tokens=max_tokens,
             )
             content = response.choices[0].message.content
+            if not content:
+                log.warning("Image bytes API boş yanıt döndü — retry")
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    max_completion_tokens=max_tokens,
+                )
+                content = response.choices[0].message.content
+                if not content:
+                    raise RuntimeError("Image bytes API 2 denemede de boş yanıt döndü")
             log.info(f"Image bytes analiz tamamlandı — {len(content)} karakter")
             return content
 

@@ -86,10 +86,10 @@ class PerplexityService:
 
         except requests.exceptions.Timeout:
             log.error(f"Perplexity timeout: '{brand_name}'")
-            return f"⚠️ Marka araştırması zaman aşımına uğradı: {brand_name}"
+            raise RuntimeError(f"Marka araştırması zaman aşımına uğradı: {brand_name}")
         except requests.exceptions.HTTPError as e:
             log.error(f"Perplexity HTTP hatası: {e}", exc_info=True)
-            return f"⚠️ Marka araştırmasında hata: {e}"
+            raise RuntimeError(f"Marka araştırmasında HTTP hatası: {e}")
         except Exception:
             log.error("Perplexity genel hata", exc_info=True)
-            return "⚠️ Marka araştırması yapılamadı."
+            raise RuntimeError("Marka araştırması yapılamadı.")
