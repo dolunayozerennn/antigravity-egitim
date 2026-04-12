@@ -50,7 +50,8 @@ eCom_Reklam_Otomasyonu/
     ├── kie_api.py               ← Seedance 2.0 + Nano Banana 2
     ├── elevenlabs_service.py    ← Doğrudan ElevenLabs TTS
     ├── replicate_service.py     ← Video + ses birleştirme
-    └── notion_service.py        ← Notion loglama
+    ├── notion_service.py        ← Notion loglama
+    └── chat_logger.py           ← Notion Chat Hafızası
 ```
 
 ---
@@ -118,9 +119,10 @@ ELEVENLABS_MODEL=eleven_multilingual_v2
 # Replicate (Video+ses birleştirme)
 REPLICATE_API_TOKEN=...
 
-# Notion (Üretim logları)
+# Notion (Üretim logları & Chat)
 NOTION_SOCIAL_TOKEN=...
 NOTION_DB_ECOM_REKLAM=...
+NOTION_CHAT_DB_ID=34095514-0a32-81a2-9af3-e06cf9b8c4fd
 ```
 
 ---
@@ -204,6 +206,7 @@ python test_bot.py
 
 | Tarih | Değişiklik |
 |----------|------------|
+| 2026-04-12 | **v2.5 Yeni Özellik** — Chat Hafızası (Notion Inline Database) entegrasyonu, asenkron konuşma loglaması |
 | 2026-04-12 | **v2.1 Stabilizasyon** — 24 bug fix: event loop blocking aşıldı (asyncio.to_thread), Vision API NoneType retry, session bellek sızıntısı TTL cleanup, Markdown parse fallback, Perplexity exception handling, aspect_ratio/resolution validasyonu, voiceover süre kontrolü, tmpfiles.org fallback, Replicate FileOutput cast, asyncio task hata yutma fix'i |
 | 2026-04-11 | İlk deploy → Railway SUCCESS |
 | 2026-04-11 | GPT-5 Mini API uyumluluğu: `max_tokens`→`max_completion_tokens`, `temperature` kaldırıldı |

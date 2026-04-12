@@ -43,6 +43,7 @@ from services.elevenlabs_service import ElevenLabsService
 from services.replicate_service import ReplicateService
 from services.notion_service import NotionService
 from services.web_scraper_service import WebScraperService
+from services.chat_logger import chat_tracker
 
 # ── Core Logic ──
 from core.conversation_manager import ConversationManager, ConversationState
@@ -158,6 +159,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     reply = conversation_mgr.handle_start(user.id, user.first_name or user.username or "")
     await update.message.reply_text(reply, parse_mode="Markdown")
+    await chat_tracker.log_interaction(str(user.id), "/start", reply)
 
 
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -233,11 +235,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if result.get("action") == "approve":
         session = conversation_mgr.get_session(user.id)
         session.state = ConversationState.PRODUCING
-        await update.message.reply_text(
-            "🚀 **Üretim başlıyor!**\n"
-            "Her adımda bildirim alacaksın.",
-            parse_mode="Markdown",
-        )
+        reply_msg = "🚀 **Üretim başlıyor!**\nHer adımda bildirim alacaksın."
+        await update.message.reply_text(reply_msg, parse_mode="Markdown")
+        await chat_tracker.log_interaction(str(user.id), text, reply_msg)
         task = asyncio.create_task(
             _run_production(update.effective_message, user.id)
         )
@@ -262,6 +262,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             log.warning("Markdown parse hatası — parse_mode=None ile tekrar deneniyor")
             await update.message.reply_text(result["reply"])
+            
+        await chat_tracker.log_interaction(str(user.id), text, result["reply"])
 
     # ── Tüm bilgiler toplandı: URL scrape mi yoksa araştırma mı? ──
     if result.get("needs_url_scrape"):
@@ -310,6 +312,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # ConversationManager'a bildir
     result = conversation_mgr.handle_photo(user.id, photo_url, user_name)
     await update.message.reply_text(result["reply"], parse_mode="Markdown")
+    await chat_tracker.log_interaction(str(user.id), "[Fotoğraf Yüklendi]", result["reply"])
 
     # Tüm bilgiler toplandıysa araştırmaya geç
     if result.get("ready_for_research"):
@@ -352,6 +355,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     result = conversation_mgr.handle_photo(user.id, photo_url, user_name)
     await update.message.reply_text(result["reply"], parse_mode="Markdown")
+    await chat_tracker.log_interaction(str(user.id), "[Dosya (Görsel) Yüklendi]", result["reply"])
 
     if result.get("ready_for_research"):
         await _run_research_and_scenario(update, context)
@@ -719,6 +723,7 @@ async def _run_production(message, user_id: int):
             delivery_msg += "\n🔄 Yeni video için /start yaz!"
 
             await message.reply_text(delivery_msg, parse_mode="Markdown")
+            await chat_tracker.log_interaction(str(user_id), "[Sistem - Üretim Tamamlandı]", delivery_msg)
 
             # Video dosyasını doğrudan Telegram'a göndermeyi dene
             # stream=True ile chunk'lı indirme — RAM spike'ı önler
@@ -767,12 +772,9 @@ async def _run_production(message, user_id: int):
 
         else:
             error = result.get("error", "Bilinmeyen hata")
-            await message.reply_text(
-                f"❌ **Üretim başarısız oldu**\n\n"
-                f"Hata: {error[:300]}\n\n"
-                f"🔄 Tekrar denemek için /start yaz.",
-                parse_mode="Markdown",
-            )
+            error_msg = f"❌ **Üretim başarısız oldu**\n\nHata: {error[:300]}\n\n🔄 Tekrar denemek için /start yaz."
+            await message.reply_text(error_msg, parse_mode="Markdown")
+            await chat_tracker.log_interaction(str(user_id), "[Sistem - Hata]", error_msg)
             session.reset()
 
     except Exception:

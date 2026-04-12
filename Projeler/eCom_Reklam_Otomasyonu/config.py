@@ -43,9 +43,10 @@ class Config:
         # ── Replicate (Video + Ses Birleştirme) ──
         self.REPLICATE_API_TOKEN = self._require_env("REPLICATE_API_TOKEN")
 
-        # ── Notion (Üretim Logları) ──
+        # ── Notion (Üretim Logları & Chat Hafızası) ──
         self.NOTION_TOKEN = self._require_env("NOTION_SOCIAL_TOKEN")
         self.NOTION_DB_ID = self._require_env("NOTION_DB_ECOM_REKLAM")
+        self.NOTION_CHAT_DB_ID = os.environ.get("NOTION_CHAT_DB_ID", "34095514-0a32-81a2-9af3-e06cf9b8c4fd")
 
     # ── Yardımcılar ──
 
