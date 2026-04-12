@@ -97,7 +97,7 @@ GOOD EXAMPLES:
 LANGUAGE RULE:
 - The prompt itself MUST be in English
 - If the video involves people speaking, add this directive at the end:
-  "All spoken dialogue must be in Turkish. Use natural, everyday Istanbul Turkish with short, emotionally engaging lines."
+  "All spoken dialogue must be in English. NEVER use Turkish or other languages, as the video generation model only supports English. Use natural, everyday language with short, emotionally engaging lines."
 
 OUTPUT FORMAT (STRICT JSON):
 {
@@ -126,7 +126,7 @@ RULES:
 4. ADD audio cues: footsteps, animal sounds, ambient noise
 5. KEEP it 40-100 words — detailed but not bloated
 6. End with: "smooth motion, natural physics, {duration} seconds"
-7. If humans speak in the video, add: "All spoken dialogue must be in Turkish. Use natural, everyday Istanbul Turkish."
+7. If humans speak in the video, add: "All spoken dialogue must be in English. NEVER use Turkish or other languages."
 
 ⚠️ CONTENT SAFETY (CRITICAL):
 - NEVER use: "steal", "theft", "crime", "police", "cop", "arrest", "gun", "weapon", "violence", "blood", "attack", "kill", "destroy"
