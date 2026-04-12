@@ -219,6 +219,58 @@ class OpenAIService:
             log.error("Image bytes analiz hatası", exc_info=True)
             raise
 
+    def select_best_product_image(self, image_urls: list[str]) -> str | None:
+        """
+        Verilen URL havuzu içinden ürünü en net gösteren tek bir fotoğrafı seçer.
+        
+        Args:
+            image_urls: Ürün görsellerinin public URL'leri (max 5-10 önerilir)
+
+        Returns:
+            str | None: Seçilen en iyi görsel URL'i veya URL listesi boşsa None
+        """
+        valid_urls = [url for url in image_urls if self._validate_image_url(url)]
+        if not valid_urls:
+            return None
+            
+        if len(valid_urls) == 1:
+            return valid_urls[0]
+            
+        try:
+            content_list = [{"type": "text", "text": "Aşağıdaki ürün fotoğraflarını incele. Bir e-ticaret reklamı üretileceği için, ürünü en net, reklama en uygun ve yüksek kalitede gösteren TEK BİR fotoğrafın sadece tam URL'ini döndür. Asla ek metin, açıklama veya markdown ekleme, sadece URL'i string olarak ver."}]
+            for url in valid_urls[:10]: # Max 10 limit
+                content_list.append({
+                    "type": "image_url",
+                    "image_url": {"url": url, "detail": "low"},
+                })
+                
+            messages = [{"role": "user", "content": content_list}]
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_completion_tokens=300,
+            )
+            
+            selected_url = response.choices[0].message.content.strip()
+            # Markdown block'ları veya ek metinleri temizle (Eğer LLM yanlış cevap verirse)
+            selected_url = selected_url.replace("```", "").replace("json", "").replace("text", "").strip()
+            
+            if selected_url in valid_urls:
+                log.info(f"OpenAI en iyi görseli seçti: {selected_url[:60]}...")
+                return selected_url
+            else:
+                # Bazen URL'i tırnak içinde veya prefix'li dönebilir
+                for valid_url in valid_urls:
+                    if valid_url in selected_url:
+                        return valid_url
+                log.warning("OpenAI görsel seçiminde URL'i yanlış formatta döndü, fallback olarak ilk görsel kullanılıyor.")
+                return valid_urls[0]
+
+        except Exception:
+            log.error("Görsel seçme hatası", exc_info=True)
+            return valid_urls[0]
+
     # ── JSON Çıktı ──
 
     def chat_json(self, messages: list[dict], temperature: float = 1.0,

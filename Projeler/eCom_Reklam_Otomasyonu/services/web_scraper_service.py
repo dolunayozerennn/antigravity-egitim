@@ -45,22 +45,15 @@ class WebScraperService:
             "Accept-Language": "en-US,en;q=0.9,tr;q=0.8",
         }
 
-    def scrape_product_images(self, url: str, max_images: int = 5) -> list[dict]:
+    def scrape_product_data(self, url: str, max_images: int = 5) -> dict:
         """
-        URL'den ürün fotoğraflarını çeker.
-
-        Öncelik sırası:
-        1. OG (Open Graph) görseli
-        2. Twitter card görseli
-        3. JSON-LD schema.org product image
-        4. İçerikteki büyük img tag'leri
-
-        Args:
-            url: Ürün sayfası URL'i
-            max_images: Maximum döndürülecek görsel sayısı
+        URL'den ürün fotoğraflarını ve sayfa metnini çeker.
 
         Returns:
-            list[dict]: [{"url": "...", "alt": "...", "source": "og|meta|content"}]
+            dict: {
+                "images": list[dict] (url, alt, source),
+                "page_text": str (Title, description ve içerik özetleri)
+            }
         """
         try:
             resp = requests.get(
@@ -72,9 +65,21 @@ class WebScraperService:
             resp.raise_for_status()
         except requests.exceptions.RequestException:
             log.error(f"URL fetch hatası: {url}", exc_info=True)
-            return []
+            return {"images": [], "page_text": ""}
 
         soup = BeautifulSoup(resp.text, "html.parser")
+        
+        # ── 0. Sayfa Metnini Çıkar (Title, Meta, Content) ──
+        title = soup.title.string.strip() if soup.title and soup.title.string else ""
+        meta_desc = (self._get_meta_content(soup, "og:description") or 
+                     (soup.find("meta", attrs={"name": "description"}).get("content", "") if soup.find("meta", attrs={"name": "description"}) else ""))
+        
+        paragraphs = [p.get_text(separator=" ", strip=True) for p in soup.find_all("p")]
+        content_ps = [p for p in paragraphs if len(p) > 40]  # Çok kısa metinleri atla
+        main_content = "\n".join(content_ps[:10])  # İlk 10 anlamlı paragrafı al
+        
+        page_text = f"Title: {title}\nDescription: {meta_desc}\n\nContent:\n{main_content}"
+        
         images = []
         seen_urls = set()
 
@@ -164,8 +169,16 @@ class WebScraperService:
             filtered.append(img)
 
         result = filtered[:max_images]
-        log.info(f"URL'den {len(result)} ürün fotoğrafı bulundu ({len(images) - len(filtered)} filtrelendi): {url[:80]}")
-        return result
+        log.info(f"URL'den {len(result)} ürün fotoğrafı ve metin çıkarıldi. ({len(images) - len(filtered)} filtrelendi): {url[:80]}")
+        return {
+            "images": result,
+            "page_text": page_text
+        }
+
+    def scrape_product_images(self, url: str, max_images: int = 5) -> list[dict]:
+        """Geriye dönük uyumluluk için sadece images listesi döner."""
+        data = self.scrape_product_data(url, max_images)
+        return data.get("images", [])
 
     def _extract_jsonld_images(
         self, data: dict, base_url: str, images: list, seen: set

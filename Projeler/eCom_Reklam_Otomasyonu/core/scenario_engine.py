@@ -168,6 +168,7 @@ class ScenarioEngine:
         resolution = collected_data.get("resolution", "720p")
         language = collected_data.get("language", "Türkçe")
         has_image = bool(collected_data.get("product_image"))
+        page_text = collected_data.get("product_page_text", "")
 
         # Resolution doğrulama
         if resolution not in ("480p", "720p"):
@@ -183,6 +184,12 @@ class ScenarioEngine:
             f"- Çözünürlük: {resolution}\n"
             f"- Dil: {language}\n"
             f"- Ürün Fotoğrafı: {'Var (image-to-video kullanılacak)' if has_image else 'Yok (text-to-video)'}\n\n"
+        )
+        
+        if page_text:
+            user_brief += f"## Ürün Sayfası Bilgileri (Web Sitesinden):\n{page_text}\n\n"
+            
+        user_brief += (
             f"## Marka Araştırması:\n{research_data.get('brand_research', 'N/A')}\n\n"
             f"## Ürün Görseli Analizi:\n{research_data.get('image_analysis', 'N/A')}\n"
         )

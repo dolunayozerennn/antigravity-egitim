@@ -385,9 +385,13 @@ async def _run_url_scrape(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     try:
-        images = await asyncio.to_thread(
-            web_scraper_svc.scrape_product_images, product_url, 5
+        data = await asyncio.to_thread(
+            web_scraper_svc.scrape_product_data, product_url, 5
         )
+        images = data.get("images", [])
+        page_text = data.get("page_text", "")
+        if page_text:
+            session.collected_data["product_page_text"] = page_text
     except Exception:
         log.error("URL scrape hatası", exc_info=True)
         images = []
@@ -403,15 +407,23 @@ async def _run_url_scrape(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         # State'i CHATTING'de bırak — kullanıcı fotoğraf gönderebilir veya devamını söyleyebilir
         return
+        
+    await update.effective_message.reply_text(
+        "🧠 Yapay zeka ürün fotoğraflarını inceliyor ve en iyisini seçiyor...",
+        parse_mode="Markdown",
+    )
 
-    # Fotoğraflar bulundu — teyit akışını başlat
-    conversation_mgr.start_photo_confirmation(user.id, images)
+    best_image_url = await asyncio.to_thread(
+        openai_svc.select_best_product_image, [img["url"] for img in images]
+    )
+    best_image = next((img for img in images if img["url"] == best_image_url), images[0])
 
-    # İlk fotoğrafı göster
-    first_img = images[0]
+    # Sadece tek (en iyi) fotoğrafı teyit akışına sok
+    conversation_mgr.start_photo_confirmation(user.id, [best_image])
+
     await _send_photo_for_confirmation(
-        update.effective_message, user.id, first_img,
-        total=len(images), current=1,
+        update.effective_message, user.id, best_image,
+        total=1, current=1,
     )
 
 
@@ -427,7 +439,7 @@ async def _send_photo_for_confirmation(
     if current is None:
         current = session.current_photo_index + 1
 
-    caption = f"📸 **Fotoğraf {current}/{total}**"
+    caption = "📸 **Yapay Zeka Seçimi**"
     if image.get("alt"):
         caption += f"\n_{image['alt']}_"
 
