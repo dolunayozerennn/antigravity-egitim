@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from config import settings
 from logger import get_logger
 from core.prompt_generator import generate_prompts
-from infrastructure.kie_client import KieClient
+from infrastructure.kie_client import KieClient, ContentFilterError
 from infrastructure.replicate_merger import merge_videos
 from infrastructure.video_downloader import download_video, cleanup_video
 from infrastructure.youtube_uploader import upload_to_youtube
@@ -109,8 +109,40 @@ async def run_auto_pipeline(topic: str = None, dry_run: bool = False):
         settings.IS_DRY_RUN = True
         settings.ENV = "development"
 
-    # Konu seç
-    selected_topic = topic or pick_topic(config)
+    # ── Content Filter Retry Mekanizması ──
+    # Auto modda insan müdahalesi yok → farklı senaryo ile otomatik tekrar dene
+    max_topic_retries = 3
+    last_error = None
+
+    for topic_attempt in range(max_topic_retries):
+        selected_topic = topic or pick_topic(config)
+        try:
+            result = await _execute_auto_pipeline(config, selected_topic, dry_run)
+            return result
+        except ContentFilterError as cfe:
+            last_error = cfe
+            if topic_attempt < max_topic_retries - 1:
+                log.warning(
+                    f"🛡️ İçerik filtresi reddetti (otonom deneme {topic_attempt + 1}/{max_topic_retries}). "
+                    f"Farklı senaryo ile tekrar denenecek..."
+                )
+                topic = None  # Yeni rastgele senaryo seçilsin
+            else:
+                log.error(f"❌ Otonom mod: {max_topic_retries} farklı senaryo denendi, hepsi reddedildi.")
+                if config.get("notify_telegram"):
+                    await asyncio.to_thread(
+                        notify_error, "auto_pipeline",
+                        f"İçerik filtresi {max_topic_retries} farklı senaryoyu da reddetti.",
+                        topic_info=selected_topic
+                    )
+                return {"success": False, "error": str(last_error)}
+
+
+async def _execute_auto_pipeline(config: dict, selected_topic: str, dry_run: bool):
+    """
+    Otonom pipeline'ın gerçek icraat kısmı.
+    ContentFilterError yukarı fırlatılır (çağıran retry yapar).
+    """
     model = config.get("model", settings.DEFAULT_MODEL)
     clip_count = config.get("clip_count", 1)
     orientation = config.get("orientation", "portrait")

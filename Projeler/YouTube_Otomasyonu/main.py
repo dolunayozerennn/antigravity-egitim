@@ -33,7 +33,7 @@ from config import settings
 from logger import get_logger
 from core.conversation_manager import ConversationManager
 from core.prompt_generator import generate_prompts
-from infrastructure.kie_client import KieClient
+from infrastructure.kie_client import KieClient, ContentFilterError
 from infrastructure.replicate_merger import merge_videos
 from infrastructure.video_downloader import download_video, cleanup_video
 from infrastructure.youtube_uploader import upload_to_youtube
@@ -331,6 +331,33 @@ async def _run_pipeline(update: Update, context: ContextTypes.DEFAULT_TYPE, conf
                 await asyncio.to_thread(tracker.update_status, "✅ Tamamlandı (YouTube Kapalı)")
 
         log.info(f"✅ Pipeline tamamlandı! ({elapsed:.1f}s)")
+
+    except ContentFilterError as cfe:
+        elapsed = time.time() - start_time
+        log.warning(f"🛡️ Pipeline içerik filtresi ile durdu ({elapsed:.1f}s): {cfe}")
+
+        try:
+            await update.message.reply_text(
+                "🛡️ **Video güvenlik filtresi tarafından reddedildi.**\n\n"
+                "Otomatik yumuşatma denendi ama bu konu AI modelinin "
+                "güvenlik politikasına takılıyor.\n\n"
+                "💡 **Öneri:** Daha güvenli bir konu dene. Örneğin:\n"
+                "• \"Kedinin robot süpürgeye ilk tepkisi\"\n"
+                "• \"Köpeğin buzdolabından tavuk çalması\"\n"
+                "• \"Rakun ailesinin verandaya gelişi\"\n\n"
+                "/yeni komutuyla yeni bir video başlat!",
+                parse_mode="Markdown"
+            )
+        except Exception:
+            try:
+                await update.message.reply_text(
+                    "🛡️ Video güvenlik filtresi ile reddedildi.\n"
+                    "Farklı bir konu deneyin: /yeni"
+                )
+            except Exception:
+                pass
+
+        await asyncio.to_thread(tracker.update_with_error, f"İçerik filtresi: {cfe}")
 
     except Exception as e:
         elapsed = time.time() - start_time

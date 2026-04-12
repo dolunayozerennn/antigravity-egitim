@@ -11,6 +11,23 @@ from config import settings
 
 log = logging.getLogger("KieClient")
 
+# ── İçerik filtresi hata sabitleri ──
+_CONTENT_FILTER_KEYWORDS = (
+    "sensitive information",
+    "content filter",
+    "safety filter",
+    "content policy",
+    "not allowed",
+    "inappropriate",
+    "violates",
+    "nsfw",
+)
+
+
+class ContentFilterError(Exception):
+    """Kie AI içerik güvenliği filtresi tarafından reddedildi."""
+    pass
+
 # ── Model konfigürasyonları ──
 MODEL_CONFIG = {
     "seedance-2": {
@@ -81,18 +98,41 @@ class KieClient:
 
         aspect_ratio = ORIENTATION_MAP.get(orientation, "9:16")
 
-        # ── Task oluştur ──
-        task_id = await self._create_task(cfg, prompt, aspect_ratio, duration, audio, resolution)
-        log.info(f"📋 Task oluşturuldu ({cfg['model_id']}): {task_id}")
+        # ── Content Filter Retry Mekanizması ──
+        # Reddedilirse prompt'u yumuşatıp tekrar dener (max 2 retry)
+        max_content_retries = 2
+        current_prompt = prompt
 
-        # ── İlk bekleme ──
-        initial_wait = settings.POLL_INITIAL_WAIT
-        log.info(f"⏳ İlk bekleme: {initial_wait} saniye...")
-        await asyncio.sleep(initial_wait)
+        for content_attempt in range(max_content_retries + 1):
+            try:
+                # ── Task oluştur ──
+                task_id = await self._create_task(cfg, current_prompt, aspect_ratio, duration, audio, resolution)
+                log.info(f"📋 Task oluşturuldu ({cfg['model_id']}): {task_id}")
 
-        # ── Polling ──
-        video_url = await self._poll_for_result(cfg, task_id)
-        return video_url
+                # ── İlk bekleme ──
+                initial_wait = settings.POLL_INITIAL_WAIT
+                log.info(f"⏳ İlk bekleme: {initial_wait} saniye...")
+                await asyncio.sleep(initial_wait)
+
+                # ── Polling ──
+                video_url = await self._poll_for_result(cfg, task_id)
+                return video_url
+
+            except ContentFilterError as cfe:
+                if content_attempt < max_content_retries:
+                    log.warning(
+                        f"⚠️ İçerik filtresi reddetti (deneme {content_attempt + 1}/{max_content_retries + 1}). "
+                        f"Prompt yumuşatılıp tekrar denenecek..."
+                    )
+                    # Prompt'u sanitize et (giderek daha agresif)
+                    from core.prompt_sanitizer import sanitize_prompt, create_softened_prompt
+                    if content_attempt == 0:
+                        current_prompt, _ = sanitize_prompt(current_prompt)
+                    else:
+                        current_prompt = create_softened_prompt(current_prompt)
+                else:
+                    log.error(f"❌ İçerik filtresi {max_content_retries + 1} denemede de reddetti.")
+                    raise  # Son deneme de başarısız → yukarı fırlat
 
     async def create_videos_batch(
         self,
@@ -235,8 +275,15 @@ class KieClient:
 
                     elif state in ("failed", "fail"):
                         fail_msg = data.get("failMsg", "Bilinmeyen hata")
-                        log.error(f"❌ Video üretimi başarısız: {fail_msg}")
-                        raise RuntimeError(f"Video üretimi başarısız: {fail_msg}")
+                        fail_lower = fail_msg.lower()
+
+                        # İçerik filtresi mi yoksa başka bir hata mı?
+                        if any(kw in fail_lower for kw in _CONTENT_FILTER_KEYWORDS):
+                            log.warning(f"🛡️ İçerik filtresi reddetti: {fail_msg}")
+                            raise ContentFilterError(f"İçerik filtresi: {fail_msg}")
+                        else:
+                            log.error(f"❌ Video üretimi başarısız: {fail_msg}")
+                            raise RuntimeError(f"Video üretimi başarısız: {fail_msg}")
 
                     else:
                         log.info(f"   [{attempt}/{max_attempts}] Durum: {state}... ({interval}s sonra tekrar)")

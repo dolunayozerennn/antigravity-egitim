@@ -28,37 +28,37 @@ SCENARIO_POOLS = {
     "bodycam": {
         "camera_directive": "bodycam footage, POV perspective, shaky handheld feel, real-time action",
         "scenarios": [
-            "Firefighter rescuing someone in a massive flood — water rising, debris floating, desperate grab and pull to safety",
-            "Dog stealing a huge piece of meat from a grocery store and being chased by a security guard through the aisles — knocking things over, sliding on the floor",
-            "Cat stealing a giant fish from an outdoor fish market and being chased by a cop — an old man trips and falls trying to catch the cat",
-            "Dog getting pulled over for driving a car — the dog looks at the officer, then floors it and drives off at high speed",
-            "Cat getting pulled over for driving a car — the cat meows at the officer, then hits the gas and speeds away",
-            "Kid driving a car getting pulled over — the kid says something rude then floors it and runs from the cop",
-            "Police officer chasing a monkey through a busy street market — the monkey keeps grabbing food from stalls while running",
+            "Firefighter rescuing a kitten stuck on a rooftop during a storm — rain pouring, wind howling, careful climb and gentle grab to safety",
+            "Dog grabbing a huge piece of steak from a BBQ party and running away while everyone chases it through the backyard — knocking over lawn chairs, sliding on wet grass",
+            "Cat snatching a giant fish from an outdoor fish market and sprinting through the crowd — the fish vendor trips over a bucket trying to catch it",
+            "Dog sitting in the driver seat of a parked car, accidentally honks the horn — a crowd gathers, the dog looks at everyone and barks happily",
+            "Cat sitting in a shopping cart rolling downhill in a parking lot — meowing loudly, people diving out of the way, cart crashes into a bush",
+            "Monkey at a street market grabbing fruit from every stall while the vendor chases it — the monkey keeps eating while running",
+            "Goose chasing a jogger through a park — the jogger tries to hide behind a tree but the goose circles around",
         ],
     },
     "ring_camera": {
         "camera_directive": "ring doorbell camera angle, wide-angle fixed position, front porch view, daylight",
         "scenarios": [
-            "Man sleeping on his porch with a huge black bear sniffing him — he wakes up startled and the bear runs away scared",
-            "Kid feeding a crocodile at the front door — the mom comes running at the last second and grabs the kid inside",
-            "Baby being approached by a crocodile on the porch — a cat jumps in and hisses at the crocodile, scaring it off, then the mom grabs the baby",
-            "Kid feeding a lion a steak on the porch — the lion calmly eats while the kid pets it",
-            "Bear charging towards a baby on the porch — then a cat jumps in the way, hisses aggressively, and the bear backs off",
-            "Farm porch — an eagle swoops down at a cat, when suddenly a goat charges in and scares off the eagle",
-            "Monkey screaming and holding onto the door — there's a tornado in the background and the monkey tries to hold on but gets pulled away",
+            "Man sleeping on his porch with a huge friendly dog licking his face — he wakes up startled and the dog wags its tail excitedly",
+            "Giant friendly tortoise slowly walking onto the porch and eating flowers from the pot — the cat watches from the window in disbelief",
+            "Raccoon family walking onto the porch in a perfect line — the baby raccoon trips and rolls, the mom raccoon picks it up",
+            "Delivery man places a package, then a parrot on the porch starts talking to him — the delivery man has a full conversation with the parrot",
+            "Bear wandering onto the porch, spots a cat in the window — the cat hisses, the bear gets startled and waddles away quickly",
+            "Farm porch — an eagle swoops down near the porch, when suddenly a rooster charges at it and the eagle flies away confused",
+            "Stray cat brings a gift (a leaf) to the doorstep every morning — time-lapse of leaf pile growing over days",
         ],
     },
     "home_camera": {
         "camera_directive": "home security camera footage, indoor wide angle, slightly elevated, static position",
         "scenarios": [
-            "Baby in a onesie curiously climbing up to a high open window — a dog comes from behind, grabs the baby by the clothes and pulls it back to safety — mom comes rushing in",
-            "Person with their dog and cat — big mess on the floor — the cat is meowing and pointing at the dog, the dog looks guilty, and the owner is listening to the cat like a judge",
-            "Man on the toilet when suddenly a wild animal smashes through the bathroom window and runs around inside — total chaos",
-            "Kid playing near an electrical outlet — dog comes over and pulls the kid away just in time — parents rush in afterward",
-            "Dinner table with lots of people — cat jumps from a balcony onto the chandelier and swings from it — chandelier crashes onto the table",
-            "Wedding ceremony — couple about to cut a massive cake — dog jumps up and bites the entire cake — everyone freaks out",
-            "Cat knocking a glass off the table in slow motion — owner tries to dive and catch it — fails spectacularly and knocks over everything else",
+            "Golden retriever carefully carrying a sleeping kitten in its mouth from the living room to its dog bed — gently places it down and curls around it",
+            "Person with their dog and cat — big mess of torn pillows on the floor — the cat is meowing and pointing at the dog, the dog looks guilty, and the owner is listening to the cat like a judge",
+            "Cat discovering a robot vacuum for the first time — cautiously approaches, it moves, cat leaps three feet in the air, then rides on top of it around the house",
+            "Dog learning to open the fridge — opens it, grabs a whole chicken, closes it perfectly, walks away casually",
+            "Dinner table with lots of people — cat jumps from a shelf onto the table and lands perfectly in an empty plate — sits there like royalty while everyone stares",
+            "Wedding ceremony — couple about to exchange rings — ring bearer dog runs in with the ring box, slides across the floor, and delivers it perfectly",
+            "Cat knocking a glass off the table in slow motion — owner tries to dive and catch it — catches it but knocks over three other things in the process",
         ],
     },
 }
@@ -69,9 +69,19 @@ CUSTOM_TOPIC_SYSTEM = """You are an expert at creating VIRAL short-form video pr
 VIRAL PROMPT FORMULA (MANDATORY):
 1. Start with a specific camera type: bodycam, ring camera, home camera, CCTV, smartphone footage, dash cam
 2. Describe a SPECIFIC event happening — not a vague concept
-3. Include a chaotic twist or unexpected moment
+3. Include a surprising twist or unexpected moment
 4. Make the viewer think "WHAT HAPPENS NEXT?"
 5. Characters should DO things — action verbs, not descriptions
+
+⚠️ CONTENT SAFETY RULES (CRITICAL — FOLLOW OR VIDEO WILL BE REJECTED BY AI MODEL):
+- NEVER use words: "steal", "theft", "crime", "arrest", "gun", "weapon", "violence", "blood", "attack", "kill", "destroy", "fight", "drugs"
+- NEVER show children in dangerous situations (near crocodiles, heights, cars, electricity)
+- NEVER show police/cop chases, car theft, or criminal activity
+- REPLACE "stealing" with "grabbing" or "snatching playfully"
+- REPLACE "chased by police" with "chased by the owner" or "chased by everyone"
+- Keep all scenarios WHOLESOME, FAMILY-FRIENDLY, and PLAYFUL
+- Focus on animal humor, wholesome surprises, and funny reactions
+- If the user requests something potentially dangerous, make it safe: e.g., "dog steals meat" → "dog grabs steak from BBQ and runs away"
 
 ANTI-PATTERNS (NEVER DO):
 ❌ "Cinematic establishing shot of a beautiful landscape" — boring
@@ -80,9 +90,9 @@ ANTI-PATTERNS (NEVER DO):
 ❌ Generic "a cat does something cute" — too vague
 
 GOOD EXAMPLES:
-✅ "Bodycam footage: officer approaches a parked car. A golden retriever is in the driver's seat. The dog puts the car in drive and speeds off"
-✅ "Ring camera: a bear charges at a baby on the porch. Out of nowhere, the family cat leaps in, hisses, and the bear backs off"
-✅ "Home camera: wedding cake ceremony. Everyone is watching. The dog leaps onto the table and destroys the entire cake"
+✅ "Bodycam footage: a golden retriever grabs a whole steak from a BBQ party and sprints across the backyard. Everyone chases it. The dog slides under a trampoline."
+✅ "Ring camera: a raccoon walks onto the porch and starts eating from the cat's food bowl. The cat watches from the window in disbelief."
+✅ "Home camera: wedding reception. The ring bearer dog slides across the dance floor and crashes into the cake table. Everyone gasps."
 
 LANGUAGE RULE:
 - The prompt itself MUST be in English
@@ -113,10 +123,16 @@ RULES:
 1. Keep the original scenario's story beats — don't change the plot
 2. ADD vivid physical details: character appearance, environment, textures, weather
 3. ADD action choreography: timing, speed, reactions, expressions
-4. ADD audio cues: footsteps, crashes, animal sounds, ambient noise
+4. ADD audio cues: footsteps, animal sounds, ambient noise
 5. KEEP it 40-100 words — detailed but not bloated
 6. End with: "smooth motion, natural physics, {duration} seconds"
 7. If humans speak in the video, add: "All spoken dialogue must be in Turkish. Use natural, everyday Istanbul Turkish."
+
+⚠️ CONTENT SAFETY (CRITICAL):
+- NEVER use: "steal", "theft", "crime", "police", "cop", "arrest", "gun", "weapon", "violence", "blood", "attack", "kill", "destroy"
+- Use SAFE alternatives: "grab" instead of "steal", "chase" instead of "pursue", "surprise" instead of "scare"
+- Keep everything WHOLESOME and FAMILY-FRIENDLY
+- No children in danger, no criminal activity, no weapons
 
 CAMERA STYLE MUST MATCH:
 - bodycam: shaky, POV, forward-facing, first-person perspective
@@ -329,6 +345,15 @@ async def _call_gpt(system_prompt: str, user_message: str, config: dict) -> dict
             word_count = len(scene["prompt"].split())
             log.info(f"   Sahne {scene['scene_number']}: {word_count} kelime, {scene.get('duration', '?')}s")
             log.info(f"   → {scene['prompt'][:80]}...")
+
+        # Son güvenlik katmanı: üretilen promptları sanitize et
+        from core.prompt_sanitizer import sanitize_prompt
+        for scene in result.get("scenes", []):
+            original = scene.get("prompt", "")
+            sanitized, changes = sanitize_prompt(original)
+            if changes:
+                scene["prompt"] = sanitized
+                log.info(f"   🛡️ Sahne {scene.get('scene_number', '?')} sanitize edildi: {len(changes)} değişiklik")
 
         return result
 
