@@ -98,6 +98,7 @@ python main.py
 | V2.1 | 11 Nisan 2026 | 14 | Viral prompt engine, ENV-based YouTube upload |
 | V2.2 | 12 Nisan 2026 | 2 | FFmpeg PATH resolve, video download retry |
 | V2.3 | 12 Nisan 2026 | 5 | Event loop blocking fix, HTTP client reuse, Notion retry, nixpacks temizliği |
+| V2.4 | 12 Nisan 2026 | 1 | Seedance Türkçe prompt düzeltmesi, İngilizce'ye zorlandı. Kapsamlı stabilizasyon denetimleri (1.1'den 3.3'e) sıfır hatayla geçildi. |
 
 ---
 
