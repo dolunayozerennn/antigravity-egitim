@@ -1,76 +1,76 @@
 {
-  "channel_niche": "Space & Sci-Fi Bodycam",
-  "default_style": "bodycam POV footage, immersive first-person perspective",
+  "channel_niche": "Absurd Animal & Unexpected Camera Moments",
+  "default_style": "CCTV, Ring Camera, Bodycam, or low quality smartphone footage",
   "topics": [
     {
       "id": 1,
-      "category": "construction",
-      "title_hint": "Building on Mars",
-      "description": "Workers building a 7-star luxury hotel on Mars, massive skyscraper construction in low gravity, heavy machinery operating in Martian dust storms.",
-      "style_hints": ["bodycam POV", "dramatic red Martian sky", "construction site chaos"]
+      "category": "bodycam_action",
+      "title_hint": "Police Chase: K9 Suspect",
+      "description": "Bodycam footage. A dog stealing a large piece of meat from Costco and zooming through the aisles while being chased by a cop.",
+      "style_hints": ["bodycam POV", "shaky camera", "fast running", "fluorescent lighting"]
     },
     {
       "id": 2,
-      "category": "mega_engineering",
-      "title_hint": "Moon-Earth Bridge",
-      "description": "Astronauts working on an impossibly massive bridge construction between the Moon and Earth, welding beams in zero gravity, Earth rising in the background.",
-      "style_hints": ["bodycam POV", "zero gravity welding sparks", "Earth in background"]
+      "category": "bodycam_action",
+      "title_hint": "The Getaway Cat",
+      "description": "Police pull over a speeding car. Bodycam shows the cop approaching the window, but there's a cat sitting in the driver's seat. The cat immediately slams the gas pedal and drives off.",
+      "style_hints": ["bodycam POV", "flashing police lights", "night time traffic stop"]
     },
     {
       "id": 3,
-      "category": "space_maintenance",
-      "title_hint": "Saturn Orbit Repairs",
-      "description": "A spacecraft orbiting Saturn while an astronaut performs dangerous maintenance and repairs on its exterior, Saturn's rings reflecting light.",
-      "style_hints": ["bodycam POV", "Saturn rings visible", "tethered spacewalk"]
+      "category": "security_camera",
+      "title_hint": "Bear Meets Sleeping Guy",
+      "description": "Ring camera footage. A man is peacefully sleeping on a lawn chair on his porch. A black bear walks up and sniffs his face. The man wakes up in shock, which startles the big bear into running away hilariously.",
+      "style_hints": ["Ring camera view", "night vision or porch light", "static angle"]
     },
     {
       "id": 4,
-      "category": "atmospheric",
-      "title_hint": "Leaving the Atmosphere",
-      "description": "The intense gravitational change experienced when a spacecraft exits Earth's atmosphere, violent shaking transitioning to sudden zero-gravity calm.",
-      "style_hints": ["bodycam POV", "cockpit view", "vibration to stillness transition"]
+      "category": "security_camera",
+      "title_hint": "Cat Saves Baby from Crocodile",
+      "description": "Ring camera footage of a baby crawling near the front door as a crocodile approaches. Before the croc can strike, a brave house cat flies in out of nowhere, fiercely hissing and scaring the crocodile away. Mom rushes in seconds later.",
+      "style_hints": ["Ring camera POV", "Florida aesthetic", "sudden fast action"]
     },
     {
       "id": 5,
-      "category": "reentry",
-      "title_hint": "Pacific Ocean Landing",
-      "description": "A mini-documentary style descent showing the extreme external pressure when a spacecraft re-enters the atmosphere, heat shield glowing, speed indicators showing thousands of km/h. Landing in the Pacific Ocean.",
-      "style_hints": ["bodycam POV", "heat shield glow", "ocean splashdown"]
+      "category": "security_camera",
+      "title_hint": "Goat vs Eagle",
+      "description": "Farm security camera. A massive eagle swoops down trying to grab a small cat. Suddenly, a brave goat charges from off-screen and headbutts the eagle, saving the cat.",
+      "style_hints": ["CCTV footage", "daylight farm setting", "wide angle"]
     },
     {
       "id": 6,
-      "category": "deep_space",
-      "title_hint": "Deep Space Walk",
-      "description": "A lone astronaut performing a deep space walk outside a station orbiting Jupiter, massive gas giant filling the horizon, eerie silence of deep space.",
-      "style_hints": ["bodycam POV", "Jupiter atmosphere swirls", "isolation feeling"]
+      "category": "home_video",
+      "title_hint": "Dog Stops Baby Fall",
+      "description": "Home indoor camera. A baby in a onesie curiously climbs up to a high open window. A family dog sneaks up from behind, gently grabs the baby's onesie, and pulls the baby backward to safety just as the mom rushes into the frame in a panic.",
+      "style_hints": ["home security cam", "indoor lighting", "heart-stopping moment"]
     },
     {
       "id": 7,
-      "category": "asteroid_mining",
-      "title_hint": "Asteroid Mining Operation",
-      "description": "Workers operating heavy mining equipment on an asteroid surface, extracting rare minerals, micro-gravity making debris float in slow motion.",
-      "style_hints": ["bodycam POV", "drilling sparks in vacuum", "floating debris"]
+      "category": "home_video",
+      "title_hint": "Cat Snitches on Dog",
+      "description": "Smartphone footage. The living room is destroyed with trash everywhere. The cat is meowing angrily and pointing its paw directly at the guilty-looking golden retriever. The owner is listening to the cat like a detective.",
+      "style_hints": ["smartphone video", "wobbly handheld", "messy living room"]
     },
     {
       "id": 8,
-      "category": "space_rescue",
-      "title_hint": "Emergency Space Rescue",
-      "description": "A dramatic space rescue mission where astronauts race against time to save a crew member from a damaged space station, alarms blaring, oxygen running low.",
-      "style_hints": ["bodycam POV", "flashing red alarms", "urgent movement"]
+      "category": "home_video",
+      "title_hint": "Bathroom Window Intruder",
+      "description": "Home camera or smartphone video of a man sitting peacefully on the toilet, reading. Suddenly, a wild deer (or large animal) smashes completely through the bathroom window, causing pure chaos as the man screams and falls over.",
+      "style_hints": ["chaotic camera", "glass shattering", "small bathroom space"]
     },
     {
       "id": 9,
-      "category": "lunar_base",
-      "title_hint": "Lunar Base Construction",
-      "description": "Construction crew building the first permanent human base on the Moon, 3D-printing habitats using lunar regolith, Earth visible in the dark sky.",
-      "style_hints": ["bodycam POV", "dust clouds in low gravity", "Earth in lunar sky"]
+      "category": "home_video",
+      "title_hint": "The Chandelier Cat",
+      "description": "Low quality wobbly smartphone footage of a fancy dinner party. Everything is calm until a cat leaps from an indoor balcony, grabbing the massive chandelier. The cat swings on it, eventually dropping the entire chandelier onto the dinner table.",
+      "style_hints": ["shaky phone video", "low quality", "dinner party", "epic fail"]
     },
     {
       "id": 10,
-      "category": "space_dock",
-      "title_hint": "Orbital Shipyard",
-      "description": "Inside a massive orbital shipyard where the next generation of interplanetary vessels is being assembled, robotic arms and human workers cooperating in zero-G.",
-      "style_hints": ["bodycam POV", "welding in zero gravity", "massive scale engineering"]
+      "category": "home_video",
+      "title_hint": "Dog Ruins Wedding Cake",
+      "description": "Steady smartphone footage of a bride and groom about to carefully cut a massive, beautiful multi-tier wedding cake. Just before the knife touches it, a big dog jumps onto the table, taking a massive bite out of the cake and knocking it over.",
+      "style_hints": ["wedding aesthetic", "smartphone video", "sudden chaos"]
     }
   ]
 }

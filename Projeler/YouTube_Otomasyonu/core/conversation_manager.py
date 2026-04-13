@@ -60,6 +60,8 @@ KURALLAR:
 5. Kullanıcı "evet/başla/onay/tamam/onayla" derse → HEMEN action=start_pipeline döndür.
    ⚠️ DİKKAT: Onay aldıktan sonra ASLA ek soru sorma, tereddüt etme. Direkt start_pipeline.
 6. Kullanıcı "hayır/değiştir" derse → action=ask ile ne değiştirmek istediğini sor.
+7. ÖNEMLİ KISITLAMA: EĞER konu içerisinde "Türkçe" kelimesi geçiyorsa veya kullanıcı videoda Türkçe konuşma olmasını istiyorsa VE model "seedance-2" ise:
+   Kullanıcıyı mutlaka uyararak onay iste (action=confirm): "Bak, Seedance 2.0 modelinin Türkçesi çok kötüdür ve videolar bozuk çıkabilir. Emin misin?" (Bunu sormadan asla onaylama).
 
 ⚠️ İÇERİK GÜVENLİĞİ (ÖNEMLİ):
 Kullanıcı tehlikeli veya şiddet içerikli video isterse (hırsızlık, polis kovalamacası, silah, kavga, 
