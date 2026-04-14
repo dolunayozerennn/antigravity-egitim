@@ -50,7 +50,7 @@ def run_weekly_report():
     recent_threads = [] # (brand_name, thread_id)
     
     if os.path.exists(MARKALAR_CSV):
-        with open(MARKALAR_CSV, "r", encoding="utf-8") as f:
+        with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 o_date = parse_date(row.get("outreach_date"))

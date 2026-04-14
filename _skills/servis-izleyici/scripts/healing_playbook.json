@@ -138,10 +138,18 @@
     },
     {
       "id": "runtime_code_error",
-      "match": "AttributeError|ImportError|ModuleNotFoundError|SyntaxError|NameError|IndentationError",
+      "match": "AttributeError|ImportError|ModuleNotFoundError|SyntaxError|NameError|IndentationError|KeyError|TypeError|ValueError",
       "context": "railway_log",
       "action": "alert_only",
       "description": "Kod hatası — redeploy ile çözülmez, kod düzeltilmeli ve tekrar push edilmeli. ÖNCELİKLİ: Bu hata production'ı durdurur!"
+    },
+    {
+      "id": "marka_email_false_positive",
+      "match": "failed_verification|Email yok",
+      "context": "railway_log",
+      "action": "ignore_transient",
+      "description": "Marka_Is_Birligi botu tarafindan verilen email dogrulama basarisiz uyarisi, bu bir hata degil.",
+      "wait_minutes": 60
     },
     {
       "id": "gemini_model_not_found",

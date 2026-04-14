@@ -59,7 +59,7 @@ def _next_lead_id():
     """Sıradaki lead ID'yi oluştur."""
     max_id = 0
     if os.path.exists(MARKALAR_CSV):
-        with open(MARKALAR_CSV, "r", encoding="utf-8") as f:
+        with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 lid = row.get("lead_id", "")
@@ -85,7 +85,7 @@ def add_brands_to_csv(enriched_brands):
     # Mevcut CSV'yi oku
     existing_rows = []
     if os.path.exists(MARKALAR_CSV):
-        with open(MARKALAR_CSV, "r", encoding="utf-8") as f:
+        with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             existing_rows = list(reader)
 
@@ -148,7 +148,7 @@ def add_brands_to_csv(enriched_brands):
 def update_csv_row(lead_id, updates):
     """Belirli bir satırı günceller."""
     rows = []
-    with open(MARKALAR_CSV, "r", encoding="utf-8") as f:
+    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             if row.get("lead_id") == lead_id:
@@ -177,7 +177,7 @@ def send_outreach_emails(dry_run=False):
 
     # CSV'den yeni markaları oku
     pending = []
-    with open(MARKALAR_CSV, "r", encoding="utf-8") as f:
+    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             if row.get("outreach_status") == "New" and row.get("email"):

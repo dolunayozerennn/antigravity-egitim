@@ -63,7 +63,7 @@ def check_responses(dry_run=False):
     rows = []
     check_indices = []  # (index, thread_id)
 
-    with open(MARKALAR_CSV, "r", encoding="utf-8") as f:
+    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
             rows.append(row)

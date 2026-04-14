@@ -68,14 +68,14 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Service ID:** `3afcca6e-8f29-4ea6-bc99-b212a4269e34`
 - **COVER_TYPE:** `reels`
 - **Cron Schedule:** `0 6 * * *` (Günlük, UTC 06:00 = TR 09:00)
-- **Son Deploy:** 2026-04-10 (V2 ilk deploy — SUCCESS)
+- **Son Deploy:** 2026-04-12 (Redeploy — logger level fix, auto-deploy tetiklenmemişti)
 - **Durum:** ✅ Aktif (Günde 1 kez Reels kapak üretimi — 3 tema × 2 varyasyon = 6 kapak)
 
 #### Servis 2: youtube-kapak
 - **Service ID:** `0bfc46ea-887f-4a62-a3da-bc7fb824eb3c`
 - **COVER_TYPE:** `youtube`
 - **Cron Schedule:** `0 7 * * *` (Günlük, UTC 07:00 = TR 10:00)
-- **Son Deploy:** 2026-04-10 (V2 ilk deploy — SUCCESS)
+- **Son Deploy:** 2026-04-12 (Redeploy — logger level fix, auto-deploy tetiklenmemişti)
 - **Durum:** ✅ Aktif (Günde 1 kez YouTube thumbnail üretimi — 5 tema × 2 varyasyon = 10 kapak)
 
 - **Env Vars:** COVER_TYPE, ENV, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, NOTION_DB_YOUTUBE_ISBIRLIKLERI, NOTION_DB_OPS_LOG, KIE_API_KEY, GEMINI_API_KEY, IMGBB_API_KEY, GOOGLE_OUTREACH_TOKEN_JSON
@@ -220,13 +220,13 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `8797307d-7b80-41cb-add0-976c09eaeed4`
 - **Service ID:** `98a3be1e-f6f4-4ca2-8780-2b88bbd2125a`
 - **Environment ID:** `b8353ac5-0ec4-4785-8d72-7aae17f18e56`
-- **Deployment ID:** `fa43beac-a0e0-4258-8f26-2f104f37e3bb`
+- **Deployment ID:** `3706937b-f461-42c1-ad23-a91bd525f4bc`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-12 (v2.1 Stabilizasyon — 24 bug fix: event loop blocking, Vision NoneType, bellek sızıntısı, Markdown parse, Perplexity exception, input validasyonu, voiceover süre kontrolü)
+- **Son Deploy:** 2026-04-12 (v2.5 Yeni Özellik: Chat Hafızası (Notion Inline DB) entegrasyonu, asenkron konuşma loglaması)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
-- **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM
+- **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID
 
 ---
 
@@ -235,11 +235,11 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `87e24335-52c9-460f-8b2e-0f481f5501bd`
 - **Service ID:** `d17abb9e-3ef1-4f50-98c1-f4290bb2f090`
 - **Environment ID:** `30bb2f27-0297-4148-88f0-d28f2ac58a6c`
-- **Deployment ID:** `daf47055-105f-4e9f-85c4-a228f0eca0b5`
+- **Deployment ID:** `3633757e-dfec-4740-a601-0d2ba8ca41ae`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/YouTube_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/YouTube_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-12 (V2.3 Stabilizasyon 3. tur — 5 fix: event loop blocking, HTTP client TCP reuse, Notion retry mekanizması, nixpacks temizliği)
+- **Son Deploy:** 2026-04-12 (V2.5 Derin Güvenlik — GPT pre-flight check, GPT-powered retry rewrite, model fallback, Notion rejection telemetry)
 - **YouTube Kanalı:** Pets Got Talent (UCvj1A1gds6jZUgsPbhF3Muw) — OAuth2 bağlı
 - **Durum:** ✅ Aktif (7/24 Telegram bot — YouTube video üretim otomasyonu)
 - **Env Vars:** ENV, OPENAI_API_KEY, KIE_API_KEY, REPLICATE_API_TOKEN, TELEGRAM_YOUTUBE_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, ALLOWED_USER_IDS, NOTION_SOCIAL_TOKEN, NOTION_DB_YOUTUBE_OTOMASYON, DEFAULT_MODEL, YOUTUBE_ENABLED, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, YOUTUBE_CATEGORY_ID, YOUTUBE_PRIVACY

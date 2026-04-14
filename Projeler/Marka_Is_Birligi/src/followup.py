@@ -49,7 +49,7 @@ def get_followup_candidates():
     followup1_candidates = []
     followup2_candidates = []
 
-    with open(MARKALAR_CSV, "r", encoding="utf-8") as f:
+    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             status = row.get("outreach_status", "")
@@ -102,7 +102,7 @@ def update_csv_followup(lead_id, updates):
     from src.outreach import CSV_FIELDNAMES
     
     rows = []
-    with open(MARKALAR_CSV, "r", encoding="utf-8") as f:
+    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             if row.get("lead_id") == lead_id:

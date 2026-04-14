@@ -70,8 +70,8 @@ VIRAL PROMPT FORMULA (MANDATORY):
 1. Start with a specific camera type: bodycam, ring camera, home camera, CCTV, smartphone footage, dash cam
 2. Describe a SPECIFIC event happening — not a vague concept
 3. Include a surprising twist or unexpected moment
-4. Make the viewer think "WHAT HAPPENS NEXT?"
-5. Characters should DO things — action verbs, not descriptions
+4. Keep the prompt BRIEF AND SIMPLE. Less is more. Focus ONLY on the primary action.
+5. Characters should DO things — action verbs, not descriptions. Do not add complex background details.
 
 ⚠️ CONTENT SAFETY RULES (CRITICAL — FOLLOW OR VIDEO WILL BE REJECTED BY AI MODEL):
 - NEVER use words: "steal", "theft", "crime", "arrest", "gun", "weapon", "violence", "blood", "attack", "kill", "destroy", "fight", "drugs"
@@ -84,27 +84,24 @@ VIRAL PROMPT FORMULA (MANDATORY):
 - If the user requests something potentially dangerous, make it safe: e.g., "dog steals meat" → "dog grabs steak from BBQ and runs away"
 
 ANTI-PATTERNS (NEVER DO):
+❌ Overly detailed environmental descriptions (e.g., "Golden hour lighting bouncing off the green leaves while the wind blows gently") — THIS KILLS THE MODEL
 ❌ "Cinematic establishing shot of a beautiful landscape" — boring
 ❌ "Dolly in on a character contemplating life" — no action
-❌ "Golden hour rim light illuminates the scene" — technical jargon
-❌ Generic "a cat does something cute" — too vague
 
-GOOD EXAMPLES:
-✅ "Bodycam footage: a golden retriever grabs a whole steak from a BBQ party and sprints across the backyard. Everyone chases it. The dog slides under a trampoline."
-✅ "Ring camera: a raccoon walks onto the porch and starts eating from the cat's food bowl. The cat watches from the window in disbelief."
-✅ "Home camera: wedding reception. The ring bearer dog slides across the dance floor and crashes into the cake table. Everyone gasps."
+GOOD EXAMPLES (SHORT AND PUNCHY):
+✅ "Bodycam: Golden retriever grabs a steak from BBQ and sprints away. People chasing. Dog slides under trampoline."
+✅ "Ring camera: Raccoon walks on porch, starts eating from cat bowl. Cat watches from window."
+✅ "Home camera: Dog slides across dance floor into wedding cake. Everyone gasps."
 
 LANGUAGE RULE:
 - The prompt itself MUST be in English
-- If the video involves people speaking, add this directive at the end:
-  "All spoken dialogue must be in English. NEVER use Turkish or other languages, as the video generation model only supports English. Use natural, everyday language with short, emotionally engaging lines."
 
 OUTPUT FORMAT (STRICT JSON):
 {
   "scenes": [
     {
       "scene_number": 1,
-      "prompt": "Detailed viral video prompt (40-100 words, English, action-focused)",
+      "prompt": "Short, simple, action-focused viral video prompt (15-40 words, English)",
       "duration": 10
     }
   ],
@@ -114,19 +111,19 @@ OUTPUT FORMAT (STRICT JSON):
 }"""
 
 # Senaryo havuzundan üretirken kullanılan system prompt
-POOL_SYSTEM = """You are an expert at expanding short video scenarios into detailed AI video generation prompts.
+POOL_SYSTEM = """You are an expert at expanding short video scenarios into effective AI video generation prompts.
 
 YOUR JOB:
-Take the given scenario and camera type, and write a rich, detailed video generation prompt.
+Take the given scenario and camera type, and write a SHORT, PUNCHY, and DIRECT video generation prompt. 
+Extensive testing shows that short and simple prompts generate much better video results than overly detailed paragraphs.
 
 RULES:
-1. Keep the original scenario's story beats — don't change the plot
-2. ADD vivid physical details: character appearance, environment, textures, weather
-3. ADD action choreography: timing, speed, reactions, expressions
-4. ADD audio cues: footsteps, animal sounds, ambient noise
-5. KEEP it 40-100 words — detailed but not bloated
-6. End with: "smooth motion, natural physics, {duration} seconds"
-7. If humans speak in the video, add: "All spoken dialogue must be in English. NEVER use Turkish or other languages."
+1. Keep the original scenario's story beats — don't change the plot.
+2. Focus ONLY on the primary action and the subjects. DO NOT add complex background details or excessive adjectives.
+3. Keep the prompt BRIEF (15-30 words max).
+4. Do not use technical cinematographic jargon unless it's the requested camera angle.
+5. End with: "smooth motion, {duration} seconds".
+6. If humans speak, add: "Spoken dialogue must be in English. No other languages."
 
 ⚠️ CONTENT SAFETY (CRITICAL):
 - NEVER use: "steal", "theft", "crime", "police", "cop", "arrest", "gun", "weapon", "violence", "blood", "attack", "kill", "destroy"
@@ -144,7 +141,7 @@ OUTPUT FORMAT (STRICT JSON):
   "scenes": [
     {
       "scene_number": 1,
-      "prompt": "Detailed AI video generation prompt",
+      "prompt": "Short, simple, action-focused prompt (15-30 words max)",
       "duration": 10
     }
   ],

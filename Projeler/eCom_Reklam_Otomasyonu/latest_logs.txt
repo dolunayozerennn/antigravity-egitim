@@ -1,0 +1,20 @@
+Starting Container
+2026-04-12 12:16:22 - main - INFO - 🚀 eCom Reklam Otomasyonu başlatılıyor... [Mod: 🟢 PRODUCTION]
+2026-04-12 12:16:22 - main - INFO - 📊 Model: gpt-4.1-mini
+2026-04-12 12:16:22 - main - INFO - 👤 İzinli kullanıcılar: [1238877494]
+2026-04-12 12:16:22 - main - INFO - 🤖 Telegram polling başlatılıyor...
+2026-04-12 12:16:27 - main - ERROR - Telegram handler hatası: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+NoneType: None
+2026-04-12 14:56:30 - conversation_manager - INFO - Yeni sohbet başlatıldı: user=1238877494 (Dolunay)
+2026-04-12 14:56:57 - openai_service - INFO - JSON yanıt alındı — tokens: 977
+2026-04-12 14:56:57 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=['ad_concept', 'video_duration', 'aspect_ratio', 'language'], fotoğraf=❌, ready=False
+2026-04-12 14:57:11 - openai_service - INFO - JSON yanıt alındı — tokens: 1133
+2026-04-12 14:57:11 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=['video_duration', 'aspect_ratio', 'language'], fotoğraf=❌, ready=False
+2026-04-12 14:57:33 - openai_service - INFO - JSON yanıt alındı — tokens: 1233
+2026-04-12 14:57:33 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=[], fotoğraf=❌, ready=False
+2026-04-12 14:57:45 - openai_service - INFO - JSON yanıt alındı — tokens: 1276
+2026-04-12 14:57:45 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=[], fotoğraf=❌, ready=False
+2026-04-12 14:58:49 - openai_service - INFO - JSON yanıt alındı — tokens: 1325
+2026-04-12 14:58:49 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=[], fotoğraf=❌, ready=False
+2026-04-12 15:03:33 - openai_service - INFO - JSON yanıt alındı — tokens: 1341
+2026-04-12 15:03:33 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=[], fotoğraf=❌, ready=False

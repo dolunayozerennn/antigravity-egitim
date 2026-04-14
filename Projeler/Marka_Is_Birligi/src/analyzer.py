@@ -126,7 +126,7 @@ def load_existing_brands():
     names = set()
     
     if os.path.exists(CALISAN_MARKALAR_PATH):
-        with open(CALISAN_MARKALAR_PATH, "r", encoding="utf-8") as f:
+        with open(CALISAN_MARKALAR_PATH, "r", encoding="utf-8-sig") as f:
             data = json.load(f)
         handles = set(h.lower() for h in data.get("instagram_handles_to_exclude", []))
         names = set(n.lower().strip() for n in data.get("brands", []))
@@ -138,7 +138,7 @@ def load_existing_csv_brands():
     """Mevcut markalar.csv'deki markaları yükler (dedup için)."""
     existing = set()
     if os.path.exists(MARKALAR_CSV):
-        with open(MARKALAR_CSV, "r", encoding="utf-8") as f:
+        with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 handle = row.get("instagram_handle", "").strip().lower().lstrip("@")
@@ -205,7 +205,7 @@ def find_new_brands(reels=None):
         if not os.path.exists(RAW_REELS_PATH):
             print("[ANALYZER] raw_reels.json bulunamadı!")
             return []
-        with open(RAW_REELS_PATH, "r", encoding="utf-8") as f:
+        with open(RAW_REELS_PATH, "r", encoding="utf-8-sig") as f:
             reels = json.load(f)
 
     print(f"[ANALYZER] {len(reels)} reel analiz ediliyor...")

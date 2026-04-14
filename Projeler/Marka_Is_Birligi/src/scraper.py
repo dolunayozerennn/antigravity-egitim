@@ -67,7 +67,7 @@ def read_profiles(csv_path=None):
     urls = []
     skipped = []
     seen = set()
-    with open(csv_path, "r", encoding="utf-8") as f:
+    with open(csv_path, "r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             url = row["Link"].strip().rstrip("/")
@@ -169,7 +169,7 @@ def scrape_reels(dry_run=False):
 
     # Sonuçları kaydet
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+    with open(OUTPUT_PATH, "w", encoding="utf-8-sig") as f:
         json.dump(items, f, ensure_ascii=False, indent=2)
     print(f"[SCRAPER] Sonuçlar kaydedildi → {OUTPUT_PATH}")
 

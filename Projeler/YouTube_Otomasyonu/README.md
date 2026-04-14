@@ -99,6 +99,8 @@ python main.py
 | V2.2 | 12 Nisan 2026 | 2 | FFmpeg PATH resolve, video download retry |
 | V2.3 | 12 Nisan 2026 | 5 | Event loop blocking fix, HTTP client reuse, Notion retry, nixpacks temizliği |
 | V2.4 | 12 Nisan 2026 | 1 | Seedance Türkçe prompt düzeltmesi, İngilizce'ye zorlandı. Kapsamlı stabilizasyon denetimleri (1.1'den 3.3'e) sıfır hatayla geçildi. |
+| V2.5 | 12 Nisan 2026 | 2 | Otonom Gemini Prompt Kalibrasyon script'i (`run_prompt_calibration.py`) eklendi. Gemini A/B test (uzun vs kısa prompt) sonuçlarına göre `prompt_generator.py` "Short & Punchy (Kısa-Öz, 15-30 kelime)" formatına odaklanacak şekilde yeniden yazıldı. |
+
 
 ---
 
