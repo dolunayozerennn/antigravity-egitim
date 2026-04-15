@@ -68,7 +68,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Service ID:** `3afcca6e-8f29-4ea6-bc99-b212a4269e34`
 - **COVER_TYPE:** `reels`
 - **Cron Schedule:** `0 6 * * *` (Günlük, UTC 06:00 = TR 09:00)
-- **Son Deploy:** 2026-04-12 (Redeploy — logger level fix, auto-deploy tetiklenmemişti)
+- **Son Deploy:** 2026-04-15 (Reels trigger statuses expanded to include Çekime Hazır and Edit TAMAM)
 - **Durum:** ✅ Aktif (Günde 1 kez Reels kapak üretimi — 3 tema × 2 varyasyon = 6 kapak)
 
 #### Servis 2: youtube-kapak
