@@ -14,7 +14,7 @@ def get_config(cover_type: str) -> dict:
             "db_id": os.getenv("NOTION_DB_REELS_KAPAK", os.getenv("NOTION_DATABASE_ID")),
             "title_prop": "Name",
             "status_prop": "Status",
-            "ready_status": "Çekildi - Edit YOK",
+            "ready_statuses": ["Çekime Hazır", "Çekildi - Edit YOK", "Çekildi - Edit TAMAM"],
             "drive_prop": "Drive",
             "panel_title": "📸 REELS KAPAK REVİZYON PANELİ"
         }
@@ -24,7 +24,7 @@ def get_config(cover_type: str) -> dict:
             "db_id": os.getenv("NOTION_DB_YOUTUBE_ISBIRLIKLERI", os.getenv("NOTION_DATABASE_ID")),
             "title_prop": "Video Adı",
             "status_prop": "Durum",
-            "ready_status": "Çekildi",
+            "ready_statuses": ["Çekildi"],
             "drive_prop": "Drive",
             "panel_title": "🎬 YOUTUBE KAPAK REVİZYON PANELİ"
         }
@@ -68,7 +68,7 @@ def get_ready_videos(cover_type: str) -> list:
         print(f"[{cover_type.upper()}] Notion Token or Database ID is missing.")
         return []
 
-    print(f"[{cover_type.upper()}] Querying database: {db_id} for '{cfg['ready_status']}' videos...")
+    print(f"[{cover_type.upper()}] Querying database: {db_id} for {cfg.get('ready_statuses', [])} videos...")
     try:
         url = f"https://api.notion.com/v1/databases/{db_id}/query"
         headers = {
@@ -76,13 +76,10 @@ def get_ready_videos(cover_type: str) -> list:
             "Content-Type": "application/json",
             "Notion-Version": "2022-06-28"
         }
+        
+        status_filters = [{"property": cfg["status_prop"], "select": {"equals": s}} for s in cfg.get("ready_statuses", [])]
         payload = {
-            "filter": {
-                "property": cfg["status_prop"],
-                "select": {
-                    "equals": cfg["ready_status"]
-                }
-            }
+            "filter": {"or": status_filters} if len(status_filters) > 1 else status_filters[0]
         }
         
         response = requests.post(url, headers=headers, json=payload, timeout=30)
