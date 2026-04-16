@@ -39,8 +39,9 @@ _STATE_META_CELL = "A1"
 class SheetsReader:
     """İki farklı spreadsheet'i okuyabilen birleşik reader."""
 
-    def __init__(self, spreadsheet_id: str, sheet_tabs: list[dict], reader_name: str = "default", use_state_tab: bool = True):
+    def __init__(self, spreadsheet_id: str, sheet_tabs: list[dict], reader_name: str = "default", use_state_tab: bool = True, state_spreadsheet_id: str = None):
         self.spreadsheet_id = spreadsheet_id
+        self.state_spreadsheet_id = state_spreadsheet_id or spreadsheet_id
         self.sheet_tabs = sheet_tabs
         self.reader_name = reader_name
         self.use_state_tab = use_state_tab
@@ -64,7 +65,7 @@ class SheetsReader:
                 self.service.spreadsheets()
                 .values()
                 .get(
-                    spreadsheetId=self.spreadsheet_id,
+                    spreadsheetId=self.state_spreadsheet_id,
                     range=f"'{_STATE_META_TAB}'!A:B",
                 )
                 .execute()
@@ -120,7 +121,7 @@ class SheetsReader:
             # _Meta tab yoksa oluşturmayı dene (yazma izni varsa)
             try:
                 self.service.spreadsheets().values().update(
-                    spreadsheetId=self.spreadsheet_id,
+                    spreadsheetId=self.state_spreadsheet_id,
                     range=f"'{_STATE_META_TAB}'!A1",
                     valueInputOption="RAW",
                     body={"values": values},
@@ -131,7 +132,7 @@ class SheetsReader:
                     try:
                         # Tab oluştur
                         self.service.spreadsheets().batchUpdate(
-                            spreadsheetId=self.spreadsheet_id,
+                            spreadsheetId=self.state_spreadsheet_id,
                             body={
                                 "requests": [{
                                     "addSheet": {
@@ -143,7 +144,7 @@ class SheetsReader:
                         logger.info(f"✨ [{self.reader_name}] _Meta tab oluşturuldu")
                         # Tekrar güncelle
                         self.service.spreadsheets().values().update(
-                            spreadsheetId=self.spreadsheet_id,
+                            spreadsheetId=self.state_spreadsheet_id,
                             range=f"'{_STATE_META_TAB}'!A1",
                             valueInputOption="RAW",
                             body={"values": values},

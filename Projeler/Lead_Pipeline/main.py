@@ -264,7 +264,8 @@ def main():
     notifier_reader = SheetsReader(
         spreadsheet_id=Config.NOTIFIER_SPREADSHEET_ID,
         sheet_tabs=Config.NOTIFIER_SHEET_TABS,
-        reader_name="notifier"
+        reader_name="notifier",
+        state_spreadsheet_id=Config.CRM_SPREADSHEET_ID
     )
 
     # Notion writer
