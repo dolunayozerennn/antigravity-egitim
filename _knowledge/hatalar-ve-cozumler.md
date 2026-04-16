@@ -57,6 +57,12 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 
 ## Apify
 
+### Monthly Usage Limit (Rate Limit) Log Maskeleme
+- **Sorun:** Apify kotaları dolduğunda script "Monthly usage hard limit exceeded" hatası alıyordu ancak `apify_client.py` içerisindeki exception block bu özel hatayı (`ApifyApiError`) yakalasa bile `last_error` değişkenine atamıyordu. Sonuç olarak, tüm denemeler tükendiğinde, developer'a "Bilinmeyen bir hata" mesajı e-posta olarak veya Notion'a gönderiliyordu, gerçek kota aşılma sorunu maskeleniyordu.
+- **Çözüm:** `except ApifyApiError as e:` bloğuna `last_error = e` eklendi. Hatayı artık string formatına dahil ederek döner: `Exception: Tüm API anahtarları denendi... Son Hata: {last_error}`.
+- **Kural:** Herhangi bir API için API rotasyon (key rotation) mantığı veya çoklu deneme (try/catch loop) kurduğunda, fırlatılacak en son hatanın (last_error) daima **gerçek** exception objesi veya detaylı mesajini taşıdığından emin ol. Silent failure veya masking olmamalı.
+- **Tarih:** 16 Nisan 2026
+
 ### Boş sonuç / Actor başlamıyor
 - **Sorun:** Çok kısıtlayıcı filtreler veya hatalı Actor ID
 - **Çözüm:** Actor ID'yi Apify konsolundan kopyala, filtreleri genişlet
@@ -100,6 +106,13 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Uygulanan dosya:** `Tele_Satis_CRM/sheets_reader.py` → `get_all_rows()` metodu
 - **Kural:** Uzun süre çalışan servislerde (polling loop, webhook listener) dış API çağrılarına **mutlaka** retry + reconnect ekle
 - **Tarih:** Mart 2026
+
+### Eksik Sekme Nedeniyle HttpError 400 — Tüm Pipeline Çökmesi (KRİTİK)
+- **Sorun:** `lead-pipeline` projesinde `config.py` içinde tanımlı olan ancak henüz oluşturulmamış bir aya (örn: Nisan 2026) ait sekme adı nedeniyle `HttpError 400 Unable to parse range` hatası alınıyor ve bu hata tüm pipeline'ı çökertiyordu.
+- **Etki:** Yeni bir ay geldiğinde eğer o ayın sheet'i henüz manuel açılmamışsa, varolan sheet'ler (Mart vs.) de okunamadan cron job tamamen duruyordu.
+- **Çözüm:** `sheets_reader.py` içine `HttpError 400 ("Unable to parse range")` için özel bir yakalama eklendi. Sekme bulunamazsa artık fatal hata sayılmıyor, sadece uyarı (`Atlanıyor...`) ile devam ediliyor.
+- **Kural:** Her zaman Safe-by-Design prensibine uy: Beklenen bir hedef yapı yoksa o kısmı nazikçe atla, bir sekme yok diye diğer tüm sağlıklı sekmelerin okunmasını engelleme.
+- **Tarih:** 16 Nisan 2026
 
 ---
 
@@ -213,6 +226,11 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
 - **Kural:** CronJob projelerinde `ops_logger` birden fazla instance oluşturuyorsa (farklı component adlarıyla), exit'ten önce `wait_all_loggers()` çağır.
 - **Tarih:** 11 Nisan 2026
 
+### Video Yükleme Timeout Hatası — 5 Dakika Sınırı
+- **Sorun:** `linkedin-video-cron` büyük/yavaş işlenen videoları yüklerken 5 dakikalık timeout sınırına takılıyor ve `Video processing timed out after 5 minutes.` hatasıyla başarısız oluyordu.
+- **Çözüm:** `linkedin_publisher.py` içerisindeki video processing pooling döngüsü `max_retries` değeri 30'dan (5 dk) 90'a (15 dk) çıkarıldı.
+- **Kural:** LinkedIn'in video işleme süreleri asenkron olarak daha uzun sürebilir. Polling işlemlerine en az 10-15 dk esneklik ver.
+- **Tarih:** 16 Nisan 2026
 ---
 
 ## Kod-Repo Senkronizasyon Hataları
@@ -513,3 +531,11 @@ Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözm
   10. **asyncio.create_task Hata Yutma (P0):** `_handle_task_exception` done callback eklenerek fire-and-forget task hataları loglanıyor
 - **Kural:** Async Python projelerinde senkron API çağrıları **mutlaka** `asyncio.to_thread()` ile sarımlanmalı. Session objeleri için idle TTL zorunlu.
 - **Tarih:** 12 Nisan 2026
+
+## Kie AI (Nano Banana 2) - 400 Bad Request / Resolution Error
+**Hata:** Kie AI görsel üretimi aşamasında `taskId` döndürülememesi veya polling sırasında hata alınması. Özel olarak API'ye "1K" veya "2k" gibi artık desteklenmeyen/yanlış formatlanmış resolution (çözünürlük) değerleri gönderildiğinde yaşanır.
+**Çözüm:** `resolution` parametresi modelin kabul ettiği formatta (örn: `"1k"` - küçük harfle) gönderilmelidir. `core/image_generator.py` veya `kie_api.py` içerisindeki `"1K"` stringleri `"1k"` olarak güncellenmelidir. (Nano Banana 2, `2k` veya büyük harfli `1K` formatlarını kabul etmemektedir).
+
+## Akıllı Watchdog - Health Check "CRITICAL" False Positive Döngüsü
+**Hata:** `_skills/servis-izleyici/scripts/health_check.py` scripti, Railway'den logları çekerken `Akilli_Watchdog` loglarındaki kendi hata raporlamalarını ("Railway deployment FAILED!" gibi) tespit edip, Watchdog servisinin *kendisinin* çöktüğünü (CRITICAL ERROR) sanmaktadır.
+**Çözüm:** `health_check.py` içerisindeki hata parser regexine (`ERROR_PATTERNS` / `FALSE_POSITIVE_PATTERNS`) log prefixini yoksayacak bir kural (örn: `OpsLog_Akilli_Watchdog`) eklenmelidir, böylece sistem diğer projelerdeki hataları loglarken kendi sağlığını feda etmez.
