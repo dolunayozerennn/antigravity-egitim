@@ -194,3 +194,8 @@ def get_ops_logger(project_name: str, component: str = "Pipeline") -> OpsLogger:
     if key not in _instances:
         _instances[key] = OpsLogger(project_name, component)
     return _instances[key]
+
+def wait_all_loggers():
+    """Tüm aktif ops_logger queue'larının Notion'a yazılmasını bekler."""
+    for instance in _instances.values():
+        instance.wait_for_logs()

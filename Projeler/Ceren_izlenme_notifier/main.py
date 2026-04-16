@@ -6,6 +6,8 @@ from core.llm_helper import generate_report_summary
 
 logger = get_logger(__name__)
 
+from ops_logger import wait_all_loggers
+
 def main():
     logger.info(f"Ceren Sosyal Medya Performans Raporu Botu Baslatildi (ENV={settings.ENV}, DRY_RUN={settings.IS_DRY_RUN})")
     try:
@@ -26,6 +28,8 @@ def main():
     except Exception as e:
         logger.error(f"Uygulama calisirken fatal bir hata olustu: {e}", exc_info=True)
         send_technical_error_report([f"Fatal Uygulama Hatası (Sistem Çöktü): {e}"])
+    finally:
+        wait_all_loggers()
 
 if __name__ == "__main__":
     main()

@@ -25,6 +25,7 @@ def call_apify_actor(actor_id, run_input):
                 err_msg = str(e).lower()
                 if "monthly usage" in err_msg or "hard limit exceeded" in err_msg or "rate limit" in err_msg:
                     logger.warning(f"Apify limiti doldu (Token {key[:6]}...), diğer key'e geçiliyor... ({e})")
+                    last_error = e
                     continue
                 else:
                     logger.error(f"Apify API hatası! (Token {key[:6]}...): {e}", exc_info=True)
