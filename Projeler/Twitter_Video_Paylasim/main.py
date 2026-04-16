@@ -108,3 +108,4 @@ if __name__ == "__main__":
         job()
         ops.info("Job Bitti", "Container kapanıyor")
         ops.wait_for_logs()
+
