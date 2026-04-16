@@ -813,8 +813,8 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "⚠️ Bir hata oluştu. Lütfen tekrar dene.",
                 parse_mode="Markdown",
             )
-        except Exception:
-            pass
+        except Exception as fallback_exc:
+            log.error(f"Kullanıcıya mesaj gönderilemedi: {fallback_exc}", exc_info=True)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

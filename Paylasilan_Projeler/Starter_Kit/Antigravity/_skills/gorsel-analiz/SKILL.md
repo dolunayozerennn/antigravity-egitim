@@ -56,7 +56,7 @@ Gemini Vision API kullanarak OCR + anlam çıkarımı (semantic extraction) yapa
 ```bash
 cd ./_skills/gorsel-analiz
 source venv/bin/activate
-GEMINI_API_KEY="AIzaSyBm-23Dr71RgICy-gWTw2y3OUPs5sCCKkc" \
+GEMINI_API_KEY="AIzaSyBm-BURAYA_API_KEY_GELECEK" \
 python3 scripts/analyze_supplement.py /path/to/image.jpg --output markdown
 ```
 
@@ -67,7 +67,7 @@ python3 scripts/analyze_supplement.py /path/to/image.jpg --output markdown
 ```bash
 cd ./_skills/gorsel-analiz
 source venv/bin/activate
-GEMINI_API_KEY="AIzaSyBm-23Dr71RgICy-gWTw2y3OUPs5sCCKkc" \
+GEMINI_API_KEY="AIzaSyBm-BURAYA_API_KEY_GELECEK" \
 python3 scripts/analyze_supplement.py /path/to/images_folder/ --multi --output json
 ```
 
@@ -76,7 +76,7 @@ python3 scripts/analyze_supplement.py /path/to/images_folder/ --multi --output j
 ```bash
 cd ./_skills/gorsel-analiz
 source venv/bin/activate
-GEMINI_API_KEY="AIzaSyBm-23Dr71RgICy-gWTw2y3OUPs5sCCKkc" \
+GEMINI_API_KEY="AIzaSyBm-BURAYA_API_KEY_GELECEK" \
 python3 scripts/analyze_supplement.py /path/to/images_folder/ --output json --save output.json
 ```
 
@@ -85,7 +85,7 @@ python3 scripts/analyze_supplement.py /path/to/images_folder/ --output json --sa
 ```python
 import sys, os
 sys.path.insert(0, './_skills/gorsel-analiz/scripts')
-os.environ['GEMINI_API_KEY'] = 'AIzaSyBm-23Dr71RgICy-gWTw2y3OUPs5sCCKkc'
+os.environ['GEMINI_API_KEY'] = 'AIzaSyBm-BURAYA_API_KEY_GELECEK'
 
 from analyze_supplement import analyze_image, analyze_multiple_images, format_output
 

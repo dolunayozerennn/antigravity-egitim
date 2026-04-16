@@ -108,7 +108,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Marka_Is_Birligi`)
 - **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-04-06 (fix: YouTube URL filtreleme — Apify actor sadece Instagram URL kabul ediyor, karışık URL'ler 400 Bad Request hatasına yol açıyordu)
+- **Son Deploy:** 2026-04-16 (fix: Audit raporu sonrasi hardcoded API key'ler silindi, except bloklari düzeltildi)
 - **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — Notion state + ops_logger)
 
 ---

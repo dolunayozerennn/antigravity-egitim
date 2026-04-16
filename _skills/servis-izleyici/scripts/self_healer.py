@@ -23,6 +23,7 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from typing import Optional
 
 # ── Sabitler ──────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -155,7 +156,7 @@ def record_action(state: dict, project_name: str, action: str, success: bool, de
 
 
 # ── Hata Sınıflandırma ───────────────────────────────────
-def classify_problem(problem: dict, playbook: dict) -> dict | None:
+def classify_problem(problem: dict, playbook: dict) -> Optional[dict]:
     """
     Bir sorunu playbook'taki kalıplarla eşleştirir.
     Returns: matching pattern dict veya None
@@ -217,7 +218,7 @@ def _gql_request(token: str, query: str, variables: dict) -> dict:
         return {"errors": [{"message": str(e)}]}
 
 
-def get_latest_deployment(token: str, project_id: str, service_id: str, environment_id: str) -> dict | None:
+def get_latest_deployment(token: str, project_id: str, service_id: str, environment_id: str) -> Optional[dict]:
     """Son deployment bilgilerini çeker."""
     query = """
     query($projectId: String!, $serviceId: String!, $environmentId: String!) {

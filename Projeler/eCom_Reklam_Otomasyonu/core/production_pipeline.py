@@ -175,7 +175,7 @@ class ProductionPipeline:
                             self.kie.create_image,
                             prompt=image_prompt,
                             aspect_ratio=aspect_ratio,
-                            resolution="2k",
+                            resolution="1k",
                             image_input=[product_image],
                         )
                         nb2_result = await self.kie.async_poll_task(nb2_task)
@@ -199,7 +199,7 @@ class ProductionPipeline:
                             self.kie.create_image,
                             prompt=image_prompt,
                             aspect_ratio=aspect_ratio,
-                            resolution="2k",
+                            resolution="1k",
                         )
                         nb2_result = await self.kie.async_poll_task(nb2_task)
                         if nb2_result["status"] == "success" and nb2_result["urls"]:

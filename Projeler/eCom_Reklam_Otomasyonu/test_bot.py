@@ -16,6 +16,7 @@ KULLANIM:
 import os
 import sys
 import json
+import logging
 import time
 import asyncio
 import traceback
@@ -281,8 +282,8 @@ class BotTestSuite:
                 try:
                     json.loads(reply)
                     is_json = True
-                except (json.JSONDecodeError, TypeError):
-                    pass
+                except (json.JSONDecodeError, TypeError) as e:
+                    logging.warning("JSON Decode Error or TypeError encountered during response validation.", exc_info=True)
 
                 self._record(
                     f"LLM [{tc['name']}]: Raw JSON dönmüyor",

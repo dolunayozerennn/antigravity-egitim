@@ -25,8 +25,12 @@ try:
 except ImportError:
     SSL_CONTEXT = ssl._create_unverified_context()
 
+import os
+
 # ── API Ayarları ─────────────────────────────────────────────
-SUPADATA_API_KEY = "sd_8dd351e3d4ab96c757eb1f4ff4c6e9a3"
+SUPADATA_API_KEY = os.environ.get("SUPADATA_API_KEY")
+if not SUPADATA_API_KEY:
+    raise ValueError("SUPADATA_API_KEY environment variable is missing.")
 SUPADATA_BASE_URL = "https://api.supadata.ai/v1"
 
 

@@ -57,7 +57,7 @@ class Config:
     VALID_BUDGETS = ["$0 - $20", "$20 - $50", "$50 - $150", "$150+"]
 
     # ── BİLDİRİM (Notifier) ────────────────────────────────────────
-    NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "savasgocgen@gmail.com")
+    NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "your_email@example.com")
     SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "EMAIL_ADRESI_BURAYA")
     TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")

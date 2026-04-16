@@ -138,10 +138,10 @@ Bu bilgilerle faturayı oluşturayım mı?
 Standart `faturalastir.py` ile faturayı üret.
 
 ## Sabit Bilgiler (Gönderen)
-- **İsim:** [İSİM SOYAD]
-- **Adres:** Mithatpaşa Cad. No: 103/3, Onur Mahallesi, Balçova, 35330 İzmir
-- **E-posta:** EMAIL_ADRESI_BURAYA
-- **Telefon:** +90 533 366 62 13
+- **İsim:** [İSİM SOYADINIZ]
+- **Adres:** [ADRESİNİZ]
+- **E-posta:** [E-POSTA ADRESİNİZ]
+- **Telefon:** [TELEFON NUMARANIZ]
 
 ## 🔑 Kimlik Bilgileri (E-posta modu)
 - **Gmail hesabı:** `EMAIL_ADRESI_BURAYA`

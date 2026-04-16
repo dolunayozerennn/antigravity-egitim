@@ -1,7 +1,13 @@
+import os
 import requests
 import json
+import logging
 
-token = "14ac7442-43fc-480a-b7e2-e8b5dacf1bb3"
+logging.basicConfig(level=logging.INFO)
+
+token = os.environ.get("RAILWAY_TOKEN")
+if not token:
+    raise ValueError("RAILWAY_TOKEN environment variable is required")
 headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 # Get service details
@@ -24,4 +30,4 @@ res = requests.post("https://backboard.railway.app/graphql/v2", headers=headers,
 try:
     print(json.dumps(res, indent=2))
 except Exception as e:
-    print(e)
+    logging.error("Failed to dump JSON response:", exc_info=True)

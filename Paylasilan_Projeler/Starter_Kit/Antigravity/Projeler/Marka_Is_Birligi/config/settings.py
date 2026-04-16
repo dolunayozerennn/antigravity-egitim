@@ -15,7 +15,7 @@
 # API Anahtarları ve Ayarları (LEGACY)
 
 # Apify Ayarları (Instagram Hashtag/Profile Scraper için)
-APIFY_API_KEY = "BURAYA_API_KEY_GELECEK"
+APIFY_API_KEY = "[API ANAHTARINIZ]"
 
 # Hunter.io Ayarları (E-posta bulmak için)
 HUNTER_API_KEY = "BURAYA_API_KEY_GELECEK"

@@ -18,6 +18,7 @@ Kullanım:
 import math
 import sys
 import os
+import logging
 
 # Mevcut dizinden currency modülünü import et
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -353,23 +354,23 @@ def run_scenario_from_args():
     if len(sys.argv) > 1:
         try:
             params["property_price"] = float(sys.argv[1])
-        except ValueError:
-            pass
+        except ValueError as e:
+            logging.warning("Geçersiz property_price değeri, varsayılan kullanılıyor.", exc_info=True)
     if len(sys.argv) > 2:
         try:
             params["downpayment_pct"] = float(sys.argv[2]) / 100
-        except ValueError:
-            pass
+        except ValueError as e:
+            logging.warning("Geçersiz downpayment_pct değeri, varsayılan kullanılıyor.", exc_info=True)
     if len(sys.argv) > 3:
         try:
             params["construction_years"] = int(sys.argv[3])
-        except ValueError:
-            pass
+        except ValueError as e:
+            logging.warning("Geçersiz construction_years değeri, varsayılan kullanılıyor.", exc_info=True)
     if len(sys.argv) > 4:
         try:
             params["start_year"] = int(sys.argv[4])
-        except ValueError:
-            pass
+        except ValueError as e:
+            logging.warning("Geçersiz start_year değeri, varsayılan kullanılıyor.", exc_info=True)
 
     scenario = investment_scenario(**params)
 

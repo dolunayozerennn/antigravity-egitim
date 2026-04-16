@@ -40,12 +40,12 @@ def generate_invoice(brand_name, company_name, company_email, company_address, a
         
         pdf.set_font("Roboto", "B", 10)
         # Row 1
-        pdf.cell(col1_w, 8, "Vendor Name: [İSİM SOYAD]", border="LTR", new_x=XPos.RIGHT, new_y=YPos.TOP)
+        pdf.cell(col1_w, 8, "Vendor Name: [İSİM SOYADINIZ]", border="LTR", new_x=XPos.RIGHT, new_y=YPos.TOP)
         pdf.cell(col2_w, 8, f"Invoice No: {invoice_number}", border="LTR", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         # Row 2
         pdf.set_font("Roboto", "", 10)
-        pdf.cell(col1_w, 8, "Address: Mithatpaşa Cad. No: 103/3, Balçova, İzmir", border="LR", new_x=XPos.RIGHT, new_y=YPos.TOP)
+        pdf.cell(col1_w, 8, "Address: [ADRESİNİZ]", border="LR", new_x=XPos.RIGHT, new_y=YPos.TOP)
         pdf.cell(col2_w, 8, f"Invoice Date: {issue_date}", border="LR", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         # Row spacer
@@ -57,11 +57,11 @@ def generate_invoice(brand_name, company_name, company_email, company_address, a
         pdf.cell(col2_w, 8, "", border="LR", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         # Row 4
-        pdf.cell(col1_w, 8, "Email ID: EMAIL_ADRESI_BURAYA", border="LR", new_x=XPos.RIGHT, new_y=YPos.TOP)
+        pdf.cell(col1_w, 8, "Email ID: [E-POSTA ADRESİNİZ]", border="LR", new_x=XPos.RIGHT, new_y=YPos.TOP)
         pdf.cell(col2_w, 8, "", border="LR", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         # Row 5
-        pdf.cell(col1_w, 8, "Mobile Number: +90 533 366 62 13", border="LR", new_x=XPos.RIGHT, new_y=YPos.TOP)
+        pdf.cell(col1_w, 8, "Mobile Number: [TELEFON NUMARANIZ]", border="LR", new_x=XPos.RIGHT, new_y=YPos.TOP)
         pdf.cell(col2_w, 8, "", border="LR", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         
         # Spacer
@@ -148,14 +148,14 @@ def generate_invoice(brand_name, company_name, company_email, company_address, a
             pdf.cell(50, 8, f"{label}", border=b_left, align="L", new_x=XPos.RIGHT, new_y=YPos.TOP)
             pdf.cell(payment_width - 50, 8, f"{value}", border=b_right, align="L", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
-        payment_row("Bank Name", "First Century Bank")
-        payment_row("Bank Address", "1731 N Elm St Commerce, GA 30529 USA")
-        payment_row("Account Type", "CHECKING")
-        payment_row("Account Number", "4020503005274")
-        payment_row("SWIFT CODE", "FCNSUS32")
-        payment_row("IBAN", "")
-        payment_row("Routing Number", "061120084")
-        payment_row("Beneficiary Name", "[İSİM SOYAD]")
+        payment_row("Bank Name", "[BANKA ADINIZ]")
+        payment_row("Bank Address", "[BANKA ADRESİNİZ]")
+        payment_row("Account Type", "[HESAP TÜRÜ]")
+        payment_row("Account Number", "[HESAP NUMARANIZ]")
+        payment_row("SWIFT CODE", "[SWIFT KODUNUZ]")
+        payment_row("IBAN", "[IBAN NUMARANIZ]")
+        payment_row("Routing Number", "[ROUTING NUMARANIZ]")
+        payment_row("Beneficiary Name", "[İSİM SOYADINIZ]")
         
         # Last row has terms on left and auth signatory on right
         pdf.set_font("Roboto", "B", 10)

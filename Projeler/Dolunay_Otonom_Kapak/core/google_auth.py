@@ -39,7 +39,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
 # Öncelik 1: Ana _knowledge dizini (normal çalışma)
-_PRIMARY_OAUTH_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "_knowledge", "credentials", "oauth")
+_PRIMARY_OAUTH_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "_knowledge", "credentials", "oauth")
 # Öncelik 2: /tmp/ köprüsü (macOS sandbox kullanıcıları için)
 _FALLBACK_OAUTH_DIR = "/tmp/antigravity_creds/oauth"
 

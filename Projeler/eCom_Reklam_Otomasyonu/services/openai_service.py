@@ -318,8 +318,8 @@ class OpenAIService:
                     recovered = json.loads(match.group())
                     log.warning("JSON markdown code fence'den kurtarıldı")
                     return recovered
-                except json.JSONDecodeError:
-                    pass
+                except json.JSONDecodeError as decode_error:
+                    log.warning("JSON parsing failed, falling back", exc_info=True)
             log.error("OpenAI JSON parse hatası (kurtarılamadı)", exc_info=True)
             raise
         except Exception:

@@ -11,7 +11,7 @@ Skill'leri, projeleri veya bütün Antigravity yapısını başkalarının alıp
 API anahtarlarını temizler, bağımlılıkları çözer, kurulum rehberi üretir.
 
 ## Gerekli Skill
-`_skills/paylasim/SKILL.md` → ÖNCE OKU
+`_skills/folder-paylasim/SKILL.md` → ÖNCE OKU
 
 ## Kullanım
 
@@ -39,23 +39,26 @@ Bu workflow 3 modda çalışır. Kullanıcı ne paylaşmak istediğini belirtir:
 ## Adımlar (Tüm Modlar İçin Genel Akış)
 
 1. **Skill'i Oku**
-   - `_skills/paylasim/SKILL.md` dosyasını oku
+   - `_skills/folder-paylasim/SKILL.md` dosyasını oku
    - İlgili mod bölümündeki adımları takip et
 
-2. **Güvenlik Taraması**
-   - `_skills/paylasim/checklists/guvenlik-tarama.md` dosyasını referans al
-   - `_knowledge/api-anahtarlari.md` dosyasındaki gerçek key'leri al ve dosyalarda birebir ara
-   - Regex desenleri ile API key taraması yap
-   - Kişisel bilgileri temizle
+2. **Otomatik Güvenlik Taraması (Zorunlu)**
+   - Paylaşılacak proje klasörünü belirle.
+   - Sızıntıları engellemek için **ZORUNLU** olarak şu komutu çalıştır:
+     ```bash
+     python _skills/folder-paylasim/scripts/security_scanner.py --target [HEDEF_KLASOR_YOLU_BURAYA]
+     ```
+   - Çıktı kırmızı (HATA) dönerse: Taramanın gösterdiği sorunlu dosyalardaki tüm sızıntıları temizle ve komutu tekrar çalıştır.
+   - Tarama YEŞİL (✅) dönene kadar paylaşım işlemini ilerletme.
 
 3. **Bağımlılık Kontrolü**
-   - `_skills/paylasim/checklists/bagimlilik-kontrol.md` dosyasını referans al
+   - `_skills/folder-paylasim/checklists/bagimlilik-kontrol.md` dosyasını referans al
    - Proje dışı import'ları tespit et ve çöz
    - Skill bağımlılıklarını tespit et ve belirle
    - requirements.txt oluştur/güncelle
 
 4. **Belgeleme**
-   - İlgili şablonu `_skills/paylasim/templates/` altından al
+   - İlgili şablonu `_skills/folder-paylasim/templates/` altından al
    - Skill export → `GEREKSINIMLER_SKILL.md` şablonundan `GEREKSINIMLER.md` oluştur
    - Proje export → `KURULUM_REHBERI_PROJE.md` şablonundan `KURULUM_REHBERI.md` oluştur
    - Starter Kit → `BASLANGIÇ_REHBERI.md` şablonundan oluştur

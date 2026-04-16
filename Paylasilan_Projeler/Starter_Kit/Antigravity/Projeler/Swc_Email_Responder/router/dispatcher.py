@@ -25,29 +25,8 @@ from router.filters import (
 
 # Bilinen Creative Sourcing kontakları (fallback — LLM yoksa kullanılır)
 CREATIVE_SOURCING_CONTACTS = [
-    "tylerdaviscsatari@gmail.com", "davidecuellibusiness@gmail.com", "off_kchri",
-    "ilrealista_steven", "r3ui_tech", "ugc.beatrice@gmail.com", "usseindach@icloud.com",
-    "gemfatimazahraefilali@gmail.com", "1btypep@gmail.com", "abc.u.in.italy@gmail.com",
-    "dexter.commerciale@gmail.com", "info@gretamenchi.it", "a.suwd1114@gmail.com",
-    "aleandrobussola23@gmail.com", "alexiswarr.booking@gmail.com", "alicicomeprima@gmail.com",
-    "amedeo@atommanagement.it", "annuhamza@gmail.com", "aracamriv12@gmail.com",
-    "auwlabdllh@gmail.com", "avenged_saretta@hotmail.it", "bise@atommanagement.it",
-    "blakesecuritysystems@gmail.com", "camihawke@artisti.show-reel.it",
-    "christypolinio@gmail.com", "contatocarolvpacheco@gmail.com",
-    "contatoitalianotv@gmail.com", "daniellecandosin@gmail.com",
-    "dellasalapasquale@gmail.com", "denisecarusofr1@gmail.com",
-    "dineshmahato9824@gmail.com", "dosericcardo@gmail.com",
-    "gabriele@doom-entertainment.com", "gliautogol@artisti.show-reel.it",
-    "gmailcom.gulmiraomorova9@gmail.com", "gulmiraomorova9@gmail.com",
-    "ibra@gmail.com", "info@mattiastanga.com", "info@newco-mgmt.com",
-    "info@theshowsrl.it", "info@willwoosh.it", "infogiordanaematteo@gmail.com",
-    "ipantellas@in-sane.it", "kessyemelycollab@gmail.com", "kiro@doom-entertainment.com",
-    "management@tessamasazza.com", "manuel@role-talent.com",
-    "martina.eigner1@gmail.com", "martinkiplimo54@gmail.com", "mgmt@imsimone.com",
-    "partnership@faffapix.com", "pr.multitaskingmom@gmail.com",
-    "ricadoflash@gmail.com", "sashaderomaofficial@gmail.com", "selimash@gmail.com",
-    "thebestgamehater@gmail.com", "tiktokricadoflash@gmail.com", "totor@gmail.com",
-    "ugc.elyn@gmail.com", "waheedbutt202107@gmail.com",
+    "creative1@example.com", "creative2@example.com", "agency@example.com",
+    "ugc_creator1", "ugc_creator2"
 ]
 
 # Rule-based CS sinyal kelimeleri (LLM fallback)

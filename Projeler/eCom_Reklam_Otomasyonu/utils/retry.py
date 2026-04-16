@@ -73,8 +73,8 @@ def retry_api_call(
                             if retry_after:
                                 try:
                                     delay = min(float(retry_after), max_delay)
-                                except ValueError:
-                                    pass
+                                except ValueError as e:
+                                    log.warning("Failed to parse Retry-After header as float", exc_info=True)
                         log.warning(
                             f"{op}: HTTP {status}, retry {attempt}/{max_retries} "
                             f"({delay:.1f}s sonra)"

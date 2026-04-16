@@ -91,7 +91,7 @@ class KieAIService:
         self,
         prompt: str,
         aspect_ratio: str = "9:16",
-        resolution: str = "2k",
+        resolution: str = "1k",
         image_input: list[str] | None = None,
     ) -> str:
         """
@@ -100,7 +100,7 @@ class KieAIService:
         Args:
             prompt: Görsel açıklaması (İngilizce önerilir)
             aspect_ratio: "1:1", "4:5", "9:16", "16:9" vb.
-            resolution: "1k", "2k", "4k"
+            resolution: "1k", "4k"  # (2k model tarafindan artik desteklenmiyor)
             image_input: Referans görsel URL listesi
 
         Returns:

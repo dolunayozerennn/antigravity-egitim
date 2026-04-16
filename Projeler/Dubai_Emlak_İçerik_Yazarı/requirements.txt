@@ -1,0 +1,3 @@
+# Dubai Emlak İçerik Yazarı - Bağımlılıklar
+# Bu proje yalnızca standart Python kütüphanelerini (urllib, json, ssl, v.b.)
+# kullanmaktadır. Harici bir bağımlılık mevcut değildir.
