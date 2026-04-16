@@ -192,24 +192,27 @@ def _safe_parse_json(text):
     # 1. Direk parse
     try:
         return json.loads(text)
-    except json.JSONDecodeError:
-        pass
+    except json.JSONDecodeError as e:
+        import logging
+        logging.getLogger(__name__).warning("Fallback: JSON decode hatası (1)", exc_info=e)
 
     # 2. ```json ... ``` bloğunu çıkar
     match = re.search(r'```(?:json)?\s*\n?(\{.*?\})\s*```', text, re.DOTALL)
     if match:
         try:
             return json.loads(match.group(1))
-        except json.JSONDecodeError:
-            pass
+        except json.JSONDecodeError as e:
+            import logging
+            logging.getLogger(__name__).warning("Fallback: JSON decode hatası (2)", exc_info=e)
 
     # 3. İlk { ... } bloğunu bul
     match = re.search(r'(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})', text, re.DOTALL)
     if match:
         try:
             return json.loads(match.group(1))
-        except json.JSONDecodeError:
-            pass
+        except json.JSONDecodeError as e:
+            import logging
+            logging.getLogger(__name__).warning("Fallback: JSON decode hatası (3)", exc_info=e)
 
     return None
 

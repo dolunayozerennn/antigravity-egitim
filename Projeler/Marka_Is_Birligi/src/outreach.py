@@ -67,8 +67,9 @@ def _next_lead_id():
                     try:
                         num = int(lid.replace("MIB-", ""))
                         max_id = max(max_id, num)
-                    except ValueError:
-                        pass
+                    except ValueError as e:
+                        import logging
+                        logging.getLogger(__name__).warning(f"Geçersiz lead_id formatı: {lid}", exc_info=e)
     return f"MIB-{max_id + 1:03d}"
 
 

@@ -14,14 +14,16 @@
 
 # API Anahtarları ve Ayarları (LEGACY)
 
+import os
+
 # Apify Ayarları (Instagram Hashtag/Profile Scraper için)
-APIFY_API_KEY = "BURAYA_API_KEY_GELECEK"
+APIFY_API_KEY = os.environ.get("APIFY_API_KEY", "")
 
 # Hunter.io Ayarları (E-posta bulmak için)
-HUNTER_API_KEY = "BURAYA_API_KEY_GELECEK"
+HUNTER_API_KEY = os.environ.get("HUNTER_API_KEY", "")
 
 # Brave Search API (Opsiyonel: Google alternatif arama için)
-BRAVE_SEARCH_API_KEY = "BURAYA_API_KEY_GELECEK"
+BRAVE_SEARCH_API_KEY = os.environ.get("BRAVE_SEARCH_API_KEY", "")
 
 # Arama Kriterleri
 SEARCH_KEYWORDS = [

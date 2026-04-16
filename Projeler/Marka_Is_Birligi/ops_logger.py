@@ -32,8 +32,9 @@ def _get_env(key, default=""):
     try:
         from env_loader import get_env as _loader_get
         return _loader_get(key, default)
-    except ImportError:
-        pass
+    except ImportError as e:
+        import logging
+        logging.getLogger(__name__).debug(f"env_loader modülü bulunamadı, master.env fallback başarısız: {e}")
     return default
 
 
@@ -67,8 +68,9 @@ class _NotionLogWorker(threading.Thread):
                 print(f"[OpsLogger Error] Notion'a log gönderilemedi: {e}", file=sys.stderr)
                 try:
                     self.log_queue.task_done()
-                except ValueError:
-                    pass
+                except ValueError as ve:
+                    import logging
+                    logging.getLogger(__name__).warning('Queue task_done ValueError', exc_info=ve)
 
     def _send_to_notion(self, log_data):
         title = (log_data.get("title") or "")[:250]
