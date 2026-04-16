@@ -8,16 +8,14 @@ import random
 
 logger = get_logger(__name__)
 
-# Initialize the ApifyClient with a random API token for this execution
-selected_key = random.choice(settings.APIFY_KEYS)
-client = ApifyClient(selected_key)
-
-@retry(stop=stop_after_attempt(2), wait=wait_fixed(15))
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
 def call_apify_actor(actor_id, run_input):
     """
-    Apify actor çağrısını yapar. Hata durumunda 15 saniye bekleyip 1 kez daha dener (toplam 2 deneme).
+    Apify actor çağrısını yapar.
     """
-    logger.info(f"Apify Actor çağrılıyor: {actor_id}")
+    selected_key = random.choice(settings.APIFY_KEYS)
+    client = ApifyClient(selected_key)
+    logger.info(f"Apify Actor çağrılıyor: {actor_id} (Token: {selected_key[:6]}...)")
     return client.actor(actor_id).call(run_input=run_input)
 
 def is_within_7_days(date_str):
