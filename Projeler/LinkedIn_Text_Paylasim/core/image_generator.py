@@ -110,8 +110,7 @@ class ImageGenerator:
             "model": "nano-banana-2",
             "input": {
                 "prompt": prompt,
-                "aspect_ratio": "16:9",
-                "resolution": "1k"
+                "aspect_ratio": "16:9"
             }
         }
 
