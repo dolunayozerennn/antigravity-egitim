@@ -89,6 +89,7 @@ FALSE_POSITIVE_PATTERNS = re.compile(
     r"|only one bot instance"
     r"|No error handlers are registered.*logging exception"
     r"|1 sorun tespit edildi"
+    r"|OpsLog_Akilli_Watchdog"
     r")",
     re.IGNORECASE,
 )

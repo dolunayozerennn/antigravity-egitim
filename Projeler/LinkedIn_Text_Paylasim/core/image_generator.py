@@ -111,7 +111,7 @@ class ImageGenerator:
             "input": {
                 "prompt": prompt,
                 "aspect_ratio": "16:9",
-                "resolution": "1K"
+                "resolution": "1k"
             }
         }
 

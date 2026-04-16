@@ -1,22 +1,43 @@
 from apify_client import ApifyClient
+from apify_client.errors import ApifyApiError
 from datetime import datetime, timedelta, timezone
 from logger import get_logger
 from config import settings
-from tenacity import retry, stop_after_attempt, wait_fixed
-
-import random
+import time
 
 logger = get_logger(__name__)
 
-@retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
 def call_apify_actor(actor_id, run_input):
     """
-    Apify actor çağrısını yapar.
+    Apify actor çağrısını yapar. Biten limitlere karşı sırayla key dener.
+    Başarılı olursa (client, run_result) döner.
     """
-    selected_key = random.choice(settings.APIFY_KEYS)
-    client = ApifyClient(selected_key)
-    logger.info(f"Apify Actor çağrılıyor: {actor_id} (Token: {selected_key[:6]}...)")
-    return client.actor(actor_id).call(run_input=run_input)
+    last_error = None
+    
+    for _ in range(3): # En fazla 3 genel deneme
+        for key in settings.APIFY_KEYS:
+            try:
+                client = ApifyClient(key)
+                logger.info(f"Apify Actor çağrılıyor: {actor_id} (Token: {key[:6]}...)")
+                run = client.actor(actor_id).call(run_input=run_input)
+                return client, run
+            except ApifyApiError as e:
+                err_msg = str(e).lower()
+                if "monthly usage" in err_msg or "hard limit exceeded" in err_msg or "rate limit" in err_msg:
+                    logger.warning(f"Apify limiti doldu (Token {key[:6]}...), diğer key'e geçiliyor... ({e})")
+                    continue
+                else:
+                    logger.error(f"Apify API hatası! (Token {key[:6]}...): {e}", exc_info=True)
+                    last_error = e
+                    continue
+            except Exception as e:
+                logger.error(f"Beklenmeyen Apify hatası! (Token {key[:6]}...): {e}", exc_info=True)
+                last_error = e
+                continue
+                
+        time.sleep(5)
+    
+    raise last_error or Exception(f"Tüm try/catch denemeleri tükendi! ({len(settings.APIFY_KEYS)} key)")
 
 def is_within_7_days(date_str):
     """
@@ -57,7 +78,7 @@ def get_instagram_data():
             "resultsLimit": 7
         }
         
-        run = call_apify_actor(settings.APIFY_INSTAGRAM_ACTOR, post_run_input)
+        client, run = call_apify_actor(settings.APIFY_INSTAGRAM_ACTOR, post_run_input)
         
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             # sometimesposts are inside latestPosts
@@ -97,7 +118,7 @@ def get_tiktok_data():
             "resultsPerPage": 7,
             "downloadVideo": False
         }
-        run = call_apify_actor(settings.APIFY_TIKTOK_ACTOR, tk_run_input)
+        client, run = call_apify_actor(settings.APIFY_TIKTOK_ACTOR, tk_run_input)
         
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             dt = item.get("createTime") or item.get("createTimeISO")
@@ -135,7 +156,7 @@ def get_youtube_data():
             "maxResults": 5,
             "maxResultStreams": 0
         }
-        run = call_apify_actor(settings.APIFY_YOUTUBE_ACTOR, yt_run_input)
+        client, run = call_apify_actor(settings.APIFY_YOUTUBE_ACTOR, yt_run_input)
         
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             dt = item.get("uploadDate") or item.get("date")
