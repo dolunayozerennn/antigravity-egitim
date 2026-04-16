@@ -36,7 +36,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
 - **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
-- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
+- **Son Deploy:** 2026-04-16 (fix: Google Sheets HttpError 400 eksik sekme hatası atlanması sağlandı)
 - **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
 
 ---
@@ -108,7 +108,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Marka_Is_Birligi`)
 - **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-04-16 (fix: Audit raporu sonrasi hardcoded API key'ler silindi, except bloklari düzeltildi)
+- **Son Deploy:** 2026-04-16 (fix: Apify key rotasyonunda limit hatası durumu giderildi ve hata alındığında failover yapısı eklendi)
 - **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — Notion state + ops_logger)
 
 ---
@@ -121,7 +121,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Akilli_Watchdog`)
 - **Lokal Klasör:** `Projeler/Akilli_Watchdog/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-05 (auto-deploy — SUCCESS doğrulandı)
+- **Son Deploy:** 2026-04-16 (Fix: E-posta yorgunluğunu önleme (weekly digest mode) ve Antigravity AI Copy-Paste prompt eklendi)
 - **Durum:** ✅ Aktif (Günde 1 kez çalışır — UTC 00:00. Token expire takibi + Railway health check eklendi.)
 - **Env Vars:** GROQ_API_KEY, NOTION_API_TOKEN, NOTION_SOCIAL_TOKEN, GOOGLE_OUTREACH_TOKEN_JSON, GOOGLE_SERVICE_ACCOUNT_JSON, RAILWAY_TOKEN
 
@@ -146,7 +146,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 10 * * *` (Günlük, UTC 10:00 = TR 13:00)
-- **Son Deploy:** 2026-04-11 (4 kritik fix: content filter relaxed + fallback mekani̅zması + wait_all_loggers + ops loglama iyileştirmesi)
+- **Son Deploy:** 2026-04-16 (fix: LinkedIn video yükleme işlemi zaman aşımı 5 dakikadan 15 dakikaya çıkarıldı)
 - **Durum:** ✅ Aktif (TikTok→LinkedIn video pipeline, günde 1 kez)
 - **Env Vars:** LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, GROQ_API_KEY, LINKEDIN_FILTER_STRICTNESS=relaxed, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID, NOTION_DB_OPS_LOG
 
@@ -275,7 +275,7 @@ Aşağıdaki projeler ilerleyen dönemde platformdan silinmek üzere işaretlenm
 - ~~`linkedin-paylasim`~~ (`9aec063f`) — Hayalet, linkedin-text + linkedin-video olarak ayrılmıştı. **SİLİNDİ** (2026-04-03)
 - ~~`Twitter_Paylasim`~~ (`9b8a5927`) — Hayalet, twitter-video-cron ile duplike. **SİLİNDİ** (2026-04-03)
 - ~~`marka-is-birligi (boş)`~~ (`0522fff5`) — Boş proje. Aktif: `6994adc2`. **SİLİNDİ** (2026-04-03)
-- ~~`dolunay-reels-kapak`~~ (`fed6db49`) — V2'ye (Dolunay_Otonom_Kapak) taşındı. **ARŞİVLENDİ** (2026-04-09)
-- ~~`dolunay-youtube-kapak`~~ (`586a7bf6`) — V2'ye (Dolunay_Otonom_Kapak) taşındı. **ARŞİVLENDİ** (2026-04-09)
+- ~~`dolunay-reels-kapak`~~ (`fed6db49`) — V2'ye (Dolunay_Otonom_Kapak) taşındı. **SİLİNDİ** (2026-04-16)
+- ~~`dolunay-youtube-kapak`~~ (`586a7bf6`) — V2'ye (Dolunay_Otonom_Kapak) taşındı. **SİLİNDİ** (2026-04-16)
 - ~~`sweatcoin-email-automation`~~ (`0c1ff084`) — Proje tamamen kapatıldı, Railway'den silindi, lokal arşive taşındı. **SİLİNDİ** (2026-04-08)
 - ~~`Emlak Arazi Drone Çekim`~~ — Local-only proje, hiç deploy edilmemişti. Lokal arşive taşındı. **ARŞİVLENDİ** (2026-04-08)
