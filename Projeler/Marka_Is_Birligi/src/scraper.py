@@ -22,8 +22,8 @@ RESULTS_PER_PROFILE = 4  # Son 4 reel/profil (haftalık 1 reels varsayımı)
 POLL_INTERVAL = 15  # saniye
 
 
-def get_apify_token():
-    """Apify token'larını env var'lardan topla ve rastgele seç (Rotasyon)."""
+def get_all_apify_tokens():
+    """Apify token'larını env var'lardan topla ve liste olarak döndür (Rotasyon için)."""
     keys = []
     
     # Yeni yapı: APIFY_API_KEY_1, APIFY_API_KEY_2 vs.
@@ -57,8 +57,9 @@ def get_apify_token():
                             keys.append(token)
                             
     if keys:
-        return random.choice(keys)
-    return None
+        # Rastgeleliyi koruyarak load balancing yapalım
+        random.shuffle(keys)
+    return keys
 
 
 def read_profiles(csv_path=None):
@@ -159,21 +160,41 @@ def scrape_reels(dry_run=False):
         print(f"[DRY-RUN] Toplam tahmini sonuç: {len(urls) * RESULTS_PER_PROFILE}")
         return []
 
-    token = get_apify_token()
-    if not token:
+    keys = get_all_apify_tokens()
+    if not keys:
         raise ValueError("Apify token bulunamadı! APIFY_API_KEY env var ayarla.")
 
-    run_data = start_actor_run(urls, token)
-    dataset_id = poll_run(run_data["id"], token)
-    items = fetch_results(dataset_id, token)
+    last_err = None
+    for token in keys:
+        try:
+            print(f"[SCRAPER] Apify deneniyor. (Token Prefix: {token[:6]}...)")
+            run_data = start_actor_run(urls, token)
+            dataset_id = poll_run(run_data["id"], token)
+            items = fetch_results(dataset_id, token)
 
-    # Sonuçları kaydet
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8-sig") as f:
-        json.dump(items, f, ensure_ascii=False, indent=2)
-    print(f"[SCRAPER] Sonuçlar kaydedildi → {OUTPUT_PATH}")
+            # Sonuçları kaydet
+            os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+            with open(OUTPUT_PATH, "w", encoding="utf-8-sig") as f:
+                json.dump(items, f, ensure_ascii=False, indent=2)
+            print(f"[SCRAPER] Sonuçlar kaydedildi → {OUTPUT_PATH}")
 
-    return items
+            return items
+        
+        except requests.exceptions.RequestException as e:
+            if hasattr(e, 'response') and e.response is not None:
+                if e.response.status_code in (402, 429):
+                    print(f"  ⚠️ Limit aşıldı! (HTTP {e.response.status_code}). Diğer anahtara geçiliyor...")
+                    last_err = e
+                    continue
+            print(f"  ⚠️ Apify çalışma hatası: {e}. Diğer anahtara geçiliyor...")
+            last_err = e
+            continue
+        except Exception as e:
+            print(f"  ⚠️ Beklenmeyen Apify hatası: {e}. Diğer anahtara geçiliyor...")
+            last_err = e
+            continue
+
+    raise Exception(f"Tüm Apify API anahtarları denendi ancak işlem başarısız oldu. Son hata: {last_err}")
 
 
 if __name__ == "__main__":

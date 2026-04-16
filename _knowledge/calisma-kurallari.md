@@ -9,7 +9,7 @@ Bu dosya, Antigravity ile çalışırken birikmesi gereken kişisel tercihlerini
 
 - **Dil:** Türkçe konuşuyorum, kod ve teknik dosyalar İngilizce olabilir
 - **Proje Dizini:** Tüm projeler `/Users/dolunayozeren/Desktop/Antigravity/Projeler/` altında
-- **Kısa ve net:** Uzun açıklamalar yerine madde madde özetler tercih ediyorum
+- **Kısa ve Net İletişim (KIRMIZI ÇİZGİ):** ASLA uzun metinler veya destanlar yazma. En fazla 1-2 cümlelik bullet point'ler (madde imleri) kullan. "Okumadım, kısalt" uyarısı dikkate alınarak tüm cevaplar ultrashort (çok kısa) tutulmalıdır.
 
 ## Proje Yapısı
 

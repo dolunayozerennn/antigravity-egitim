@@ -93,12 +93,12 @@ def start_health_server():
 # 🚀 İş Fonksiyonları
 # ═══════════════════════════════════════════════════════════════════════
 
-def run_weekly_pipeline():
+def run_weekly_pipeline(force=False):
     """Haftalik marka kesif + outreach pipeline'ini calistir."""
     now = tr_now()
     weekday = now.weekday()
 
-    if weekday >= 5:
+    if not force and weekday >= 5:
         print(f"📅 {now.strftime('%Y-%m-%d %H:%M')} — Hafta sonu, atlanıyor.")
         return
 
@@ -137,12 +137,12 @@ def run_weekly_pipeline():
         ops_pipe.error("Haftalık Pipeline çöktü", exception=e)
 
 
-def run_followup_check():
+def run_followup_check(force=False):
     """Follow-up kontrolü — cevapsız markalara reply at."""
     now = tr_now()
     weekday = now.weekday()
 
-    if weekday >= 5:
+    if not force and weekday >= 5:
         print(f"📅 {now.strftime('%Y-%m-%d %H:%M')} — Hafta sonu, atlanıyor.")
         return
 
@@ -219,29 +219,45 @@ def run_weekly_report_job():
 def main():
     now_tr = tr_now()
     weekday = now_tr.weekday()
+    
+    force_pipeline = "--pipeline" in sys.argv
+    force_followup = "--followup" in sys.argv
+    force_report = "--report" in sys.argv
+    force_all = "--all" in sys.argv
+    dry_run = "--dry-run" in sys.argv # Henüz içe aktarılmadı ama gelecekte eklenebilir.
+    
+    is_manual = force_pipeline or force_followup or force_report or force_all
+    mode = "Manuel Mod" if is_manual else "Cron Modu"
+
     print("=" * 60)
-    print("🤝 Marka İş Birliği — Otomatik Outreach Sistemi (Cron Modu)")
+    print(f"🤝 Marka İş Birliği — Otomatik Outreach Sistemi ({mode})")
     print(f"   🕐 Sunucu UTC: {datetime.now(timezone.utc).strftime('%H:%M')} → TR: {now_tr.strftime('%H:%M')}")
     print(f"   📅 Gün (0=Pzt, 6=Paz): {weekday}")
     print("=" * 60)
 
-    # Pazartesi (0) -> Haftalık Pipeline
-    if weekday == 0:
-        print("➡️ Pazartesi: run_weekly_pipeline tetikleniyor...")
-        run_weekly_pipeline()
-
-    # Perşembe (3) -> Follow-Up Kontrolü
-    elif weekday == 3:
-        print("➡️ Perşembe: run_followup_check tetikleniyor...")
-        run_followup_check()
-
-    # Cuma (4) -> Haftalık Rapor
-    elif weekday == 4:
-        print("➡️ Cuma: run_weekly_report_job tetikleniyor...")
-        run_weekly_report_job()
-
+    if is_manual:
+        if force_all or force_pipeline:
+            print("➡️ Manuel tetikleme: run_weekly_pipeline çalışıyor...")
+            run_weekly_pipeline(force=True)
+        if force_all or force_followup:
+            print("➡️ Manuel tetikleme: run_followup_check çalışıyor...")
+            run_followup_check(force=True)
+        if force_all or force_report:
+            print("➡️ Manuel tetikleme: run_weekly_report_job çalışıyor...")
+            run_weekly_report_job()
     else:
-        print("➡️ Bugün planlanmış bir görev bulunmuyor.")
+        # Cron mantığı
+        if weekday == 0:
+            print("➡️ Pazartesi: run_weekly_pipeline tetikleniyor...")
+            run_weekly_pipeline(force=False)
+        elif weekday == 3:
+            print("➡️ Perşembe: run_followup_check tetikleniyor...")
+            run_followup_check(force=False)
+        elif weekday == 4:
+            print("➡️ Cuma: run_weekly_report_job tetikleniyor...")
+            run_weekly_report_job()
+        else:
+            print("➡️ Bugün planlanmış bir görev bulunmuyor.")
 
     print("\n👋 İşlem tamamlandı, çıkılıyor.")
     ops.wait_for_logs()

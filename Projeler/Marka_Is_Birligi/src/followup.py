@@ -12,107 +12,15 @@ Seçenek A: Markanın son Instagram paylaşımları + web sitesi analizi ile
 kişiselleştirilmiş follow-up üretir.
 """
 
-import csv
-import json
-import os
 import time
 from datetime import datetime, timezone, timedelta
+from src.notion_service import get_followup_candidates, update_brand
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MARKALAR_CSV = os.path.join(BASE_DIR, "data", "markalar.csv")
-
 TR_TZ = timezone(timedelta(hours=3))
-FOLLOWUP1_WAIT_DAYS = 5  # İlk follow-up: 5 gün sonra
-FOLLOWUP2_WAIT_DAYS = 5  # İkinci follow-up: 5 gün sonra
 
 
-def get_followup_candidates():
-    """
-    Follow-up gönderilmesi gereken markaları filtreler.
-    
-    İki kategori döndürür:
-    - followup1: İlk follow-up adayları (outreach'ten 5+ gün geçmiş, followup henüz yok)
-    - followup2: İkinci follow-up adayları (followup1'den 5+ gün geçmiş, followup2 henüz yok)
-    
-    Returns:
-        tuple: (followup1_candidates, followup2_candidates)
-    """
-    # CSV yoksa otomatik oluştur (Railway deploy sonrası)
-    from src.outreach import ensure_csv_exists
-    ensure_csv_exists()
-    
-    if not os.path.exists(MARKALAR_CSV):
-        print("[FOLLOWUP] markalar.csv bulunamadı!")
-        return [], []
 
-    now = datetime.now(TR_TZ)
-    followup1_candidates = []
-    followup2_candidates = []
-
-    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            status = row.get("outreach_status", "")
-            
-            # Replied veya Bounced olanlara follow-up atma
-            if status in ("Replied", "Bounced", "Not_Interested", "No_Email", "Failed"):
-                continue
-
-            # ── Follow-up 1 adayları ──
-            if status == "Sent" and not row.get("followup_status"):
-                outreach_date = _parse_date(row.get("outreach_date", ""))
-                if outreach_date:
-                    days_since = (now - outreach_date).days
-                    if days_since >= FOLLOWUP1_WAIT_DAYS:
-                        row["_days_since"] = days_since
-                        row["_followup_type"] = "followup1"
-                        followup1_candidates.append(row)
-
-            # ── Follow-up 2 adayları ──
-            elif status == "Sent" and row.get("followup_status") == "Sent" and not row.get("followup2_status"):
-                followup1_date = _parse_date(row.get("followup_date", ""))
-                if followup1_date:
-                    days_since = (now - followup1_date).days
-                    if days_since >= FOLLOWUP2_WAIT_DAYS:
-                        row["_days_since"] = days_since
-                        row["_followup_type"] = "followup2"
-                        followup2_candidates.append(row)
-
-    print(f"[FOLLOWUP] {len(followup1_candidates)} follow-up 1 adayı, {len(followup2_candidates)} follow-up 2 adayı bulundu.")
-    return followup1_candidates, followup2_candidates
-
-
-def _parse_date(date_str):
-    """Tarih string'ini parse eder."""
-    if not date_str or not date_str.strip():
-        return None
-    try:
-        dt = datetime.strptime(date_str.strip(), "%Y-%m-%d %H:%M")
-        return dt.replace(tzinfo=TR_TZ)
-    except ValueError:
-        try:
-            dt = datetime.strptime(date_str.strip(), "%Y-%m-%d")
-            return dt.replace(tzinfo=TR_TZ)
-        except ValueError:
-            return None
-
-
-def update_csv_followup(lead_id, updates):
-    """Belirli bir satırın follow-up bilgilerini günceller."""
-    from src.outreach import CSV_FIELDNAMES
-    
-    rows = []
-    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row.get("lead_id") == lead_id:
-                row.update(updates)
-            rows.append(row)
-
-    with open(MARKALAR_CSV, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 def send_followup_emails(dry_run=False):
@@ -203,13 +111,13 @@ def send_followup_emails(dry_run=False):
 
         if result:
             if followup_type == "followup1":
-                update_csv_followup(candidate["lead_id"], {
+                update_brand(candidate["notion_page_id"], {
                     "followup_status": "Sent",
                     "followup_date": now,
                     "followup_message_id": result.get("message_id", ""),
                 })
             else:  # followup2
-                update_csv_followup(candidate["lead_id"], {
+                update_brand(candidate["notion_page_id"], {
                     "followup2_status": "Sent",
                     "followup2_date": now,
                     "followup2_message_id": result.get("message_id", ""),
@@ -222,13 +130,13 @@ def send_followup_emails(dry_run=False):
             stats["sent"] += 1
         else:
             if followup_type == "followup1":
-                update_csv_followup(candidate["lead_id"], {
+                update_brand(candidate["notion_page_id"], {
                     "followup_status": "Failed",
                     "followup_date": now,
                     "notlar": f"{candidate.get('notlar', '')} | Follow-up 1 gönderim hatası".strip(" |"),
                 })
             else:
-                update_csv_followup(candidate["lead_id"], {
+                update_brand(candidate["notion_page_id"], {
                     "followup2_status": "Failed",
                     "followup2_date": now,
                     "notlar": f"{candidate.get('notlar', '')} | Follow-up 2 gönderim hatası".strip(" |"),

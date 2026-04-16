@@ -5,161 +5,19 @@ Outreach modülü — Yeni markalar için ilk outreach email gönderimi.
 Pipeline: scrape → analyze → find contacts → kişiselleştir → gönder
 """
 
-import csv
 import json
 import os
 import random
 import time
 from datetime import datetime, timezone, timedelta
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MARKALAR_CSV = os.path.join(BASE_DIR, "data", "markalar.csv")
+from src.notion_service import add_brands_batch, update_brand, get_brands_by_status
 
-# CSV sütunları
-CSV_FIELDNAMES = [
-    "lead_id", "marka_adi", "instagram_handle", "website", "email",
-    "email_kaynagi", "email_status", "email_contact_name", "email_contact_title",
-    "sirket_aciklamasi", "mention_sayisi", "is_collab",
-    "kaynak_profiller", "outreach_status", "outreach_date",
-    "outreach_message_id", "outreach_thread_id", "outreach_subject",
-    "followup_status", "followup_date", "followup_message_id",
-    "followup2_status", "followup2_date", "followup2_message_id",
-    "notlar", "kesfedilme_tarihi",
-]
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DAILY_SEND_LIMIT = 20  # Günlük max email gönderim limiti
 
 TR_TZ = timezone(timedelta(hours=3))
-
-
-def ensure_csv_exists():
-    """data/ klasörünü ve markalar.csv'yi otomatik oluşturur.
-    
-    Railway'de her deploy sonrası dosya sistemi sıfırlanır.
-    Bu fonksiyon CSV yoksa boş header ile oluşturur,
-    böylece pipeline graceful çalışmaya devam eder.
-    """
-    data_dir = os.path.dirname(MARKALAR_CSV)
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir, exist_ok=True)
-        print(f"[OUTREACH] 📁 data/ klasörü oluşturuldu: {data_dir}")
-    
-    if not os.path.exists(MARKALAR_CSV):
-        with open(MARKALAR_CSV, "w", encoding="utf-8-sig", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES)
-            writer.writeheader()
-        print(f"[OUTREACH] 📄 Boş markalar.csv oluşturuldu (header only)")
-
-
-# Modül yüklendiğinde otomatik çalıştır
-ensure_csv_exists()
-
-
-def _next_lead_id():
-    """Sıradaki lead ID'yi oluştur."""
-    max_id = 0
-    if os.path.exists(MARKALAR_CSV):
-        with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                lid = row.get("lead_id", "")
-                if lid.startswith("MIB-"):
-                    try:
-                        num = int(lid.replace("MIB-", ""))
-                        max_id = max(max_id, num)
-                    except ValueError as e:
-                        import logging
-                        logging.getLogger(__name__).warning(f"Geçersiz lead_id formatı: {lid}", exc_info=e)
-    return f"MIB-{max_id + 1:03d}"
-
-
-def add_brands_to_csv(enriched_brands):
-    """
-    Zenginleştirilmiş markaları CSV'ye ekler.
-    
-    Args:
-        enriched_brands: list of enriched brand dicts
-    
-    Returns:
-        list of brand dicts with lead_ids assigned
-    """
-    # Mevcut CSV'yi oku
-    existing_rows = []
-    if os.path.exists(MARKALAR_CSV):
-        with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            existing_rows = list(reader)
-
-    now = datetime.now(TR_TZ).strftime("%Y-%m-%d %H:%M")
-    new_rows = []
-
-    for brand in enriched_brands:
-        email = brand.get("best_email", "")
-        email_status = brand.get("email_status", "not_found")
-
-        lead_id = _next_lead_id()
-        # Email durumuna göre outreach status belirle
-        if email and email_status == "verified":
-            outreach_status = "New"
-        else:
-            outreach_status = "No_Email"
-
-        row = {
-            "lead_id": lead_id,
-            "marka_adi": brand.get("marka_adi", ""),
-            "instagram_handle": brand.get("instagram_handle", ""),
-            "website": brand.get("website", ""),
-            "email": email,
-            "email_kaynagi": brand.get("email_source", ""),
-            "email_status": email_status,
-            "email_contact_name": brand.get("email_contact_name", ""),
-            "email_contact_title": brand.get("email_contact_title", ""),
-            "sirket_aciklamasi": brand.get("sirket_aciklamasi", ""),
-            "mention_sayisi": brand.get("mention_sayisi", 0),
-            "is_collab": "Evet" if brand.get("is_collab") else "Hayır",
-            "kaynak_profiller": ", ".join(brand.get("kaynak_profiller", [])),
-            "outreach_status": outreach_status,
-            "outreach_date": "",
-            "outreach_message_id": "",
-            "outreach_thread_id": "",
-            "outreach_subject": "",
-            "followup_status": "",
-            "followup_date": "",
-            "followup_message_id": "",
-            "followup2_status": "",
-            "followup2_date": "",
-            "followup2_message_id": "",
-            "notlar": f"Email bulunamadı ({email_status})" if not email else "",
-            "kesfedilme_tarihi": now,
-        }
-        new_rows.append(row)
-        brand["lead_id"] = lead_id
-
-    # CSV'ye yaz
-    all_rows = existing_rows + new_rows
-    with open(MARKALAR_CSV, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(all_rows)
-
-    print(f"[OUTREACH] ✅ {len(new_rows)} marka CSV'ye eklendi. Toplam: {len(all_rows)}")
-    return enriched_brands
-
-
-def update_csv_row(lead_id, updates):
-    """Belirli bir satırı günceller."""
-    rows = []
-    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row.get("lead_id") == lead_id:
-                row.update(updates)
-            rows.append(row)
-
-    with open(MARKALAR_CSV, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 def send_outreach_emails(dry_run=False):
@@ -172,17 +30,9 @@ def send_outreach_emails(dry_run=False):
     from src.personalizer import generate_outreach_email
     from src.gmail_sender import get_service, send_email
 
-    if not os.path.exists(MARKALAR_CSV):
-        print("[OUTREACH] markalar.csv bulunamadı!")
-        return {"sent": 0, "failed": 0, "skipped": 0}
-
-    # CSV'den yeni markaları oku
-    pending = []
-    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row.get("outreach_status") == "New" and row.get("email"):
-                pending.append(row)
+    # Notion'dan yeni markaları oku
+    pending_brands = get_brands_by_status("New")
+    pending = [b for b in pending_brands if b.get("email")]
 
     if not pending:
         print("[OUTREACH] Gönderilecek yeni marka yok.")
@@ -230,17 +80,17 @@ def send_outreach_emails(dry_run=False):
         result = send_email(service, brand_row["email"], subject, body_html, body_text, plain_text_only=True)
 
         if result:
-            update_csv_row(brand_row["lead_id"], {
+            update_brand(brand_row["notion_page_id"], {
                 "outreach_status": "Sent",
                 "outreach_date": now,
-                "outreach_message_id": result.get("message_id", ""),
-                "outreach_thread_id": result.get("thread_id", ""),
-                "outreach_subject": subject,
+                "message_id": result.get("message_id", ""),
+                "thread_id": result.get("thread_id", ""),
+                "subject": subject,
             })
             print(f"     ✅ Gönderildi (Thread: {result.get('thread_id', '')})")
             stats["sent"] += 1
         else:
-            update_csv_row(brand_row["lead_id"], {
+            update_brand(brand_row["notion_page_id"], {
                 "outreach_status": "Failed",
                 "outreach_date": now,
                 "notlar": "Email gönderim hatası",
@@ -296,8 +146,8 @@ def run_full_pipeline(dry_run=False):
     enriched = enrich_new_brands(new_brands)
 
     # Adım 4: Add to DB
-    print("\n📌 ADIM 4: Yeni markalar veritabanına ekleniyor...")
-    add_brands_to_csv(enriched)
+    print("\n📌 ADIM 4: Yeni markalar veritabanına ekleniyor (Notion)...")
+    add_brands_batch(enriched)
 
     # Adım 5: Send outreach
     print("\n📌 ADIM 5: Outreach e-postaları gönderiliyor...")

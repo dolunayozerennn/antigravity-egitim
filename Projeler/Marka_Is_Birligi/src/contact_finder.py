@@ -334,85 +334,122 @@ def search_hunter_domain(domain, api_key):
 def extract_email_from_ig_bio(handle):
     """
     Instagram biyografisinden email çıkarmayı dener.
-    Apify Instagram Scraper kullanır.
+    Apify Instagram Scraper kullanır. Limit hatasında token değiştirir.
 
     Returns:
         str or None: Bulunan email
     """
-    apify_token = os.environ.get("APIFY_API_KEY") or _get_env("APIFY_API_KEY", ["Apify"])
-    if not apify_token or not handle:
+    if not handle:
+        return None
+
+    # Token rotasyonu - _get_env yerine manuel tarama
+    sys_keys = []
+    for i in range(1, 10):
+        val = os.environ.get(f"APIFY_API_KEY_{i}")
+        if val and val not in sys_keys:
+            sys_keys.append(val)
+    val = os.environ.get("APIFY_API_KEY")
+    if val and val not in sys_keys:
+        sys_keys.append(val)
+    val = _get_env("APIFY_API_KEY", ["Apify"])
+    if val and val not in sys_keys:
+        sys_keys.append(val)
+        
+    if not sys_keys:
         return None
 
     print(f"  🔍 IG Bio Scrape: @{handle}...")
 
-    try:
-        # Apify Instagram Profile Scraper kullan
-        resp = requests.post(
-            "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/runs",
-            headers={
-                "Authorization": f"Bearer {apify_token}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "usernames": [handle],
-                "resultsLimit": 1,
-            },
-            timeout=30,
-        )
-
-        if resp.status_code != 201:
-            print(f"  ℹ️ IG Bio: Apify başlatılamadı (HTTP {resp.status_code})")
-            return None
-
-        run_id = resp.json().get("data", {}).get("id")
-        if not run_id:
-            return None
-
-        # Sonucu bekle (max 90 saniye)
-        for _ in range(9):
-            time.sleep(10)
-            status_resp = requests.get(
-                f"https://api.apify.com/v2/actor-runs/{run_id}",
-                headers={"Authorization": f"Bearer {apify_token}"},
-                timeout=10,
+    import random
+    random.shuffle(sys_keys)
+    
+    for apify_token in sys_keys:
+        try:
+            # Apify Instagram Profile Scraper kullan
+            resp = requests.post(
+                "https://api.apify.com/v2/acts/apify~instagram-profile-scraper/runs",
+                headers={
+                    "Authorization": f"Bearer {apify_token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "usernames": [handle],
+                    "resultsLimit": 1,
+                },
+                timeout=30,
             )
-            status = status_resp.json().get("data", {}).get("status")
 
-            if status == "SUCCEEDED":
-                dataset_id = status_resp.json()["data"]["defaultDatasetId"]
-                items = requests.get(
-                    f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+            if resp.status_code in (402, 429):
+                print(f"  ⚠️ IG Bio: Apify Limit Aşıldı (HTTP {resp.status_code}), diğer token deneniyor...")
+                continue
+                
+            if resp.status_code != 201:
+                print(f"  ℹ️ IG Bio: Apify başlatılamadı (HTTP {resp.status_code})")
+                continue
+
+            run_id = resp.json().get("data", {}).get("id")
+            if not run_id:
+                continue
+
+            # Sonucu bekle (max 90 saniye)
+            found_email = None
+            for _ in range(9):
+                time.sleep(10)
+                status_resp = requests.get(
+                    f"https://api.apify.com/v2/actor-runs/{run_id}",
                     headers={"Authorization": f"Bearer {apify_token}"},
                     timeout=10,
-                ).json()
+                )
+                status = status_resp.json().get("data", {}).get("status")
 
-                if items:
-                    bio = items[0].get("biography", "") or ""
-                    external_url = items[0].get("externalUrl", "") or ""
-                    business_email = items[0].get("businessEmail", "") or ""
+                if status == "SUCCEEDED":
+                    dataset_id = status_resp.json()["data"]["defaultDatasetId"]
+                    items = requests.get(
+                        f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                        headers={"Authorization": f"Bearer {apify_token}"},
+                        timeout=10,
+                    ).json()
 
-                    # Önce business email field'ını kontrol et
-                    if business_email and not _is_noise_email(business_email):
-                        print(f"  ✅ IG Bio: {business_email} (business email)")
-                        return business_email.lower()
+                    if items:
+                        bio = items[0].get("biography", "") or ""
+                        business_email = items[0].get("businessEmail", "") or ""
 
-                    # Bio'dan email regex ile çıkar
-                    bio_emails = EMAIL_PATTERN.findall(bio)
-                    for e in bio_emails:
-                        if not _is_noise_email(e):
-                            print(f"  ✅ IG Bio: {e} (bio'dan)")
-                            return e.lower()
+                        # Önce business email field'ını kontrol et
+                        if business_email and not _is_noise_email(business_email):
+                            print(f"  ✅ IG Bio: {business_email} (business email)")
+                            found_email = business_email.lower()
+                            break
 
-                    # External URL'yi de website olarak döndürebiliriz (ileride)
+                        # Bio'dan email regex ile çıkar
+                        bio_emails = EMAIL_PATTERN.findall(bio)
+                        for e in bio_emails:
+                            if not _is_noise_email(e):
+                                print(f"  ✅ IG Bio: {e} (bio'dan)")
+                                found_email = e.lower()
+                                break
+                                
                     print(f"  ℹ️ IG Bio: Email bulunamadı")
-                break
+                    break
 
-            elif status in ("FAILED", "ABORTED", "TIMED-OUT"):
-                print(f"  ⚠️ IG Bio: Apify run {status}")
-                break
-
-    except Exception as exc:
-        logger.error(f"IG Bio scrape hatası: {exc}", exc_info=True)
+                elif status in ("FAILED", "ABORTED", "TIMED-OUT"):
+                    print(f"  ⚠️ IG Bio: Apify run {status}")
+                    break
+                    
+            if found_email:
+                return found_email
+            
+            # Run succeeded/failed for this token, so we break out of token loop
+            break 
+            
+        except requests.exceptions.RequestException as e:
+            if hasattr(e, 'response') and e.response is not None and e.response.status_code in (402, 429):
+                print(f"  ⚠️ IG Bio limit aşıldı, token değiştiriliyor...")
+                continue
+            print(f"  ⚠️ IG Bio hatası: {e}")
+            continue
+        except Exception as exc:
+            logger.error(f"IG Bio scrape hatası: {exc}", exc_info=True)
+            continue
 
     return None
 

@@ -135,16 +135,19 @@ def load_existing_brands():
 
 
 def load_existing_csv_brands():
-    """Mevcut markalar.csv'deki markaları yükler (dedup için)."""
-    existing = set()
-    if os.path.exists(MARKALAR_CSV):
-        with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                handle = row.get("instagram_handle", "").strip().lower().lstrip("@")
-                if handle:
-                    existing.add(handle)
-    return existing
+    """Mevcut Notion'daki markaları yükler (dedup için)."""
+    try:
+        from src.notion_service import get_all_brands
+        brands = get_all_brands()
+        existing = set()
+        for b in brands:
+            handle = b.get("instagram_handle", "").strip().lower().lstrip("@")
+            if handle:
+                existing.add(handle)
+        return existing
+    except Exception as e:
+        print(f"[ANALYZER] Notion'dan markalar alınırken hata: {e}")
+        return set()
 
 
 def analyze_reels(reels):

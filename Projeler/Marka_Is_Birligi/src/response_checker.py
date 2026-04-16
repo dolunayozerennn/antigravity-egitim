@@ -11,14 +11,12 @@ Response Checker — Outreach thread'lerinde gelen cevapları tespit eder.
                 ve Follow-up'tan önce (Perşembe 06:30 UTC)
 """
 
-import csv
 import os
 import time
 from datetime import datetime, timezone, timedelta
+from src.notion_service import get_brands_by_status, update_brand
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MARKALAR_CSV = os.path.join(BASE_DIR, "data", "markalar.csv")
-
 TR_TZ = timezone(timedelta(hours=3))
 
 # Bounce gönderici adresleri
@@ -50,50 +48,36 @@ def check_responses(dry_run=False):
         dict: {replied: int, bounced: int, checked: int}
     """
     from src.gmail_sender import get_service, SENDER_EMAIL
-    from src.outreach import CSV_FIELDNAMES, ensure_csv_exists
 
-    # CSV yoksa otomatik oluştur (Railway deploy sonrası)
-    ensure_csv_exists()
+    # Sadece 'Sent' olanları kontrol et (Follow-up atılmış olanlar da 'Sent' durumundadır)
+    sent_brands = get_brands_by_status("Sent")
+    
+    check_list = []  # (brand, thread_id)
+    for brand in sent_brands:
+        thread_id = brand.get("outreach_thread_id", "")
+        if thread_id:
+            check_list.append((brand, thread_id))
 
-    if not os.path.exists(MARKALAR_CSV):
-        print("[RESPONSE] markalar.csv bulunamadı!")
-        return {"replied": 0, "bounced": 0, "checked": 0}
-
-    # Kontrol edilecek satırları oku
-    rows = []
-    check_indices = []  # (index, thread_id)
-
-    with open(MARKALAR_CSV, "r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for i, row in enumerate(reader):
-            rows.append(row)
-            status = row.get("outreach_status", "")
-            thread_id = row.get("outreach_thread_id", "")
-            # Sadece Sent veya FollowedUp durumundakileri kontrol et
-            if status in ("Sent", "FollowedUp") and thread_id:
-                check_indices.append((i, thread_id))
-
-    if not check_indices:
+    if not check_list:
         print("[RESPONSE] Kontrol edilecek thread yok.")
         return {"replied": 0, "bounced": 0, "checked": 0}
 
     print(f"\n{'='*60}")
-    print(f"🔍 {len(check_indices)} outreach thread'i kontrol ediliyor...")
+    print(f"🔍 {len(check_list)} outreach thread'i kontrol ediliyor...")
     print(f"{'='*60}")
 
     if dry_run:
-        for idx, tid in check_indices:
-            print(f"  [DRY-RUN] {rows[idx].get('marka_adi', '')} → Thread: {tid}")
-        return {"replied": 0, "bounced": 0, "checked": len(check_indices)}
+        for b, tid in check_list:
+            print(f"  [DRY-RUN] {b.get('marka_adi', '')} → Thread: {tid}")
+        return {"replied": 0, "bounced": 0, "checked": len(check_list)}
 
     service = get_service()
     stats = {"replied": 0, "bounced": 0, "checked": 0}
     now = datetime.now(TR_TZ).strftime("%Y-%m-%d %H:%M")
     updated = False
 
-    for idx, thread_id in check_indices:
-        row = rows[idx]
-        brand_name = row.get("marka_adi", "Bilinmeyen")
+    for brand, thread_id in check_list:
+        brand_name = brand.get("marka_adi", "Bilinmeyen")
 
         try:
             thread = service.users().threads().get(
@@ -131,20 +115,22 @@ def check_responses(dry_run=False):
                             break
 
                 if is_bounce:
-                    print(f"  📛 BOUNCE: {brand_name} → {row.get('email', '')}")
-                    rows[idx]["outreach_status"] = "Bounced"
-                    rows[idx]["email_status"] = "bounced"
-                    rows[idx]["notlar"] = f"{row.get('notlar', '')} | Bounce detected {now}".strip(" |")
+                    print(f"  📛 BOUNCE: {brand_name} → {brand.get('email', '')}")
+                    update_brand(brand.get("notion_page_id"), {
+                        "outreach_status": "Bounced",
+                        # email_status in Notion could theoretically be updated too, but outreach_status is enough
+                        "notlar": f"{brand.get('notlar', '')} | Bounce detected {now}".strip(" |")
+                    })
                     stats["bounced"] += 1
-                    updated = True
                     break  # Thread'deki diğer mesajlara bakmaya gerek yok
                 else:
                     # Gerçek yanıt!
                     print(f"  💬 REPLY: {brand_name} → Yanıt gelmiş! (from: {sender[:50]})")
-                    rows[idx]["outreach_status"] = "Replied"
-                    rows[idx]["notlar"] = f"{row.get('notlar', '')} | Reply detected {now}".strip(" |")
+                    update_brand(brand.get("notion_page_id"), {
+                        "outreach_status": "Replied",
+                        "notlar": f"{brand.get('notlar', '')} | Reply detected {now}".strip(" |")
+                    })
                     stats["replied"] += 1
-                    updated = True
                     break  # İlk yanıt yeterli
 
         except Exception as e:
@@ -153,13 +139,7 @@ def check_responses(dry_run=False):
         stats["checked"] += 1
         time.sleep(0.5)  # Gmail API rate limit
 
-    # CSV'yi güncelle
-    if updated:
-        with open(MARKALAR_CSV, "w", encoding="utf-8-sig", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES, extrasaction="ignore")
-            writer.writeheader()
-            writer.writerows(rows)
-        print(f"\n  ✅ CSV güncellendi.")
+
 
     print(f"\n{'='*60}")
     print(f"📊 RESPONSE CHECK: {stats['checked']} kontrol, {stats['replied']} yanıt, {stats['bounced']} bounce")
