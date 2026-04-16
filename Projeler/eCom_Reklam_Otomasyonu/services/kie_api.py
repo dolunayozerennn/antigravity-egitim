@@ -109,7 +109,6 @@ class KieAIService:
         input_data = {
             "prompt": prompt,
             "aspect_ratio": aspect_ratio,
-            "resolution": resolution,
         }
 
         if image_input:
