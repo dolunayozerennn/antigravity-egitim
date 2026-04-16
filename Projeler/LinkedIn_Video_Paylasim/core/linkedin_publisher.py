@@ -142,7 +142,7 @@ class LinkedInPublisher:
         """Finalize the video upload by checking processing status."""
         url = f"{self.API_BASE}/rest/videos/{video_urn}"
 
-        max_retries = 30  # Wait up to 5 minutes
+        max_retries = 90  # Wait up to 15 minutes
         for attempt in range(max_retries):
             try:
                 resp = requests.get(url, headers=self.headers, timeout=15)
@@ -168,7 +168,7 @@ class LinkedInPublisher:
                 ops.error(f"Error checking video status: {e}", exception=e)
                 time.sleep(10)
 
-        ops.error("Video processing timed out after 5 minutes.")
+        ops.error("Video processing timed out after 15 minutes.")
         return False
 
     def create_post(self, text: str, video_urn: str) -> str:

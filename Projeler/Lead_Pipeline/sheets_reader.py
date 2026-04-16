@@ -419,6 +419,10 @@ class SheetsReader:
                     row["_source_tab"] = tab_name
                 all_new.extend(new_rows)
             except Exception as e:
+                # Tab henüz oluşturulmadıysa (HttpError 400 Unable to parse range) fatal hata sayma
+                if isinstance(e, HttpError) and getattr(e.resp, 'status', 0) == 400 and "Unable to parse range" in str(e):
+                    logger.warning(f"⚠️ [{self.reader_name}] '{tab_name}' sekmesi bulunamadı (Henüz oluşturulmamış olabilir). Atlanıyor...")
+                    continue
                 logger.error(f"❌ [{self.reader_name}] '{tab_name}' okunamadı: {e}")
                 had_error = True
                 continue
