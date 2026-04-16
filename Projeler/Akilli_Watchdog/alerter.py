@@ -127,6 +127,23 @@ def build_html_report(
             </ul>
         </div>"""
 
+    # Antigravity Prompt (Kullanıcının kopyalayacağı kısım)
+    antigravity_prompt_html = ""
+    if all_issues:
+        prompt_text = "Merhaba Antigravity, Akıllı Watchdog sisteminden aşağıdaki hataları tespit ettim. Lütfen bu sorunları inceleyip çözer misin?\n\nWatchdog Çıktısı:\n"
+        for issue in all_issues:
+            prompt_text += f"- {issue}\n"
+            
+        antigravity_prompt_html = f"""
+        <div style="margin-bottom: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #ffffff; font-size: 16px; margin: 0; padding: 14px 24px; background: linear-gradient(90deg, #4f46e5, #6366f1); border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <span>🤖 Antigravity'ye Kopyalanacak Prompt</span>
+            </h2>
+            <div style="background: #0f172a; padding: 24px; border-radius: 0 0 8px 8px; font-family: 'Courier New', Courier, monospace; color: #cdd6f4; font-size: 14px; white-space: pre-wrap; line-height: 1.6; border: 1px solid #3730a3; border-top: none;">{prompt_text}</div>
+            <p style="text-align: center; font-size: 13px; color: #94a3b8; margin-top: 12px; font-weight: 500;">👆 Üstteki siyah kutudaki metni kopyalayıp doğrudan Chat'e yapıştırabilirsiniz.</p>
+        </div>"""
+
+
     # Proje durumları tablosu
     project_rows = ""
     for sr in sheets_results:
@@ -322,6 +339,7 @@ def build_html_report(
         </div>
 
         <div style="padding: 24px;">
+            {antigravity_prompt_html}
             {issues_html}
 
             <!-- Proje Durumları -->
@@ -377,15 +395,25 @@ def send_alert_email(
     Returns:
         True: başarılı gönderim, False: gönderilmedi veya hata
     """
-    # Issue yoksa ve force değilse gönderme
     has_problem = bool(all_issues)
     has_critical = any(
         r.get("overall_status") == "CRITICAL" or not r.get("healthy", True)
         for r in sheets_results + notion_results + llm_results
     )
+    if railway_results:
+        if any(not rr.get("healthy", True) for rr in railway_results):
+            has_critical = True
+    if token_results:
+        if any(tr.get("status") == "CRITICAL" for tr in token_results):
+            has_critical = True
 
-    if not has_problem and not has_critical and not force:
-        logger.info("📧 Sorun yok, alarm e-postası gönderilmedi")
+    # E-posta Yorgunluğunu (Alert Fatigue) Önleme:
+    # Kritik bir sorun yoksa, sadece Pazartesi günleri haftalık özet (digest) gönder.
+    is_monday = datetime.now().weekday() == 0
+    should_send = has_critical or force or (has_problem and is_monday)
+
+    if not should_send:
+        logger.info(f"📧 Kritik sorun yok ve haftalık özet günü değil. E-posta bastırıldı. (Sorun Sayısı: {len(all_issues)})")
         return False
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -419,6 +447,13 @@ def send_alert_email(
 
     # Plain text fallback
     plain = f"Akıllı Watchdog Raporu\n{'='*40}\n"
+    if all_issues:
+        plain += "\n[ANTIGRAVITY PROMPT]\n"
+        plain += "Merhaba Antigravity, Akıllı Watchdog sisteminden aşağıdaki hataları tespit ettim. Lütfen inceleyip çözer misin?\n"
+        for issue in all_issues:
+            plain += f"- {issue}\n"
+        plain += "----------------------\n"
+
     for issue in all_issues:
         plain += f"\n• {issue}"
     plain += f"\n\nKontrol zamanı: {timestamp}"
