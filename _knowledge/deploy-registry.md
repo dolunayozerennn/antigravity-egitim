@@ -36,7 +36,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `*/10 * * * *` (10 dakikada bir)
 - **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
-- **Son Deploy:** 2026-04-16 (fix: Google Sheets HttpError 400 eksik sekme hatası atlanması sağlandı)
+- **Son Deploy:** 2026-04-16 (fix: Notifier spreadsheet state_spreadsheet_id üzerinden izlenerek sonsuz spam loop hatası çözüldü)
 - **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
 
 ---
