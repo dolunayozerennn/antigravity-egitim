@@ -220,11 +220,11 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `8797307d-7b80-41cb-add0-976c09eaeed4`
 - **Service ID:** `98a3be1e-f6f4-4ca2-8780-2b88bbd2125a`
 - **Environment ID:** `b8353ac5-0ec4-4785-8d72-7aae17f18e56`
-- **Deployment ID:** `3706937b-f461-42c1-ad23-a91bd525f4bc`
+- **Deployment ID:** `bc7ab4b2-3682-477d-88a7-5f833434998f`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-12 (v2.5 Yeni Özellik: Chat Hafızası (Notion Inline DB) entegrasyonu, asenkron konuşma loglaması)
+- **Son Deploy:** 2026-04-18 (Stabilizasyon: Kredi bakiye AttributeError düzeltmesi, eksik NB2 çözünürlük parametresi ve Notion Column Schema validasyonları çözüldü)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID
 
@@ -243,6 +243,27 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **YouTube Kanalı:** Pets Got Talent (UCvj1A1gds6jZUgsPbhF3Muw) — OAuth2 bağlı
 - **Durum:** ✅ Aktif (7/24 Telegram bot — YouTube video üretim otomasyonu)
 - **Env Vars:** ENV, OPENAI_API_KEY, KIE_API_KEY, REPLICATE_API_TOKEN, TELEGRAM_YOUTUBE_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, ALLOWED_USER_IDS, NOTION_SOCIAL_TOKEN, NOTION_DB_YOUTUBE_OTOMASYON, DEFAULT_MODEL, YOUTUBE_ENABLED, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, YOUTUBE_CATEGORY_ID, YOUTUBE_PRIVACY
+
+---
+
+### whatsapp-onboarding (Worker — Express + Cron)
+- **Platform:** `railway`
+- **Railway Project ID:** `5f346c33-6af1-4788-8405-34133c98451b`
+- **Service ID:** `64673112-d65a-4286-abc7-808af50901ce`
+- **Environment ID:** `f2000489-b711-4224-9fd4-44791bdb59d4`
+- **GitHub Repo:** `dolunayozerennn/whatsapp-onboarding` (standalone Node.js repo)
+- **Lokal Klasör:** `Projeler/WhatsApp_Onboarding/`
+- **Start Komutu:** `node server.js`
+- **Cron Schedule:** `0 12 * * *` (Günlük, UTC 09:00 = TR 12:00 — app-level cron)
+- **Domain:** `whatsapp-onboarding-production.up.railway.app`
+- **Webhook URL'ler:**
+  - `POST /webhook/new-paid-member` (Zapier Zap #1)
+  - `POST /webhook/membership-questions` (Zapier Zap #2)
+  - `GET /health` (Monitoring)
+- **Son Deploy:** 2026-04-17 (v1.0.0 — İlk deploy)
+- **Durum:** ✅ Aktif (Notion DB paylaşımı bekliyor)
+- **Env Vars:** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL
+- **Not:** ManyChat Day 2-6 flow'ları henüz oluşturulmadı (TODO). ✅ Resend email fallback yapılandırıldı (dolunay.ai, EU-West).
 
 ---
 
