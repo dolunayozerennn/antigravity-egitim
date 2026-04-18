@@ -116,7 +116,24 @@ class SheetsReader:
 
         # Google Sheets _Meta tab'ına yaz
         try:
-            values = [[tab_name, str(count)] for tab_name, count in clean_state.items()]
+            # Mevcut _Meta verilerini oku
+            all_state = {}
+            try:
+                result = self.service.spreadsheets().values().get(
+                    spreadsheetId=self.state_spreadsheet_id,
+                    range=f"'{_STATE_META_TAB}'!A:B",
+                ).execute()
+                for row in result.get("values", []):
+                    if len(row) >= 2:
+                        all_state[row[0]] = row[1]
+            except Exception:
+                pass
+            
+            # Kendi state'imizi mevcut listeye ekle/güncelle
+            for tab_name, count in clean_state.items():
+                all_state[tab_name] = str(count)
+                
+            values = [[k, v] for k, v in all_state.items()]
 
             # _Meta tab yoksa oluşturmayı dene (yazma izni varsa)
             try:
