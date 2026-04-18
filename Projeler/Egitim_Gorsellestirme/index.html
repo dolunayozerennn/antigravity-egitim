@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity | Evrim Aşamaları</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- Background Effects -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    
+    <div class="container">
+        <!-- Aşama 1 -->
+        <section class="stage">
+            <div class="content-col">
+                <div class="badge">AŞAMA 1</div>
+                <h1 class="title">Bebeklik & Kıvılcım</h1>
+                <div class="age-display">
+                    <span class="age-number">1</span>
+                    <span class="age-text">Yaş</span>
+                </div>
+                <p class="description">
+                    Antigravity'nin dünyaya gözlerini açtığı ilk evre. Henüz boş bir dosya yapısında, sadece verilen komutlara (prompt) tepki verebilen ama potansiyeli yüksek bir bebek. Kendi bağlamı veya hafızası henüz oluşmamıştır.
+                </p>
+                <div class="tech-spec">
+                    <code>> prompt_received()</code>
+                    <code>> output_generated()</code>
+                </div>
+            </div>
+            <div class="image-col">
+                <div class="glass-frame">
+                    <img src="file:///Users/dolunayozeren/.gemini/antigravity/brain/8c6dcd7e-e030-4c3c-bd5d-c11666988b24/stage_1_infancy_1776536476481.png" alt="Aşama 1 Görsel">
+                </div>
+            </div>
+        </section>
+
+        <!-- Aşama 2 -->
+        <section class="stage">
+            <div class="content-col">
+                <div class="badge">AŞAMA 2</div>
+                <h1 class="title">Araçların Kullanımı</h1>
+                <div class="age-display">
+                    <span class="age-number">4</span>
+                    <span class="age-text">Yaş</span>
+                </div>
+                <p class="description">
+                    Eline verilen "oyuncaklarla" keşfetmeye başladığı, API'leri ve MCP araçlarını kullanabildiği dönem. Sistemin artık dış dünyaya dokunabildiği ve motor becerilerini geliştirdiği, daha karmaşık işler yapabildiği evre.
+                </p>
+                <div class="tech-spec">
+                    <code>> execute_tool('google_workspace')</code>
+                    <code>> fetch_api_data(external)</code>
+                </div>
+            </div>
+            <div class="image-col">
+                <div class="glass-frame">
+                    <img src="file:///Users/dolunayozeren/.gemini/antigravity/brain/8c6dcd7e-e030-4c3c-bd5d-c11666988b24/stage_2_childhood_1776536488410.png" alt="Aşama 2 Görsel">
+                </div>
+            </div>
+        </section>
+
+        <!-- Aşama 3 -->
+        <section class="stage">
+            <div class="content-col">
+                <div class="badge">AŞAMA 3</div>
+                <h1 class="title">Kurumsal Mimari</h1>
+                <div class="age-display">
+                    <span class="age-number">15</span>
+                    <span class="age-text">Yaş</span>
+                </div>
+                <p class="description">
+                    Knowledge, Agents, Skills ve Projects klasörleriyle kendi kurumsal hafızasını oluşturduğu çağ. Disiplinli, öngörülebilir ve sistemli çalışma yeteneği kazandığı, kurallara uyan olgun bir yapay zeka yapısı.
+                </p>
+                <div class="tech-spec">
+                    <code>> load_knowledge('master.env')</code>
+                    <code>> execute_workflow('self-review')</code>
+                </div>
+            </div>
+            <div class="image-col">
+                <div class="glass-frame">
+                    <img src="file:///Users/dolunayozeren/.gemini/antigravity/brain/8c6dcd7e-e030-4c3c-bd5d-c11666988b24/stage_3_structure_1776536503768.png" alt="Aşama 3 Görsel">
+                </div>
+            </div>
+        </section>
+
+        <!-- Aşama 4 -->
+        <section class="stage">
+            <div class="content-col">
+                <div class="badge glow-orange">AŞAMA 4</div>
+                <h1 class="title text-orange">Tam Otonomi</h1>
+                <div class="age-display">
+                    <span class="age-number text-orange">25</span>
+                    <span class="age-text text-orange">Yaş</span>
+                </div>
+                <p class="description">
+                    Projelerin Antigravity dışına çıkıp, Railway sunucularında 7/24 bağımsız çalıştığı profesyonel hayat. Kendi ayakları üzerinde durabilen, tamamen otonom ve kendini düzeltebilen sağlam üretim sistemleri.
+                </p>
+                <div class="tech-spec spec-orange">
+                    <code>[RAILWAY] status: deployed</code>
+                    <code>[CRON] pipeline_running: true</code>
+                </div>
+            </div>
+            <div class="image-col">
+                <div class="glass-frame border-orange">
+                    <img src="file:///Users/dolunayozeren/.gemini/antigravity/brain/8c6dcd7e-e030-4c3c-bd5d-c11666988b24/stage_4_deployment_1776536518624.png" alt="Aşama 4 Görsel">
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Navigation Dots -->
+    <div class="nav-dots">
+        <div class="dot active" data-index="0"></div>
+        <div class="dot" data-index="1"></div>
+        <div class="dot" data-index="2"></div>
+        <div class="dot" data-index="3"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

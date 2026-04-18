@@ -224,25 +224,26 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-18 (Stabilizasyon: Kredi bakiye AttributeError düzeltmesi, eksik NB2 çözünürlük parametresi ve Notion Column Schema validasyonları çözüldü)
+- **Son Deploy:** 2026-04-18 (v3.0 Deterministik tam otomasyona geçildi. Firecrawl entegre edildi, Web scraper ve Nano Banana 2 kaldırıldı. Sadece URL ile sıfır sorulu video üretim modeli sağlandı.)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
-- **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID
+- **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID, FIRECRAWL_API_KEY
 
 ---
 
-### youtube-otomasyonu-v2 (Worker — Telegram Polling)
-- **Platform:** `railway`
+### youtube-otomasyonu-v3 (CronJob — Günlük) ✅
+- **Platform:** `railway-cron`
 - **Railway Project ID:** `87e24335-52c9-460f-8b2e-0f481f5501bd`
 - **Service ID:** `d17abb9e-3ef1-4f50-98c1-f4290bb2f090`
 - **Environment ID:** `30bb2f27-0297-4148-88f0-d28f2ac58a6c`
-- **Deployment ID:** `3633757e-dfec-4740-a601-0d2ba8ca41ae`
+- **Deployment ID:** `07b822d1-aa2c-4c86-88de-a9d82df4b3da`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/YouTube_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/YouTube_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-12 (V2.5 Derin Güvenlik — GPT pre-flight check, GPT-powered retry rewrite, model fallback, Notion rejection telemetry)
+- **Cron Schedule:** `0 14 * * *` (Günlük, UTC 14:00 = TR 17:00)
+- **Son Deploy:** 2026-04-18 (V3: Telegram kaldırıldı → CronJob, Creative Engine + GPT senaryo, Seedance 2.0 otonom pipeline)
 - **YouTube Kanalı:** Pets Got Talent (UCvj1A1gds6jZUgsPbhF3Muw) — OAuth2 bağlı
-- **Durum:** ✅ Aktif (7/24 Telegram bot — YouTube video üretim otomasyonu)
-- **Env Vars:** ENV, OPENAI_API_KEY, KIE_API_KEY, REPLICATE_API_TOKEN, TELEGRAM_YOUTUBE_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, ALLOWED_USER_IDS, NOTION_SOCIAL_TOKEN, NOTION_DB_YOUTUBE_OTOMASYON, DEFAULT_MODEL, YOUTUBE_ENABLED, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, YOUTUBE_CATEGORY_ID, YOUTUBE_PRIVACY
+- **Durum:** ✅ Aktif (Günde 1 kez otonom video — Creative Engine: 2686 kombinasyon)
+- **Env Vars:** ENV, OPENAI_API_KEY, KIE_API_KEY, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_YOUTUBE_OTOMASYON, YOUTUBE_ENABLED, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, YOUTUBE_CATEGORY_ID, YOUTUBE_PRIVACY
 
 ---
 

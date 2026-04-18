@@ -43,6 +43,9 @@ class Config:
         # ── Replicate (Video + Ses Birleştirme) ──
         self.REPLICATE_API_TOKEN = self._require_env("REPLICATE_API_TOKEN")
 
+        # ── Firecrawl (URL Scraping — birincil) ──
+        self.FIRECRAWL_API_KEY = os.environ.get("FIRECRAWL_API_KEY", "")
+
         # ── Notion (Üretim Logları & Chat Hafızası) ──
         self.NOTION_TOKEN = self._require_env("NOTION_SOCIAL_TOKEN")
         self.NOTION_DB_ID = self._require_env("NOTION_DB_ECOM_REKLAM")

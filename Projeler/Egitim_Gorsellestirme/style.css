@@ -1,0 +1,310 @@
+:root {
+    --bg-color: #060608;
+    --text-primary: #ffffff;
+    --text-muted: #8b92a5;
+    
+    --brand-blue: #00d2ff;
+    --brand-purple: #9d00ff;
+    --brand-cyan: #00f0ff;
+    --brand-orange: #ff5e00;
+
+    --glass-bg: rgba(20, 22, 30, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+    height: 100vh;
+    overflow-y: scroll;
+}
+
+/* Background Effects */
+.bg-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    z-index: -1;
+    opacity: 0.5;
+    animation: float 20s infinite ease-in-out alternate;
+}
+
+.orb-1 {
+    width: 600px;
+    height: 600px;
+    top: -100px;
+    left: -200px;
+    background: radial-gradient(circle, var(--brand-blue) 0%, transparent 70%);
+}
+
+.orb-2 {
+    width: 500px;
+    height: 500px;
+    bottom: -150px;
+    right: -100px;
+    background: radial-gradient(circle, var(--brand-purple) 0%, transparent 70%);
+    animation-delay: -5s;
+}
+
+@keyframes float {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+}
+
+/* Progress Bar */
+.progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.05);
+    z-index: 100;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--brand-blue), var(--brand-cyan));
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--brand-blue);
+}
+
+/* Layout */
+.container {
+    width: 100%;
+}
+
+.stage {
+    min-height: 100vh;
+    width: 100vw;
+    padding: 0 8vw;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    scroll-snap-align: start;
+    position: relative;
+}
+
+.content-col {
+    flex: 1;
+    max-width: 500px;
+    z-index: 2;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.image-col {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transform: scale(0.9) translateX(40px);
+    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: 0.2s;
+}
+
+.stage.is-visible .content-col {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.stage.is-visible .image-col {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+}
+
+/* Typography & Content UI */
+.badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    background: rgba(0, 210, 255, 0.1);
+    color: var(--brand-cyan);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    margin-bottom: 24px;
+}
+
+.badge.glow-orange {
+    background: rgba(255, 94, 0, 0.1);
+    color: var(--brand-orange);
+    border-color: rgba(255, 94, 0, 0.3);
+}
+
+.title {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #fff 0%, #a5b4cb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-orange {
+    background: linear-gradient(135deg, #fff 0%, var(--brand-orange) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.age-display {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.age-number {
+    font-size: 6rem;
+    font-weight: 800;
+    line-height: 0.8;
+    color: var(--brand-blue);
+    text-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+}
+
+.age-number.text-orange {
+    color: var(--brand-orange);
+    text-shadow: 0 0 30px rgba(255, 94, 0, 0.3);
+}
+
+.age-text {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--text-muted);
+}
+
+.description {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+    font-weight: 300;
+}
+
+.tech-spec {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--brand-cyan);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tech-spec.spec-orange {
+    color: var(--brand-orange);
+}
+
+/* Glass Frame & Imagery */
+.glass-frame {
+    width: 600px;
+    height: 600px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    padding: 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+    overflow: hidden;
+    position: relative;
+}
+
+.glass-frame.border-orange {
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255, 94, 0, 0.1);
+}
+
+.glass-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+    transition: transform 0.5s ease;
+}
+
+.stage:hover .glass-frame img {
+    transform: scale(1.05);
+}
+
+/* Dots */
+.nav-dots {
+    position: fixed;
+    right: 4vw;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 10;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dot.active {
+    background: var(--brand-blue);
+    box-shadow: 0 0 10px var(--brand-blue);
+    transform: scale(1.5);
+}
+
+.dot:last-child.active {
+    background: var(--brand-orange);
+    box-shadow: 0 0 10px var(--brand-orange);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .stage {
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        padding-top: 80px;
+    }
+    
+    .content-col {
+        margin-bottom: 40px;
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .age-display {
+        justify-content: center;
+    }
+
+    .glass-frame {
+        width: 400px;
+        height: 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    .title { font-size: 2.5rem; }
+    .age-number { font-size: 4rem; }
+    .glass-frame { width: 300px; height: 300px; }
+    .nav-dots { display: none; }
+}

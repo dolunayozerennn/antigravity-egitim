@@ -206,6 +206,7 @@ python test_bot.py
 
 | Tarih | Değişiklik |
 |----------|------------|
+| 2026-04-18 | **v3.0 Deterministik Otomasyon** — Firecrawl entegre edildi, WebScraper servis kaldırıldı. Nano Banana 2 kaldırılıp Seedance 2.0 image_input (reference) moduna geçildi. Sohbet adımları tamamen kaldırılıp URL okuma ve deterministik tek tuşla/onayla pipeline mimarisine geçiş yapıldı. |
 | 2026-04-18 | **v2.7 Otonomlaştırma** — ChatGPT Promptu otonomlaştırıldı, video süresi, reklam konsepti, dil ve çözünürlük için gereksiz sorular kaldırılıp sistemin kendisinin inisiyatif alması sağlandı. Karşılama akışı kısaltıldı. |
 | 2026-04-14 | **v2.6 Stabilizasyon** — Kapsamlı kod ve bağımlılık health check çalıştırıldı. Sistem tamamıyla stabil ve architecture-strict hale getirildi. |
 | 2026-04-12 | **v2.5 Yeni Özellik** — Chat Hafızası (Notion Inline Database) entegrasyonu, asenkron konuşma loglaması |

@@ -43,7 +43,7 @@ Antigravity/
 | Blog_Yazici | YouTube → Blog pipeline | Lokal (geliştirme) |
 | Dolunay_YouTube_Kapak | YouTube thumbnail üretimi | Lokal (geliştirme) |
 | Dubai_Emlak_İçerik_Yazarı | İçerik üretim sistemi | Lokal (geliştirme) |
-| Emlak_Arazi_Drone_Çekim | Drone çekim analiz sistemi | Lokal (geliştirme) |
+| Emlak_Arazi_Drone_Çekim | Drone çekim video pipeline'ı | Lokal (aktif) — `/drone-cekim` |
 
 ## 🌐 Eğitim Görselleri ve Netlify Yayını (OTOMATİK)
 > **Antigravity eğitim görsellerinde (`_skills/egitim-gorselleri`) bir revize yapılıp kullanıcı tarafından onaylandığında, bu klasör MUTLAKA anında Netlify üzerinde yayınlanır (Deploy edilir).**

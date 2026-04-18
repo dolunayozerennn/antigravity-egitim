@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 """
-Production Pipeline — Video Üretim Orkestratörü
-==================================================
-Onaylanan senaryoyu alıp aşama aşama video üretir:
+Production Pipeline — Deterministik Video Üretim Orkestratörü
+===============================================================
+Onaylanan senaryoyu alıp 4 adımda video üretir:
 
-1. Nano Banana 2 → Giriş sahnesi görseli (first frame)
-2. Seedance 2.0 → Video üretimi (image-to-video/text-to-video)
-3. [Türkçe] ElevenLabs → Dış ses üretimi
-4. [Türkçe] Replicate → Video + ses birleştirme
-5. Notion loglama
+1. Seedance 2.0 → Video üretimi (reference image modu)
+2. ElevenLabs → Türkçe dış ses üretimi
+3. Replicate → Video + ses birleştirme
+4. Notion loglama
+
+Deterministik kurallar:
+- 10 saniye, 9:16, 720p (sabit)
+- Reference image: ürün görselleri image_input olarak verilir
+- Karakter konuşması YOK — ambient sesler AÇIK
+- Dış ses her zaman Türkçe, ~25 kelime, ElevenLabs
+- Birleştirme: replace_audio=False (ambient + dış ses overlay)
 
 Her aşamada progress callback ile Telegram'a bildirim gönderilir.
 """
@@ -23,7 +29,7 @@ log = get_logger("production_pipeline")
 
 class ProductionPipeline:
     """
-    Video üretim orkestratörü.
+    Deterministik video üretim orkestratörü.
 
     Tüm servisler dışarıdan enjekte edilir (Dependency Injection).
     Pipeline sadece akış kontrolüne odaklanır.
@@ -53,11 +59,11 @@ class ProductionPipeline:
         user_name: str = "",
     ) -> dict:
         """
-        Onaylanan senaryoyla video üretim pipeline'ını çalıştır.
+        Onaylanan senaryoyla deterministik video üretim pipeline'ını çalıştır.
 
         Args:
             scenario: ScenarioEngine çıktısı
-            collected_data: Kullanıcıdan toplanan veriler
+            collected_data: URLDataExtractor'dan gelen veriler
             progress_callback: async def callback(step: str, message: str)
                              Her aşamada Telegram'a bildirim göndermek için.
             user_name: Telegram kullanıcı adı
@@ -66,9 +72,8 @@ class ProductionPipeline:
             dict: {
                 "status": "success" | "failed",
                 "video_url": str,           # Final video URL
-                "first_frame_url": str,     # Üretilen giriş görseli
                 "raw_video_url": str,       # Ses olmadan video
-                "audio_url": str,           # Dış ses URL (varsa)
+                "audio_url": str,           # Dış ses URL
                 "notion_page_url": str,     # Notion log URL
                 "error": str,               # Hata mesajı (varsa)
                 "cost": dict,               # Maliyet bilgisi
@@ -79,15 +84,13 @@ class ProductionPipeline:
         concept = collected_data.get("ad_concept", "?")
         duration = scenario.get("duration", 10)
         aspect_ratio = scenario.get("aspect_ratio", "9:16")
-        resolution = scenario.get("resolution", "720p")
         language = scenario.get("language", "Türkçe")
         cost = scenario.get("cost", {})
-        product_image = collected_data.get("product_image")
+        reference_images = collected_data.get("best_image_urls", [])
 
         result = {
             "status": "failed",
             "video_url": "",
-            "first_frame_url": "",
             "raw_video_url": "",
             "audio_url": "",
             "notion_page_url": "",
@@ -102,7 +105,6 @@ class ProductionPipeline:
                 await progress_callback("dry_run", "🏜️ DRY-RUN modu — gerçek API çağrısı yapılmıyor")
             result["status"] = "success"
             result["video_url"] = "https://example.com/dry-run-video.mp4"
-            result["first_frame_url"] = "https://example.com/dry-run-frame.png"
             return result
 
         # ── KIE AI KREDİ BAKİYE KONTROLÜ ──
@@ -110,7 +112,6 @@ class ProductionPipeline:
             credit_data = await asyncio.to_thread(self.kie.get_credit_balance)
             credit_balance = 0.0
             if credit_data and isinstance(credit_data, dict):
-                # API yapısına göre bakiyeyi çek
                 data_block = credit_data.get("data", credit_data)
                 if isinstance(data_block, dict):
                     credit_balance = float(data_block.get("balance", data_block.get("credit", 0)))
@@ -119,7 +120,7 @@ class ProductionPipeline:
                         credit_balance = float(data_block)
                     except (ValueError, TypeError):
                         pass
-            MIN_CREDIT_THRESHOLD = 0.50  # Minimum $0.50 bakiye gerekli
+            MIN_CREDIT_THRESHOLD = 0.50
             if 0 < credit_balance < MIN_CREDIT_THRESHOLD:
                 error_msg = (
                     f"Kie AI kredi bakiyesi yetersiz: ${credit_balance:.2f} "
@@ -133,7 +134,6 @@ class ProductionPipeline:
             if credit_balance > 0:
                 log.info(f"Kie AI kredi bakiyesi: ${credit_balance:.2f} — yeterli")
         except Exception:
-            # Kredi sorgulama hatası pipeline'ı durdurmasın — devam et
             log.warning("Kie AI kredi bakiyesi sorgulanamadı — pipeline devam ediyor", exc_info=True)
 
         # ── NOTION LOG — "Üretiliyor" ──
@@ -146,98 +146,44 @@ class ProductionPipeline:
                 concept=concept[:200],
                 video_duration=duration,
                 aspect_ratio=aspect_ratio,
-                resolution=resolution,
+                resolution="720p",
                 language=language,
                 estimated_cost=cost.get("total_usd", 0),
                 status="Üretiliyor",
                 user_name=user_name,
             )
             result["notion_page_url"] = notion_page_url or ""
-            # Page ID'yi doğrudan sakla (Önerildi: URL parse'dan daha güvenilir)
             if isinstance(notion_page_url, str) and notion_page_url:
                 result["_notion_page_id"] = self._extract_page_id(notion_page_url)
         except Exception:
             log.error("Notion log oluşturulamadı", exc_info=True)
-            # Notion hatası pipeline'ı durdurmasın
 
         try:
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # ADIM 1: Giriş Görseli (Nano Banana 2)
+            # ADIM 1: Video Üretimi (Seedance 2.0 — Reference Image)
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             if progress_callback:
-                await progress_callback("step_1", "🖼️ Giriş görseli üretiliyor (Nano Banana 2)...")
-
-            image_prompt = scenario.get("image_prompt", "")
-            first_frame_url = None
-
-            if product_image:
-                # Ürün fotoğrafı varsa — doğrudan kullan veya NB2 ile zenginleştir
-                if image_prompt:
-                    log.info("Nano Banana 2 ile giriş görseli üretiliyor...")
-                    try:
-                        nb2_task = await asyncio.to_thread(
-                            self.kie.create_image,
-                            prompt=image_prompt,
-                            aspect_ratio=aspect_ratio,
-                            resolution="1k",
-                            image_input=[product_image],
-                        )
-                        nb2_result = await self.kie.async_poll_task(nb2_task)
-
-                        if nb2_result["status"] == "success" and nb2_result["urls"]:
-                            first_frame_url = nb2_result["urls"][0]
-                            log.info(f"NB2 giriş görseli hazır: {first_frame_url[:60]}...")
-                        else:
-                            log.warning("NB2 başarısız — ürün fotoğrafı doğrudan kullanılacak")
-                            first_frame_url = product_image
-                    except Exception as e:
-                        log.warning(f"NB2 görsel üretim hatası — fallback: product_image: {e}")
-                        first_frame_url = product_image
-                else:
-                    first_frame_url = product_image
-            else:
-                # Ürün fotoğrafı yok — sıfırdan NB2 görsel üret
-                if image_prompt:
-                    try:
-                        nb2_task = await asyncio.to_thread(
-                            self.kie.create_image,
-                            prompt=image_prompt,
-                            aspect_ratio=aspect_ratio,
-                            resolution="1k",
-                        )
-                        nb2_result = await self.kie.async_poll_task(nb2_task)
-                        if nb2_result["status"] == "success" and nb2_result["urls"]:
-                            first_frame_url = nb2_result["urls"][0]
-                        else:
-                            log.warning("NB2 text-to-image başarısız — first_frame olmadan devam ediliyor")
-                    except Exception as e:
-                        log.warning(f"NB2 text-to-image hatası — first_frame olmadan devam: {e}")
-
-            result["first_frame_url"] = first_frame_url or ""
-
-            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # ADIM 2: Video Üretimi (Seedance 2.0)
-            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            if progress_callback:
-                await progress_callback("step_2", "🎬 Video üretiliyor (Seedance 2.0)... Bu 3-5 dakika sürebilir.")
+                ref_count = len(reference_images) if reference_images else 0
+                await progress_callback(
+                    "step_1",
+                    f"🎬 Video üretiliyor (Seedance 2.0, {ref_count} referans görsel)... "
+                    f"Bu 3-5 dakika sürebilir."
+                )
 
             video_prompt = scenario.get("video_prompt", "")
 
-            # Türkçe dış ses varsa, video'da konuşma olmamalı
-            if language == "Türkçe" and "no dialogue" not in video_prompt.lower():
-                video_prompt += " No dialogue, ambient sounds only."
-
-            # Generate audio: İngilizce ise True, Türkçe ise False
-            generate_audio = language != "Türkçe"
+            # Güvenlik: Konuşma yasağını prompt'a zorla ekle
+            no_dialogue_clause = "No character dialogue, no speaking, no lip movement. Enable ambient and environmental sounds, natural atmosphere."
+            if "no dialogue" not in video_prompt.lower() and "no speaking" not in video_prompt.lower():
+                video_prompt += f" {no_dialogue_clause}"
 
             video_task = await asyncio.to_thread(
                 self.kie.create_video,
                 prompt=video_prompt,
                 duration=duration,
-                resolution=resolution,
                 aspect_ratio=aspect_ratio,
-                generate_audio=generate_audio,
-                first_frame_url=first_frame_url,
+                generate_audio=True,  # Ambient sesler AÇIK
+                reference_images=reference_images if reference_images else None,
             )
 
             log.info(f"Seedance 2.0 video görevi: {video_task}")
@@ -248,7 +194,7 @@ class ProductionPipeline:
             if video_result["status"] != "success" or not video_result.get("urls"):
                 error_msg = video_result.get("error", "Video üretimi başarısız")
                 
-                # P1-4: Safety filter — prompt rewrite ile tekrar dene
+                # Safety filter — prompt rewrite ile tekrar dene
                 if any(keyword in error_msg.lower() for keyword in ["safety", "sensitive", "content policy", "nsfw"]):
                     log.warning(f"Safety filter tetiklendi: {error_msg[:100]}. Prompt yeniden yazılıyor...")
                     if progress_callback:
@@ -262,17 +208,15 @@ class ProductionPipeline:
                                 self.kie.create_video,
                                 prompt=rewritten_prompt,
                                 duration=duration,
-                                resolution=resolution,
                                 aspect_ratio=aspect_ratio,
-                                generate_audio=generate_audio,
-                                first_frame_url=first_frame_url,
+                                generate_audio=True,
+                                reference_images=reference_images if reference_images else None,
                             )
                             video_result2 = await self.kie.async_poll_task(video_task2)
                             if video_result2["status"] == "success" and video_result2.get("urls"):
                                 raw_video_url = video_result2["urls"][0]
                                 result["raw_video_url"] = raw_video_url
                                 log.info(f"Safety rewrite başarılı: {raw_video_url[:60]}...")
-                                # Normal akışa devam — aşağıdaki adımlara geç
                             else:
                                 raise RuntimeError(f"Seedance 2.0 safety rewrite de başarısız: {video_result2.get('error', '?')}")
                         else:
@@ -291,79 +235,75 @@ class ProductionPipeline:
             log.info(f"Video üretildi: {raw_video_url[:60]}...")
 
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # ADIM 3: Dış Ses (ElevenLabs) — Sadece Türkçe
+            # ADIM 2: Türkçe Dış Ses (ElevenLabs)
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            final_video_url = raw_video_url  # Varsayılan: dış ses yok
+            voiceover_text = scenario.get("voiceover_text", "")
 
-            if language == "Türkçe":
-                voiceover_text = scenario.get("voiceover_text", "")
+            if voiceover_text:
+                if progress_callback:
+                    await progress_callback(
+                        "step_2",
+                        "🎙️ Türkçe dış ses üretiliyor (ElevenLabs)..."
+                    )
 
-                if voiceover_text:
-                    if progress_callback:
-                        await progress_callback(
-                            "step_3",
-                            "🎙️ Türkçe dış ses üretiliyor (ElevenLabs)..."
+                # Dış ses süre kontrolü — video süresini aşarsa metni kırp
+                from services.elevenlabs_service import ElevenLabsService
+                est_duration = ElevenLabsService.estimate_duration_seconds(voiceover_text)
+                if est_duration > duration + 2:  # 2 saniye tolerans
+                    target_words = int(duration * 2.5)  # ~2.5 kelime/saniye
+                    words = voiceover_text.split()
+                    if len(words) > target_words:
+                        voiceover_text = " ".join(words[:target_words])
+                        log.warning(
+                            f"Dış ses metni kırpıldı: {est_duration:.1f}s → ~{duration}s "
+                            f"({len(words)} → {target_words} kelime)"
                         )
 
-                    # Dış ses süre kontrolü — video süresini aşarsa metni kırp
-                    from services.elevenlabs_service import ElevenLabsService
-                    est_duration = ElevenLabsService.estimate_duration_seconds(voiceover_text)
-                    if est_duration > duration + 2:  # 2 saniye tolerans
-                        target_words = int(duration * 2.5)  # ~2.5 kelime/saniye
-                        words = voiceover_text.split()
-                        if len(words) > target_words:
-                            voiceover_text = " ".join(words[:target_words])
-                            log.warning(
-                                f"Dış ses metni kırpıldı: {est_duration:.1f}s → ~{duration}s "
-                                f"({len(words)} → {target_words} kelime)"
-                            )
+                # ElevenLabs TTS
+                log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
+                audio_bytes = await asyncio.to_thread(
+                    self.elevenlabs.generate_speech,
+                    text=voiceover_text,
+                    voice_name="Sarah",
+                    stability=0.5,
+                    similarity_boost=0.75,
+                    style=0.4,
+                )
 
-                    # ElevenLabs TTS
-                    log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
-                    audio_bytes = await asyncio.to_thread(
-                        self.elevenlabs.generate_speech,
-                        text=voiceover_text,
-                        voice_name="Sarah",
-                        stability=0.5,
-                        similarity_boost=0.75,
-                        style=0.4,
+                # Ses dosyasını hosting'e yükle
+                audio_url = await asyncio.to_thread(
+                    self.elevenlabs.upload_audio_to_hosting,
+                    audio_bytes,
+                    imgbb_api_key=self.imgbb.api_key,
+                )
+                result["audio_url"] = audio_url
+                log.info(f"Dış ses hazır: {audio_url[:60]}...")
+
+                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                # ADIM 3: Video + Ses Birleştirme (Replicate)
+                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                if progress_callback:
+                    await progress_callback(
+                        "step_3",
+                        "🔀 Video ve dış ses birleştiriliyor (Replicate)..."
                     )
 
-                    # Ses dosyasını hosting'e yükle (ImgBB birincil, tmpfiles yedek)
-                    audio_url = await asyncio.to_thread(
-                        self.elevenlabs.upload_audio_to_hosting,
-                        audio_bytes,
-                        imgbb_api_key=self.imgbb.api_key,
-                    )
-                    result["audio_url"] = audio_url
-                    log.info(f"Dış ses hazır: {audio_url[:60]}...")
-
-                    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    # ADIM 4: Video + Ses Birleştirme (Replicate)
-                    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    if progress_callback:
-                        await progress_callback(
-                            "step_4",
-                            "🔀 Video ve dış ses birleştiriliyor (Replicate)..."
-                        )
-
-                    # Async merge — event loop'u bloke etmez
-                    final_video_url = await self.replicate.async_merge_video_audio(
-                        video_url=raw_video_url,
-                        audio_url=audio_url,
-                        replace_audio=False,
-                    )
-                    log.info(f"Video+ses birleştirildi: {final_video_url[:60]}...")
-                else:
-                    log.warning("Dış ses metni boş — ses eklenmeden devam ediliyor")
+                # Async merge — ambient ses korunur + dış ses overlay
+                final_video_url = await self.replicate.async_merge_video_audio(
+                    video_url=raw_video_url,
+                    audio_url=audio_url,
+                    replace_audio=False,  # Ambient sesler + Türkçe dış ses
+                )
+                log.info(f"Video+ses birleştirildi: {final_video_url[:60]}...")
             else:
-                log.info("Dil İngilizce — Seedance native ses kullanılıyor, ek işlem yok")
+                log.warning("Dış ses metni boş — ses eklenmeden devam ediliyor")
+                final_video_url = raw_video_url
 
             result["video_url"] = final_video_url
             result["status"] = "success"
 
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # ADIM 5: Notion güncelle — "Tamamlandı"
+            # ADIM 4: Notion güncelle — "Tamamlandı"
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             if notion_page_url:
                 page_id = result.get("_notion_page_id") or self._extract_page_id(notion_page_url)

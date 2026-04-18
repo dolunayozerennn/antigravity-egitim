@@ -11,9 +11,9 @@
 ## Aktif TODO'lar
 
 
-### ~~🟡 YouTube Otomasyonu V2~~ → ✅ Deploy tamamlandı (11 Nisan 2026 gece)
-- Railway SUCCESS, Smoke test geçti, Pets Got Talent kanalı OAuth2 ile bağlı
-- Bot: @YouTube_Otomasyon_Doluay_Bot — 7/24 polling
+### ~~🟡 YouTube Otomasyonu V2~~ → ✅ V3'e yükseltildi (18 Nisan 2026)
+- V3: Telegram kaldırıldı → CronJob (günlük 17:00 TR), Creative Engine, tam otonom
+- İlk otonom video başarıyla yüklendi: https://youtube.com/shorts/zXFbB789f3Q
 
 ### ~~🟡 eCom Reklam Otomasyonu~~ → ✅ Tamamlandı, arşive taşındı (11 Nisan 2026 akşam)
 
@@ -24,6 +24,21 @@
 > Deploy sonrası eklenen izleme kayıtları burada tutulur.
 > Her konuşma başında bu bölüm kontrol edilir — izleme süresi dolmuş ve 2 temiz kontrol geçilmişse arşive taşınır.
 
+### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (v2.4 Fixes)
+- **Deploy tarihi:** 2026-04-18
+- **İzleme bitiş:** 2026-04-20
+- **Kontrol 1:** ⏳ Bekliyor (Notion property 'Proje', KIE API 'resolution', Web Scraper 403 fallback ve Telegram API Conflict fixleri denetlenecek)
+- **Kontrol 2:** ⏳ Bekliyor
+- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+
+### 🟡 48-Saat İzleme — YouTube_Otomasyonu V3 (CronJob Dönüşümü)
+- **Deploy tarihi:** 2026-04-18
+- **İzleme bitiş:** 2026-04-20
+- **İlk otonom video:** ✅ https://youtube.com/shorts/zXFbB789f3Q (french bulldog × pottery)
+- **Kontrol 1:** ⏳ Bekliyor (yarın 17:00 TR cron tetiklenmesi sonrası loglar kontrol edilecek)
+- **Kontrol 2:** ⏳ Bekliyor
+- **Bilinen küçük sorunlar:** FFmpeg nixpacks'te yok (Replicate fallback mevcut, blocker değil)
+- **Sonuç:** ⏳ 2 ardışık başarılı cron çalışması ile kapatılır
 
 
 ---

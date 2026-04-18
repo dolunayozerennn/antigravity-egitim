@@ -1,20 +1,87 @@
 Starting Container
-2026-04-12 12:16:22 - main - INFO - 🚀 eCom Reklam Otomasyonu başlatılıyor... [Mod: 🟢 PRODUCTION]
-2026-04-12 12:16:22 - main - INFO - 📊 Model: gpt-4.1-mini
-2026-04-12 12:16:22 - main - INFO - 👤 İzinli kullanıcılar: [1238877494]
-2026-04-12 12:16:22 - main - INFO - 🤖 Telegram polling başlatılıyor...
-2026-04-12 12:16:27 - main - ERROR - Telegram handler hatası: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
+2026-04-18 16:34:56 - main - INFO - 🤖 Telegram polling başlatılıyor...
+2026-04-18 16:34:56 - main - INFO - 🚀 eCom Reklam Otomasyonu v2.0 başlatılıyor... [Mod: 🟢 PRODUCTION]
+2026-04-18 16:34:56 - main - INFO - 📊 Model: gpt-4.1-mini
+2026-04-18 16:34:56 - main - INFO - 👤 İzinli kullanıcılar: [1238877494]
+2026-04-18 16:35:00 - main - ERROR - Telegram handler hatası: Conflict: terminated by other getUpdates request; make sure that only one bot instance is running
 NoneType: None
-2026-04-12 14:56:30 - conversation_manager - INFO - Yeni sohbet başlatıldı: user=1238877494 (Dolunay)
-2026-04-12 14:56:57 - openai_service - INFO - JSON yanıt alındı — tokens: 977
-2026-04-12 14:56:57 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=['ad_concept', 'video_duration', 'aspect_ratio', 'language'], fotoğraf=❌, ready=False
-2026-04-12 14:57:11 - openai_service - INFO - JSON yanıt alındı — tokens: 1133
-2026-04-12 14:57:11 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=['video_duration', 'aspect_ratio', 'language'], fotoğraf=❌, ready=False
-2026-04-12 14:57:33 - openai_service - INFO - JSON yanıt alındı — tokens: 1233
-2026-04-12 14:57:33 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=[], fotoğraf=❌, ready=False
-2026-04-12 14:57:45 - openai_service - INFO - JSON yanıt alındı — tokens: 1276
-2026-04-12 14:57:45 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=[], fotoğraf=❌, ready=False
-2026-04-12 14:58:49 - openai_service - INFO - JSON yanıt alındı — tokens: 1325
-2026-04-12 14:58:49 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=[], fotoğraf=❌, ready=False
-2026-04-12 15:03:33 - openai_service - INFO - JSON yanıt alındı — tokens: 1341
-2026-04-12 15:03:33 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=[], fotoğraf=❌, ready=False
+requests.exceptions.HTTPError: 403 Client Error: Forbidden for url: https://www.sephora.com.tr/p/parfum-cheveux-au-miel---vanilla-glaze-P1000212153.html
+2026-04-18 16:44:36 - conversation_manager - INFO - Yeni sohbet başlatıldı: user=1238877494 (Dolunay)
+2026-04-18 16:44:41 - openai_service - INFO - JSON yanıt alındı — tokens: 1339
+2026-04-18 16:44:41 - conversation_manager - INFO - Bilgi çıkarma: user=1238877494, eksik=[], fotoğraf=❌, url=✅, ready=False, needs_scrape=True
+2026-04-18 16:44:41 - web_scraper - ERROR - URL fetch hatası: https://www.sephora.com.tr/p/parfum-cheveux-au-miel---vanilla-glaze-P1000212153.html
+Traceback (most recent call last):
+  File "/app/services/web_scraper_service.py", line 65, in scrape_product_data
+    resp.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/requests/models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+2026-04-18 16:45:01 - imgbb_service - INFO - ImgBB upload başarılı: https://i.ibb.co/R4kgzCtf/product-ecom.jpg (17866 bytes)
+2026-04-18 16:45:01 - conversation_manager - INFO - Ürün fotoğrafı alındı: user=1238877494, url=https://i.ibb.co/R4kgzCtf/product-ecom.jpg...
+2026-04-18 16:45:01 - scenario_engine - INFO - Marka araştırması başlıyor: Sephora — Parfum Cheveux Au Miel - Vanilla Glaze
+2026-04-18 16:45:11 - perplexity_service - INFO - Marka araştırması tamamlandı: 'Sephora' — 1729 karakter
+2026-04-18 16:45:11 - scenario_engine - INFO - Ürün görseli analiz ediliyor: https://i.ibb.co/R4kgzCtf/product-ecom.jpg...
+2026-04-18 16:45:14 - openai_service - INFO - Vision analiz tamamlandı — 397 karakter
+2026-04-18 16:45:14 - scenario_engine - INFO - Araştırma tamamlandı: brand_research=1729 chars, image_analysis=397 chars
+2026-04-18 16:45:14 - scenario_engine - INFO - Senaryo üretimi başlıyor: Sephora — Parfum Cheveux Au Miel - Vanilla Glaze (10s, 9:16)
+2026-04-18 16:45:21 - openai_service - INFO - JSON yanıt alındı — tokens: 1847
+2026-04-18 16:45:21 - scenario_engine - INFO - Senaryo üretildi: 'Saçlarda Vanilya ve Balın Büyüsü' — $1.250, 250 credits
+2026-04-18 16:45:30 - kie_api - INFO - Kredi bakiyesi sorgulandı: {'code': 200, 'msg': 'success', 'data': 13582.1}
+2026-04-18 16:45:30 - production_pipeline - INFO - Kie AI kredi bakiyesi: $13582.10 — yeterli
+2026-04-18 16:45:31 - notion_service - ERROR - Notion loglama hatası: Sephora
+Traceback (most recent call last):
+  File "/app/.venv/lib/python3.13/site-packages/notion_client/client.py", line 118, in _parse_response
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/app/.venv/lib/python3.13/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '400 Bad Request' for url 'https://api.notion.com/v1/pages'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/services/notion_service.py", line 83, in log_production
+    page = self.client.pages.create(
+        parent={"database_id": self.database_id},
+        properties=properties,
+    )
+  File "/app/.venv/lib/python3.13/site-packages/notion_client/api_endpoints.py", line 208, in create
+    return self.parent.request(
+           ~~~~~~~~~~~~~~~~~~~^
+  File "/app/.venv/lib/python3.13/site-packages/notion_client/client.py", line 194, in request
+        path="pages",
+    return self._parse_response(response)
+        ^^^^^^^^^^^^^
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+    ...<2 lines>...
+  File "/app/.venv/lib/python3.13/site-packages/notion_client/client.py", line 126, in _parse_response
+        auth=kwargs.get("auth"),
+    raise APIResponseError(response, body["message"], code)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+notion_client.errors.APIResponseError: Title is not a property that exists.
+    )
+    ^
+2026-04-18 16:45:31 - production_pipeline - INFO - Nano Banana 2 ile giriş görseli üretiliyor...
+2026-04-18 16:45:31 - production_pipeline - WARNING - NB2 görsel üretim hatası — fallback: product_image: Kie AI createTask hatası: resolution is not within the range of allowed options (code=500)
+2026-04-18 16:45:31 - kie_api - INFO - Seedance 2.0 video görevi oluşturuldu: e9acac8cddb61a26c8595fd6f02c2cb2 (10s, 720p, 9:16)
+2026-04-18 16:45:31 - production_pipeline - INFO - Seedance 2.0 video görevi: e9acac8cddb61a26c8595fd6f02c2cb2
+2026-04-18 16:45:31 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [1/60] state=waiting
+2026-04-18 16:45:41 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [2/60] state=waiting
+2026-04-18 16:45:51 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [3/60] state=waiting
+2026-04-18 16:46:02 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [4/60] state=waiting
+2026-04-18 16:46:12 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [5/60] state=waiting
+2026-04-18 16:46:22 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [6/60] state=waiting
+2026-04-18 16:46:32 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [7/60] state=waiting
+2026-04-18 16:46:42 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [8/60] state=waiting
+2026-04-18 16:46:52 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [9/60] state=waiting
+2026-04-18 16:47:02 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [10/60] state=waiting
+2026-04-18 16:47:12 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [11/60] state=waiting
+2026-04-18 16:47:23 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [12/60] state=waiting
+2026-04-18 16:47:33 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [13/60] state=waiting
+2026-04-18 16:47:43 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [14/60] state=waiting
+2026-04-18 16:47:53 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [15/60] state=waiting
+2026-04-18 16:48:03 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [16/60] state=waiting
+2026-04-18 16:48:13 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [17/60] state=waiting
+2026-04-18 16:48:23 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [18/60] state=waiting
+2026-04-18 16:48:33 - kie_api - INFO - Polling e9acac8cddb61a26c8595fd6f02c2cb2: [19/60] state=waiting

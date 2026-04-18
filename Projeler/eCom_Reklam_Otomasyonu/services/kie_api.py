@@ -41,11 +41,10 @@ class KieAIService:
     def create_video(
         self,
         prompt: str,
-        duration: int = 8,
-        resolution: str = "720p",
+        duration: int = 10,
         aspect_ratio: str = "9:16",
-        generate_audio: bool = False,
-        first_frame_url: str | None = None,
+        generate_audio: bool = True,
+        reference_images: list[str] | None = None,
     ) -> str:
         """
         Seedance 2.0 ile video üretim görevi oluşturur.
@@ -53,10 +52,11 @@ class KieAIService:
         Args:
             prompt: Video açıklaması (İngilizce önerilir)
             duration: Video süresi (4-15 saniye)
-            resolution: "480p" veya "720p"
             aspect_ratio: "9:16", "16:9", "1:1" vb.
-            generate_audio: Native ses üretimi (Türkçe dış ses varsa False)
-            first_frame_url: İlk kare görseli URL'i (image-to-video)
+            generate_audio: Native ses üretimi (ambient sesler için True)
+            reference_images: Referans görseller URL listesi (1-3 adet)
+                              Modele "bu görselleri referans al, özgürce üret" der.
+                              first_frame_url ile AYNI ANDA KULLANILAMAZ.
 
         Returns:
             str: taskId
@@ -64,14 +64,13 @@ class KieAIService:
         input_data = {
             "prompt": prompt,
             "duration": duration,
-            "resolution": resolution,
             "aspect_ratio": aspect_ratio,
             "generate_audio": generate_audio,
             "web_search": False,
         }
 
-        if first_frame_url:
-            input_data["first_frame_url"] = first_frame_url
+        if reference_images:
+            input_data["image_input"] = reference_images
 
         payload = {
             "model": "bytedance/seedance-2",
@@ -79,8 +78,9 @@ class KieAIService:
         }
 
         task_id = self._create_task(payload)
+        ref_count = len(reference_images) if reference_images else 0
         log.info(f"Seedance 2.0 video görevi oluşturuldu: {task_id} "
-                 f"({duration}s, {resolution}, {aspect_ratio})")
+                 f"({duration}s, {aspect_ratio}, ref_images={ref_count})")
         return task_id
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
