@@ -15,7 +15,7 @@ class Config:
     # ── GOOGLE SHEETS (CRM Kaynak) ──────────────────────────────────
     CRM_SPREADSHEET_ID = os.environ.get(
         "CRM_SPREADSHEET_ID",
-        "10uTCr65VlIBng0Sxlmz7h1Q2y5AWBp1qDQHTeqI7mGU"
+        "1DdrIZzWpdksuOQMnlxfffyW8ewAN4WsNVt_pdDZojm4"
     )
 
     _crm_tabs_env = os.environ.get("CRM_SHEET_TABS", "")
@@ -25,14 +25,13 @@ class Config:
         ]
     else:
         CRM_SHEET_TABS = [
-            {"name": "Nisan-2026-Saat Bazlı-v2"},
-            {"name": "Mart-2026-Saat Bazlı-v2"},
+            {"name": "0426-Yeni"},
         ]
 
     # ── GOOGLE SHEETS (Notifier Kaynak) ─────────────────────────────
     NOTIFIER_SPREADSHEET_ID = os.environ.get(
         "NOTIFIER_SPREADSHEET_ID",
-        "1DUxt0W6b-Sa5StDdGMnyVm4WFy-PB3FZIlCH30_9sh4"
+        "1DdrIZzWpdksuOQMnlxfffyW8ewAN4WsNVt_pdDZojm4"
     )
 
     _notifier_tabs_env = os.environ.get("NOTIFIER_SHEET_TABS", "")
@@ -42,7 +41,7 @@ class Config:
         ]
     else:
         NOTIFIER_SHEET_TABS = [
-            {"name": "Sheet1"}
+            {"name": "0426-Yeni"}
         ]
 
     # ── NOTION (CRM Hedef) ──────────────────────────────────────────

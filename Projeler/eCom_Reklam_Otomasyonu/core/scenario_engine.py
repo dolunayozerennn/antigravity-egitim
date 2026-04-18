@@ -46,7 +46,7 @@ SCENARIO_SYSTEM_PROMPT = """Sen profesyonel bir reklam film yönetmenisin. Veril
 {
   "title": "Senaryo başlığı",
   "summary": "1-2 cümlelik özet",
-  "video_prompt": "Seedance 2.0 için detaylı İngilizce video promptu. Kamera hareketleri, ışık, renk paleti, atmosfer dahil. 'no dialogue, ambient sounds only' ifadesini ekle eğer Türkçe dış ses varsa.",
+  "video_prompt": "Seedance 2.0 için DETAYLI İngilizce video promptu. Kameranın nasıl hareket edeceği (Örn: smooth zoom in, slow pan left), ışığın nasıl olacağı (soft cinematic lighting), odak noktası ve renk paleti KESİN bir dille yazılmalıdır. Durağan veya basit kalıplardan kaçın. Eğer orijinal görsel (image-to-video) varsa, prompt görsele sadık kalarak kameranın görsel etrafında nasıl hareket edeceğini 3D bir hissiyatla (cinematic tracking shot, depth of field) belirtmelidir.",
   "voiceover_text": "Türkçe dış ses metni (video süresine uygun: ~2.5 kelime/saniye). Dil İngilizce ise boş bırak.",
   "image_prompt": "Nano Banana 2 için İngilizce giriş karesı promptu. Ürünün/markanın tanıtıldığı sinematik ilk kare.",
   "resolution": "720p",

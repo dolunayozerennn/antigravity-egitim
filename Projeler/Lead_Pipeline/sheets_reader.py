@@ -73,7 +73,15 @@ class SheetsReader:
             values = result.get("values", [])
             for row in values:
                 if len(row) >= 2:
-                    key = f"{self.reader_name}:{row[0]}"
+                    raw_key = row[0]
+                    if ":" not in raw_key:
+                        # Eski format: Tablo adını namespace ile güncelle
+                        key = f"{self.reader_name}:{raw_key}"
+                    else:
+                        # Eğer namespace varsa ve bu reader'a ait değilse atla
+                        if not raw_key.startswith(f"{self.reader_name}:"):
+                            continue
+                        key = raw_key
                     try:
                         self._last_row_counts[key] = int(row[1])
                     except ValueError:
@@ -105,11 +113,11 @@ class SheetsReader:
         if not self.use_state_tab:
             return
 
-        # Env variable'a da yaz
+        # Env variable ve Sheets'e tam namespace ile yaz (shared tab çakışmasını önlemek için)
         clean_state = {}
         for k, v in self._last_row_counts.items():
-            tab_name = k.replace(f"{self.reader_name}:", "")
-            clean_state[tab_name] = v
+            if k.startswith(f"{self.reader_name}:"):
+                clean_state[k] = v
 
         env_key = f"LEAD_PIPELINE_STATE_{self.reader_name.upper()}"
         os.environ[env_key] = json.dumps(clean_state)
