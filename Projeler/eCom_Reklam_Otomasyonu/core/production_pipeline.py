@@ -112,9 +112,13 @@ class ProductionPipeline:
             if credit_data and isinstance(credit_data, dict):
                 # API yapısına göre bakiyeyi çek
                 data_block = credit_data.get("data", credit_data)
-                credit_balance = float(
-                    data_block.get("balance", data_block.get("credit", 0))
-                )
+                if isinstance(data_block, dict):
+                    credit_balance = float(data_block.get("balance", data_block.get("credit", 0)))
+                else:
+                    try:
+                        credit_balance = float(data_block)
+                    except (ValueError, TypeError):
+                        pass
             MIN_CREDIT_THRESHOLD = 0.50  # Minimum $0.50 bakiye gerekli
             if 0 < credit_balance < MIN_CREDIT_THRESHOLD:
                 error_msg = (

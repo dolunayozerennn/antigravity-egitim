@@ -60,15 +60,10 @@ class NotionService:
         """
         try:
             properties = {
-                "Proje": {"title": [{"text": {"content": f"eCom — {brand}"}}]},
+                "Title": {"title": [{"text": {"content": f"eCom — {brand}"}}]},
                 "Marka": {"rich_text": [{"text": {"content": brand}}]},
                 "Ürün": {"rich_text": [{"text": {"content": product}}]},
                 "Konsept": {"rich_text": [{"text": {"content": concept[:2000]}}]},
-                "Video Süresi": {"number": video_duration},
-                "Aspect Ratio": {"select": {"name": aspect_ratio}},
-                "Çözünürlük": {"select": {"name": resolution}},
-                "Dil": {"select": {"name": language}},
-                "Tahmini Maliyet ($)": {"number": round(estimated_cost, 3)},
                 "Durum": {"select": {"name": status}},
                 "Tarih": {"date": {"start": datetime.now(timezone.utc).isoformat()}},
             }
