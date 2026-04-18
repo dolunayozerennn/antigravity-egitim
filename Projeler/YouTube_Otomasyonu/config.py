@@ -1,7 +1,8 @@
 """
-YouTube Otomasyonu V2 — Fail-Fast Config
-Chat-based Telegram Bot mimarisi.
+YouTube Otomasyonu V3 — Fail-Fast Config
+"Pets Got Talent" Tam Otonom Pipeline.
 Tüm gerekli env variable'ları boot time'da doğrular.
+Telegram kaldırıldı — CronJob ile çalışır.
 """
 import os
 import sys
@@ -20,7 +21,7 @@ class Config:
             default="sk-test-placeholder" if self.IS_DRY_RUN else None
         )
 
-        # ── Video Üretimi (Kie AI) ──
+        # ── Video Üretimi (Kie AI — Seedance 2.0) ──
         self.KIE_API_KEY = self._require_env(
             "KIE_API_KEY",
             default="test-kie-key" if self.IS_DRY_RUN else None
@@ -37,12 +38,11 @@ class Config:
             "14273448a57117b5d424410e2e79700ecde6cc7d60bf522a769b9c7cf989eba7"
         )
 
-        # ── Default Üretim Parametreleri ──
-        self.DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "seedance-2")  # veya "veo3.1"
-        self.DEFAULT_ORIENTATION = os.environ.get("DEFAULT_ORIENTATION", "portrait")  # portrait=9:16, landscape=16:9
-        self.DEFAULT_CLIP_COUNT = int(os.environ.get("DEFAULT_CLIP_COUNT", "1"))
-        self.DEFAULT_AUDIO = os.environ.get("DEFAULT_AUDIO", "true").lower() == "true"
-        self.DEFAULT_DURATION = int(os.environ.get("DEFAULT_DURATION", "10"))
+        # ── Sabit Üretim Parametreleri (V3 — Pets Got Talent) ──
+        self.DEFAULT_MODEL = "seedance-2"       # Sabit — sadece Seedance 2.0
+        self.DEFAULT_ORIENTATION = "portrait"    # Sabit — Shorts (9:16)
+        self.DEFAULT_AUDIO = True               # Sabit — ses her zaman açık
+        self.DEFAULT_DURATION = 10              # Fallback — GPT dinamik karar verir
         self.DEFAULT_RESOLUTION = os.environ.get("DEFAULT_RESOLUTION", "720p")
 
         # ── YouTube Upload ──
@@ -50,22 +50,8 @@ class Config:
         self.YOUTUBE_CLIENT_SECRET = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
         self.YOUTUBE_REFRESH_TOKEN = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
         self.YOUTUBE_CATEGORY_ID = os.environ.get("YOUTUBE_CATEGORY_ID", "15")  # Pets & Animals
-        self.YOUTUBE_PRIVACY = os.environ.get("YOUTUBE_PRIVACY", "public")  # public — videonun izlenmesi gerekiyor
-        self.YOUTUBE_ENABLED = os.environ.get("YOUTUBE_ENABLED", "false").lower() == "true"
-
-        # ── Telegram Bot (V2 — Chat-based) ──
-        self.TELEGRAM_YOUTUBE_BOT_TOKEN = self._require_env(
-            "TELEGRAM_YOUTUBE_BOT_TOKEN",
-            default="test-telegram-yt-bot-token" if self.IS_DRY_RUN else None
-        )
-        self.TELEGRAM_ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "1238877494")
-
-        # Notification bot (ayrı — eski pipeline uyumluluğu)
-        self.TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", self.TELEGRAM_YOUTUBE_BOT_TOKEN)
-
-        # Access control — sadece admin
-        _allowed_raw = os.environ.get("ALLOWED_USER_IDS", "1238877494")
-        self.ALLOWED_USER_IDS = [int(uid.strip()) for uid in _allowed_raw.split(",") if uid.strip()]
+        self.YOUTUBE_PRIVACY = os.environ.get("YOUTUBE_PRIVACY", "public")
+        self.YOUTUBE_ENABLED = os.environ.get("YOUTUBE_ENABLED", "true").lower() == "true"
 
         # ── Notion ──
         self.NOTION_TOKEN = os.environ.get(
@@ -73,7 +59,6 @@ class Config:
             os.environ.get("NOTION_API_TOKEN", "")
         )
         self.NOTION_DB_ID = os.environ.get("NOTION_DB_YOUTUBE_OTOMASYON", "")
-        self.NOTION_CHAT_DB_ID = os.environ.get("NOTION_CHAT_DB_ID", "34095514-0a32-81c9-94a6-f269b060c377")
         self.NOTION_ENABLED = bool(self.NOTION_TOKEN and self.NOTION_DB_ID)
 
         # ── Polling Ayarları (Kie AI video üretimi) ──
@@ -96,15 +81,6 @@ class Config:
                 f"CRITICAL STARTUP FAILURE: Gerekli ortam değişkeni '{key}' bulunamadı!"
             )
         return val
-
-    def _check_system_deps(self, binaries: list):
-        """Sistem bağımlılığı kontrolü."""
-        for binary in binaries:
-            if not shutil.which(binary):
-                raise EnvironmentError(
-                    f"CRITICAL STARTUP FAILURE: Sistem bağımlılığı '{binary}' bulunamadı! "
-                    f"nixpacks.toml dosyasına aptPkgs = [\"{binary}\"] eklenmeli."
-                )
 
 
 # Boot time'da config'i oluştur — eksik var ise hemen çök

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Notion Logger V2 — Her video üretimini Notion veritabanına kaydeder.
 Adım adım durum güncellemesi, model/maliyet/süre takibi.
@@ -63,6 +65,11 @@ class NotionTracker:
             "Klip Sayısı": {"number": config.get("clip_count", 1)},
             "Tarih": {"date": {"start": datetime.now(timezone.utc).isoformat()}},
         }
+
+        # V3: Combo key — tekrar önleme sistemi
+        combo_key = config.get("combo_key", "")
+        if combo_key:
+            properties["Combo Key"] = {"rich_text": [{"text": {"content": combo_key}}]}
 
         payload = {
             "parent": {"database_id": settings.NOTION_DB_ID},
@@ -136,6 +143,65 @@ class NotionTracker:
             "Süre (sn)": {"number": round(elapsed, 1)},
         }
         self.update_status(STATUS_ERROR, extra)
+
+    def get_used_combos(self, days: int = 60) -> list[str]:
+        """
+        Son N günde kullanılmış combo_key'leri Notion'dan çeker.
+        Tekrar önleme sistemi için kullanılır.
+
+        Args:
+            days: Kaç gün geriye bakılacak
+
+        Returns:
+            list[str]: ["animal|talent", ...] formatında combo_key listesi
+        """
+        if not self.enabled or settings.IS_DRY_RUN:
+            return []
+
+        from datetime import timedelta
+
+        try:
+            since = datetime.now(timezone.utc) - timedelta(days=days)
+            since_iso = since.isoformat()
+
+            payload = {
+                "filter": {
+                    "and": [
+                        {
+                            "property": "Tarih",
+                            "date": {"on_or_after": since_iso}
+                        },
+                        {
+                            "property": "Durum",
+                            "select": {"equals": STATUS_COMPLETED}
+                        }
+                    ]
+                },
+                "sorts": [{"property": "Tarih", "direction": "descending"}],
+                "page_size": 100,
+            }
+
+            response = _notion_request(
+                "POST",
+                f"{NOTION_API_URL}/databases/{settings.NOTION_DB_ID}/query",
+                json=payload,
+            )
+
+            combos = []
+            for page in response.get("results", []):
+                props = page.get("properties", {})
+                combo_rt = props.get("Combo Key", {}).get("rich_text", [])
+                if combo_rt:
+                    combo_text = combo_rt[0].get("text", {}).get("content", "")
+                    if combo_text:
+                        combos.append(combo_text)
+
+            log.info(f"📋 Notion'dan {len(combos)} kullanılmış combo yüklendi")
+            return combos
+
+        except Exception as e:
+            log.warning(f"⚠️ Notion combo sorgusu başarısız (devam ediliyor): {e}")
+            return []
 
     def update_with_safety_info(self, safety_data: dict):
         """

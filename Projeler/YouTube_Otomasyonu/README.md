@@ -1,107 +1,125 @@
-# YouTube Otomasyonu V2.3
+# 🐾 Pets Got Talent — YouTube Shorts Otomasyon V3
 
-> Chat-based Telegram bot ile otonom video üretimi sistemi.
-> **Pets Got Talent** kanalı — 7/24 otonom çalışır.
+> Her gün otomatik olarak absürt hayvan yetenek videoları üretip YouTube Shorts'a yükleyen tam otonom pipeline.
 
-## 🎯 Ne Yapıyor?
+## 📋 Genel Bakış
 
-Telegram üzerinden doğal dilde sohbet ederek video üretimini başlatır:
+Bu sistem **sıfır insan müdahalesi** ile çalışır. Railway CronJob ile günde 1 kez tetiklenir ve şu akışı izler:
 
-1. **Sohbet** — Kullanıcı video fikrini anlatır
-2. **Bilgi Toplama** — Bot sorular sorarak detayları netleştirir (model, format, süre)
-3. **Viral Prompt Üretimi** — 21 kanıtlanmış senaryo havuzu + GPT-4.1 zenginleştirme
-4. **Video Üretimi** — Kie AI üzerinden Seedance 2.0 veya Veo 3.1 ile video üretir
-5. **Birleştirme** — Çoklu klipleri Replicate API (veya FFmpeg fallback) ile birleştirir
-6. **YouTube Upload** — Data API v3 ile YouTube'a yükler (ENV-based OAuth2)
-7. **Loglama** — Notion'a detaylı pipeline kaydı yazar
+1. **🧠 Creative Engine** — 34 hayvan × 79 yetenek = **2686 benzersiz kombinasyon** arasından seçim yapar
+2. **🤖 GPT-4.1** — Absürt, eğlenceli bir senaryo yazar (dinamik klip sayısı + süre kararı)
+3. **✂️ Prompt Simplifier** — Senaryoyu Seedance 2.0'a optimize 15-30 kelimelik prompt'a çevirir
+4. **🛡️ Safety Check** — İçerik güvenliği filtresi
+5. **🎬 Seedance 2.0 (Kie AI)** — Video üretir (5-15 saniye, portrait 9:16)
+6. **🎞️ Replicate Merge** — Çoklu klipleri birleştirir (gerekirse)
+7. **📺 YouTube Upload** — Shorts olarak yükler (public)
+8. **📋 Notion Log** — Tüm süreci kaydeder
 
 ## 🏗️ Mimari
 
 ```
-Kullanıcı → Telegram Bot → GPT-4.1 → Kie AI (Seedance/Veo) → Replicate Merge → YouTube Upload → Notion Log
-```
-
-### Desteklenen Modeller
-
-| Model | Kalite | Fiyat | Kullanım |
-|-------|--------|-------|----------|
-| **Seedance 2.0** | 720p | 💰 Uygun | Genel amaçlı, kamera kontrolü, hızlı |
-| **Veo 3.1** | 1080p | 💰💰💰 Premium | Sinematik, insan yüzleri |
-
-### Telegram Komutları
-
-| Komut | Açıklama |
-|-------|----------|
-| `/start` | Bot hakkında bilgi |
-| `/yeni` | Yeni video talebi başlat |
-| `/durum` | Bot ve pipeline durumu |
-| `/modeller` | Kullanılabilir model bilgisi |
-| 🎤 Sesli mesaj | Whisper ile transkript + işlem |
-
-## 🔧 Ortam Değişkenleri
-
-| Değişken | Zorunlu | Açıklama |
-|----------|---------|----------|
-| `TELEGRAM_YOUTUBE_BOT_TOKEN` | ✅ | YouTube bot token'ı |
-| `OPENAI_API_KEY` | ✅ | GPT-4.1 + Whisper |
-| `KIE_API_KEY` | ✅ | Kie AI video üretimi |
-| `REPLICATE_API_TOKEN` | ✅ | Video birleştirme |
-| `YOUTUBE_CLIENT_ID` | ⚡ | YouTube upload (Railway'de zorunlu) |
-| `YOUTUBE_CLIENT_SECRET` | ⚡ | YouTube upload (Railway'de zorunlu) |
-| `YOUTUBE_REFRESH_TOKEN` | ⚡ | YouTube OAuth2 refresh token (Railway'de zorunlu) |
-| `YOUTUBE_ENABLED` | ❌ | `true` → YouTube'a yükle |
-| `NOTION_SOCIAL_TOKEN` | ❌ | Notion API token |
-| `NOTION_DB_YOUTUBE_OTOMASYON` | ❌ | Notion database ID |
-| `ALLOWED_USER_IDS` | ❌ | Virgülle ayrılmış user ID'ler |
-| `ENV` | ❌ | `production` veya `development` |
-
-## 📁 Dosya Yapısı
-
-```
 YouTube_Otomasyonu/
-├── main.py                          ← Telegram bot entry point
-├── config.py                        ← Fail-fast config  
-├── logger.py                        ← Standart logging
-├── requirements.txt                 ← Pinned bağımlılıklar
-├── nixpacks.toml                    ← Railway build config
+├── main.py                          # CronJob entry point
+├── config.py                        # Fail-fast yapılandırma
+├── logger.py                        # Logging
 ├── core/
-│   ├── conversation_manager.py      ← Chat-based sohbet motoru (GPT-4.1)
-│   └── prompt_generator.py          ← Viral-optimized prompt üretimi
+│   ├── creative_engine.py           # Yaratıcı senaryo motoru (seed havuzları + GPT prompts)
+│   ├── prompt_generator.py          # 3 katmanlı prompt pipeline
+│   └── prompt_sanitizer.py          # İçerik güvenliği filtresi
 ├── infrastructure/
-│   ├── kie_client.py                ← Seedance + Veo unified client
-│   ├── replicate_merger.py          ← Video birleştirme (Replicate + FFmpeg)
-│   ├── youtube_uploader.py          ← YouTube Data API v3 upload
-│   ├── notion_logger.py             ← Notion DB execution tracking
-│   ├── telegram_notifier.py         ← Bildirim gönderici
-│   └── video_downloader.py          ← Video indirici
-└── topics.json                      ← Konu havuzu (ilham)
+│   ├── kie_client.py                # Seedance 2.0 API (video üretim)
+│   ├── replicate_merger.py          # Video birleştirme
+│   ├── video_downloader.py          # Video indirme + cleanup
+│   ├── youtube_uploader.py          # OAuth2 YouTube upload
+│   └── notion_logger.py             # Notion DB tracking + tekrar önleme
+├── nixpacks.toml                    # Railway build config
+└── requirements.txt                 # Python bağımlılıkları
 ```
 
-## 🚀 Deploy
+## ⚙️ Sabit Parametreler (V3)
 
-Railway **Worker** servisi olarak deploy edilir (7/24 polling).
+| Parametre | Değer | Açıklama |
+|-----------|-------|----------|
+| **Model** | `seedance-2` | Sabit — sadece Seedance 2.0 |
+| **Format** | `portrait (9:16)` | Sabit — YouTube Shorts |
+| **Ses** | `Açık` | Sabit — ambient ses, müzik, efektler |
+| **Konuşma** | `Yok` | Sabit — global kitle, dil bariyeri yok |
+| **Klip sayısı** | `1-3` | Dinamik — GPT hikayeye göre karar verir |
+| **Süre/klip** | `5-15s` | Dinamik — GPT senaryoya göre karar verir |
+| **Upload** | `public` | Sabit |
+| **Kategori** | `15 (Pets & Animals)` | Sabit |
+
+## 🔑 Gerekli Ortam Değişkenleri
+
+```env
+# ── AI ──
+OPENAI_API_KEY=sk-...
+KIE_API_KEY=...
+
+# ── Video Birleştirme ──
+REPLICATE_API_TOKEN=...
+
+# ── YouTube OAuth2 ──
+YOUTUBE_CLIENT_ID=...
+YOUTUBE_CLIENT_SECRET=...
+YOUTUBE_REFRESH_TOKEN=...
+YOUTUBE_ENABLED=true
+
+# ── Notion ──
+NOTION_SOCIAL_TOKEN=...
+NOTION_DB_YOUTUBE_OTOMASYON=...
+
+# ── Sistem ──
+ENV=production
+```
+
+## 🚀 Çalıştırma
 
 ```bash
-# Lokal test (dry-run)
-export ENV=development
+# Tam pipeline (CronJob bu komutu çalıştırır)
 python main.py
 
-# Production
-export ENV=production
-python main.py
+# Test (gerçek üretim yapmadan)
+python main.py --dry-run
+
+# Sistem sağlık kontrolü
+python main.py --check
 ```
 
-## 🛡️ Stabilizasyon Geçmişi
+## 🕐 Railway CronJob
 
-| Tur | Tarih | Fix Sayısı | Öne Çıkan |
-|-----|-------|------------|----------|
-| V2.1 | 11 Nisan 2026 | 14 | Viral prompt engine, ENV-based YouTube upload |
-| V2.2 | 12 Nisan 2026 | 2 | FFmpeg PATH resolve, video download retry |
-| V2.3 | 12 Nisan 2026 | 5 | Event loop blocking fix, HTTP client reuse, Notion retry, nixpacks temizliği |
-| V2.4 | 12 Nisan 2026 | 1 | Seedance Türkçe prompt düzeltmesi, İngilizce'ye zorlandı. Kapsamlı stabilizasyon denetimleri (1.1'den 3.3'e) sıfır hatayla geçildi. |
-| V2.5 | 12 Nisan 2026 | 2 | Otonom Gemini Prompt Kalibrasyon script'i (`run_prompt_calibration.py`) eklendi. Gemini A/B test (uzun vs kısa prompt) sonuçlarına göre `prompt_generator.py` "Short & Punchy (Kısa-Öz, 15-30 kelime)" formatına odaklanacak şekilde yeniden yazıldı. |
+- **Komut:** `python main.py`
+- **Zamanlama:** `0 14 * * *` (her gün 14:00 UTC = 17:00 TR)
+- **Tip:** CronJob (çalışır, iş bitince kapanır)
 
+## 🛡️ Güvenlik Katmanları
 
----
+1. **GPT Pre-flight Check** — Riskli prompt'u Kie AI'a göndermeden yakalar
+2. **Content Filter Retry** — Reddedilen prompt'u GPT ile yeniden yazar (2x)
+3. **Senaryo Retry** — Tüm prompt denemeleri başarısız olursa farklı senaryo seçer (3x)
+4. **Prompt Sanitizer** — Tehlikeli kelimeleri otomatik değiştirir
 
-*Antigravity V2 — Enterprise standardında.*
+## 📊 Tekrar Önleme
+
+- Kullanılan `hayvan|yetenek` kombinasyonları Notion DB'de `Combo Key` alanında saklanır
+- Her çalışmada son 60 günün geçmişi sorgulanır
+- **2686 kombinasyon** — yıllar boyunca tekrarsız içerik garanti
+
+## 📝 Notion DB Alanları
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| Video Adı | Title | YouTube başlığı |
+| Durum | Select | Pipeline durumu |
+| Model | Select | seedance-2 |
+| Tetikleyici | Select | "auto" |
+| Konu | Rich Text | Senaryo özeti |
+| Prompt | Rich Text | İlk sahne promptu |
+| Combo Key | Rich Text | "animal\|talent" — tekrar önleme |
+| Klip Sayısı | Number | 1-3 |
+| Video URL | URL | CDN link |
+| YouTube URL | URL | Shorts link |
+| Tarih | Date | Üretim tarihi |
+| Süre (sn) | Number | Pipeline süresi |
+| Hata | Rich Text | Varsa hata mesajı |
+| Güvenlik | Rich Text | Safety telemetrisi |
