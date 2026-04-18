@@ -61,8 +61,8 @@ eCom_Reklam_Otomasyonu/
 ```
 /start → Hoş geldin mesajı
    ↓
-CHATTING: Doğal sohbetle bilgi toplama
-   → Marka adı, ürün, fotoğraf, konsept, süre, format, dil
+CHATTING: Kullanıcı sadece link/ürün adı/ürün görseli paylaşır
+   → AI (Süre, Çözünürlük, Dil, Reklam Senaryosu) gibi değerleri ZORLAMADAN ve SORU SORMADAN otonom tahmin eder. Sadece gerekirse format sorar.
    ↓
 RESEARCHING: Perplexity + GPT Vision
    ↓
@@ -206,6 +206,7 @@ python test_bot.py
 
 | Tarih | Değişiklik |
 |----------|------------|
+| 2026-04-18 | **v2.7 Otonomlaştırma** — ChatGPT Promptu otonomlaştırıldı, video süresi, reklam konsepti, dil ve çözünürlük için gereksiz sorular kaldırılıp sistemin kendisinin inisiyatif alması sağlandı. Karşılama akışı kısaltıldı. |
 | 2026-04-14 | **v2.6 Stabilizasyon** — Kapsamlı kod ve bağımlılık health check çalıştırıldı. Sistem tamamıyla stabil ve architecture-strict hale getirildi. |
 | 2026-04-12 | **v2.5 Yeni Özellik** — Chat Hafızası (Notion Inline Database) entegrasyonu, asenkron konuşma loglaması |
 | 2026-04-12 | **v2.1 Stabilizasyon** — 24 bug fix: event loop blocking aşıldı (asyncio.to_thread), Vision API NoneType retry, session bellek sızıntısı TTL cleanup, Markdown parse fallback, Perplexity exception handling, aspect_ratio/resolution validasyonu, voiceover süre kontrolü, tmpfiles.org fallback, Replicate FileOutput cast, asyncio task hata yutma fix'i |
