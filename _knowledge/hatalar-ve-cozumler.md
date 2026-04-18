@@ -2,540 +2,317 @@
 
 Geçmişte karşılaşılan hatalar ve çözümleri. Aynı sorunu iki kez çözmemek için bu dosyayı güncelliyoruz.
 
-**Format:** Her hata bloğu aşağıdaki yapıyı takip eder.
-
 ---
 
 ## Kie AI
 
 ### Sora 2 Pro Storyboard — Model adı ve format hataları
-- **Sorun:** Model adı `sora-2-pro` değil, tam olarak `sora-2-pro-storyboard` olmalı
-- **Sorun:** `shots` alanı içinde `Scene` büyük S ile yazılmalı
-- **Sorun:** `n_frames` ve `aspect_ratio` zorunlu alan — eksik olunca 422 hatası
-- **Çözüm:**
-  ```json
-  {
-    "model": "sora-2-pro-storyboard",
-    "input": {
-      "n_frames": 150,
-      "aspect_ratio": "16:9",
-      "shots": [{ "Scene": "...", "image_urls": [] }]
-    }
-  }
-  ```
+- **Sorun:** Model adı `sora-2-pro-storyboard` olmalı. `shots` içinde `Scene` büyük S. `n_frames` ve `aspect_ratio` zorunlu — eksik olunca 422.
+- **Çözüm:** Model, input yapısı ve zorunlu alanları doğru ver.
 - **Tarih:** Şubat 2026
-
-### Kie AI — Eski API anahtarları (ÇÖZÜLDÜ)
-- **Sorun:** Eskiden birden fazla key dolaşıyordu (`47b22662...`, `97d226c568...`)
-- **Çözüm:** ✅ Tek aktif key: `0bf01128b0840e22108b95e484b09f76` — tüm dosyalar bununla güncellendi (Mart 2026)
-- **Tarih:** Mart 2026
 
 ### Video üretimi sonrası URL gelmeme
-- **Sorun:** `resultJson` alanı string olarak geliyor, JSON parse edilmeli
+- **Sorun:** `resultJson` alanı string olarak geliyor.
 - **Çözüm:** `json.loads(data["resultJson"])["resultUrls"][0]`
 - **Tarih:** Şubat 2026
+
+### Nano Banana 2 — 400 Bad Request / Resolution Error
+- **Sorun:** API'ye "1K" veya "2k" gibi yanlış formatlanmış resolution gönderildiğinde `taskId` döndürülemiyor.
+- **Çözüm:** `resolution` parametresi küçük harfle (`"1k"`) gönderilmeli. NB2 büyük harfli `"1K"` veya `"2k"` kabul etmiyor.
+- **Tarih:** Nisan 2026
 
 ---
 
 ## Gmail / Outreach
 
-### Gmail MCP — Draft (Taslak) Oluşturma Aracı YOK (KRİTİK)
-- **Sorun:** Kullanıcı "maili drafta yaz" dediğinde `send_gmail_message` kullanıldı → mail placeholder içeriğiyle doğrudan gönderildi.
-- **Kök Neden:** Google Workspace MCP araçları arasında `create_draft` fonksiyonu bulunmuyor. Mevcut araçlar: `send_gmail_message` (gönderir), `search_gmail_messages` (arar), `get_gmail_message_content` (okur).
-- **Çözüm/Kural:**
-  1. Kullanıcı "drafta yaz" veya "taslak oluştur" dediğinde **ASLA `send_gmail_message` kullanma** — bu doğrudan gönderir!
-  2. Bunun yerine mail içeriğini Antigravity artifact'a yaz → kullanıcıya göster → kullanıcı kopyalayıp Gmail'de kendisi draft oluştursun.
-  3. Veya kullanıcıya "Gmail MCP'de draft aracı yok, doğrudan göndermemi ister misin?" diye sor.
+### Gmail MCP — Draft (Taslak) Oluşturma Aracı YOK
+- **Sorun:** `send_gmail_message` direkt gönderir — draft oluşturmaz.
+- **Çözüm:** Kullanıcı "drafta yaz" dediğinde mail içeriğini artifact'a yaz ve göster. ASLA `send_gmail_message` kullanma.
 - **Tarih:** Mart 2026
 
 ### OAuth Token Hatası (`invalid_grant`)
-- **Sorun:** `token.json` süresi dolmuş veya bozulmuş
-- **Çözüm:** `token.json` dosyasını sil → scripti tekrar çalıştır → tarayıcıda yeniden onayla
-- **Tarih:** —
+- **Sorun:** `token.json` süresi dolmuş veya bozulmuş.
+- **Çözüm:** `token.json` dosyasını sil → scripti tekrar çalıştır → tarayıcıda yeniden onayla.
+
+### Gmail OAuth Scope Uyumsuzluğu — `invalid_scope`
+- **Sorun:** Koddaki SCOPES ile token'daki scope eşleşmezse `invalid_scope: Bad Request`.
+- **Çözüm:** SCOPES'u token'daki scope ile eşleştir. Token oluşturulduktan sonra SCOPES değiştirmemeli.
+- **Tarih:** Mart 2026
 
 ---
 
 ## Apify
 
-### Monthly Usage Limit (Rate Limit) Log Maskeleme
-- **Sorun:** Apify kotaları dolduğunda script "Monthly usage hard limit exceeded" hatası alıyordu ancak `apify_client.py` içerisindeki exception block bu özel hatayı (`ApifyApiError`) yakalasa bile `last_error` değişkenine atamıyordu. Sonuç olarak, tüm denemeler tükendiğinde, developer'a "Bilinmeyen bir hata" mesajı e-posta olarak veya Notion'a gönderiliyordu, gerçek kota aşılma sorunu maskeleniyordu.
-- **Çözüm:** `except ApifyApiError as e:` bloğuna `last_error = e` eklendi. Hatayı artık string formatına dahil ederek döner: `Exception: Tüm API anahtarları denendi... Son Hata: {last_error}`.
-- **Kural:** Herhangi bir API için API rotasyon (key rotation) mantığı veya çoklu deneme (try/catch loop) kurduğunda, fırlatılacak en son hatanın (last_error) daima **gerçek** exception objesi veya detaylı mesajini taşıdığından emin ol. Silent failure veya masking olmamalı.
-- **Tarih:** 16 Nisan 2026
+### Monthly Usage Limit — Rate Limit Log Maskeleme
+- **Sorun:** Apify kota aşıldığında `last_error` değişkenine atanmıyordu → "Bilinmeyen hata" mesajı.
+- **Çözüm:** `except ApifyApiError as e:` bloğuna `last_error = e` eklendi.
+- **Kural:** API key rotation kullanırken `last_error` gerçek exception'ı taşımalı. Silent failure yasak.
+- **Tarih:** Nisan 2026
 
 ### Boş sonuç / Actor başlamıyor
-- **Sorun:** Çok kısıtlayıcı filtreler veya hatalı Actor ID
-- **Çözüm:** Actor ID'yi Apify konsolundan kopyala, filtreleri genişlet
-- **Tarih:** —
+- **Çözüm:** Actor ID'yi Apify konsolundan kopyala, filtreleri genişlet.
 
 ### Kredi tükenmesi
-- **Çözüm:** `_knowledge/api-anahtarlari.md` → Apify Hesap 2 (yedek) kullan
-- **Tarih:** —
+- **Çözüm:** `_knowledge/api-anahtarlari.md` → Apify Hesap 2 (yedek) kullan.
 
 ---
 
 ## Telegram Bot
 
 ### Markdown parse hatası
-- **Sorun:** GPT yanıtındaki özel karakterler Telegram'da hata veriyor
-- **Çözüm:** Yanıtı göndermeden önce `escape_markdown()` ile temizle
+- **Çözüm:** Yanıtı göndermeden önce `escape_markdown()` ile temizle veya `parse_mode=None` fallback kullan.
 - **Tarih:** Şubat 2026
 
-### Telegram Conflict — Aynı anda iki bot instance (Railway)
-- **Sorun:** `telegram.error.Conflict: terminated by other getUpdates request` — Railway deploy sırasında eski container henüz durmadan yenisi başlıyor, iki polling çakışıyor
-- **Ek Sorun:** python-telegram-bot "No error handlers are registered" diye ERROR logluyor → self-healer bunu "unknown" sorun olarak algılıyor → sürekli yanlış alarm (false positive)
-- **Çözüm (3 katman):**
-  1. `bot.py` → `error_handler()` fonksiyonu eklendi: Conflict hatalarını INFO, ağ hatalarını WARNING olarak loglar. ERROR çıkmaz.
-  2. `healing_playbook.json` → `telegram_conflict` ve `telegram_no_error_handler` pattern'ları eklendi: `ignore_transient` olarak sınıflandırılır.
-  3. `health_check.py` → `FALSE_POSITIVE_PATTERNS` listesine eklendi: Log taramasında Conflict hataları artık hata sayılmaz.
-- **Kural:** Deploy sonrası oluşan Conflict hatası geçicidir, yeni instance çalışır çalışmaz kendi kendine düzelir. Ayrıca `run_polling(stop_signals=None)` kullanılmalıdır.
+### Conflict — Aynı anda iki bot instance
+- **Sorun:** Deploy sırasında eski container henüz durmadan yenisi başlıyor → iki polling çakışıyor.
+- **Çözüm:** `error_handler()` ile Conflict hatalarını INFO olarak logla. `healing_playbook.json`'a ignore pattern ekle. `run_polling(stop_signals=None)` kullan.
+- **Kural:** Deploy sonrası Conflict geçicidir, otomatik düzelir.
 - **Tarih:** Mart 2026
 
 ---
 
 ## Google Sheets / API Bağlantı Kopmaları
 
-### SSL EOF Hatası — Geçici Ağ Kopması (Tekrarlayan Pattern)
-- **Sorun:** `EOF occurred in violation of protocol (_ssl.c)` — Railway container'larında uzun süre yaşayan bağlantı objeleri bayatlıyor. Google Sheets, Fal AI gibi servislerde tekrarlayan pattern.
-- **Kök neden:** `service` objesi bir kez oluşturulup sonsuza dek kullanılıyor. SSL bağlantısı kopunca retry yok, tüm döngü başarısız oluyor.
-- **Çözüm (Sürdürülebilir retry pattern):**
-  1. Hata mesajında geçici ağ anahtar kelimeleri ara: `eof`, `ssl`, `broken pipe`, `connection reset`, `timeout`, `connection aborted`
-  2. Eşleşirse: `service = None` → `authenticate()` → tekrar dene
-  3. Max 3 deneme, exponential backoff (2s, 4s)
-  4. Geçici değilse doğrudan raise et
-- **Uygulanan dosya:** `Tele_Satis_CRM/sheets_reader.py` → `get_all_rows()` metodu
-- **Kural:** Uzun süre çalışan servislerde (polling loop, webhook listener) dış API çağrılarına **mutlaka** retry + reconnect ekle
+### SSL EOF Hatası — Geçici Ağ Kopması (Tekrarlayan)
+- **Sorun:** Railway'de uzun yaşayan bağlantı objeleri bayatlıyor → SSL EOF.
+- **Çözüm:** Geçici ağ hataları (`eof`, `ssl`, `broken pipe`, `timeout`) yakalandığında `service = None` → `authenticate()` → retry (max 3, exponential backoff).
+- **Kural:** Uzun çalışan servislerde dış API çağrılarına **mutlaka** retry + reconnect ekle.
 - **Tarih:** Mart 2026
 
-### Eksik Sekme Nedeniyle HttpError 400 — Tüm Pipeline Çökmesi (KRİTİK)
-- **Sorun:** `lead-pipeline` projesinde `config.py` içinde tanımlı olan ancak henüz oluşturulmamış bir aya (örn: Nisan 2026) ait sekme adı nedeniyle `HttpError 400 Unable to parse range` hatası alınıyor ve bu hata tüm pipeline'ı çökertiyordu.
-- **Etki:** Yeni bir ay geldiğinde eğer o ayın sheet'i henüz manuel açılmamışsa, varolan sheet'ler (Mart vs.) de okunamadan cron job tamamen duruyordu.
-- **Çözüm:** `sheets_reader.py` içine `HttpError 400 ("Unable to parse range")` için özel bir yakalama eklendi. Sekme bulunamazsa artık fatal hata sayılmıyor, sadece uyarı (`Atlanıyor...`) ile devam ediliyor.
-- **Kural:** Her zaman Safe-by-Design prensibine uy: Beklenen bir hedef yapı yoksa o kısmı nazikçe atla, bir sekme yok diye diğer tüm sağlıklı sekmelerin okunmasını engelleme.
-- **Tarih:** 16 Nisan 2026
+### Eksik Sekme — HttpError 400 Tüm Pipeline Çökmesi
+- **Sorun:** Config'de tanımlı ama henüz oluşturulmamış sheet sekmesi → `Unable to parse range` → tüm pipeline çökme.
+- **Çözüm:** HttpError 400 için özel yakalama: sekme bulunamazsa uyarıyla atla, diğer sağlıklı sekmeleri okumaya devam et.
+- **Tarih:** Nisan 2026
+
+### Shared Tab (Aynı Sayfayı Dinleyen Birden Fazla Proje) State Çakışması
+- **Sorun:** Hem CRM botu hem Notifier botu aynı sayfayı (`0426-Yeni`) okuyup durumlarını `_Meta`'ya yazdıklarında, son yazan ilkini eziyor veya state'ler karışıp spam döngüsüne neden oluyor.
+- **Çözüm:** Kendi state key'lerine bir prefix (`namespace`) ekle (örn. `crm:0426-Yeni` ve `notifier:0426-Yeni`). Ayrıca `_Meta` sekmesini yazarken tüm mevcut alanları (`all_state`) koruyarak (merge) yaz.
+- **Kural:** Merkezi config dosyasından okuyan projeler, "state" (durum) tutuyorsa kendi adıyla bir "namespace / prefix" KULLANMAK ZORUNDADIR. 
+- **Tarih:** Nisan 2026
 
 ---
 
-## Antigravity Chat — Tarayıcı Fallback Sorunu
+## Antigravity Chat
 
-### GEMINI.md Boş → Agent Tarayıcıya Düşüyor (KRİTİK)
-- **Sorun:** Agent, Notion/Railway/GitHub gibi servislere erişirken MCP/API yerine `browser_subagent` kullanarak tarayıcı açıyordu. Kullanıcı "token'ın var" dediğinde düzeliyordu ama her seferinde hatırlatma gerekiyordu.
-- **Kök Neden:** `~/.gemini/GEMINI.md` dosyası **tamamen boştu** (0 byte). Bu dosya her konuşma başında okunur ve servis yönlendirme kurallarını içermesi gerekir. Boş olduğunda agent hangi araçla hangi servise bağlanacağını bilemiyor ve default olarak tarayıcıya düşüyor.
-- **Çözüm:** `GEMINI.md` dosyasına tam servis yönlendirme tablosu eklendi (GitHub → MCP, Notion → API, Railway → GraphQL, Google → MCP vb.). Bu tablo `user_global` kurallarındakiyle aynı ama ek bir güvenlik katmanı sağlıyor.
-- **Kural:** `GEMINI.md` dosyasının **asla boş bırakılmaması** gerekir. Periyodik olarak kontrol et.
-- **Tarih:** Mart 2026
-
-### Gmail OAuth Scope Uyumsuzluğu — `invalid_scope: Bad Request`
-- **Sorun:** `marka-is-birligi` projesinde `gmail_sender.py` → `SCOPES` listesi `gmail.readonly` istiyordu ama OAuth token `gmail.modify` scope'uyla oluşturulmuştu. Google OAuth kütüphanesi scope eşleşmediği için `invalid_scope: Bad Request` hatası verdi.
-- **Kök Neden:** Token oluşturulurken `gmail.modify` (okuma+yazma) scope'u verildi ama kod daha sonra `gmail.readonly` (sadece okuma) isteyecek şekilde değiştirildi. Token scope'ları ⊃ istenen scope'lar olsa bile, eşleşme kontrolü strict.
-- **Çözüm:** `gmail_sender.py` → SCOPES'ta `gmail.readonly` → `gmail.modify` olarak değiştirildi (token'daki scope ile eşleşecek şekilde).
-- **Kural:** OAuth token oluşturulduktan sonra koddaki SCOPES listesi DEĞİŞTİRİLMEMELİ. Değiştirilirse token yeniden oluşturulmalı.
+### GEMINI.md Boş → Agent Tarayıcıya Düşüyor
+- **Sorun:** `GEMINI.md` boşken agent servis yönlendirmelerini bilemiyor → tarayıcıya düşüyor.
+- **Çözüm:** `GEMINI.md` dosyasına tam servis yönlendirme tablosu eklendi. Asla boş bırakılmamalı.
 - **Tarih:** Mart 2026
 
 ---
 
 ## Gemini API
 
-### Gemini Model Deprecated — `404 models/gemini-1.5-pro-latest is not found`
-- **Sorun:** `dolunay-reels-kapak` projesinde `autonomous_cover_agent.py` ve `revision_engine.py` dosyalarında `gemini-1.5-pro-latest` model adı kullanılıyordu. Google bu modeli deprecate etti ve API 404 dönmeye başladı.
-- **Etki:** Kapak üretim pipeline'ı Gemini Vision değerlendirmesi yapamıyordu. Evaluation hep `score: 0` dönüyordu.
-- **Çözüm:** Tüm `gemini-1.5-pro-latest` referansları `gemini-2.0-flash` ile değiştirildi (6 yerde: 4x autonomous_cover_agent.py, 2x revision_engine.py).
-- **Kural:** Gemini model adları deprecate olabilir. Üretim kodunda `-latest` suffix'li model adı KULLANMA — spesifik versiyon kullan. Deprecation durumunda `gemini-2.0-flash` veya `gemini-2.5-pro` gibi güncel modellere geçiş yap.
+### Model Deprecated — `404 models/gemini-1.5-pro-latest`
+- **Çözüm:** Tüm `-latest` referanslarını `gemini-2.0-flash` ile değiştir.
+- **Kural:** Üretim kodunda `-latest` suffix KULLANMA — spesifik model adı kullan.
 - **Tarih:** Mart 2026
 
-### get_logger() TypeError — V2 Geçişi API Uyumsuzluğu
-- **Sorun:** `Dolunay_Otonom_Kapak` V2 deploy sonrası cron çalışırken `TypeError: get_logger() got an unexpected keyword argument 'level'` ile CRASH oldu.
-- **Kök Neden:** `main.py` satır 227'de `get_logger("Otonom_Kapak", level="INFO")` çağrılıyor ama `core/logger.py`'deki `get_logger(name)` fonksiyonu sadece tek parametre (`name`) kabul ediyordu. V2 geçişinde `main.py` güncellenip `level` parametresi eklendi ama `logger.py`'deki fonksiyon imzası güncellenmedi.
-- **Etki:** Her iki servis de (reels-kapak, youtube-kapak) 21 saat boyunca CRASHED kaldı. Pipeline hiçbir kapak üretemedi.
-- **Çözüm:** `core/logger.py` → `get_logger(name, level="INFO")` olarak güncellendi. `level` parametresi opsiyonel, default değeri `"INFO"`.
-- **Kural:** Bir fonksiyonun **çağrı noktasını** değiştirirken, fonksiyonun **tanımını** da kontrol et. Caller ↔ Callee uyumsuzluğu en sık crash nedenidir. Deploy öncesi `python3 -c "from modül import fonksiyon"` testi bunu yakalar.
-- **Tarih:** 11 Nisan 2026
+### get_logger() TypeError — Caller ↔ Callee İmza Uyumsuzluğu (TEKRARLAYAN)
+- **Sorun:** Fonksiyonun çağrı noktası (`level=...`) güncellendi ama tanımı (`get_logger(name)`) güncellenmedi → 21 saat CRASH.
+- **Çözüm:** `get_logger(name, level="INFO")` olarak güncellendi.
+- **Kural:** Caller değiştirirken callee'yi de kontrol et. Import testi bunu YAKALAMAZ — imza doğrulaması da gerekli.
+- **Tarih:** Nisan 2026
 
-### GPT-5 Mini → GPT-4.1 Mini API Geçişi — max_tokens + temperature (KRİTİK)
-- **Sorun:** `eCom_Reklam_Otomasyonu` projesinde tüm OpenAI API çağrıları `400 Bad Request` ile CRASH oluyordu.
-- **Kök Neden (2 ayrı sorun):**
-  1. GPT-5 Mini modeli `max_tokens` parametresini kabul etmiyor, `max_completion_tokens` kullanmak ZORUNLU
-  2. GPT-5 Mini modeli `temperature` parametresinde sadece default değer (1.0) kabul ediyor, özel değer gönderilirse hata veriyor
-- **Ek Sorun:** GPT-5 Mini intermittent olarak boş content (empty string) döndürüyor (~%30). Bu durumda `json.loads("")` → `JSONDecodeError` crash oluyor.
-- **Çözüm:**
-  1. Tüm `max_tokens` → `max_completion_tokens` olarak değiştirildi
-  2. `temperature` parametresi API çağrılarından kaldırıldı
-  3. Boş content için 3 deneme retry mekanizması + null guard eklendi
-  4. 3 denemede de boşsa graceful olarak `{}` dönüyor
-  5. **Model GPT-4.1 Mini'ye geçirildi** — boş content sorunu çözüldü
-- **Kural:** OpenAI model değişikliğinde **API parametre uyumluluğunu kontrol et**. Model değişikliği sonrası tüm dosyalardaki referansları güncelle.
-- **Tarih:** 11 Nisan 2026
+### GPT Model Geçişi — max_tokens + temperature Uyumsuzluğu
+- **Sorun:** GPT-5 Mini `max_tokens` kabul etmiyor (→ `max_completion_tokens`), `temperature` sadece default (1.0), boş content (~%30).
+- **Çözüm:** `max_tokens` → `max_completion_tokens`, temperature kaldır, boş content için 3 retry, model GPT-4.1 Mini'ye geçirildi.
+- **Kural:** Model değişikliğinde API parametre uyumluluğunu kontrol et.
+- **Tarih:** Nisan 2026
 
-### GPT-4.1 Mini Non-JSON Modda Boş Content (Empty Response) Sorunu
-- **Sorun:** `openai_service.py` içinde `chat()` metodu (json_object formatı OLMADAN) kısa system prompt'larda 3 denemeye rağmen sürekli boş content döndürüyordu. Aynı mesajla `chat_json()` (json_object formatı İLE) sorunsuz çalışıyordu.
-- **Kök Neden:** Non-JSON modunda ve çok kısa/minimalist system prompt verildiğinde empty content döndürebiliyor. Bu özellikle `max_tokens < 100` olan çağrılarda belirgin.
-- **Etki:** Bot akışında minimal — çünkü bot kullanıcı mesajlarını `chat_json()` ile işliyor, `chat()` yalnızca `analyze_image()` içinde kullanılıyor.
-- **Çözüm (3 katman):**
-  1. `openai_service.py` → `chat()` ve `chat_json()` metodlarına `effective_max_tokens = max(max_tokens, 100/200)` minimum token sınırı eklendi
-  2. Retry döngüsüne 0.5s bekleme eklendi — rate limit / cache sorunlarını aşmak için
-  3. 3 denemede de boş content gelirse `RuntimeError` fırlatılıyor (sessiz boş string dönmek yerine)
-  4. `conversation_manager.py` → `RuntimeError` yakalanıp kullanıcıya "AI şu an meşgul, tekrar dene" mesajı veriliyor
-- **Kural:** `chat()` çağrılarında system prompt'u detaylı tut ve `max_tokens >= 100` kullan. Mümkünse `json_object` formatını tercih et.
-- **Tarih:** 11 Nisan 2026
+### ElevenLabs Rachel Sesi Kaldırıldı
+- **Çözüm:** "Rachel" → "Sarah" ile değiştirildi. Voice lookup'a fallback eklendi.
+- **Kural:** Hardcoded voice name yerine voice ID tercih et. API'den güncel ses listesini doğrula.
+- **Tarih:** Nisan 2026
 
-### ElevenLabs Rachel Sesi Kaldırıldı — Voice Deprecation
-- **Sorun:** `eCom_Reklam_Otomasyonu` projesinde TTS üretimi başarısız — "Rachel" sesi ElevenLabs API'den kaldırılmış.
-- **Çözüm:** Tüm "Rachel" referansları "Sarah" ile değiştirildi (4 dosya). Voice lookup'a fallback prefix matching eklendi.
-- **Kural:** ElevenLabs sesleri kaldırılabilir. API'den güncel ses listesini çekerek doğrulama yap. Hardcoded voice name kullanma, voice ID tercih et.
-- **Tarih:** 11 Nisan 2026
+### Video Download Retry Eksikliği
+- **Çözüm:** 3 deneme + exponential backoff (2s, 4s) + yarım dosya temizliği. CDN indirmelerine mutlaka retry ekle.
+- **Tarih:** Nisan 2026
 
-### Video Download Retry Eksikliği — SSL/Network Timeout Crash
-- **Sorun:** `YouTube_Otomasyonu` pipeline'ında Kie AI CDN'den video indirirken tek denemeli `requests.get()` kullanılıyordu. Railway ağında SSL EOF, connection reset veya timeout oluştuğunda pipeline direkt crash oluyordu.
-- **Kök Neden:** `video_downloader.py`'de retry mekanizması yoktu. Tek başarısız denemede `RuntimeError` fırlatılıp tüm pipeline sonlanıyordu.
-- **Çözüm:** 3 deneme + exponential backoff (2s, 4s) eklendi. Her başarısız denemede yarım kalmış dosya temizlenip tekrar deneniyor. Son denemede de başarısız olursa `RuntimeError` fırlatılıyor.
-- **Kural:** CDN/dış servislerden büyük dosya (video, görsel) indiren fonksiyonlara **mutlaka** retry + cleanup mekanizması ekle. Network hataları geçici olabilir.
-- **Tarih:** 12 Nisan 2026
+---
 
-### FFmpeg subprocess PATH Kaybı — Nixpacks Child Process (TEKRARLAYAN)
-- **Sorun:** `replicate_merger.py`'de `ffmpeg` subprocess çağrısı bare binary adıyla (`"ffmpeg"`) yapılıyordu. Railway Nixpacks ortamında parent process PATH'i görür ama subprocess child PATH'i göremeyebilir.
-- **Kök Neden:** Nixpacks, ffmpeg'i `/root/.nix-profile/bin/` altına kuruyor. `shutil.which()` bu PATH'i görebilir ama `subprocess.run`/`create_subprocess_shell` child process her zaman miras alamıyor.
-- **Çözüm:** Modül seviyesinde `_FFMPEG_BIN = shutil.which("ffmpeg") or "ffmpeg"` ile absolute path resolve edilip subprocess çağrılarında bu değişken kullanıldı.
-- **Kural:** **Bu pattern `hatalar-ve-cozumler.md`'de 3. kez tekrarlıyor** (Twitter, LinkedIn, YouTube). Nixpacks'ta sistem binary'leri her zaman `shutil.which()` ile resolve edilmeli. Template'e eklenmiş durumda.
-- **Tarih:** 12 Nisan 2026
+## FFmpeg — Nixpacks PATH Sorunu (3+ PROJEDE TEKRARLAYAN)
+
+> Bu sorun Twitter, LinkedIn ve YouTube projelerinde tekrar tekrar yaşandı. TEK çözüm var.
+
+### Sorun
+Railway Nixpacks `Aptfile`/`apt.txt` dosyalarını YOKSAYAR. ffmpeg'i `/root/.nix-profile/bin/` altına kurar. `shutil.which()` ana process'te bulur ama `subprocess` child process'te bulamayabilir.
+
+### Çözüm (3 katman)
+1. **nixpacks.toml:** `[phases.setup] nixPkgs = ["ffmpeg"]` — `Aptfile`/`apt.txt` kullanma, bulursan SİL
+2. **Absolute path:** `_FFMPEG_BIN = shutil.which("ffmpeg") or "ffmpeg"` → subprocess'te bu değişkeni kullan
+3. **Fail-fast:** `config.py`'da `shutil.which("ffmpeg")` kontrolü — binary yoksa boot'ta çök
+
+### Kurallar
+- Railway'de sistem paketi = SADECE `nixpacks.toml`
+- Sistem binary'leri her zaman `shutil.which()` ile resolve et
+- **Tarih:** Mart-Nisan 2026 (çoklu tekrar)
 
 ---
 
 ## LinkedIn Automation
 
-### LinkedIn Images API URN Format Uyumsuzluğu — v2/assets vs rest/posts (KRİTİK)
-- **Sorun:** `LinkedIn_Text_Paylasim` projesinde görsel+metin postu oluşturma her zaman başarısız. LinkedIn'e hiç görselli post atılamadı.
-- **Kök Neden:** Eski `v2/assets?action=registerUpload` API'si `urn:li:digitalmediaAsset:...` formatında URN döndürüyor, ama yeni `rest/posts` API'si `content.media.id` alanında `urn:li:image:...` formatı bekliyor. Format uyumsuzluğu 4xx hata döndürüyor.
-- **Çözüm:** Görsel upload `rest/images?action=initializeUpload` endpoint'ine migrate edildi. Bu endpoint `urn:li:image:...` formatında URN döndürüyor ve `rest/posts` ile uyumlu.
-- **Kural:** LinkedIn API'da eski (v2) ve yeni (rest) endpoint'ler aynı anda kullanılMAMALI. Her iki operasyon (upload + post) aynı API versiyonundan olmalı.
-- **Tarih:** 11 Nisan 2026
+### Images API URN Format Uyumsuzluğu
+- **Sorun:** Eski `v2/assets` API'si `urn:li:digitalmediaAsset:...` döndürüyor, yeni `rest/posts` `urn:li:image:...` bekliyor.
+- **Çözüm:** Upload'u `rest/images?action=initializeUpload`'a migrate et. Eski ve yeni API'yi karıştırma.
+- **Tarih:** Nisan 2026
 
-### LinkedIn Video Content Filter — Groq LLM Tüm Videoları Reddediyor (KRİTİK)
-- **Sorun:** `LinkedIn_Video_Paylasim` pipeline'ı 7+ gün boyunca hiçbir TikTok videosunu LinkedIn'e paylaşamadı. Groq (llama-3.3-70b) content filter, "moderate" modda bile her videoyu reddetti.
-- **Kök Neden:** "moderate" prompt'taki kriter ("kurumsal olması gerekmez" demesine rağmen) LLM'in yorumlaması çok dardı. "Evcil hayvan koleksiyonu", "casual ve kişisel", "eğlence" gibi sebeplerle hep REJECT kararı verdi.
-- **Çözüm (3 katman):**
-  1. Prompt'lar ultra-esnek yapıldı — moderate şimdi "Diğer HER ŞEYİ KABUL ET" diyor
-  2. Railway env var `LINKEDIN_FILTER_STRICTNESS=relaxed` yapıldı (sadece küfür/nefret/cinsel reddet)
-  3. **Fallback mekanizması** eklendi: Tüm videolar reddedilirse, en düşük güvenle reddedilen ZORLA kabul edilir
-- **Kural:** LLM content filter'ları beklenenden daha kısıtlayıcı olabilir. Her zaman fallback eklenmeli.
-- **Tarih:** 11 Nisan 2026
+### Video Content Filter — Groq LLM Tüm Videoları Reddediyor
+- **Sorun:** "moderate" modda bile LLM her videoyu reddetti (7+ gün paylaşım yok).
+- **Çözüm:** Prompt ultra-esnek yapıldı → `LINKEDIN_FILTER_STRICTNESS=relaxed` → tüm videolar reddedilirse en düşük güvenle reddedilen ZORLA kabul edilir.
+- **Kural:** LLM content filter'larına her zaman fallback ekle.
+- **Tarih:** Nisan 2026
 
-### OpsLogger Queue Flush — Container Exit Before Logs Written
-- **Sorun:** Her iki LinkedIn projesinde ops logları Notion'a ulaşmıyordu. Ops log query'si boş dönüyordu.
-- **Kök Neden:** `ops.wait_for_logs()` sadece `main.py`'deki Pipeline OpsLogger instance'ını bekliyordu. Core modüllerdeki (LinkedinPublisher, ContentFilter vb.) OpsLogger instance'ları ayrı queue'lara sahip ve bunlar flush edilmeden container kapanıyordu.
-- **Çözüm:** `wait_all_loggers()` fonksiyonu eklendi — `_instances` dict'teki TÜM OpsLogger'ların queue'larını boşaltır. Container kapanmadan önce bu çağrılıyor.
-- **Kural:** CronJob projelerinde `ops_logger` birden fazla instance oluşturuyorsa (farklı component adlarıyla), exit'ten önce `wait_all_loggers()` çağır.
-- **Tarih:** 11 Nisan 2026
+### OpsLogger Queue Flush — Exit Before Logs Written
+- **Çözüm:** `wait_all_loggers()` fonksiyonu eklendi — TÜM OpsLogger instance'larının queue'larını boşaltır.
+- **Kural:** CronJob'larda birden fazla OpsLogger varsa exit'ten önce `wait_all_loggers()` çağır.
+- **Tarih:** Nisan 2026
 
-### Video Yükleme Timeout Hatası — 5 Dakika Sınırı
-- **Sorun:** `linkedin-video-cron` büyük/yavaş işlenen videoları yüklerken 5 dakikalık timeout sınırına takılıyor ve `Video processing timed out after 5 minutes.` hatasıyla başarısız oluyordu.
-- **Çözüm:** `linkedin_publisher.py` içerisindeki video processing pooling döngüsü `max_retries` değeri 30'dan (5 dk) 90'a (15 dk) çıkarıldı.
-- **Kural:** LinkedIn'in video işleme süreleri asenkron olarak daha uzun sürebilir. Polling işlemlerine en az 10-15 dk esneklik ver.
-- **Tarih:** 16 Nisan 2026
+### Video Yükleme Timeout — 5 Dakika Yetersiz
+- **Çözüm:** Polling `max_retries` 30'dan (5dk) 90'a (15dk) çıkarıldı. LinkedIn video işleme asenkron — en az 15dk ver.
+- **Tarih:** Nisan 2026
+
 ---
 
-## Kod-Repo Senkronizasyon Hataları
+## Kod-Repo Senkronizasyon
 
-### Config.DEDUP_WINDOW_DAYS AttributeError — Lokal ↔ Production Uyumsuzluğu (KRİTİK)
-- **Sorun:** `notion_writer.py` → `Config.DEDUP_WINDOW_DAYS` kullanıyordu ama `config.py`'da bu attribute henüz tanımlanmamıştı. Lokal'de güncellenmiş ama ayrı GitHub repo'suna (`dolunayozerennn/tele-satis-crm`) push edilmemişti. Railway eski commit (12a9d2b) üzerinden çalışıyordu.
-- **Etki:** 1 gün boyunca lead'ler Notion'a yazılamadı → ciddi maddi kayıp
-- **Kök Neden (3 katman):**
-  1. Lokal kod değiştirildi ama ayrı repo'ya push edilmedi
-  2. Deploy workflow'unda "push öncesi import testi" adımı yoktu → `AttributeError` deploy edilmeden yakalanamadı
-  3. Health check sadece deployment status'e bakıyordu → SUCCESS durumundaki runtime error'ları tespit edemiyordu
-- **Çözüm (3 katmanlı savunma eklendi):**
-  1. `/canli-yayina-al` workflow'una **zorunlu pre-push kod sağlık kontrolü** eklendi (import zinciri testi + unit test çalıştırma)
-  2. `/canli-yayina-al` workflow'una **zorunlu post-deploy smoke test** eklendi (log'lardan fatal error tarama)
-  3. `healing_playbook.json`'a `runtime_code_error` pattern'i eklendi (AttributeError, ImportError → alert_only, redeploy yapma)
-- **Kural:** Her push'tan önce `python3 -c "import modül"` ile tüm modüllerin import edilebilmesi doğrulanmalı. Her deploy sonrası loglar smoke test ile taranmalı.
+### Config.DEDUP_WINDOW_DAYS AttributeError — Lokal ↔ Production Uyumsuzluğu
+- **Sorun:** Lokal'de kod değiştirildi ama push edilmedi → Railway eski commit çalıştırdı → 1 gün lead kaybı.
+- **Çözüm:** Pre-push import testi + post-deploy smoke test + healing playbook `runtime_code_error` pattern'i eklendi.
+- **Kural:** Her push'tan önce import testi, her deploy sonrası log taraması ZORUNLU.
 - **Tarih:** Mart 2026
 
-### MİMARİ DEÐİŞİKLİK — Native Mono-Repo Geçişi (Lokal ↔ GitHub ↔ Railway)
-- **Eski Sorun:** Tüm projeler lokal'de `antigravity-egitim` mono-repo'sunun içinde yaşıyor (`Projeler/XXX/`). Ama geçmişte Railway her proje için ayrı bir GitHub reposu izliyordu (`dolunayozerennn/tele-satis-crm` vb.). Bu yüzden `/tmp/` dizinine klonlayıp dosyaları `cp` ile kopyaladığımız tehlikeli bir senkronizasyon workaround'umuz vardı. Bu durum `AttributeError` gibi cross-repo bağımlılık çöküşlerine ve veri kayıplarına (silinen dosyaların production'da silinmemesi) yol açıyordu.
-- **Etki:** Güvenilmez deploys, git conflictleri ve çakışan history'ler.
-- **Kök Neden:** Sistemin "Mono-repo" geliştirme yapıp "Multi-repo" production beklemesi.
-- **ÇÖZÜM (YENİ MİMARİ): Native Mono-Repo Mimarisi**
-  1. **Artık hiçbir projeyi dışarı taşıyıp ayrı repoya push KESİNLİKLE YAPILMIYOR.** Tamamen iptal edildi.
-  2. Tüm projenin ana omurgası `dolunayozerennn/antigravity-egitim` adlı **tek bir GitHub reposudur**.
-  3. Yeni bir Railway projesi/servisi kurulduğunda veya güncellendiğinde, bu TEK repo (`dolunayozerennn/antigravity-egitim`) Railway'e bağlanır.
-  4. Railway üzerindeki ilgili servisin ayarlarından **"Root Directory"** parametresi ilgili proje klasörü (örn: `Projeler/Tele_Satis_CRM`) olarak ayarlanır.
-  5. Gereksiz trigger'ları (diğer projelerin de deploy edilmesini) engellemek için Watch Paths özelliğinde sadece o dizine izin verilir (`/Projeler/Tele_Satis_CRM/**`).
-- **Kural:** Herhangi bir proje için kod deploylanacaksa sadece `git push origin main` yapılır. Kopya `cp` scriptleri ASLA kullanılmaz.
+### Native Mono-Repo Mimarisi (MİMARİ KARAR)
+- **Eski sorun:** Ayrı GitHub repo'larına kopyalama → sync sorunları, conflict'ler, veri kaybı.
+- **Yeni mimari:** Tek repo `dolunayozerennn/antigravity-egitim`. Railway'de Root Directory + Watch Paths ile proje izolasyonu.
+- **Kural:** `git push origin main` yeterli. Kopya `cp` scriptleri ASLA kullanılmaz.
 - **Tarih:** Mart 2026
 
-### macOS Sandbox EPERM & npm Cache Hataları (Lokal Build)
-- **Sorun:** Projede `npm run build` veya `npm install` denerken `npm error code EPERM` / `lstat` veya `operation not permitted` tarzı Terminal hataları ile karşılaşılıyor. Bağımlılıklar yüklenemiyor veya klasörler silinemiyor.
-- **Kök Neden:** macOS üzerindeki Cursor Sandbox ortamı veya iCloud kilitleri `.DS_Store`, `node_modules` vs. dosyalara donanımsal yetki kilitleri koyuyor. Bu sistem seviyesi bir kısıtlamadır; **koddaki veya paketteki bir bozukluk değildir**.
-- **Etki:** Bilgisiz bir LLM/Agent, uygulamanın çalışmadığını sanıp kodu downgrade etmeye teşebbüs edebilir veya Vite vb. eski mimarilere (rollback) dönmek için kod tabanını mahvedebilir.
-- **Çözüm / Kural:** 
-  1. Hata görüldüğünde koda (`package.json`, klasör yapılanması vb.) **KESİNLİKLE MÜDAHALE ETME**, package sürümleriyle veya import yollarıyla OYNAMA.
-  2. Mimariyi veya kodun stabilité durumunu, lokal build hatalarından değil sadece remote (Netlify vb.) Deployment Log'larından yorumla. Kod dışarıda çalışıyorsa sorun yoktur.
-  3. Silemediğin eski kilitli klasör kalıntılarına rastlarsan zorla silmek yerine `mv` komutuyla `_arsiv/` dizinine taşı.
+### macOS Sandbox EPERM & npm Cache
+- **Sorun:** Lokal build'de `EPERM` / `operation not permitted` hataları.
+- **Çözüm:** Koda DOKUNMA — sorun sandbox'ta. Kod sağlığını remote deploy loglarından yorumla. Kilitli klasörleri `mv` ile taşı.
 - **Tarih:** Mart 2026
 
 ---
 
 ## Railway Deploy
 
-### Sandbox, Shell Script'ten Dosya Okumasını Engeller
-- **Sorun:** `cat`, `grep` gibi komutlarla `_knowledge/api-anahtarlari.md` veya herhangi bir dosyadan token okunamıyor. `Operation not permitted` hatası veriyor.
-- **Neden:** Antigravity sandbox ortamında çalışıyor. Sandbox, güvenlik nedeniyle shell komutlarının dosya okuma yetkisini kısıtlıyor.
-- **Yanlış Çözümler (Çalışmayan):**
-  - Shell script ile `cat dosya.txt` → ❌ İzin hatası
-  - Gizli dosya `.railway-token` oluşturma → ❌ Gizli dosyalar ekstra kısıtlı
-  - Farklı klasörlere token dosyası koyma → ❌ Tüm klasörler kısıtlı
-- **Doğru Çözüm:** Antigravity'nin kendi `view_file` tool'unu kullanarak dosyayı oku, sonra token'ı komutu çalıştırırken `RAILWAY_TOKEN="okunan_token"` olarak enjekte et.
-- **Kural:** Token gereken her işlemde `view_file` → `_knowledge/api-anahtarlari.md` → Token'ı oku → Komuta prefix olarak ekle.
+### Sandbox Shell Script Token Okuma Engeli
+- **Çözüm:** `cat`/`grep` yerine `view_file` ile token oku → komutu çalıştırırken enjekte et.
 - **Tarih:** Mart 2026
 
-### Railway CLI "Unauthorized" ama GraphQL API Çalışıyor
-- **Sorun:** `railway whoami`, `railway list` gibi CLI komutları `Unauthorized` hatası veriyor ama aynı token ile Railway GraphQL API'ye `curl` ile istek atınca sorunsuz çalışıyor.
-- **Neden:** Railway CLI'ın eski versiyonu (veya workspace-scoped token'lar) bazı CLI komutlarıyla uyumsuz olabiliyor. CLI dahili olarak farklı bir auth endpoint kullanıyor.
-- **Çözüm:** CLI çalışmazsa **GraphQL API fallback** kullan:
-  ```bash
-  curl -s -X POST https://backboard.railway.app/graphql/v2 \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer TOKEN" \
-    -d '{"query": "{ projects { edges { node { id name } } } }"}'
-  ```
+### CLI "Unauthorized" — GraphQL API Fallback
+- **Çözüm:** CLI çalışmazsa GraphQL API kullan: `curl -X POST https://backboard.railway.app/graphql/v2`
 - **Tarih:** Mart 2026
 
-### Yeni Railway Token Propagation Gecikmesi
-- **Sorun:** Yeni oluşturulan Railway token'ı ilk dakikalarda `Invalid RAILWAY_TOKEN` hatası verebilir.
-- **Çözüm:** 3-5 dakika bekleyip tekrar dene. Token sonunda aktif olur.
+### Yeni Token Propagation Gecikmesi
+- **Çözüm:** 3-5 dakika bekleyip tekrar dene.
+
+### BASH_SOURCE Sandbox'ta Boş
+- **Çözüm:** Sabit yol (hardcoded path) kullan.
+
+### Path.parents IndexError — Container Crash
+- **Sorun:** Railway'de kısa yol (`/app/...`) nedeniyle `parents[N]` IndexError.
+- **Çözüm:** `parents[N]` yerine enumerate ile güvenli erişim. Uzunluk kontrolü zorunlu.
 - **Tarih:** Mart 2026
 
-### BASH_SOURCE Sandbox'ta Boş Dönüyor
-- **Sorun:** `bash script.sh` ile çalıştırılan script'lerde `${BASH_SOURCE[0]}` boş dönüyor. Bu da `SCRIPT_DIR` doğru hesaplanamıyor.
-- **Çözüm:** `BASH_SOURCE` yerine sabit yol (hardcoded path) kullan.
+### API İsteklerinde Timeout Eksikliği — Sonsuz Bekleme
+- **Çözüm:** Tüm dış API çağrılarına `timeout=30` (veya `60`) ekle. Python requests varsayılan timeout'suz çalışır.
+- **Kural:** İstisnasız her dış istek `timeout` parametresi almalı.
 - **Tarih:** Mart 2026
 
-### Path.parents IndexError — Railway Container Crash
-- **Sorun:** `pathlib.Path.parents[2]` Railway'de `IndexError: 2` fırlatıyor. `/app/shared/dosya.py` yolunun sadece 2 parent'i var (`/app/shared/`, `/app/`). `parents[2]` mevcut değil.
-- **Kök Neden:** Modül seviyesinde (top-level) `try-except` olmadan parent dizin aranıyordu. Lokal'de yol derin (`/Users/.../Projeler/Swc_Email_Responder/shared/`) olduğu için çalışıyordu, Railway'de kısa yol (`/app/shared/`) crash etti.
-- **Çözüm:** `parents[N]` yerine `[p for i, p in enumerate(Path.parents) if i < 4]` ile güvenli erişim kullan. IndexError riskini ortadan kaldırır.
-- **Kural:** Railway container'larında dosya yolu `/app/` altındadır. `Path.parents` index erişimlerinde **mutlaka** uzunluk kontrolü yap veya enumerate ile güvenli eriş.
+### SMTP Port Engellemesi — Email Gönderimi
+- **Sorun:** Railway SMTP portlarını (25, 465, 587) engeller → `smtplib` çalışmaz.
+- **Çözüm:** `smtplib` kaldır → Gmail API (OAuth2) kullan. `Lead_Notifier_Bot` referans implementasyon.
+- **Kural:** Railway'de ASLA `smtplib` kullanma.
 - **Tarih:** Mart 2026
 
-### ⚠️ API İsteklerinde Timeout Eksikliği — Sonsuz Bekleme (Hang) (KRİTİK)
-- **Sorun:** Pipeline (örn. Blog Yazıcı, Kapak Üretici) Notion, ImgBB, GitHub veya Kie AI'a `requests.get()` veya `requests.post()` atıyor ancak `timeout` parametresi verilmemiş. Railway ağında geçici bir kopukluk veya hedefin yanıt vermemesi durumunda container **sonsuza kadar** o satırda asılı kalıyor (hang). Cron job'ların CPU süresini tüketip kilitlenmesine neden oluyor.
-- **Kök Neden:** Python `requests` kütüphanesi varsayılan olarak timeout'suz (sonsuz bekleme) çalışır.
-- **Çözüm:** Tüm dış API çağrılarına zorunlu olarak `timeout=30` (veya `60`) eklendi.
-  ```python
-  resp = requests.post("https://api.github.com/...", headers=headers, json=data, timeout=30)
-  ```
-- **Kural:** Herhangi bir dış servise istek atan her fonksiyona **istisnasız** `timeout` parametresi ekle.
+### Ephemeral Filesystem — CSV Kalıcılık
+- **Çözüm:** `ensure_csv_exists()` ile otomatik oluşturma veya harici storage kullan. `.gitignore`'daki dosyalar deploy'dan sonra kaybolur.
 - **Tarih:** Mart 2026
+
+### Nixpacks Docker Build Cache — python311
+- **Çözüm:** `nixpkgs`'e `python311` explicit ekle + sıfırdan temiz deploy at (`usePreviousImageTag: false`).
+- **Tarih:** Nisan 2026
 
 ---
 
 ## MCP Bağlantı Sorunları
 
-### GitHub MCP Server Bağlanmıyor — Docker Daemon + macOS Sandbox
-- **Sorun:** GitHub MCP, `mcp_config.json`'da Docker container olarak yapılandırılmıştı (`ghcr.io/github/github-mcp-server`). Docker Desktop kapalı olduğunda MCP asla başlatılamıyordu. Tüm `mcp_github-mcp-server_*` araçları devre dışı kalıyordu.
-- **Ek Sorun:** `~/.npm` klasöründe macOS'un `com.apple.provenance` extended attribute'u vardı. Bu, sandbox ortamından çalışan npm süreçlerinin yeni paket indirmesini engelliyordu (EPERM hatası).
-- **Çözüm (2 adım):**
-  1. Terminal'den `sudo chown -R $(whoami) ~/.npm && xattr -dr com.apple.provenance ~/.npm` çalıştırıldı
-  2. `mcp_config.json`'da GitHub MCP, Docker'dan npx tabanlıya geçirildi: `"command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"]`
-  3. Sandbox npm cache sorunu için `"npm_config_cache": "/tmp/npm-cache"` env değişkeni eklendi
-- **Kural:** MCP sunucularını mümkünse Docker yerine npx/uvx ile çalıştır — Docker Desktop bağımlılığını ortadan kaldırır.
+### GitHub MCP — Docker Daemon Bağımlılığı
+- **Çözüm:** Docker'dan npx tabanlıya geç: `"command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"]`. npm cache için `/tmp/npm-cache` kullan.
 - **Tarih:** Mart 2026
 
-### Notion MCP — Sayfa/Veritabanı 404 Hatası (ERİŞİM İZNİ EKSİK)
-- **Sorun:** Notion MCP bağlantısı (`API-get-self`) başarılı dönüyor ama belirli sayfa veya veritabanına erişmeye çalışınca `404 Not Found` veya `Could not find ...` hatası alınıyor.
-- **Kök Neden:** Notion entegrasyonları (örn. "antigravity" botu) **sadece kendilerine açıkça paylaşılmış** sayfalara erişebilir. Workspace'teki tüm sayfaları otomatik göremez. Kullanıcı yeni bir sayfa oluşturduğunda veya mevcut bir sayfayı paylaşmak istediğinde, o sayfayı entegrasyonla paylaşmamış olabilir.
-- **Belirtiler:**
-  - `API-get-self` başarılı (bot bilgisi döner) ama `API-retrieve-a-page`, `API-query-data-source` hata verir
-  - `API-post-search` ile aratıldığında sayfa sonuçlarda çıkmaz
-  - Aynı workspace'teki bazı sayfalar çalışır, bazıları 404 verir
-- **Çözüm (Kullanıcı Tarafında — 30 saniye):**
-  1. Notion'da ilgili sayfaya git
-  2. Sağ üst köşede `...` (üç nokta) menüsüne tıkla
-  3. **"Connections"** (veya "Bağlantılar") seçeneğini bul
-  4. **"antigravity"** entegrasyonunu ekle (ara ve seç)
-  5. Eğer sayfa bir inline database içeriyorsa, **üst sayfa (parent page)** paylaşılmalı — sadece inline DB paylaşılamaz
-  6. Alt sayfalar (child pages) otomatik olarak üst sayfanın iznini miras alır
-- **Tanı Prosedürü (AI Tarafında):**
-  1. Önce `API-get-self` ile bağlantı sağlığını doğrula
-  2. Sonra `API-post-search` ile sayfayı ada göre arat
-  3. Arama sonucu boşsa → paylaşım eksik → kullanıcıya Connection ekleme talimatı ver
-  4. Arama sonucu varsa → dönen `id` ile doğrudan erişmeyi dene
-- **Önleme:** Yeni bir Notion sayfası/veritabanı ile çalışılacağında, **ilk iş** sayfanın "antigravity" entegrasyonuyla paylaşılıp paylaşılmadığını `API-post-search` ile kontrol et. Bulunamazsa kullanıcıya hemen sor — saatlerce 404 debug etme.
+### Notion MCP — 404 Hatası (Erişim İzni Eksik)
+- **Sorun:** Entegrasyon sadece paylaşılmış sayfalara erişebilir.
+- **Çözüm:** Notion sayfasında `...` → Connections → "antigravity" ekle. Alt sayfalar üst iznini miras alır.
+- **Tanı:** `API-get-self` başarılı ama `API-retrieve-a-page` 404 → paylaşım eksik.
 - **Tarih:** Mart 2026
 
-### Notion MCP — Çift Workspace (İki Farklı Token) Karışıklığı
-- **Sorun:** Antigravity sisteminde iki ayrı Notion workspace var. MCP `notion-mcp-server` sadece **bir** workspace'e bağlı olabilir. Yanlış workspace'teki sayfaya erişmeye çalışınca 404 alınır.
-- **Mevcut MCP Bağlantısı:** `Dolunay Özeren's Notion` workspace'i (antigravity botu)
-- **Diğer Workspace:** `NOTION_SOCIAL_TOKEN` ile erişilen sosyal medya workspace'i (Ceren, Video İçerik Akışları vb.)
-- **Çözüm:** MCP ile erişilemeyen workspace'teki verilere `curl` + `NOTION_SOCIAL_TOKEN` ile ulaş (Python script veya `run_command`). MCP sadece antigravity botunun bağlı olduğu workspace'i görür.
-- **Kural:** `calisma-kurallari.md`'deki Notion Workspace Yapısı tablosuna bak — hangi DB'nin hangi workspace'te olduğunu kontrol et.
-- **Tarih:** Mart 2026
-
----
-
-## Railway — SMTP Port Engellemesi (KRİTİK)
-
-### `[Errno 101] Network is unreachable` — SMTP Email Gönderimi
-- **Sorun:** Railway container'larında `smtplib.SMTP_SSL("smtp.gmail.com", 465)` çağrısı `[Errno 101] Network is unreachable` hatası veriyor. Bu hata `Isbirligi_Tahsilat_Takip` ve `Akilli_Watchdog` projelerinde e-posta gönderimini haftalarca engelledi.
-- **Kök Neden:** Railway, abuse önleme nedeniyle SMTP portlarını (25, 465, 587) engeller. `smtplib` ile e-posta göndermek mümkün değil.
-- **Etki:** `Isbirligi_Tahsilat_Takip` 7+ gün boyunca 17 markaya ödeme hatırlatması gönderemedi. `Akilli_Watchdog` sağlık raporu e-postaları hiç ulaşmadı.
-- **Çözüm:** `smtplib` tamamen kaldırıldı → Gmail API (OAuth2) ile değiştirildi:
-  1. `GOOGLE_OUTREACH_TOKEN_JSON` env variable'ı Railway'e eklendi
-  2. `google.oauth2.credentials.Credentials.from_authorized_user_info()` ile token parse
-  3. `googleapiclient.discovery.build('gmail', 'v1')` ile service oluştur
-  4. `base64.urlsafe_b64encode()` ile email encode → `users().messages().send()` 
-- **Kural:** Railway'de **ASLA** `smtplib` kullanma. Email göndermek için **Gmail API (OAuth2)** kullan. `Lead_Notifier_Bot` referans implementasyon.
-- **Dikkat:** `variableUpsert` mutation'ı ile JSON env variable eklerken çift-escape sorunu olabilir. Token'ı her zaman doğrudan `json.dumps(token_string)` ile escape et, ek escape YAPMA.
-- **Tarih:** Mart 2026
-
-### markalar.csv Kalıcılık Sorunu — Railway Ephemeral Filesystem
-- **Sorun:** `Marka_Is_Birligi` projesinde `data/markalar.csv` dosyası `.gitignore`'da olduğu için Railway'e deploy edilmiyordu. Her deploy sonrası `[FOLLOWUP] markalar.csv bulunamadı!` hatası.
-- **Kök Neden:** Railway container'ları ephemeral (geçici) dosya sistemi kullanır. `.gitignore` ile hariç tutulan dosyalar deploy'dan sonra mevcut olmaz.
-- **Çözüm:** `ensure_csv_exists()` fonksiyonu eklendi — modül yüklendiğinde `data/` klasörü ve `markalar.csv` header-only olarak otomatik oluşturulur.
-- **Kural:** Railway'de runtime'da oluşturulan/güncellenen veri dosyaları **deploy sonrası kaybolur**. Ya otomatik oluşturma mekanizması ekle, ya da harici storage (Google Drive, DB) kullan.
+### Notion MCP — Çift Workspace Karışıklığı
+- **Sorun:** MCP tek workspace'e bağlı. Diğer workspace'e erişim yok.
+- **Çözüm:** MCP dışındaki workspace'lere `curl` + `NOTION_SOCIAL_TOKEN` ile ulaş.
 - **Tarih:** Mart 2026
 
 ---
 
 ## Servis İzleyici — Self-Healer
 
-### Cron Job'lar "unknown" Olarak Raporlanıyor
-- **Sorun:** `dolunay-reels-kapak` ve `revizyon-cron` servisleri Railway Cron Job'a geçirilmişti ama `deploy-registry.md`'deki platform bilgisi `railway` olarak kalmıştı. `health_check.py` sadece `platform == "railway"` olan servisleri kontrol ediyordu → `railway-cron` platformundaki servisler atlanıyordu → self-healer bunları "unknown" olarak raporluyordu.
-- **Kök Neden:** Railway Cron geçişi sırasında deploy-registry platformu güncellenmemiş + health_check.py filtresinde `railway-cron` eksikti.
-- **Çözüm (2 adım):**
-  1. `deploy-registry.md` → `dolunay-reels-kapak` ve `revizyon-cron` platformları `railway` → `railway-cron` olarak güncellendi
-  2. `health_check.py` → satır 681: `p.get("platform") == "railway"` → `p.get("platform") in ("railway", "railway-cron")` olarak genişletildi
-- **Kural:** Bir servisi Railway Cron Job'a taşırken **mutlaka** `deploy-registry.md`'deki platform bilgisini `railway-cron` olarak güncelle.
+### Cron Job'lar "unknown" Raporlanıyor
+- **Çözüm:** `deploy-registry.md`'de platform `railway` → `railway-cron`. `health_check.py` filtresine `railway-cron` ekle.
 - **Tarih:** Mart 2026
 
----
-
-## Railway — Nixpacks vs Aptfile/apt.txt Uyumsuzluğu (KRİTİK SİSTEMİK HATA)
-
-### `FileNotFoundError: [Errno 2] No such file or directory: 'ffmpeg'` — Sistem Bağımlılıkları Yüklenmiyor
-- **Sorun:** `LinkedIn_Video_Paylasim` ve `Twitter_Video_Paylasim` projelerinde video pipeline her çalıştığında `FileNotFoundError: ffmpeg` hatası alıyordu. Projede `Aptfile` ve `apt.txt` dosyaları `ffmpeg` satırıyla mevcut olmasına rağmen Railway `ffmpeg`'i yüklemiyordu.
-- **Kök Neden:** Railway, **Nixpacks builder** kullanır. Nixpacks, Heroku buildpack'lerine özgü `Aptfile` ve `apt.txt` dosyalarını **tamamen yoksayar**. Bu dosyaların projede bulunması "ayar yapılmış" yanılgısı yaratır (false confidence) ama aslında hiçbir işe yaramaz.
-- **Etki:** Video pipeline günlerce çalışamadı. Aynı hata tekrar tekrar yapıldı çünkü yanıltıcı dosyalar "zaten ayarlanmış" hissi veriyordu.
-- **Çözüm (6 Katmanlı Savunma):**
-  1. **Legacy temizlik:** Tüm `Aptfile` ve `apt.txt` dosyaları silindi
-  2. **nixpacks.toml:** Doğru yapılandırma dosyası `[phases.setup] nixPkgs = ["ffmpeg"]` ile oluşturuldu
-  3. **Fail-fast:** `config.py`'da `shutil.which("ffmpeg")` kontrolü eklendi — uygulama başlarken binary yoksa anında çöker
-  4. **V2 Starter Template:** `_check_system_deps()` metodu ve `nixpacks.toml` şablonu eklendi
-  5. **Deploy Workflow:** Adım 2.5.7 Nixpacks-farkındalıklı sistem bağımlılığı kontrolü olarak güncellendi
-  6. **Healing Playbook:** `missing_ffmpeg` pattern'i düzeltildi (eski yanlış tavsiye kaldırıldı)
-- **Kurallar (KALICI):**
-  1. Railway'de sistem paketi yüklemek için **SADECE** `nixpacks.toml` kullanılır
-  2. `Aptfile` ve `apt.txt` dosyaları oluşturulmaz — bulunursa silinir
-  3. Sistem bağımlılığı gerektiren her projede `config.py`'da `_check_system_deps()` ile fail-fast kontrolü ZORUNLUDUR
-  4. Deploy workflow'unda (Adım 2.5.7) nixpacks.toml varlığı ve legacy dosya kontrolü yapılır
+### Watchdog — Health Check False Positive Döngüsü
+- **Sorun:** Watchdog kendi hata raporlamalarını tespit edip kendisinin çöktüğünü sanıyor.
+- **Çözüm:** `ERROR_PATTERNS` / `FALSE_POSITIVE_PATTERNS`'e log prefixini (`OpsLog_Akilli_Watchdog`) yoksayacak kural ekle.
 - **Tarih:** Nisan 2026
-
-### Nixpacks ffmpeg PATH Kaybı — `shutil.which` Bulur Ama `subprocess.run` Bulamaz (ALT SORUN)
-- **Sorun:** `nixpacks.toml` doğru, build SUCCESS, `config.py`'deki `shutil.which("ffmpeg")` fail-fast kontrolü **geçiyor** (BOOT ERROR yok), AMA `video_processor.py`'deki `subprocess.run(["ffmpeg", ...])` çağrısı `FileNotFoundError: [Errno 2] No such file or directory: 'ffmpeg'` hatası veriyor.
-- **Kök Neden:** Nixpacks, ffmpeg'i `/root/.nix-profile/bin/` altına kuruyor. Ana Python process bu PATH'i görüyor (`shutil.which` başarılı), ama `subprocess.run` child process spawn ederken bazı durumlarda nix PATH'i miras alamıyor.
-- **Çözüm:** `video_processor.py`'de bare `"ffmpeg"` string'i yerine modül load sırasında `shutil.which("ffmpeg")` ile resolve edilen **absolute path** kullanılır:
-  ```python
-  import shutil
-  _FFMPEG_BIN = shutil.which("ffmpeg") or "ffmpeg"
-  # subprocess.run([_FFMPEG_BIN, "-y", "-i", ...])
-  ```
-- **Etkilenen Projeler:** `Twitter_Video_Paylasim`, `LinkedIn_Video_Paylasim`
-- **Kural:** Railway/Nixpacks'ta sistem binary'leri (`ffmpeg`, `imagemagick` vb.) her zaman `shutil.which()` ile resolve edilmiş absolute path ile çağrılmalı. Bare binary adı kullanma.
-- **Tarih:** 5 Nisan 2026
-
-### Nixpacks Docker Build Cache Hataları — `python311` Gereksinimi
-- **Sorun:** Railway `deploymentRedeploy` veya `serviceInstanceDeployV2` çağrılarında "Deployment does not have an associated build" dönerek FAILED olması, veya build loglarında nix garbage collection (GC) hatalarına (örneğin JSON decode hataları veya nix path'in temizlenmesi) rastlanması. 
-- **Kök Neden:** Nixpacks'ın standart Python desteğinde bazen paketler GC ile bozuluyor, bu da local runner'ın (Railway Build) container'ı doğru kuramamasına veya build'in direkt fail olmasına sebep oluyor.
-- **Çözüm:** `nixpacks.toml` dosyasında `nixPkgs` array'ine `python311` (veya kullanılan diğer sürüm) paketi EXPLICIT olarak eklenmelidir. Sonrasında sıfırdan (`usePreviousImageTag: false`) temiz bir deploy atılmalıdır.
-  ```toml
-  [phases.setup]
-  nixPkgs = ["...", "python311"]
-  ```
-- **Tarih:** 9 Nisan 2026
 
 ---
 
 ## Netlify / Hosting
 
-### Netlify Free Plan Kredi Tükenmesi — Blog Yazıcı Günlük Deploy (KRİTİK)
-- **Sorun:** Netlify free plan'da 300 kredi/ay var. Her production deploy 15 kredi. Blog Yazıcı günlük cron ile çalıştığında ayda ~30 deploy = 450 kredi → free limit aşılır → **site duraklatılır, ziyaretçiler erişemez**.
-- **Veri (Mart-Nisan 2026):** 14 deploy = 210 kredi (%92 toplam tüketim). Bandwidth (1.23 GB = 12.3 kredi) ve web requests (13K = 3.9 kredi) neredeyse maliyetsiz.
-- **Kök Neden:** Blog Yazıcı Railway cron'u günlük (`0 3 * * *`) idi. Her çalışmada başarılı blog = GitHub push → Netlify auto-deploy → 15 kredi.
-- **Çözüm:** Blog Yazıcı cron'u haftada 1'e çekildi (`0 3 * * 1` — Pazartesi). Aylık ~4 deploy = 60 kredi. Manuel deploylarla birlikte ~135 kredi/ay → free planda güvenle kalınır.
-- **Kural:**
-  1. Netlify auto-deploy açıkken, GitHub'a her push = 15 kredi. Gereksiz push'lardan kaçın.
-  2. Branch deploy ve preview deploy kredi harcamaz — test için onları kullan.
-  3. Kredi 300'ün %75'ine ulaştığında Netlify uyarı maili atar. O noktada deploy sıklığını kontrol et.
-- **Tarih:** 10 Nisan 2026
+### Free Plan Kredi Tükenmesi
+- **Sorun:** Her deploy = 15 kredi, 300/ay limit. Günlük cron → aylık ~450 kredi → site duraklar.
+- **Çözüm:** Blog Yazıcı cron'u haftada 1'e çekildi. Aylık ~4 deploy = 60 kredi.
+- **Kural:** Gereksiz push = gereksiz deploy = kredi harcama. Branch deploy kredi harcamaz.
+- **Tarih:** Nisan 2026
 
-### Cloudflare Pages Taşıma Denemesi — BAŞARISIZ
-- **Sorun:** Netlify alternatifi olarak Cloudflare Pages denenmiş, **sonuç hüsran** olmuştur.
-- **Karar:** dolunay.ai sitesi Netlify'da kalmaya devam edecek. Cloudflare Pages tekrar denenmeyecek.
-- **Kural:** Hosting değişikliği önerisi yapılırken Cloudflare Pages ÖNERİLMEZ. Kullanıcı daha önce denedi ve başarısız oldu.
+### Cloudflare Pages — BAŞARISIZ
+- **Karar:** dolunay.ai Netlify'da kalıyor. Cloudflare Pages önerilmez — daha önce denendi, başarısız oldu.
 - **Tarih:** Nisan 2026
 
 ---
 
-## GitHub — Pages Build Spam (Alarm Yorgunluğu)
+## GitHub
 
-### Her Push'ta "Run failed: pages build and deployment" Maili — SAHTE ALARM (KRİTİK)
-- **Sorun:** `antigravity-egitim` mono-reposuna her `git push` yapıldığında GitHub otomatik olarak "pages build and deployment" workflow'unu tetikliyordu. Repo bir statik site olmadığı için (Python projeleri ve markdown dosyaları barındırır) her build KESİNLİKLE başarısız oluyor ve "Run failed" bildirim maili gönderiyordu. Tek günde 10+ sahte hata maili alınıyordu.
-- **Etki:** Gerçek Railway crash mailleri ile sahte GitHub Pages mailleri birbirine karışıyordu → **alarm yorgunluğu (alert fatigue)** → gerçek sorunlar gözden kaçıyordu.
-- **Kök Neden:** GitHub Pages özelliği açık bırakılmıştı (muhtemelen eski bir deneme). Mono-repo mimarisinde her push Actions workflow'unu tetikliyor.
-- **Çözüm (11 Nisan 2026):**
-  1. GitHub API ile Pages tamamen kapatıldı (`DELETE /repos/.../pages` → HTTP 204)
-  2. GitHub Actions da repo düzeyinde devre dışı bırakıldı (`PUT /repos/.../actions/permissions` → `enabled: false`)
-- **Kural:**
-  1. Statik site barındırmayan GitHub repolarında **Pages özelliği kapalı olmalı**. Yeni repo oluşturulduğunda kontrol et.
-  2. `antigravity-egitim` gibi mono-repo'larda CI/CD, Railway'in kendi build sistemi ile yapılır — GitHub Actions KULLANILMAZ.
-  3. Alarm yorgunluğu ciddi bir operasyonel risktir. Her sahte alarm kaynağı derhal kapatılmalıdır.
-- **Tarih:** 11 Nisan 2026
+### Pages Build Spam — Sahte Alarm
+- **Çözüm:** GitHub API ile Pages kapatıldı + Actions devre dışı. Mono-repo'da CI/CD = Railway build.
+- **Kural:** Statik site barındırmayan repo'larda Pages kapalı olmalı.
+- **Tarih:** Nisan 2026
 
 ---
 
-## Pre-Push Test Kapsamı — Import Testi Tek Başına Yetersiz
+## Pre-Push Test Kapsamı
 
-### Import Testi Geçiyor Ama Runtime'da TypeError CRASH — Caller ↔ Callee İmza Uyumsuzluğu (KRİTİK)
-- **Sorun:** Deploy öncesi import testi (`python3 -c "import modül"`) tüm modülleri başarıyla import ediyordu (✅ 12/12). Ancak production'da `get_logger("Otonom_Kapak", level="INFO")` çağrısı `TypeError: got an unexpected keyword argument 'level'` ile CRASH oldu. Import testi bu hatayı YAKALAYAMAZ çünkü modül yükleniyor ama fonksiyon çağrılmıyor.
-- **Kök Neden:** Import testi sadece modülün Python yorumlayıcısına yüklenip yüklenemeyeceğini kontrol eder. Fonksiyonların doğru argümanlarla çağrılıp çağrılmadığını doğrulamaz. `main.py` `get_logger(name, level=...)` çağırıyor, `logger.py` sadece `get_logger(name)` kabul ediyor — bu uyumsuzluk ancak fonksiyon **çalıştırıldığında** ortaya çıkıyor.
-- **Etki:** V2 geçişinde servisler 21 saat boyunca çökük kaldı. İmport testi "✅ geçti" dediği için güvenle push edildi.
-- **Çözüm:** Deploy workflow'una (`canli-yayina-al.md`) **Adım 2.5.9 — Caller ↔ Callee İmza Doğrulaması** eklendi. Python AST modülü ile entry point'teki fonksiyon çağrılarının keyword argümanları, aynı projedeki fonksiyon tanımlarıyla karşılaştırılır. Uyumsuzluk bulunursa push engellenir.
-- **Kural:**
-  1. Import testi GEREKLİDİR ama TEK BAŞINA YETERSİZ — her zaman imza doğrulaması ile birlikte çalıştırılmalı
-  2. Bir fonksiyonun **çağrı noktasını** (caller) değiştirirken, **tanımını** (callee) da güncelle
-  3. Bir fonksiyonun **tanımını** değiştirirken, **tüm çağrı noktalarını** `grep` ile bul ve uyumlu olduğunu doğrula
-- **Tarih:** 11 Nisan 2026
+### Import Testi Geçiyor Ama Runtime'da Crash (Caller ↔ Callee)
+- **Sorun:** Import testi modül yüklenmesini kontrol eder ama fonksiyon argüman uyumsuzluğunu YAKALAMAZ.
+- **Çözüm:** Deploy workflow'una AST tabanlı imza doğrulaması eklendi.
+- **Kural:** Import testi GEREKLİ ama TEK BAŞINA YETERSİZ. Caller değiştirirken callee'yi de kontrol et.
+- **Tarih:** Nisan 2026
 
-### Lokal Fix Push Edilmemiş — Production Eski Kodla Çalışıyor (KRİTİK TEKRARLAYAN)
-- **Sorun:** `eCom_Reklam_Otomasyonu` botuna mesaj gönderildiğinde `⚠️ Bir hata oluştu, tekrar dene.` yanıtı geliyordu. Railway loglarında `openai.BadRequestError: 400 — 'max_tokens' is not supported` hatası görüldü.
-- **Kök Neden:** `openai_service.py` ve `conversation_manager.py` dosyalarında `max_tokens → max_completion_tokens` fix'i lokalde yapılmıştı ama **GitHub'a push edilmemişti**. `git status` 3 modified dosya gösteriyordu. Railway auto-deploy eski commit'i çalıştırıyordu.
-- **Etki:** Bot deploy'dan bu yana hiçbir kullanıcı mesajını işleyemedi — her metin mesajında OpenAI 400 hatası, error_handler devreye girip generic hata mesajı döndü.
-- **Çözüm:** 3 dosya (`openai_service.py`, `conversation_manager.py`, `test_bot.py`) commit + push + Railway redeploy.
-- **Kural (ZORUNLU POST-FIX CHECKLİST):**
-  1. Fix yapıldıktan sonra **her zaman** `git status` kontrol et — modified dosya varsa push et
-  2. Push sonrası Railway'de yeni deployment oluştuğunu doğrula (auto-deploy tetiklenmediyse `serviceInstanceRedeploy`)
-  3. `/canli-yayina-al` workflow'u kullanılmasa bile push + deploy + smoke test zinciri ZORUNLU
-- **Tarih:** 11 Nisan 2026
+### Lokal Fix Push Edilmemiş — Production Eski Kod (TEKRARLAYAN)
+- **Sorun:** Fix lokal'de yapıldı ama push edilmedi → Railway eski commit çalıştırdı.
+- **Çözüm:** Fix sonrası `git status` → modified varsa push → Railway deploy tetikle → smoke test.
+- **Tarih:** Nisan 2026
 
-### eCom Reklam Otomasyonu v2.1 — 24 Bug Fix Stabilizasyon
-- **Sorun:** Proje 24/7 otonom çalışırken birden fazla crash noktası vardı.
-- **Kök Nedenler ve Çözümler:**
-  1. **Event Loop Blocking (P0):** Tüm senkron API çağrıları (requests, Replicate SDK) `asyncio.to_thread()` ile sarımlanarak async event loop'un bloklanması önlendi
-  2. **Bellek Sızıntısı (P0):** `UserSession` objeleri hiç temizlenmiyordu. 10dk idle timeout + `_session_cleanup_task` + 20 mesaj chat_history limiti eklendi
-  3. **Vision API NoneType (P1):** `analyze_image()` ve `analyze_image_bytes()` null content döndürüyordu. NoneType guard + 3 deneme retry eklendi
-  4. **Telegram Markdown Parse (P1):** LLM çıktılarındaki özel karakterler parse hatası veriyordu. `parse_mode=None` fallback eklendi
-  5. **Perplexity Exception Handling (P1):** String dönmek yerine `RuntimeError` fırlatılıyor, ScenarioEngine fallback ile yakalıyor
-  6. **Replicate FileOutput (P1):** SDK `FileOutput` objesi döndürüyordu, `str()` cast eklendi
-  7. **Input Validasyonu (P1):** `aspect_ratio`, `resolution`, `video_duration` için normalize + valid set kontrolü eklendi
-  8. **Audio Hosting (P2):** imgbb_api_key bağımlılığı kaldırıldı, tmpfiles.org (birincil) + file.io (fallback) eklendi
-  9. **Voiceover Süre Kontrolü (P3):** Ses metni video süresini aşarsa otomatik kırpılıyor
-  10. **asyncio.create_task Hata Yutma (P0):** `_handle_task_exception` done callback eklenerek fire-and-forget task hataları loglanıyor
-- **Kural:** Async Python projelerinde senkron API çağrıları **mutlaka** `asyncio.to_thread()` ile sarımlanmalı. Session objeleri için idle TTL zorunlu.
-- **Tarih:** 12 Nisan 2026
+---
 
-## Kie AI (Nano Banana 2) - 400 Bad Request / Resolution Error
-**Hata:** Kie AI görsel üretimi aşamasında `taskId` döndürülememesi veya polling sırasında hata alınması. Özel olarak API'ye "1K" veya "2k" gibi artık desteklenmeyen/yanlış formatlanmış resolution (çözünürlük) değerleri gönderildiğinde yaşanır.
-**Çözüm:** `resolution` parametresi modelin kabul ettiği formatta (örn: `"1k"` - küçük harfle) gönderilmelidir. `core/image_generator.py` veya `kie_api.py` içerisindeki `"1K"` stringleri `"1k"` olarak güncellenmelidir. (Nano Banana 2, `2k` veya büyük harfli `1K` formatlarını kabul etmemektedir).
+## eCom Reklam Otomasyonu — v2.1 Stabilizasyon (24 Bug)
 
-## Akıllı Watchdog - Health Check "CRITICAL" False Positive Döngüsü
-**Hata:** `_skills/servis-izleyici/scripts/health_check.py` scripti, Railway'den logları çekerken `Akilli_Watchdog` loglarındaki kendi hata raporlamalarını ("Railway deployment FAILED!" gibi) tespit edip, Watchdog servisinin *kendisinin* çöktüğünü (CRITICAL ERROR) sanmaktadır.
-**Çözüm:** `health_check.py` içerisindeki hata parser regexine (`ERROR_PATTERNS` / `FALSE_POSITIVE_PATTERNS`) log prefixini yoksayacak bir kural (örn: `OpsLog_Akilli_Watchdog`) eklenmelidir, böylece sistem diğer projelerdeki hataları loglarken kendi sağlığını feda etmez.
+En kritik fixler:
+1. **Event Loop Blocking (P0):** Senkron API çağrıları → `asyncio.to_thread()` ile sarımla
+2. **Bellek Sızıntısı (P0):** `UserSession` temizliği → 10dk idle timeout + 20 mesaj limit
+3. **asyncio.create_task Hata Yutma (P0):** `_handle_task_exception` done callback ekle
+4. **Vision API NoneType (P1):** Null guard + 3 retry
+5. **Telegram Markdown (P1):** `parse_mode=None` fallback
+6. **Tarih:** Nisan 2026

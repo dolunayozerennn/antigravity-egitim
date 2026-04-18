@@ -34,3 +34,9 @@ python main.py
 | `NOTIFY_EMAIL` | Bildirim alacak e-posta adresi |
 | `CRM_SPREADSHEET_ID` | CRM Google Sheets ID |
 | `NOTIFIER_SPREADSHEET_ID` | Notifier Google Sheets ID |
+
+## 🛡️ Stabilizasyon ve Hata Giderme (18 Nisan 2026)
+- **Fix 1:** `.gitignore` eksikleri (token.json, credentials.json, \*.pyc) tamamlandı.
+- **Fix 2:** Ortak olarak dinlenen sekme (`0426-Yeni`) yüzünden yaşanacak olası `_Meta` conflict'lerini önlemek amacıyla state key'ler `crm:` ve `notifier:` prefixleri ile namespace'lendi.
+- **Fix 3:** `_Meta` durumu kaydedilirken tüm mevcut kayıtları ezme engellendi, sadece bu instance'a ait alanlar merge edildi.
+- **Doğrulama:** Dependency audit, syntax kontrolü ve Railway deployment logs (SUCCESS) doğrulandı. Hiçbir anti-pattern tespit edilmedi.
