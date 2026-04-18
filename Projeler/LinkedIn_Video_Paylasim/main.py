@@ -94,7 +94,7 @@ def job():
         logger_db = NotionLogger()
 
         # Step 1: Fetch Recent Videos (last 10)
-        recent_videos = scraper.get_recent_videos(count=10)
+        recent_videos = scraper.get_recent_videos(count=20)
         if not recent_videos:
             ops.warning("Workflow Durdu", "TikTok'tan video çekilemedi")
             return

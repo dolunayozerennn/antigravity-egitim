@@ -23,8 +23,9 @@ class NotionLogger:
 
     def is_video_posted(self, video_id: str) -> bool:
         """
-        Check if the given video_id has already been processed (posted or filtered).
-        Returns True if already handled.
+        Check if the given video_id has already been successfully posted or filtered.
+        Returns True only for terminal states (Success, Filtered).
+        Failed videos return False so they can be retried.
         """
         try:
             url = f"https://api.notion.com/v1/databases/{self.db_id}/query"
@@ -39,7 +40,25 @@ class NotionLogger:
             resp = requests.post(url, headers=self.headers, json=payload, timeout=10)
             resp.raise_for_status()
             data = resp.json()
-            return len(data.get("results", [])) > 0
+            results = data.get("results", [])
+
+            if not results:
+                return False  # Hiç kayıt yok — yeni video
+
+            # Kayıtlardaki durumları kontrol et
+            for record in results:
+                status_prop = record.get("properties", {}).get("Status", {}).get("select")
+                status_name = status_prop.get("name", "") if status_prop else ""
+
+                if status_name == "Success":
+                    return True   # Başarıyla paylaşıldı — skip
+                if status_name == "Filtered":
+                    return True   # Content filter reddi — skip
+
+            # Kalan kayıtlar sadece "Failed" — retry edilebilir
+            ops.info(f"Video {video_id} daha önce başarısız olmuş — yeniden denenecek")
+            return False
+
         except Exception as e:
             ops.error(f"Error checking Notion for video_id {video_id}: {e}", exception=e)
             # Fail safe: return False to prevent falsely marking a video as processed if API fails
