@@ -18,5 +18,4 @@ notion-client==2.2.1
 replicate==1.0.4
 
 # Web Scraping (Ürün Fotoğrafı Çekme)
-beautifulsoup4==4.12.3
-lxml==5.2.1
+
