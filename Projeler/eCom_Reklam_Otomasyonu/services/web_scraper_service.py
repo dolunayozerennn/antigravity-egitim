@@ -63,8 +63,14 @@ class WebScraperService:
                 allow_redirects=True,
             )
             resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403:
+                log.warning(f"URL fetch 403 (Erişim engellendi - Bot Koruması): {url}")
+            else:
+                log.error(f"URL fetch HTTP hatası: {url}", exc_info=True)
+            return {"images": [], "page_text": ""}
         except requests.exceptions.RequestException:
-            log.error(f"URL fetch hatası: {url}", exc_info=True)
+            log.error(f"URL fetch bağlantı hatası: {url}", exc_info=True)
             return {"images": [], "page_text": ""}
 
         soup = BeautifulSoup(resp.text, "html.parser")
