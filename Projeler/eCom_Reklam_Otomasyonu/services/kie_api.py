@@ -8,6 +8,7 @@ Asenkron görev modeli: createTask → polling → resultUrls.
 """
 
 import json
+import os
 import time
 
 import requests
@@ -21,6 +22,9 @@ log = get_logger("kie_api")
 POLL_INTERVAL_SECONDS = 10
 MAX_POLL_ATTEMPTS = 60  # ~10 dakika
 REQUEST_TIMEOUT = 30
+
+# File Upload
+FILE_UPLOAD_BASE_URL = "https://kieai.redpandaai.co"
 
 
 class KieAIService:
@@ -44,7 +48,13 @@ class KieAIService:
         duration: int = 10,
         aspect_ratio: str = "9:16",
         generate_audio: bool = True,
+        resolution: str | None = None,
         reference_images: list[str] | None = None,
+        first_frame_url: str | None = None,
+        last_frame_url: str | None = None,
+        reference_videos: list[str] | None = None,
+        reference_audios: list[str] | None = None,
+        return_last_frame: bool = False,
     ) -> str:
         """
         Seedance 2.0 ile video üretim görevi oluşturur.
@@ -54,13 +64,30 @@ class KieAIService:
             duration: Video süresi (4-15 saniye)
             aspect_ratio: "9:16", "16:9", "1:1" vb.
             generate_audio: Native ses üretimi (ambient sesler için True)
-            reference_images: Referans görseller URL listesi (1-3 adet)
+            resolution: Video çözünürlüğü ("720p" vb.)
+            reference_images: Referans görseller URL listesi (1-3 adet).
                               Modele "bu görselleri referans al, özgürce üret" der.
                               first_frame_url ile AYNI ANDA KULLANILAMAZ.
+            first_frame_url: İlk kare görseli URL (Image-to-Video modu).
+                             reference_images ile AYNI ANDA KULLANILAMAZ.
+            last_frame_url: Son kare görseli URL.
+            reference_videos: Referans video URL listesi (stil/hareket rehberi).
+            reference_audios: Referans ses URL listesi.
+            return_last_frame: True ise son kareyi ayrıca döndürür.
 
         Returns:
             str: taskId
+
+        Raises:
+            ValueError: first_frame_url ve reference_images aynı anda verilirse.
         """
+        # Doğrulama: first_frame_url ve reference_images birlikte kullanılamaz
+        if first_frame_url and reference_images:
+            raise ValueError(
+                "Seedance 2.0: first_frame_url ve reference_images "
+                "aynı anda kullanılamaz. Birini seçin."
+            )
+
         input_data = {
             "prompt": prompt,
             "duration": duration,
@@ -69,8 +96,21 @@ class KieAIService:
             "web_search": False,
         }
 
+        # Opsiyonel parametreler — sadece değer varsa ekle
+        if resolution:
+            input_data["resolution"] = resolution
         if reference_images:
             input_data["reference_image_urls"] = reference_images
+        if first_frame_url:
+            input_data["first_frame_url"] = first_frame_url
+        if last_frame_url:
+            input_data["last_frame_url"] = last_frame_url
+        if reference_videos:
+            input_data["reference_video_urls"] = reference_videos
+        if reference_audios:
+            input_data["reference_audio_urls"] = reference_audios
+        if return_last_frame:
+            input_data["return_last_frame"] = True
 
         payload = {
             "model": "bytedance/seedance-2",
@@ -79,8 +119,9 @@ class KieAIService:
 
         task_id = self._create_task(payload)
         ref_count = len(reference_images) if reference_images else 0
+        mode = "I2V" if first_frame_url else f"ref_images={ref_count}"
         log.info(f"Seedance 2.0 video görevi oluşturuldu: {task_id} "
-                 f"({duration}s, {aspect_ratio}, ref_images={ref_count})")
+                 f"({duration}s, {aspect_ratio}, {mode})")
         return task_id
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -310,6 +351,84 @@ class KieAIService:
         except Exception:
             log.error("Kredi sorgulama hatası", exc_info=True)
             return {}
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 📤 DOSYA YÜKLEME — File Upload API
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    def upload_file_from_url(self, file_url: str, file_name: str | None = None) -> str:
+        """
+        Harici URL'deki dosyayı Kie AI'ın dosya sunucusuna yükler.
+
+        Seedance 2.0'a verilecek referans görseller/videolar/sesler için
+        harici kaynakları önce Kie AI sistemine yüklemek gerekebilir.
+
+        Endpoint: POST https://kieai.redpandaai.co/api/file-url-upload
+
+        Args:
+            file_url: Yüklenecek dosyanın harici URL'si
+            file_name: Dosya adı (verilmezse URL'den çıkarılır)
+
+        Returns:
+            str: Kie AI üzerindeki downloadUrl
+
+        Raises:
+            ValueError: API hatası
+        """
+        if not file_name:
+            # URL'den dosya adını çıkar
+            from urllib.parse import urlparse
+            parsed = urlparse(file_url)
+            file_name = os.path.basename(parsed.path) or "uploaded_file"
+
+        url = f"{FILE_UPLOAD_BASE_URL}/api/file-url-upload"
+        payload = {
+            "fileUrl": file_url,
+            "fileName": file_name,
+        }
+
+        try:
+            response = requests.post(
+                url,
+                headers=self.headers,
+                json=payload,
+                timeout=60,  # Dosya yükleme daha uzun sürebilir
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            download_url = data.get("downloadUrl") or data.get("data", {}).get("downloadUrl")
+            if not download_url:
+                raise ValueError(f"File upload yanıtında downloadUrl bulunamadı: {data}")
+
+            log.info(f"Dosya yüklendi: {file_name} → {download_url[:80]}...")
+            return download_url
+
+        except requests.exceptions.RequestException as e:
+            log.error(f"Dosya yükleme hatası: {file_url} — {e}", exc_info=True)
+            raise ValueError(f"Kie AI file upload başarısız: {e}") from e
+
+    def upload_files_from_urls(self, file_urls: list[str]) -> list[str]:
+        """
+        Birden fazla harici URL'yi Kie AI'a toplu yükler.
+
+        Args:
+            file_urls: Yüklenecek dosya URL'leri listesi
+
+        Returns:
+            list[str]: Kie AI downloadUrl'leri listesi
+        """
+        download_urls = []
+        for i, url in enumerate(file_urls, 1):
+            try:
+                dl_url = self.upload_file_from_url(url)
+                download_urls.append(dl_url)
+                log.info(f"Toplu yükleme [{i}/{len(file_urls)}]: başarılı")
+            except Exception:
+                log.error(f"Toplu yükleme [{i}/{len(file_urls)}] başarısız: {url}", exc_info=True)
+                # Başarısız olanı atla, diğerlerine devam et
+                continue
+        return download_urls
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 🔧 INTERNAL
