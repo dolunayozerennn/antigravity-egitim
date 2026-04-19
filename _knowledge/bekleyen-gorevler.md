@@ -24,21 +24,22 @@
 > Deploy sonrası eklenen izleme kayıtları burada tutulur.
 > Her konuşma başında bu bölüm kontrol edilir — izleme süresi dolmuş ve 2 temiz kontrol geçilmişse arşive taşınır.
 
-### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (v2.4 Fixes)
-- **Deploy tarihi:** 2026-04-18
-- **İzleme bitiş:** 2026-04-20
-- **Kontrol 1:** ⏳ Bekliyor (Notion property 'Proje', KIE API 'resolution', Web Scraper 403 fallback ve Telegram API Conflict fixleri denetlenecek)
+### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (Görsel Seçim Prompt Fix)
+- **Deploy tarihi:** 2026-04-19
+- **İzleme bitiş:** 2026-04-21
+- **Değişiklik:** Seedance 2.0 referans görsel prompt'u güçlendirildi — infografik/metin görselleri filtreleniyor
+- **Kontrol 1:** ⏳ Bekliyor (bir sonraki video üretiminde infografik seçilmemesi doğrulanacak)
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
-### 🟡 48-Saat İzleme — YouTube_Otomasyonu V3 (CronJob Dönüşümü)
-- **Deploy tarihi:** 2026-04-18
-- **İzleme bitiş:** 2026-04-20
+### 🟡 48-Saat İzleme — YouTube_Otomasyonu (Realism Prompt Optimizasyonu)
+- **Deploy tarihi:** 2026-04-19
+- **İzleme bitiş:** 2026-04-21
 - **İlk otonom video:** ✅ https://youtube.com/shorts/zXFbB789f3Q (french bulldog × pottery)
-- **Kontrol 1:** ⏳ Bekliyor (yarın 17:00 TR cron tetiklenmesi sonrası loglar kontrol edilecek)
+- **Değişiklik:** Videolardaki "gerçekçi illüstrasyon" (uncanny valley) hissiyatını azaltmak için videolara `photorealistic, raw camera footage` constraint'i eklendi ve süre (`10 seconds`) zorunluluğu kaldırıldı.
+- **Kontrol 1:** ⏳ Bekliyor (sıradaki cron tetiklemesinde video kalitesine bakılacak)
 - **Kontrol 2:** ⏳ Bekliyor
-- **Bilinen küçük sorunlar:** FFmpeg nixpacks'te yok (Replicate fallback mevcut, blocker değil)
-- **Sonuç:** ⏳ 2 ardışık başarılı cron çalışması ile kapatılır
+- **Sonuç:** ⏳ 2 ardışık videoda tamamen photorealism yakalandıysa kapatılır
 
 
 ---
