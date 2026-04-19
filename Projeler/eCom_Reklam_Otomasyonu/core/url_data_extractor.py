@@ -322,11 +322,22 @@ class URLDataExtractor:
             log.warning("Görsel URL'si bulunamadı — boş liste dönüyor")
             return []
 
-        # URL validasyonu — desteklenmeyen formatları filtrele
-        valid_urls = [
-            url for url in image_urls
-            if self.openai._validate_image_url(url)
-        ]
+        # URL validasyonu — desteklenmeyen formatları filtrele ve duplicate/kopya (aynı) resimleri temizle
+        valid_urls = []
+        seen_base_urls = set()
+        
+        for url in image_urls:
+            if not self.openai._validate_image_url(url):
+                continue
+                
+            # Mükerrer (aynı parametreli/farklı parametreli aynı) görselleri engellemek için parse et
+            import urllib.parse
+            parsed = urllib.parse.urlparse(url)
+            base_url = f"{parsed.netloc}{parsed.path}"
+            
+            if base_url not in seen_base_urls:
+                seen_base_urls.add(base_url)
+                valid_urls.append(url)
 
         if not valid_urls:
             log.warning("Geçerli görsel URL'si bulunamadı (format filtresi sonrası)")
