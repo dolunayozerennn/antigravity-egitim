@@ -158,8 +158,9 @@ def check_railway_deployments() -> list[dict]:
                 node = edges[0]["node"]
                 deploy_status = node.get("status", "UNKNOWN")
                 created_at = node.get("createdAt", "?")
-                # Railway deployment statuses: SUCCESS, FAILED, CRASHED, BUILDING, DEPLOYING, etc.
-                is_healthy = deploy_status in ("SUCCESS", "SLEEPING", "BUILDING", "DEPLOYING")
+                # Railway deployment statuses: SUCCESS, FAILED, CRASHED, BUILDING, DEPLOYING, SKIPPED, etc.
+                # SKIPPED = watch patterns detected no changes for this service (normal in monorepo)
+                is_healthy = deploy_status in ("SUCCESS", "SLEEPING", "BUILDING", "DEPLOYING", "SKIPPED")
                 results.append({
                     "name": svc["name"],
                     "service_id": svc["service_id"],

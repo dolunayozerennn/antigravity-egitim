@@ -267,6 +267,12 @@ Railway Nixpacks `Aptfile`/`apt.txt` dosyalarını YOKSAYAR. ffmpeg'i `/root/.ni
 - **Çözüm:** `ERROR_PATTERNS` / `FALSE_POSITIVE_PATTERNS`'e log prefixini (`OpsLog_Akilli_Watchdog`) yoksayacak kural ekle.
 - **Tarih:** Nisan 2026
 
+### Watchdog — SKIPPED Deploy False Alarm (Monorepo)
+- **Sorun:** Monorepo'da alakasız bir commit push edildiğinde Railway tüm servislere deploy tetikliyor. Watch patterns değişiklik görmediğinde `SKIPPED` durumu oluşuyor. Watchdog bunu "FAILED" olarak raporluyordu.
+- **Çözüm:** `is_healthy` tuple'ına `"SKIPPED"` eklendi. SKIPPED = watch patterns değişiklik görmedi = önceki SUCCESS deploy hâlâ aktif.
+- **Kural:** Monorepo'da `SKIPPED` her zaman sağlıklıdır. Railway önceki başarılı image ile çalışmaya devam eder.
+- **Tarih:** Nisan 2026
+
 ---
 
 ## Netlify / Hosting
