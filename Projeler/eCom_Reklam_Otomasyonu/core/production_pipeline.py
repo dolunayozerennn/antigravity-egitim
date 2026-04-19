@@ -12,7 +12,7 @@ Onaylanan senaryoyu alıp 4 adımda video üretir:
 
 Deterministik kurallar:
 - 10 saniye, 9:16, 720p (sabit)
-- Reference image: ürün görselleri image_input olarak verilir
+- Reference image: ürün görselleri reference_image_urls olarak verilir
 - Karakter konuşması YOK — ambient sesler AÇIK
 - Dış ses her zaman Türkçe, ~25 kelime, ElevenLabs
 - Birleştirme: replace_audio=False (ambient + dış ses overlay)

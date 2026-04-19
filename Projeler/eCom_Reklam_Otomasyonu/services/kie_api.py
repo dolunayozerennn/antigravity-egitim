@@ -70,7 +70,7 @@ class KieAIService:
         }
 
         if reference_images:
-            input_data["image_input"] = reference_images
+            input_data["reference_image_urls"] = reference_images
 
         payload = {
             "model": "bytedance/seedance-2",
