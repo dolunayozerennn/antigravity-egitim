@@ -53,7 +53,7 @@ EXTRACTION_PROMPT = """Sen bir e-ticaret ürün analiz uzmanısın. Aşağıdaki
 # LLM PROMPT — En İyi Görsel Seçimi
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-IMAGE_SELECTION_PROMPT = """Aşağıdaki ürün görsellerini incele. Bir e-ticaret video reklamı üretmek için EN UYGUN 1-3 fotoğrafı seç.
+IMAGE_SELECTION_PROMPT = """Aşağıdaki ürün görsellerini incele. Bu görseller bir AI video modeline (Seedance 2.0) REFERANS GÖRSEL olarak verilecek. Model bu görsellere bakarak video üretecek. Bu yüzden sadece ÜRÜNÜN FİZİKSEL görsellerini seç.
 
 ## Seçim Kriterleri (öncelik sırasına göre):
 1. Ürünü en net ve yüksek kalitede gösteren
@@ -65,7 +65,20 @@ IMAGE_SELECTION_PROMPT = """Aşağıdaki ürün görsellerini incele. Bir e-tica
 - En az 1, en fazla 3 görsel seç
 - Seçtiğin görsellerin indeks numaralarını JSON array olarak döndür
 - SADECE JSON döndür: {{"selected_indices": [0, 2, 4]}}
-- Logo, ikon, lifestyle (ürün olmayan) ve düşük çözünürlüklü görselleri ASLA SEÇME
+
+## ASLA SEÇME (bu türler video referansı olarak UYGUN DEĞİLDİR):
+- Üzerinde yazı/metin bulunan infografikler (örn: "Ne zaman uygulanır?", "Nasıl kullanılır?", özellik tabloları)
+- Kullanım talimatı veya adım adım uygulama görselleri
+- Boyut karşılaştırma, before/after kolaj görselleri
+- İçerik listesi, sertifika veya uyarı görselleri
+- Logo, ikon, banner veya web sitesi UI elementleri
+- Düşük çözünürlüklü veya bulanık görseller
+- Lifestyle görselleri (ürünün kendisi NET görünmüyorsa)
+
+## SADECE SEÇ:
+- Ürünün ambalajını/şişesini/kutusunu net gösteren fotoğraflar
+- Ürünün kendisinin yakın çekim (close-up) fotoğrafları
+- Ürünün profesyonel stüdyo çekimleri
 
 ## Görsel URL Listesi:
 {image_list}"""
