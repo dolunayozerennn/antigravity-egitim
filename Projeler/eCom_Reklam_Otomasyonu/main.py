@@ -372,7 +372,11 @@ async def _run_production(message, user_id: int):
         try:
             await message.reply_text(msg, parse_mode="Markdown")
         except Exception:
-            log.error(f"Progress bildirim hatası: {step}", exc_info=True)
+            # Markdown parse hatası — düz metin ile tekrar dene
+            try:
+                await message.reply_text(msg, parse_mode=None)
+            except Exception:
+                log.error(f"Progress bildirim hatası: {step}", exc_info=True)
 
     try:
         result = await pipeline.produce(

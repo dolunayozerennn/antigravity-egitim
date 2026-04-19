@@ -38,7 +38,7 @@ class Config:
 
         # ── ElevenLabs (Doğrudan API — Türkçe TTS) ──
         self.ELEVENLABS_API_KEY = self._require_env("ELEVENLABS_API_KEY")
-        self.ELEVENLABS_MODEL = os.environ.get("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+        self.ELEVENLABS_MODEL = os.environ.get("ELEVENLABS_MODEL", "eleven_v3")
 
         # ── Replicate (Video + Ses Birleştirme) ──
         self.REPLICATE_API_TOKEN = self._require_env("REPLICATE_API_TOKEN")

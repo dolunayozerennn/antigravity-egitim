@@ -33,7 +33,7 @@ DEFAULT_VOICES = {
 class ElevenLabsService:
     """ElevenLabs doğrudan TTS API servisi."""
 
-    def __init__(self, api_key: str, model_id: str = "eleven_multilingual_v2"):
+    def __init__(self, api_key: str, model_id: str = "eleven_v3"):
         self.api_key = api_key
         self.model_id = model_id
         self.headers = {
@@ -110,6 +110,19 @@ class ElevenLabsService:
             json=payload,
             timeout=REQUEST_TIMEOUT,
         )
+
+        # Hata durumunda response body'yi logla (debug için kritik)
+        if response.status_code != 200:
+            try:
+                error_body = response.text[:500]
+            except Exception:
+                error_body = "(okunamadı)"
+            log.error(
+                f"ElevenLabs API hatası: HTTP {response.status_code} | "
+                f"model={payload.get('model_id')} | "
+                f"body={error_body}"
+            )
+
         response.raise_for_status()
 
         audio_bytes = response.content
