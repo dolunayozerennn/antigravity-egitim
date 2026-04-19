@@ -63,6 +63,7 @@ IMAGE_SELECTION_PROMPT = """Aşağıdaki ürün görsellerini incele. Bu görsel
 
 ## Kurallar:
 - En az 1, en fazla 3 görsel seç
+- Seçtiğin görseller BİRBİRİNDEN FARKLI (çeşitli açılar/pozlar) olmalıdır. Aynı veya çok benzer fotoğrafların kopyalarını birlikte seçme. Çeşitlilik sağla.
 - Seçtiğin görsellerin indeks numaralarını JSON array olarak döndür
 - SADECE JSON döndür: {{"selected_indices": [0, 2, 4]}}
 
