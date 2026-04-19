@@ -445,17 +445,17 @@ async def _run_production(message, user_id: int):
 
         else:
             error = result.get("error", "Bilinmeyen hata")
-            error_msg = f"❌ **Üretim başarısız oldu**\n\nHata: {error[:300]}\n\n🔄 Tekrar link göndererek yeniden deneyebilirsin."
-            await message.reply_text(error_msg, parse_mode="Markdown")
+            error_msg = f"❌ Üretim başarısız oldu\n\nHata: {error[:300]}\n\n🔄 Tekrar link göndererek yeniden deneyebilirsin."
+            await message.reply_text(error_msg, parse_mode=None)
             await chat_tracker.log_interaction(str(user_id), "[Sistem - Hata]", error_msg)
             session.reset()
 
     except Exception:
         log.error("Production pipeline çöktü", exc_info=True)
         await message.reply_text(
-            "💥 **Kritik hata!** Üretim sırasında beklenmeyen bir hata oluştu.\n"
+            "💥 Kritik hata! Üretim sırasında beklenmeyen bir hata oluştu.\n"
             "🔄 Linki kontrol edip tekrar dene.",
-            parse_mode="Markdown",
+            parse_mode=None,
         )
         session.reset()
 
