@@ -246,19 +246,14 @@ YOUR JOB: Given an animal, a talent, a setting, and a twist direction, create a 
 You must decide how many video clips this scenario needs and how long each should be.
 
 GUIDELINES:
-- **1 clip (5-15 seconds):** Simple, single-action scenarios. Most scenarios should be ONE clip.
+- **1 clip (8-15 seconds):** Simple, single-action scenarios. Most scenarios should be ONE clip.
   Examples: "Cat flips pancake, it lands on its head" = 1 clip, 10 seconds
-- **2 clips (5-10 seconds each):** Only if there's a clear SETUP → PAYOFF that needs a scene change.
+- **2 clips (8-12 seconds each):** Only if there's a clear SETUP → PAYOFF that needs a scene change.
   Examples: "Dog practices piano alone → performs on stage for audience" = 2 clips
-- **3 clips (5-10 seconds each):** Only for stories with clear beginning/middle/end AND each part needs a DIFFERENT visual.
+- **3 clips (8-10 seconds each):** Only for stories with clear beginning/middle/end AND each part needs a DIFFERENT visual.
   Examples: "Raccoon sees cooking show → tries to cook → kitchen is a mess but food is perfect" = 3 clips
 
 IMPORTANT: Do NOT create multiple clips just to pad the video. If the story works in one continuous shot, USE ONE CLIP.
-
-## SEEDANCE DURATION OPTIONS:
-- 5 seconds: Very short action, single moment
-- 10 seconds: Standard — most scenarios work great at 10 seconds
-- 15 seconds: Longer scenes with buildup + payoff
 
 ## OUTPUT FORMAT (STRICT JSON):
 {

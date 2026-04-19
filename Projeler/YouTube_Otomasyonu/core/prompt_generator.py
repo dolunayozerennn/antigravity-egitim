@@ -168,7 +168,7 @@ TWIST DIRECTION: {seed['twist']}
 
 Remember:
 - Decide how many clips (1, 2, or 3) based on story structure
-- Choose appropriate duration (5, 10, or 15 seconds) for each clip
+- Choose appropriate duration (between 8 to 15 seconds) for each clip
 - NO spoken dialogue — this is for a GLOBAL audience
 - Audio will include ambient sounds, music, and sound effects only
 - Make it ABSURD but VISUALLY CLEAR"""
@@ -182,8 +182,8 @@ Remember:
     # Clip süreleri Seedance limitleri içinde mi?
     for scene in result["scenes"]:
         dur = scene.get("duration", 10)
-        if dur < 5:
-            scene["duration"] = 5
+        if dur < 8:
+            scene["duration"] = 8
         elif dur > 15:
             scene["duration"] = 15
 
