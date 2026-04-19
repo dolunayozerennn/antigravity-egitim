@@ -136,80 +136,27 @@ class ElevenLabsService:
 
     def upload_audio_to_hosting(self, audio_bytes: bytes, imgbb_api_key: str = "") -> str:
         """
-        Ses dosyasını Replicate'in erişebileceği bir URL'e yükler.
-
-        NOT: Replicate video-audio-merge modeli doğrudan URL bekler.
-
-        Sıralama:
-        1. ImgBB (base64 — kalıcı, güvenilir)
-        2. tmpfiles.org fallback (24 saat TTL)
+        Ses dosyasını Replicate'in erişebileceği bir Data URI formatına çevirir.
+        Geçmişteki kararsız 3. parti file host'lar (ImgBB, tmpfiles, file.io) yerine,
+        Replicate API doğrudan Data URI (base64) kabul edebildiği için direkt stringe dönüştürülür.
 
         Args:
             audio_bytes: MP3 ses verisi
-            imgbb_api_key: ImgBB API anahtarı (pipeline'dan geçilir)
+            imgbb_api_key: Geriye dönük uyumluluk için var, artık kullanılmıyor.
 
         Returns:
-            str: Public erişimli audio URL
+            str: Base64 kodlanmış mp3 Data URI
         """
         import base64
 
-        # ── 1. ImgBB (birincil — kalıcı hosting) ──
-        # ImgBB aslında görsel servisi ama base64 ile her türlü dosya yüklenebilir
-        if imgbb_api_key:
-            try:
-                b64 = base64.b64encode(audio_bytes).decode("utf-8")
-                response = requests.post(
-                    "https://api.imgbb.com/1/upload",
-                    data={
-                        "key": imgbb_api_key,
-                        "image": b64,
-                        "name": "voiceover_audio",
-                    },
-                    timeout=REQUEST_TIMEOUT,
-                )
-                response.raise_for_status()
-                data = response.json()
-                if data.get("success"):
-                    direct_url = data["data"]["url"]
-                    log.info(f"Ses dosyası yüklendi (ImgBB): {direct_url} ({len(audio_bytes)} bytes)")
-                    return direct_url
-            except Exception:
-                log.warning("ImgBB audio upload başarısız, tmpfiles fallback...", exc_info=True)
-
-        # ── 2. tmpfiles.org (fallback) ──
         try:
-            response = requests.post(
-                "https://tmpfiles.org/api/v1/upload",
-                files={"file": ("voiceover.mp3", audio_bytes, "audio/mpeg")},
-                timeout=REQUEST_TIMEOUT,
-            )
-            response.raise_for_status()
-            data = response.json()
-            tmp_url = data["data"]["url"]
-            direct_url = tmp_url.replace("tmpfiles.org/", "tmpfiles.org/dl/")
-            log.info(f"Ses dosyası yüklendi (tmpfiles): {direct_url} ({len(audio_bytes)} bytes)")
-            return direct_url
-
-        except Exception:
-            log.warning("tmpfiles.org başarısız, file.io deneniyor...", exc_info=True)
-
-        # ── 3. file.io (son çare) ──
-        try:
-            response = requests.post(
-                "https://file.io",
-                files={"file": ("voiceover.mp3", audio_bytes, "audio/mpeg")},
-                timeout=REQUEST_TIMEOUT,
-            )
-            response.raise_for_status()
-            data = response.json()
-            if data.get("success"):
-                direct_url = data["link"]
-                log.info(f"Ses dosyası yüklendi (file.io): {direct_url} ({len(audio_bytes)} bytes)")
-                return direct_url
-            raise ValueError(f"file.io upload failed: {data}")
-        except Exception:
-            log.error("Ses dosyası hosting hatası (3 yöntem de başarısız)", exc_info=True)
-            raise
+            b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
+            data_uri = f"data:audio/mp3;base64,{b64_audio}"
+            log.info(f"Ses dosyası Data URI olarak encode edildi (Uzunluk: {len(data_uri)})")
+            return data_uri
+        except Exception as e:
+            log.error("Ses dosyası encode edilemedi", exc_info=True)
+            raise ValueError(f"Data URI encode hatası: {e}")
 
     def list_voices(self) -> list[dict]:
         """

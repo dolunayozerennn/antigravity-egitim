@@ -53,10 +53,10 @@ class ReplicateService:
             )
 
             prediction = self.client.predictions.create(
-                model="lucataco/video-audio-merge",
+                version="8c3d57c9c9a1aaa05feabafbcd2dff9f68a5cb394e54ec020c1c2dcc42bde109",
                 input={
-                    "video": video_url,
-                    "audio": audio_url,
+                    "video_file": video_url,
+                    "audio_file": audio_url,
                     "replace_audio": replace_audio,
                 },
             )
@@ -140,10 +140,10 @@ class ReplicateService:
             # prediction oluşturma kısa süreli — thread'de çalıştır
             prediction = await _asyncio.to_thread(
                 self.client.predictions.create,
-                model="lucataco/video-audio-merge",
+                version="8c3d57c9c9a1aaa05feabafbcd2dff9f68a5cb394e54ec020c1c2dcc42bde109",
                 input={
-                    "video": video_url,
-                    "audio": audio_url,
+                    "video_file": video_url,
+                    "audio_file": audio_url,
                     "replace_audio": replace_audio,
                 },
             )
