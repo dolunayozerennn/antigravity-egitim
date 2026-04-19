@@ -304,12 +304,14 @@ async def _process_url_and_scenario(message, user_id: int, url: str):
     except Exception as e:
         log.error(f"URL işleme/senaryo hatası: {e}", exc_info=True)
         session.state = ConversationState.IDLE
-        await message.reply_text(
+        
+        error_reply = (
             f"⚠️ Ürün bilgisi çıkarılamadı veya senaryo üretilemedi.\n\n"
             f"Hata detayı: {str(e)[:200]}\n\n"
-            f"Lütfen bağlantıyı kontrol et ve tekrar dene.",
-            parse_mode="Markdown"
+            f"Lütfen bağlantıyı kontrol et ve tekrar dene."
         )
+        await message.reply_text(error_reply, parse_mode=None)
+        await chat_tracker.log_interaction(str(user_id), "[Sistem - Fallback URL Hatası]", error_reply)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

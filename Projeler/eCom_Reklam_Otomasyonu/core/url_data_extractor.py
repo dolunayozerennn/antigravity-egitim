@@ -34,14 +34,14 @@ EXTRACTION_PROMPT = """Sen bir e-ticaret ürün analiz uzmanısın. Aşağıdaki
 - Yanıtın SADECE JSON olmalı, başka hiçbir metin ekleme
 
 ## Çıkarılacak JSON formatı:
-{
+{{
     "brand_name": "Marka adı",
     "product_name": "Ürün adı (kısa ve net)",
     "product_description": "Ürünün 2-3 cümlelik açıklaması",
     "ad_concept": "Kısa, etkileyici Türkçe reklam konsepti (1-2 cümle, sinematik ve dinamik)",
     "target_audience": "Hedef kitle tanımı (1 cümle)",
     "product_category": "Ürün kategorisi (örn: Elektronik, Giyim, Kozmetik, Mobilya)"
-}
+}}
 
 ## Sayfa Verisi:
 ---
@@ -64,7 +64,7 @@ IMAGE_SELECTION_PROMPT = """Aşağıdaki ürün görsellerini incele. Bir e-tica
 ## Kurallar:
 - En az 1, en fazla 3 görsel seç
 - Seçtiğin görsellerin indeks numaralarını JSON array olarak döndür
-- SADECE JSON döndür: {"selected_indices": [0, 2, 4]}
+- SADECE JSON döndür: {{"selected_indices": [0, 2, 4]}}
 - Logo, ikon, lifestyle (ürün olmayan) ve düşük çözünürlüklü görselleri ASLA SEÇME
 
 ## Görsel URL Listesi:
