@@ -36,7 +36,7 @@
 - **Deploy tarihi:** 2026-04-19
 - **İzleme bitiş:** 2026-04-21
 - **İlk otonom video:** ✅ https://youtube.com/shorts/zXFbB789f3Q (french bulldog × pottery)
-- **Değişiklik:** Videolardaki "gerçekçi illüstrasyon" (uncanny valley) hissiyatını azaltmak için videolara `photorealistic, raw camera footage` constraint'i eklendi ve süre (`10 seconds`) zorunluluğu kaldırıldı.
+- **Değişiklik:** Videolardaki "gerçekçi illüstrasyon" (uncanny valley) hissiyatını azaltmak için `photorealistic, raw camera footage` constraint'i eklendi. Süre sınırlamaları esnekleştirildi ve aşırı kısa klip üretimini (5-7sn) engellemek adına süre sınırı 8-15 saniye arası olacak şekilde yeniden ayarlandı.
 - **Kontrol 1:** ⏳ Bekliyor (sıradaki cron tetiklemesinde video kalitesine bakılacak)
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 ardışık videoda tamamen photorealism yakalandıysa kapatılır
