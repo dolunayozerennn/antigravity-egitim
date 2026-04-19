@@ -16,7 +16,9 @@ from logger import get_logger
 log = get_logger("retry")
 
 # Yeniden denenecek HTTP status kodları
-RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+# NOT: 401 eklendi — ElevenLabs gibi servisler geçici 401 dönebiliyor
+# (deploy sırasında env yavaş yüklenmesi, servis tarafı geçici auth hatası)
+RETRYABLE_STATUS_CODES = {401, 408, 429, 500, 502, 503, 504}
 
 # Yeniden denenecek exception türleri
 RETRYABLE_EXCEPTIONS = (

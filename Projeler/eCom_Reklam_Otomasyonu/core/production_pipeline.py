@@ -240,61 +240,80 @@ class ProductionPipeline:
             voiceover_text = scenario.get("voiceover_text", "")
 
             if voiceover_text:
-                if progress_callback:
-                    await progress_callback(
-                        "step_2",
-                        "🎙️ Türkçe dış ses üretiliyor (ElevenLabs)..."
-                    )
-
-                # Dış ses süre kontrolü — video süresini aşarsa metni kırp
-                from services.elevenlabs_service import ElevenLabsService
-                est_duration = ElevenLabsService.estimate_duration_seconds(voiceover_text)
-                if est_duration > duration + 2:  # 2 saniye tolerans
-                    target_words = int(duration * 2.5)  # ~2.5 kelime/saniye
-                    words = voiceover_text.split()
-                    if len(words) > target_words:
-                        voiceover_text = " ".join(words[:target_words])
-                        log.warning(
-                            f"Dış ses metni kırpıldı: {est_duration:.1f}s → ~{duration}s "
-                            f"({len(words)} → {target_words} kelime)"
+                # ── Graceful Degradation: Dış ses başarısız olursa video yine teslim edilir ──
+                voiceover_succeeded = False
+                try:
+                    if progress_callback:
+                        await progress_callback(
+                            "step_2",
+                            "🎙️ Türkçe dış ses üretiliyor (ElevenLabs)..."
                         )
 
-                # ElevenLabs TTS
-                log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
-                audio_bytes = await asyncio.to_thread(
-                    self.elevenlabs.generate_speech,
-                    text=voiceover_text,
-                    voice_name="Sarah",
-                    stability=0.5,
-                    similarity_boost=0.75,
-                    style=0.4,
-                )
+                    # Dış ses süre kontrolü — video süresini aşarsa metni kırp
+                    from services.elevenlabs_service import ElevenLabsService
+                    est_duration = ElevenLabsService.estimate_duration_seconds(voiceover_text)
+                    if est_duration > duration + 2:  # 2 saniye tolerans
+                        target_words = int(duration * 2.5)  # ~2.5 kelime/saniye
+                        words = voiceover_text.split()
+                        if len(words) > target_words:
+                            voiceover_text = " ".join(words[:target_words])
+                            log.warning(
+                                f"Dış ses metni kırpıldı: {est_duration:.1f}s → ~{duration}s "
+                                f"({len(words)} → {target_words} kelime)"
+                            )
 
-                # Ses dosyasını hosting'e yükle
-                audio_url = await asyncio.to_thread(
-                    self.elevenlabs.upload_audio_to_hosting,
-                    audio_bytes,
-                    imgbb_api_key=self.imgbb.api_key,
-                )
-                result["audio_url"] = audio_url
-                log.info(f"Dış ses hazır: {audio_url[:60]}...")
-
-                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                # ADIM 3: Video + Ses Birleştirme (Replicate)
-                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                if progress_callback:
-                    await progress_callback(
-                        "step_3",
-                        "🔀 Video ve dış ses birleştiriliyor (Replicate)..."
+                    # ElevenLabs TTS
+                    log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
+                    audio_bytes = await asyncio.to_thread(
+                        self.elevenlabs.generate_speech,
+                        text=voiceover_text,
+                        voice_name="Sarah",
+                        stability=0.5,
+                        similarity_boost=0.75,
+                        style=0.4,
                     )
 
-                # Async merge — ambient ses korunur + dış ses overlay
-                final_video_url = await self.replicate.async_merge_video_audio(
-                    video_url=raw_video_url,
-                    audio_url=audio_url,
-                    replace_audio=False,  # Ambient sesler + Türkçe dış ses
-                )
-                log.info(f"Video+ses birleştirildi: {final_video_url[:60]}...")
+                    # Ses dosyasını hosting'e yükle
+                    audio_url = await asyncio.to_thread(
+                        self.elevenlabs.upload_audio_to_hosting,
+                        audio_bytes,
+                        imgbb_api_key=self.imgbb.api_key,
+                    )
+                    result["audio_url"] = audio_url
+                    log.info(f"Dış ses hazır: {audio_url[:60]}...")
+
+                    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    # ADIM 3: Video + Ses Birleştirme (Replicate)
+                    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    if progress_callback:
+                        await progress_callback(
+                            "step_3",
+                            "🔀 Video ve dış ses birleştiriliyor (Replicate)..."
+                        )
+
+                    # Async merge — ambient ses korunur + dış ses overlay
+                    final_video_url = await self.replicate.async_merge_video_audio(
+                        video_url=raw_video_url,
+                        audio_url=audio_url,
+                        replace_audio=False,  # Ambient sesler + Türkçe dış ses
+                    )
+                    log.info(f"Video+ses birleştirildi: {final_video_url[:60]}...")
+                    voiceover_succeeded = True
+
+                except Exception as vo_err:
+                    # ── GRACEFUL DEGRADATION ──
+                    # Dış ses veya birleştirme başarısız → ambient-only video teslim edilir
+                    log.error(
+                        f"Dış ses/birleştirme hatası (graceful degradation): {vo_err}",
+                        exc_info=True,
+                    )
+                    final_video_url = raw_video_url
+                    result["voiceover_error"] = str(vo_err)[:300]
+                    if progress_callback:
+                        await progress_callback(
+                            "voiceover_warning",
+                            "⚠️ Dış ses eklenemedi — video ambient seslerle teslim edilecek."
+                        )
             else:
                 log.warning("Dış ses metni boş — ses eklenmeden devam ediliyor")
                 final_video_url = raw_video_url
