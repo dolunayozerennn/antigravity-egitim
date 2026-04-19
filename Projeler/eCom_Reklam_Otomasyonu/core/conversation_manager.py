@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 """
-Conversation Manager — Deterministik URL-Tabanlı Akış
-========================================================
+Conversation Manager — Akıllı Agent + Deterministik Workflow
+==============================================================
 Telegram bot ile kullanıcı arasındaki konuşma akışını yönetir.
 
-Basitleştirilmiş state machine (sohbet tabanlı bilgi toplama KALDIRILDI):
+## Mimari Prensip: Agent ≠ Workflow
+- WORKFLOW (teknik pipeline): Deterministik — URL → Scrape → Senaryo → Video
+- AGENT (kullanıcı etkileşimi): Akıllı, bağlam-farkında, doğal
+
+State machine:
 IDLE → URL_PROCESSING → RESEARCHING → SCENARIO_APPROVAL → PRODUCING → DELIVERED
 
-Kullanıcıdan sadece ürün URL'i alınır. Geri kalan her şey otomatik:
-- URLDataExtractor ile ürün verisi + görseller
-- ScenarioEngine ile senaryo
-- ProductionPipeline ile video üretimi
-
-v3.0 — Deterministik pipeline: sohbet yok, soru yok, tek giriş noktası: URL
+v3.1 — Akıllı agent katmanı: state-aware yanıtlar, bağlam koruması
 """
 
 import threading
@@ -72,13 +71,34 @@ class UserSession:
         # İşlenen URL
         self.current_url: str | None = None
 
+        # Agent context — önceki işlem bilgisi (doğal yanıtlar için)
+        self.last_brand: str | None = None
+        self.last_product: str | None = None
+        self.welcomed: bool = False  # /start karşılaması gösterildi mi
+
         # Bellek yönetimi
         import time as _time
         self._last_activity: float = _time.time()
 
     def reset(self):
-        """Konuşmayı sıfırla — yeni video için hazırla."""
+        """Konuşmayı sıfırla — yeni video için hazırla (context KORUNUR)."""
+        # Context'i koru — agent doğal yanıt verebilsin
+        self.last_brand = self.collected_data.get("brand_name", self.last_brand)
+        self.last_product = self.collected_data.get("product_name", self.last_product)
+
         self.state = ConversationState.IDLE
+        self.collected_data = {}
+        self.scenario = None
+        self.production_result = None
+        self.current_url = None
+        import time as _time
+        self._last_activity = _time.time()
+
+    def soft_reset_for_new_url(self):
+        """Yeni URL geldiğinde — sadece iş verisini temizle, context koru."""
+        self.last_brand = self.collected_data.get("brand_name", self.last_brand)
+        self.last_product = self.collected_data.get("product_name", self.last_product)
+
         self.collected_data = {}
         self.scenario = None
         self.production_result = None
@@ -92,6 +112,16 @@ class UserSession:
         import time as _time
         self._last_activity = _time.time()
 
+    @property
+    def active_brand(self) -> str:
+        """Aktif veya son bilinen marka adı."""
+        return self.collected_data.get("brand_name") or self.last_brand or ""
+
+    @property
+    def active_product(self) -> str:
+        """Aktif veya son bilinen ürün adı."""
+        return self.collected_data.get("product_name") or self.last_product or ""
+
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 🤖 CONVERSATION MANAGER
@@ -99,10 +129,10 @@ class UserSession:
 
 class ConversationManager:
     """
-    Deterministik URL-tabanlı konuşma yöneticisi.
+    Akıllı agent + deterministik workflow yöneticisi.
 
-    Eski sohbet tabanlı bilgi toplama kaldırıldı.
-    Tek giriş noktası: ürün URL'i.
+    Agent katmanı: bağlam-farkında, state-aware doğal yanıtlar.
+    Workflow katmanı: URL → Scrape → Senaryo → Video (deterministik).
     """
 
     def __init__(self, openai_service=None):
@@ -127,7 +157,7 @@ class ConversationManager:
             return session
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # STATE: IDLE → URL_PROCESSING
+    # 🎬 /start KOMUTU
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     def handle_start(self, user_id: int, user_name: str = "") -> str:
@@ -139,6 +169,7 @@ class ConversationManager:
         """
         session = self.get_session(user_id, user_name)
         session.reset()
+        session.welcomed = True
 
         welcome = (
             "🎬 **eCom Reklam Otomasyonu'na hoş geldin!**\n\n"
@@ -153,57 +184,40 @@ class ConversationManager:
         return welcome
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # STATE: CHATTING (URL Algılama)
+    # 🧠 ANA MESAJ HANDLER — AGENT KATMANI
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     def handle_text_message(self, user_id: int, text: str, user_name: str = "") -> dict:
         """
-        Metin mesajını işle — URL ara, uygun state geçişi yap.
+        Metin mesajını işle — akıllı agent katmanı.
+
+        Agent, mevcut state'e göre bağlam-farkında yanıt verir.
+        Workflow tetikleme (has_url=True) sadece uygun state'lerde yapılır.
 
         Returns:
             dict: {
                 "reply": str,
                 "state": ConversationState,
-                "has_url": bool,           # URL bulundu mu
+                "has_url": bool,           # URL bulundu mu — pipeline tetiklenir
                 "url": str | None,         # Bulunan URL
                 "action": str | None,      # "approve" / "cancel" (SCENARIO_APPROVAL'da)
             }
         """
         session = self.get_session(user_id, user_name)
 
-        # ── State: IDLE → otomatik başlat ──
-        if session.state == ConversationState.IDLE:
-            welcome = self.handle_start(user_id, user_name)
+        # URL var mı kontrol et (her state'de lazım)
+        from core.url_data_extractor import URLDataExtractor
+        url = URLDataExtractor.extract_url_from_text(text)
 
-            # İlk mesajda URL var mı kontrol et
-            from core.url_data_extractor import URLDataExtractor
-            url = URLDataExtractor.extract_url_from_text(text)
-
-            if url:
-                session.current_url = url
-                session.state = ConversationState.URL_PROCESSING
-                return {
-                    "reply": (
-                        f"{welcome}\n\n"
-                        f"🔗 URL algılandı! Ürün bilgileri çıkarılıyor...\n"
-                        f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
-                    ),
-                    "state": session.state,
-                    "has_url": True,
-                    "url": url,
-                    "action": None,
-                }
-
-            return {
-                "reply": welcome,
-                "state": ConversationState.IDLE,
-                "has_url": False,
-                "url": None,
-                "action": None,
-            }
-
-        # ── State: SCENARIO_APPROVAL → metin tabanlı onay/iptal ──
+        # ── State: SCENARIO_APPROVAL → metin tabanlı onay/iptal (öncelikli) ──
         if session.state == ConversationState.SCENARIO_APPROVAL:
+            # Senaryo onay state'inde URL gelirse → onay/iptal bekliyoruz uyarısı
+            if url:
+                return self._reply(session, (
+                    "📋 Şu an bir senaryo onayı bekliyor.\n\n"
+                    "Önce mevcut senaryoyu **onayla** veya **iptal et**, "
+                    "sonra yeni bir link gönderebilirsin."
+                ))
             return self._handle_scenario_text_response(session, text)
 
         # ── State: URL_PROCESSING / RESEARCHING / PRODUCING → işlem devam ediyor ──
@@ -212,77 +226,134 @@ class ConversationManager:
             ConversationState.RESEARCHING,
             ConversationState.PRODUCING,
         ):
-            return {
-                "reply": "⏳ Şu an bir işlem devam ediyor. Lütfen bekle.",
-                "state": session.state,
-                "has_url": False,
-                "url": None,
-                "action": None,
-            }
+            return self._handle_busy_state(session, text, url)
 
-        # ── State: DELIVERED → yeni video için /start veya yeni URL ──
+        # ── State: IDLE → yeni iş kabul et veya sohbet ──
+        if session.state == ConversationState.IDLE:
+            return self._handle_idle_state(session, text, url, user_id, user_name)
+
+        # ── State: DELIVERED → yeni iş veya teşekkür/sohbet ──
         if session.state == ConversationState.DELIVERED:
-            # Delivered sonrası yeni URL gelirse otomatik yeniden başlat
-            from core.url_data_extractor import URLDataExtractor
-            url = URLDataExtractor.extract_url_from_text(text)
+            return self._handle_delivered_state(session, text, url)
 
-            if url:
-                session.reset()
-                session.current_url = url
-                session.state = ConversationState.URL_PROCESSING
-                return {
-                    "reply": (
-                        "🔗 Yeni URL algılandı! Ürün bilgileri çıkarılıyor...\n"
-                        f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
-                    ),
-                    "state": session.state,
-                    "has_url": True,
-                    "url": url,
-                    "action": None,
-                }
-
-            return {
-                "reply": (
-                    "✅ Son video teslim edildi.\n\n"
-                    "Yeni bir video için **ürün linkini** gönder veya /start yaz!"
-                ),
-                "state": session.state,
-                "has_url": False,
-                "url": None,
-                "action": None,
-            }
-
-        # ── Herhangi bir state'de URL algıla ──
-        from core.url_data_extractor import URLDataExtractor
-        url = URLDataExtractor.extract_url_from_text(text)
-
+        # ── Fallback — bilinmeyen state ──
         if url:
+            session.soft_reset_for_new_url()
             session.current_url = url
             session.state = ConversationState.URL_PROCESSING
-            return {
-                "reply": (
-                    "🔗 URL algılandı! Ürün bilgileri çıkarılıyor...\n"
-                    f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
-                ),
-                "state": session.state,
-                "has_url": True,
-                "url": url,
-                "action": None,
-            }
+            return self._reply(session, (
+                "🔗 URL algılandı! Ürün bilgileri çıkarılıyor...\n"
+                f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
+            ), has_url=True, url=url)
 
-        # URL bulunamadı — kullanıcıyı yönlendir
-        return {
-            "reply": (
-                "📎 Lütfen bir **ürün web sitesi linki** gönder.\n\n"
-                "_Örnek: https://www.marka.com/urun-adi_\n\n"
-                "Link göndermen yeterli — ürün bilgileri, görseller ve "
-                "reklam konsepti otomatik çıkarılacak!"
+        return self._reply(session, self._idle_guidance())
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🧠 STATE HANDLER'LAR (Agent Zekası)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    def _handle_idle_state(self, session: UserSession, text: str,
+                           url: str | None, user_id: int, user_name: str) -> dict:
+        """IDLE state — yeni iş kabul et veya doğal sohbet."""
+        if url:
+            # İlk kez geliyorsa karşılama göster
+            if not session.welcomed:
+                session.welcomed = True
+                prefix = (
+                    "🎬 **Hoş geldin!** Reklam videonu hazırlıyorum.\n\n"
+                )
+            else:
+                prefix = ""
+
+            session.current_url = url
+            session.state = ConversationState.URL_PROCESSING
+            return self._reply(session, (
+                f"{prefix}"
+                f"🔗 URL algılandı! Ürün bilgileri çıkarılıyor...\n"
+                f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
+            ), has_url=True, url=url)
+
+        # URL yok — ilk mesaj mı yoksa devam eden sohbet mi?
+        if not session.welcomed:
+            session.welcomed = True
+            return self._reply(session, (
+                "🎬 **Merhaba!** Ben senin reklam video asistanınım.\n\n"
+                "Bana bir **ürün linki** gönder, "
+                "ben de o ürün için profesyonel bir reklam videosu hazırlayayım! 🚀\n\n"
+                "📎 _Örnek: https://www.marka.com/urun-adi_"
+            ))
+
+        # Zaten karşılama gösterildi — doğal bir yönlendirme yap
+        return self._reply(session, self._idle_guidance())
+
+    def _handle_busy_state(self, session: UserSession, text: str,
+                           url: str | None) -> dict:
+        """İşlem devam ederken — bağlam-farkında durum bilgisi."""
+        brand = session.active_brand
+        product = session.active_product
+        product_label = f"**{brand} {product}**" if brand else "ürün"
+
+        state_messages = {
+            ConversationState.URL_PROCESSING: (
+                f"🔗 Şu an {product_label} için ürün bilgileri çıkarılıyor.\n"
+                "Bu birkaç saniye sürer, biraz bekle! ⏳"
             ),
-            "state": session.state,
-            "has_url": False,
-            "url": None,
-            "action": None,
+            ConversationState.RESEARCHING: (
+                f"🔍 {product_label} için marka araştırması ve senaryo kurgulanıyor.\n"
+                "Bu 15-30 saniye sürebilir, az kaldı! ⏳"
+            ),
+            ConversationState.PRODUCING: (
+                f"🎬 {product_label} için video üretimi devam ediyor.\n"
+                "Seedance ile video, ElevenLabs ile dış ses hazırlanıyor.\n"
+                "Bu 2-5 dakika sürebilir — bitince haber vereceğim! 📹"
+            ),
         }
+
+        status_msg = state_messages.get(
+            session.state,
+            "⏳ Bir işlem devam ediyor, lütfen bekle."
+        )
+
+        if url:
+            status_msg += (
+                "\n\n📎 Yeni bir link gönderdiğini gördüm — "
+                "mevcut işlem tamamlandıktan sonra yeni linki gönderebilirsin."
+            )
+
+        return self._reply(session, status_msg)
+
+    def _handle_delivered_state(self, session: UserSession, text: str,
+                                url: str | None) -> dict:
+        """DELIVERED sonrası — yeni iş veya sohbet."""
+        if url:
+            # Yeni URL → soft reset (context koru) + yeni pipeline
+            old_brand = session.active_brand
+            session.soft_reset_for_new_url()
+            session.current_url = url
+            session.state = ConversationState.URL_PROCESSING
+
+            prefix = ""
+            if old_brand:
+                prefix = f"👍 {old_brand} videosu tamamlandı.\n\n"
+
+            return self._reply(session, (
+                f"{prefix}"
+                f"🔗 Yeni ürün linki algılandı! Bilgiler çıkarılıyor...\n"
+                f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
+            ), has_url=True, url=url)
+
+        # URL yok — sohbet/teşekkür/soru
+        last_label = ""
+        if session.last_brand:
+            last_label = f" ({session.last_brand}"
+            if session.last_product:
+                last_label += f" — {session.last_product}"
+            last_label += ")"
+
+        return self._reply(session, (
+            f"✅ Son video{last_label} teslim edildi!\n\n"
+            "Yeni bir video için **ürün linkini** gönder 🚀"
+        ))
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # STATE: SCENARIO_APPROVAL
@@ -318,9 +389,11 @@ class ConversationManager:
                 "action": "cancel",
             }
         else:
+            brand = session.active_brand
+            product_info = f" ({brand})" if brand else ""
             return {
                 "reply": (
-                    "📋 Senaryo onayı bekliyor. Lütfen:\n"
+                    f"📋 Senaryo onayı{product_info} bekliyor. Lütfen:\n"
                     "• **Onayla** / **Tamam** → Üretim başlar\n"
                     "• **İptal** / **Vazgeç** → İptal edilir\n\n"
                     "Ya da yukarıdaki butonları kullanabilirsin."
@@ -359,6 +432,33 @@ class ConversationManager:
             }
 
         return {"action": "unknown", "state": session.state}
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🛠️ YARDIMCI METOTLAR (Agent)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    @staticmethod
+    def _reply(session: UserSession, reply: str, has_url: bool = False,
+               url: str | None = None, action: str | None = None) -> dict:
+        """Standart reply dict oluşturur."""
+        import time as _time
+        session._last_activity = _time.time()
+        return {
+            "reply": reply,
+            "state": session.state,
+            "has_url": has_url,
+            "url": url,
+            "action": action,
+        }
+
+    @staticmethod
+    def _idle_guidance() -> str:
+        """IDLE'da URL olmayan mesajlara kısa, doğal yanıt."""
+        return (
+            "Bana bir **ürün linki** gönder, "
+            "gerisini ben halledeyim! 🚀\n\n"
+            "📎 _Örnek: https://www.marka.com/urun-adi_"
+        )
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # STATE GEÇİŞ METODLARİ
