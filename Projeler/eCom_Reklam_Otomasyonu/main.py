@@ -67,7 +67,7 @@ notion_svc = NotionService(token=settings.NOTION_TOKEN, database_id=settings.NOT
 firecrawl_svc = FirecrawlService(api_key=getattr(settings, "FIRECRAWL_API_KEY", ""))
 
 # Core modüller — DI ile servisler enjekte edilir
-conversation_mgr = ConversationManager()
+conversation_mgr = ConversationManager(openai_service=openai_svc)
 url_extractor = URLDataExtractor(openai_service=openai_svc, firecrawl_service=firecrawl_svc)
 scenario_engine = ScenarioEngine(openai_service=openai_svc, perplexity_service=perplexity_svc)
 pipeline = ProductionPipeline(

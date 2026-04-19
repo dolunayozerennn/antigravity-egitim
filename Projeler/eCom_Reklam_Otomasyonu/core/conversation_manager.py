@@ -191,8 +191,10 @@ class ConversationManager:
         """
         Metin mesajını işle — akıllı agent katmanı.
 
-        Agent, mevcut state'e göre bağlam-farkında yanıt verir.
-        Workflow tetikleme (has_url=True) sadece uygun state'lerde yapılır.
+        Agent, GPT'nin tool_calling özelliğini kullanarak:
+        - Kullanıcının bir ürün/link gönderip göndermediğini anlar (process_url tool)
+        - Mevcut bir işlem varsa onay/iptal kararlarını algılar
+        - Bunlar dışında doğal olarak sohbet edebilir.
 
         Returns:
             dict: {
@@ -205,47 +207,156 @@ class ConversationManager:
         """
         session = self.get_session(user_id, user_name)
 
-        # URL var mı kontrol et (her state'de lazım)
-        from core.url_data_extractor import URLDataExtractor
-        url = URLDataExtractor.extract_url_from_text(text)
+        # Agent sistem talimatı
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Sen eCom Reklam Otomasyonu'nun akıllı asistanısın. Kullanıcılar sana e-ticaret "
+                    "ürün linkleri (veya metinleri) gönderir, sen de onlara profesyonel reklam videoları üretirsin. "
+                    "Amacın konuşmayı anında URL veya ürün isteğine yönlendirmek. Kullanıcı sadece bir sitenin anasayfasına "
+                    "yönlendiren link veya herhangi bir ürün bağlantısı atarsa, MUTLAKA `process_url` aracını (tool) çağır. "
+                    "Kullanıcı e-ticaret ürününü işlemeyi onaylarsa veya \"başla\" derse `approve_scenario` yetkisini kullan. "
+                    "Hiçbiri değilse, kullanıcıya nazikçe yardım et ve konuşmayı sürdür."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"[SİSTEM VERİSİ - Mevcut Durumun: {session.state.name}, Son İşlenen Marka: {session.active_brand}]\nKullanıcı: {text}"
+            }
+        ]
 
-        # ── State: SCENARIO_APPROVAL → metin tabanlı onay/iptal (öncelikli) ──
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "process_url",
+                    "description": "Kullanıcı mesajında herhangi bir web sitesi veya ürün URL'si olduğunda bu fonksiyonu çağır. Parametre olarak bulduğun URL'yi vermelisin.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": "string", "description": "Mesajdaki veya en belirgin bağlantı URL'si"}
+                        },
+                        "required": ["url"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "approve_scenario",
+                    "description": "Kullanıcı hazırlanan senaryoyu/işlemi onaylarsa, tamam falan derse çağırılacak eylem."
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "cancel_action",
+                    "description": "Kullanıcı üretimi iptal etmek isterse veya vazgeçerse çağırılır."
+                }
+            }
+        ]
+
+        url = None
+        action = None
+        assistant_reply = None
+
+        try:
+            if not self.openai:
+                raise ValueError("OpenAI service bulunamadı, fallback'e geçiliyor.")
+                
+            msg = self.openai.chat_with_tools(messages, tools, max_tokens=1500)
+            if getattr(msg, "tool_calls", None):
+                tool_call = msg.tool_calls[0].function
+                if tool_call.name == "process_url":
+                    import json
+                    args = json.loads(tool_call.arguments)
+                    url = args.get("url")
+                elif tool_call.name == "approve_scenario":
+                    action = "approve"
+                elif tool_call.name == "cancel_action":
+                    action = "cancel"
+            else:
+                assistant_reply = msg.content
+        except Exception as e:
+            log.error(f"Agent analiz hatası: {e}", exc_info=True)
+            # Fallback (Regex URL çıkarıcı)
+            from core.url_data_extractor import URLDataExtractor
+            url = URLDataExtractor.extract_url_from_text(text)
+            
+            lower = text.lower().strip()
+            if any(w in lower for w in APPROVAL_KEYWORDS):
+                action = "approve"
+            elif any(w in lower for w in CANCEL_KEYWORDS):
+                action = "cancel"
+
+        # ── State: SCENARIO_APPROVAL ──
         if session.state == ConversationState.SCENARIO_APPROVAL:
-            # Senaryo onay state'inde URL gelirse → onay/iptal bekliyoruz uyarısı
             if url:
                 return self._reply(session, (
                     "📋 Şu an bir senaryo onayı bekliyor.\n\n"
                     "Önce mevcut senaryoyu **onayla** veya **iptal et**, "
                     "sonra yeni bir link gönderebilirsin."
                 ))
-            return self._handle_scenario_text_response(session, text)
+            
+            if action == "approve":
+                log.info(f"Agent-based senaryo onayı: user={session.user_id}")
+                return {
+                    "reply": None,  # main.py kendi mesajını gönderecek
+                    "state": ConversationState.PRODUCING,
+                    "has_url": False,
+                    "url": None,
+                    "action": "approve",
+                }
+            elif action == "cancel":
+                session.reset()
+                log.info(f"Agent-based senaryo iptali: user={session.user_id}")
+                return {
+                    "reply": "❌ İptal edildi.\n\nYeni bir video için ürün linkini gönderebilirsin.",
+                    "state": session.state,
+                    "has_url": False,
+                    "url": None,
+                    "action": "cancel",
+                }
+                
+            # Aksi halde agent'ın sohbet yanıtını döndür veya varsayılan mesaj
+            return self._reply(session, assistant_reply or "Lütfen mevcut senaryoyu onayla ya da iptal et.")
 
-        # ── State: URL_PROCESSING / RESEARCHING / PRODUCING → işlem devam ediyor ──
+        # ── State: İşlem devam ediyor (BUSY) ──
         if session.state in (
             ConversationState.URL_PROCESSING,
             ConversationState.RESEARCHING,
             ConversationState.PRODUCING,
         ):
+            if action == "cancel":
+                session.reset()
+                return self._reply(session, "❌ İşlemler durduruldu ve iptal edildi.")
+                
+            # Eğer tool çağrılmadıysa ve bot cevap ürettiyse onu kullan. Değilse standart meşgul
+            if not url and assistant_reply:
+                return self._reply(session, assistant_reply)
             return self._handle_busy_state(session, text, url)
 
-        # ── State: IDLE → yeni iş kabul et veya sohbet ──
-        if session.state == ConversationState.IDLE:
-            return self._handle_idle_state(session, text, url, user_id, user_name)
-
-        # ── State: DELIVERED → yeni iş veya teşekkür/sohbet ──
-        if session.state == ConversationState.DELIVERED:
-            return self._handle_delivered_state(session, text, url)
-
-        # ── Fallback — bilinmeyen state ──
+        # ── State: IDLE veya DELIVERED ──
+        # Her ikisinde de yeni URL kabul edilir
         if url:
-            session.soft_reset_for_new_url()
+            if session.state == ConversationState.DELIVERED:
+                session.soft_reset_for_new_url()
+            elif session.state == ConversationState.IDLE and not session.welcomed:
+                session.welcomed = True
+                
             session.current_url = url
             session.state = ConversationState.URL_PROCESSING
             return self._reply(session, (
-                "🔗 URL algılandı! Ürün bilgileri çıkarılıyor...\n"
+                "🔗 URL algılandı! Akıllı agent sistemi devreye giriyor...\n"
                 f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
             ), has_url=True, url=url)
 
+        # Eğer URL yoksa, Agent'ın verdiği yanıtı dön
+        if assistant_reply:
+            session.welcomed = True
+            return self._reply(session, assistant_reply)
+            
         return self._reply(session, self._idle_guidance())
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

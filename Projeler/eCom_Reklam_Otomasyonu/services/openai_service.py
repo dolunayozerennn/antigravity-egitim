@@ -74,6 +74,26 @@ class OpenAIService:
             log.error(f"OpenAI API hatası: {e}", exc_info=True)
             raise
 
+    def chat_with_tools(self, messages: list[dict], tools: list[dict], max_tokens: int = 1500):
+        """
+        OpenAI chat completion çağrısı, ancak yetki (tools) listesiyle.
+        Agent mimarisi için.
+        """
+        try:
+            effective_max_tokens = max(max_tokens, 100)
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                tools=tools,
+                tool_choice="auto",
+                max_completion_tokens=effective_max_tokens,
+            )
+            log.info(f"Chat (Tools) yanıt alındı — tokens: {response.usage.total_tokens}")
+            return response.choices[0].message
+        except Exception as e:
+            log.error(f"OpenAI tools API hatası: {e}", exc_info=True)
+            raise
+
     # ── Görsel URL Validasyonu ──
 
     # OpenAI Vision API desteklenen formatlar

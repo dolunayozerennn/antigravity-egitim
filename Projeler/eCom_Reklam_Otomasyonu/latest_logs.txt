@@ -1,3 +1,4 @@
+  File "/app/core/url_data_extractor.py", line 144, in extract
     extracted = await asyncio.to_thread(
                 ^^^^^^^^^^^^^^^^^^^^^^^^
         self._extract_structured_data, page_content, metadata
@@ -9,21 +10,21 @@
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/mise/installs/python/3.13.13/lib/python3.13/concurrent/futures/thread.py", line 59, in run
     result = self.fn(*self.args, **self.kwargs)
-  File "/app/core/url_data_extractor.py", line 144, in extract
   File "/app/core/url_data_extractor.py", line 254, in _extract_structured_data
     prompt = EXTRACTION_PROMPT.format(page_content=enriched_content)
-    extracted = await asyncio.to_thread(
 KeyError: '\n    "brand_name"'
-                ^^^^^^^^^^^^^^^^^^^^^^^^
-2026-04-19 08:48:52 - main - ERROR - Background task çöktü: Task-478
-        self._extract_structured_data, page_content, metadata
+2026-04-19 08:58:43 - main - ERROR - Background task çöktü: Task-608
 Traceback (most recent call last):
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/app/main.py", line 267, in _process_url_and_scenario
-    )
     extracted_data = await url_extractor.extract(url)
-    ^
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/core/url_data_extractor.py", line 144, in extract
+    extracted = await asyncio.to_thread(
+                ^^^^^^^^^^^^^^^^^^^^^^^^
+        self._extract_structured_data, page_content, metadata
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
   File "/mise/installs/python/3.13.13/lib/python3.13/asyncio/threads.py", line 25, in to_thread
     return await loop.run_in_executor(None, func_call)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -40,40 +41,40 @@ Traceback (most recent call last):
     await message.reply_text(
     ...<4 lines>...
     )
+    ^
   File "/app/.venv/lib/python3.13/site-packages/telegram/_message.py", line 1771, in reply_text
     return await self.get_bot().send_message(
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 1019, in send_message
     ...<20 lines>...
     )
+    return await self._send_message(
     ^
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/app/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 2965, in send_message
+    ...<19 lines>...
     return await super().send_message(
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ^
+    )
     ...<21 lines>...
-  File "/app/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 731, in _send_message
-    )
-    result = await self._post(
-    ^
-             ^^^^^^^^^^^^^^^^^
-  File "/app/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 1019, in send_message
-    ...<7 lines>...
-    return await self._send_message(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ...<19 lines>...
     ^
     )
-  File "/app/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 619, in _post
-    ^
   File "/app/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 610, in _send_message
-    return await self._do_post(
     result = await super()._send_message(
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-           ^^^^^^^^^^^^^^^^^^^^
     ...<21 lines>...
-    ...<6 lines>...
     )
+    ^
+  File "/app/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 731, in _send_message
+    result = await self._post(
+             ^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "/app/.venv/lib/python3.13/site-packages/telegram/_bot.py", line 619, in _post
+    return await self._do_post(
+           ^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
     )
     ^
   File "/app/.venv/lib/python3.13/site-packages/telegram/ext/_extbot.py", line 354, in _do_post
@@ -97,5 +98,4 @@ Traceback (most recent call last):
   File "/app/.venv/lib/python3.13/site-packages/telegram/request/_baserequest.py", line 383, in _request_wrapper
     raise BadRequest(message)
 telegram.error.BadRequest: Can't parse entities: can't find end of the entity starting at byte offset 94
-2026-04-19 08:48:52 - conversation_manager - INFO - Yeni sohbet başlatıldı: user=1238877494 (Dolunay)
-2026-04-19 08:48:57 - conversation_manager - INFO - Yeni sohbet başlatıldı: user=1238877494 (Dolunay)
+2026-04-19 08:58:51 - conversation_manager - INFO - Yeni sohbet başlatıldı: user=1238877494 (Dolunay)
