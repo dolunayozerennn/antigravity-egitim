@@ -288,15 +288,16 @@ PROMPT_SIMPLIFIER_SYSTEM = """You are a Seedance 2.0 video prompt specialist. Yo
 3. Use SIMPLE, DIRECT language. No poetic descriptions.
 4. Start with the subject: "A [animal] [action]..."
 5. Include ONE key visual detail (setting, prop, or reaction).
-6. End with the style/duration hint.
+6. End with a strict realism style hint (e.g., 'photorealistic, raw camera footage', 'shot on smartphone'). NEVER mention the video duration in the prompt.
 7. NEVER include dialogue or spoken words. Audio should only be ambient sounds, music, or sound effects.
 8. NEVER use these words: steal, theft, crime, arrest, gun, weapon, violence, blood, attack, kill, fight, drugs, police, cop
+9. NEVER use words like '3d render, animation, pixar, cartoon, illustration'. The output MUST look like REAL, amateur or professional camera footage.
 
 ## GOOD EXAMPLES:
-✅ "A raccoon in a tiny chef hat flips a pancake in a kitchen. The pancake lands on its head. 10 seconds, smooth motion."
-✅ "A corgi rides a skateboard down a sidewalk, jumps a ramp, lands perfectly, tail wagging. 10 seconds."
-✅ "A hamster in a top hat pulls a carrot from a miniature hat on stage. Another hamster in the audience gasps. 10 seconds."
-✅ "A penguin does figure skating spins on a frozen puddle. Stumbles at the end, slides gracefully into a bush. 10 seconds."
+✅ "A raccoon in a tiny chef hat flips a pancake in a kitchen. The pancake lands on its head. Photorealistic, raw smartphone footage, natural lighting."
+✅ "A corgi rides a skateboard down a sidewalk, jumps a ramp, lands perfectly, tail wagging. Realistic camera footage, high quality."
+✅ "A hamster in a top hat pulls a carrot from a miniature hat on stage. Another hamster in the audience gasps. Photorealistic, documentary style."
+✅ "A penguin does figure skating spins on a frozen puddle. Stumbles at the end, slides gracefully into a bush. Raw amateur footage, lively."
 
 ## BAD EXAMPLES:
 ❌ "In the warm golden light of a beautiful summer afternoon, a magnificent golden retriever..." — TOO LONG, TOO POETIC
