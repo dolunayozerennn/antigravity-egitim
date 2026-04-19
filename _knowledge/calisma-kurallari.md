@@ -317,3 +317,83 @@ Kullanıcı kodlama bilmiyor. Bir proje 6 adımlı bir pipeline çalıştırıyo
 | Hata | Rich Text | Hata mesajı (varsa) |
 | Süre | Number | Toplam çalışma süresi (saniye) |
 
+## 📖 API Contract-First Development (ZORUNLU — Nisan 2026+)
+
+> **Post-mortem kaynağı:** eCom Seedance hatası — 8 gün boyunca yanlış parametre ismi kullanıldı, gerçek testle ortaya çıktı.
+
+### Kural:
+Herhangi bir 3. parti API entegrasyonu yazılmadan ÖNCE:
+1. **Dökümantasyonu oku** — resmi API docs URL'sini not et
+2. **1 adet curl/test isteği gönder** — gerçek başarılı response al
+3. **Parametre isimlerini dökümantasyondan kopyala** — ASLA tahmin etme, başka modelden kopyalama
+4. Başarılı response gördükten SONRA kodu yaz
+
+### Anti-pattern (YASAK):
+- "X modeli şu parametreyi kullanıyor, Y modeli de aynı şirketten, büyük ihtimalle aynıdır"
+- Parametre ismini hafızadan veya tahminle yazmak
+- Dökümantasyon okumadan entegrasyon kodlamak
+
+## 🧪 Uçtan Uca Çıktı Doğrulaması (ZORUNLU — Nisan 2026+)
+
+> **"Log'da hata yok" ≠ "Çalışıyor"**
+
+### Kural:
+Pipeline projeleri (3+ adım, dış API kullanan) için deploy sonrası:
+1. **Minimum 1 test** gerçek veriyle (mock/dummy değil) çalıştırılır
+2. **Somut çıktı kontrol edilir** — video üretildiyse izlenir, email atıldıysa alınır, veri yazıldıysa okunur
+3. Stabilize-Lite kontrol listesine **6. madde** olarak eklenir
+
+### Mevcut Stabilize-Lite'a Eklenen 6. Madde:
+```
+6. Pipeline projesi ise → 1 adet gerçek veriyle uçtan uca test çalıştır
+   → Somut çıktı (dosya, mesaj, kayıt) gözle doğrula
+```
+
+## 🏗️ Proof of Concept Before Pipeline (ZORUNLU — Nisan 2026+)
+
+> **20 dosya yazdım ama hiçbiri gerçekten çalışıyor mu bilmiyorum = YASAK**
+
+### Kural:
+Yeni proje kurulmadan ÖNCE:
+1. **Kritik dış bağımlılıklar listelenir** (video API, scraping, ödeme vb.)
+2. **Her biri 1 script/curl ile test edilir** — "çalışıyor" kanıtı üretilir
+3. **Tüm core entegrasyonlar çalıştıktan SONRA** pipeline/bot mimarisi kurulur
+4. Kullanıcıya "şu API'leri test ettim, hepsi çalışıyor, şimdi projeyi kurabiliriz" raporu verilir
+
+### Yeni Proje Başlatma Kontrol Listesi:
+```
+□ 1. Kullanılacak dış API'ler listelendi
+□ 2. Her API'nin dökümantasyonu okundu
+□ 3. Her API için 1 adet başarılı test isteği gönderildi
+□ 4. Core entegrasyonlar tek dosyada çalışır durumda
+□ 5. Pipeline mimarisi tasarlandı
+□ 6. Deploy sonrası uçtan uca test senaryosu HAZIR (gerçek veriyle)
+```
+
+## 🤖 Otonom Contract Test (ZORUNLU — Nisan 2026+)
+
+> **Kullanıcı Telegram'dan test etmek zorunda değil. Agent kendi kendine doğrular.**
+
+### Kural:
+Her pipeline projesi bir `contract_test.py` dosyası içerir. Bu dosya:
+1. **Her dış API entegrasyonunu** gerçek bir istek ile test eder (task oluştur → poll → URL al)
+2. **Çıktının erişilebilirliğini** doğrular (dönen URL'e HTTP GET → 200 mü?)
+3. **Deploy öncesi agent tarafından çalıştırılır** — kullanıcıya "test sonuçları" olarak raporlanır
+
+### Ne Kontrol Eder (Minimum):
+- API anahtarı geçerli mi? (auth hatası yok mu?)
+- Request payload'u kabul ediliyor mu? (parametre isimleri doğru mu?)
+- Task oluşturuluyor mu? (taskId dönüyor mu?)
+- Polling sonucu başarılı mı? (resultUrls dolu mu?)
+- Üretilen URL'ler erişilebilir mi? (HTTP 200?)
+
+### Ne Kontrol Edemez:
+- Video/görsel kalitesi (bunu insan değerlendirir)
+- İçerik uygunluğu (promptun sonucu estetik mi?)
+
+### Uygulama:
+- **Yeni projeler:** Proje ile birlikte `contract_test.py` oluşturulur
+- **Mevcut projeler:** Peyderpey eklenir (Küçük Parça Prensibi)
+- **Çalıştırma:** Deploy workflow'unun import testi adımından hemen sonra
+
+

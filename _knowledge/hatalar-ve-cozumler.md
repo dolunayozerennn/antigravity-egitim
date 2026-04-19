@@ -322,3 +322,25 @@ En kritik fixler:
 4. **Vision API NoneType (P1):** Null guard + 3 retry
 5. **Telegram Markdown (P1):** `parse_mode=None` fallback
 6. **Tarih:** Nisan 2026
+
+### Seedance 2.0 — Yanlış Parametre Adı (image_input vs reference_image_urls)
+- **Sorun:** Nano Banana 2'deki `image_input` parametresi Seedance 2.0'a da uygulandı. Seedance 2.0 `reference_image_urls` bekliyor. 8 gün boyunca fark edilmedi çünkü gerçek veriyle uçtan uca test yapılmadı.
+- **Çözüm:** `image_input` → `reference_image_urls` olarak değiştirildi. API dökümantasyonundaki parametre isimleri birebir kopyalandı.
+- **Kural:** Aynı şirketin farklı modelleri farklı parametre isimleri kullanabilir. Her model için dökümantasyon okunup `curl` ile test edildikten sonra kodlanmalı.
+- **Tarih:** Nisan 2026
+
+---
+
+## 🚨 API Contract Violation — Sistemik Anti-Pattern (POST-MORTEM)
+
+> Bu bölüm eCom Seedance hatasının kök neden analizinden doğmuştur (Nisan 2026).
+
+### Sorun Kalıbı
+API parametreleri tahmin edildi veya başka bir modelden kopyalandı → hata deploy sonrası değil, gerçek kullanımda ortaya çıktı → uzun süre fark edilmedi.
+
+### Önleme (3 Kural)
+1. **API-First:** 3. parti API entegrasyonu yazmadan ÖNCE dökümantasyonu oku, 1 curl testi gönder, başarılı response gör.
+2. **E2E Test:** Pipeline projelerinde deploy sonrası en az 1 uçtan uca test gerçek veriyle yapılır. Log'da hata yoksa bile çıktı (video, dosya, kayıt) gözle doğrulanır.
+3. **PoC-First:** Büyük proje kurmadan önce her kritik dış bağımlılık tek bir script/curl ile test edilir ve çalıştığı kanıtlanır.
+
+- **Tarih:** Nisan 2026

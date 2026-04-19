@@ -220,11 +220,11 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `8797307d-7b80-41cb-add0-976c09eaeed4`
 - **Service ID:** `98a3be1e-f6f4-4ca2-8780-2b88bbd2125a`
 - **Environment ID:** `b8353ac5-0ec4-4785-8d72-7aae17f18e56`
-- **Deployment ID:** `bc7ab4b2-3682-477d-88a7-5f833434998f`
+- **Deployment ID:** `f2963e80-87dc-4d39-a96b-7872f004a9ee`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-19 (Telegram hata mesajlarında oluşan Markdown parse entities hatası fixlendi)
+- **Son Deploy:** 2026-04-19 (Seedance 2.0 tam parametre desteği: I2V, ref video/audio, resolution + File Upload API entegrasyonu)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID, FIRECRAWL_API_KEY
 
