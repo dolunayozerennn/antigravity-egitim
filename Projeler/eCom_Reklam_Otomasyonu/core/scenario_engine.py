@@ -121,7 +121,7 @@ class ScenarioEngine:
     # 🎬 SENARYO ÜRETİMİ
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    def generate_scenario(self, collected_data: dict, research_data: dict) -> dict:
+    def generate_scenario(self, collected_data: dict, research_data: dict, preferences: dict = None) -> dict:
         """
         Araştırma sonuçlarıyla deterministik video senaryosu üretir.
 
@@ -130,6 +130,7 @@ class ScenarioEngine:
         Args:
             collected_data: URLDataExtractor'dan gelen veriler
             research_data: research() çıktısı
+            preferences: Kullanıcının belirlediği tercihler (butonlardan/metinden gelen)
 
         Returns:
             dict: Senaryo bilgileri + maliyet
@@ -141,6 +142,23 @@ class ScenarioEngine:
         target_audience = collected_data.get("target_audience", "")
         has_images = bool(collected_data.get("best_image_urls"))
 
+        aspect_ratio_override = FIXED_ASPECT_RATIO
+
+        extra_notes = ""
+        preferences = preferences or {}
+        if preferences.get("video_format"):
+            aspect_ratio_override = preferences["video_format"]
+        
+        if preferences.get("video_style"):
+            style_desc = {
+                "cinematic": "Profesyonel çekim, sinematik ışıklandırma, ürün odaklı",
+                "ugc": "Samimi, User Generated Content tarzı, doğal ve gerçekçi",
+            }.get(preferences["video_style"], preferences["video_style"])
+            extra_notes += f"- Video Tarzı: {style_desc}\n"
+        
+        if preferences.get("custom_note"):
+            extra_notes += f"- Kullanıcı Notu: {preferences['custom_note']}\n"
+
         user_brief = (
             f"## Proje Bilgileri:\n"
             f"- Marka: {brand}\n"
@@ -149,11 +167,15 @@ class ScenarioEngine:
             f"- Reklam Konsepti: {concept}\n"
             f"- Hedef Kitle: {target_audience}\n"
             f"- Video Süresi: {FIXED_DURATION} saniye (SABİT)\n"
-            f"- Format: {FIXED_ASPECT_RATIO} (SABİT)\n"
+            f"- Format: {aspect_ratio_override} (SABİT)\n"
             f"- Dil: {FIXED_LANGUAGE} (SABİT)\n"
-            f"- Ürün Referans Görseli: {'Var (reference image modu)' if has_images else 'Yok (text-to-video)'}\n\n"
-            f"## Marka Araştırması:\n{research_data.get('brand_research', 'N/A')}\n"
+            f"- Ürün Referans Görseli: {'Var (reference image modu)' if has_images else 'Yok (text-to-video)'}\n"
         )
+
+        if extra_notes:
+            user_brief += f"\n## Kullanıcı Tercihleri ve Notlar:\n{extra_notes}\n"
+
+        user_brief += f"\n## Marka Araştırması:\n{research_data.get('brand_research', 'N/A')}\n"
 
         messages = [
             {"role": "system", "content": SCENARIO_SYSTEM_PROMPT},
@@ -174,7 +196,7 @@ class ScenarioEngine:
 
         # Senaryo sonucunu deterministik parametrelerle zenginleştir
         scenario["duration"] = FIXED_DURATION
-        scenario["aspect_ratio"] = FIXED_ASPECT_RATIO
+        scenario["aspect_ratio"] = aspect_ratio_override
         scenario["language"] = FIXED_LANGUAGE
         scenario["has_reference_images"] = has_images
         scenario["cost"] = cost

@@ -246,6 +246,41 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         await chat_tracker.log_interaction(str(user.id), text, result["reply"])
 
+    # Buton yanıtı
+    if result.get("buttons"):
+        try:
+            btn_data = result["buttons"]
+            keyboard_rows = []
+            options = btn_data.get("options", [])
+            choice_key = btn_data.get("choice_key", "unknown")
+            question = btn_data.get("question", "Lütfen seçiminizi yapın:")
+            
+            for opt in options:
+                val = opt.get('value', 'unkn')
+                label = opt.get('label', 'Seçenek')
+                cb_data = f"pref:{choice_key}:{val}"
+                # Telegram callback_data limit extends to 64 bytes - ensuring it fits
+                if len(cb_data.encode('utf-8')) > 64:
+                    cb_data = cb_data[:64]
+                keyboard_rows.append([InlineKeyboardButton(label, callback_data=cb_data)])
+            
+            if btn_data.get("allow_freetext"):
+                cb_data = f"pref:{choice_key}:__freetext__"
+                if len(cb_data.encode('utf-8')) > 64:
+                    cb_data = cb_data[:64]
+                keyboard_rows.append([InlineKeyboardButton("✍️ Kendi cevabımı yazacağım", callback_data=cb_data)])
+            
+            markup = InlineKeyboardMarkup(keyboard_rows)
+            try:
+                await update.message.reply_text(question, reply_markup=markup, parse_mode="Markdown")
+            except Exception:
+                await update.message.reply_text(question, reply_markup=markup)
+                
+            await chat_tracker.log_interaction(str(user.id), "[Sistem - Buton Gösterildi]", question)
+        except Exception as e:
+            log.error(f"Buton yanıtı oluşturulurken hata: {e}", exc_info=True)
+            await update.message.reply_text("⚠️ Seçenekler gösterilirken bir hata oluştu, lütfen manuel yazın.")
+
     # Eğer URL bulunduysa Pipeline'ı başlat
     if result.get("has_url") and result.get("url"):
         task = asyncio.create_task(
@@ -280,7 +315,7 @@ async def _process_url_and_scenario(message, user_id: int, url: str):
 
         # Adım 3: Senaryo Üretimi
         scenario = await asyncio.to_thread(
-            scenario_engine.generate_scenario, session.collected_data, research_data
+            scenario_engine.generate_scenario, session.collected_data, research_data, session.preferences
         )
         session.scenario = scenario
 
@@ -350,6 +385,55 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             result.get("reply", "❌ İptal edildi."),
             parse_mode="Markdown",
         )
+    elif data.startswith("pref:"):
+        parts = data.split(":", 2)  # pref:choice_key:value
+        choice_key = parts[1]
+        choice_value = parts[2] if len(parts) > 2 else ""
+
+        session = conversation_mgr.get_session(user.id)
+        
+        if choice_value == "__freetext__":
+            # Serbest metin modu
+            session.pending_choice_key = choice_key
+            await query.edit_message_reply_markup(reply_markup=None)
+            await query.message.reply_text("✍️ Lütfen tercihini metin olarak yazarak bana gönder:")
+        else:
+            # Butondan seçildi
+            await query.edit_message_reply_markup(reply_markup=None)
+            
+            result = conversation_mgr.handle_preference_set(user.id, choice_key, choice_value)
+            
+            if result.get("reply"):
+                try:
+                    await query.message.reply_text(result["reply"], parse_mode="Markdown")
+                except Exception:
+                    await query.message.reply_text(result["reply"], parse_mode=None)
+
+            if result.get("buttons"):
+                btn_data = result["buttons"]
+                keyboard_rows = []
+                for opt in btn_data["options"]:
+                    cb_data = f"pref:{btn_data['choice_key']}:{opt['value']}"
+                    if len(cb_data.encode('utf-8')) > 64:
+                        cb_data = cb_data[:64]
+                    keyboard_rows.append([InlineKeyboardButton(opt["label"], callback_data=cb_data)])
+                
+                if btn_data.get("allow_freetext"):
+                    cb_data = f"pref:{btn_data['choice_key']}:__freetext__"
+                    if len(cb_data.encode('utf-8')) > 64:
+                        cb_data = cb_data[:64]
+                    keyboard_rows.append([InlineKeyboardButton("✍️ Kendi cevabımı yazacağım", callback_data=cb_data)])
+                
+                markup = InlineKeyboardMarkup(keyboard_rows)
+                await query.message.reply_text(btn_data["question"], reply_markup=markup, parse_mode="Markdown")
+
+            # Eğer URL algılandıysa (Agent text handle sonrası pipeline başlatmak isterse)
+            if result.get("has_url") and result.get("url"):
+                task = asyncio.create_task(
+                    _process_url_and_scenario(query.message, user.id, result["url"])
+                )
+                task.add_done_callback(_handle_task_exception)
+
     else:
         log.warning(f"Bilinmeyen callback data: {data}")
         await query.edit_message_reply_markup(reply_markup=None)
@@ -384,6 +468,7 @@ async def _run_production(message, user_id: int):
             collected_data=session.collected_data,
             progress_callback=progress_callback,
             user_name=session.user_name,
+            preferences=session.preferences,
         )
 
         if result["status"] == "success":

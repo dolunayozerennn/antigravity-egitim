@@ -57,6 +57,7 @@ class ProductionPipeline:
         collected_data: dict,
         progress_callback=None,
         user_name: str = "",
+        preferences: dict = None,
     ) -> dict:
         """
         Onaylanan senaryoyla deterministik video üretim pipeline'ını çalıştır.
@@ -67,6 +68,7 @@ class ProductionPipeline:
             progress_callback: async def callback(step: str, message: str)
                              Her aşamada Telegram'a bildirim göndermek için.
             user_name: Telegram kullanıcı adı
+            preferences: Kullanıcı tercihleri
 
         Returns:
             dict: {
@@ -83,7 +85,10 @@ class ProductionPipeline:
         product = collected_data.get("product_name", "?")
         concept = collected_data.get("ad_concept", "?")
         duration = scenario.get("duration", 10)
-        aspect_ratio = scenario.get("aspect_ratio", "9:16")
+        
+        preferences = preferences or {}
+        aspect_ratio = preferences.get("video_format") or scenario.get("aspect_ratio", "9:16")
+        
         language = scenario.get("language", "Türkçe")
         cost = scenario.get("cost", {})
         reference_images = collected_data.get("best_image_urls", [])
