@@ -68,14 +68,14 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Service ID:** `3afcca6e-8f29-4ea6-bc99-b212a4269e34`
 - **COVER_TYPE:** `reels`
 - **Cron Schedule:** `0 6 * * *` (Günlük, UTC 06:00 = TR 09:00)
-- **Son Deploy:** 2026-04-15 (Reels trigger statuses expanded to include Çekime Hazır and Edit TAMAM)
+- **Son Deploy:** 2026-04-20 (fix: dotenv absolute path sorunu ve boş video listelerinde OpsLogger early-return hatası düzeltildi)
 - **Durum:** ✅ Aktif (Günde 1 kez Reels kapak üretimi — 3 tema × 2 varyasyon = 6 kapak)
 
 #### Servis 2: youtube-kapak
 - **Service ID:** `0bfc46ea-887f-4a62-a3da-bc7fb824eb3c`
 - **COVER_TYPE:** `youtube`
 - **Cron Schedule:** `0 7 * * *` (Günlük, UTC 07:00 = TR 10:00)
-- **Son Deploy:** 2026-04-12 (Redeploy — logger level fix, auto-deploy tetiklenmemişti)
+- **Son Deploy:** 2026-04-20 (fix: dotenv absolute path sorunu ve boş video listelerinde OpsLogger early-return hatası düzeltildi)
 - **Durum:** ✅ Aktif (Günde 1 kez YouTube thumbnail üretimi — 5 tema × 2 varyasyon = 10 kapak)
 
 - **Env Vars:** COVER_TYPE, ENV, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, NOTION_DB_YOUTUBE_ISBIRLIKLERI, NOTION_DB_OPS_LOG, KIE_API_KEY, GEMINI_API_KEY, IMGBB_API_KEY, GOOGLE_OUTREACH_TOKEN_JSON
