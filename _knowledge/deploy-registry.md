@@ -121,7 +121,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Akilli_Watchdog`)
 - **Lokal Klasör:** `Projeler/Akilli_Watchdog/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-16 (Fix: E-posta yorgunluğunu önleme (weekly digest mode) ve Antigravity AI Copy-Paste prompt eklendi)
+- **Son Deploy:** 2026-04-20 (Fix: TikTok bağımlı sosyal medya paylaşımlarında 'Hiç yeni lead işlenmedi' diyen false-positive Watchdog alarmı expected_daily_activity: False yapılarak düzeltildi)
 - **Durum:** ✅ Aktif (Günde 1 kez çalışır — UTC 00:00. Token expire takibi + Railway health check eklendi.)
 - **Env Vars:** GROQ_API_KEY, NOTION_API_TOKEN, NOTION_SOCIAL_TOKEN, GOOGLE_OUTREACH_TOKEN_JSON, GOOGLE_SERVICE_ACCOUNT_JSON, RAILWAY_TOKEN
 
