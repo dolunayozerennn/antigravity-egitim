@@ -14,3 +14,6 @@ NoneType: None
 2026-04-20 13:00:08 - openai_service - INFO - Chat (Tools) yanıt alındı — tokens: 856
 2026-04-20 13:10:13 - conversation_manager - INFO - Yeni sohbet başlatıldı: user=1238877494 (Dolunay)
 2026-04-20 13:10:25 - openai_service - INFO - Chat (Tools) yanıt alındı — tokens: 859
+2026-04-20 13:20:22 - conversation_manager - INFO - Yeni sohbet başlatıldı: user=1238877494 (Dolunay)
+2026-04-20 13:20:36 - openai_service - INFO - Chat (Tools) yanıt alındı — tokens: 856
+2026-04-20 13:21:13 - openai_service - INFO - Chat (Tools) yanıt alındı — tokens: 852

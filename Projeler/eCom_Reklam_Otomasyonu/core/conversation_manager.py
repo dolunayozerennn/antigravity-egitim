@@ -341,24 +341,36 @@ class ConversationManager:
                 
             import asyncio
             msg = await asyncio.to_thread(self.openai.chat_with_tools, messages, tools, max_tokens=1500)
+            assistant_reply = getattr(msg, "content", "") or ""
             if getattr(msg, "tool_calls", None):
-                tool_call = msg.tool_calls[0].function
-                if tool_call.name == "process_url":
-                    import json
-                    args = json.loads(tool_call.arguments)
-                    url = args.get("url") or session.pending_url
-                    session.pending_url = None # Tüketildi
-                elif tool_call.name == "approve_scenario":
-                    action = "approve"
-                elif tool_call.name == "cancel_action":
-                    action = "cancel"
-                elif tool_call.name == "present_choices":
-                    import json
-                    args = json.loads(tool_call.arguments)
-                    buttons_data = args
-                    session.state = ConversationState.COLLECTING_PREFERENCES
-            else:
-                assistant_reply = msg.content
+                for tool_item in msg.tool_calls:
+                    tool_call = tool_item.function
+                    if tool_call.name == "process_url":
+                        import json
+                        try:
+                            args = json.loads(tool_call.arguments)
+                            parsed_url = args.get("url")
+                            if not parsed_url:
+                                parsed_url = session.pending_url
+                            if parsed_url:
+                                url = parsed_url
+                                session.pending_url = None # Tüketildi
+                        except Exception as e:
+                            log.error(f"process_url arguments parse error: {e}")
+                            if session.pending_url:
+                                url = session.pending_url
+                    elif tool_call.name == "approve_scenario":
+                        action = "approve"
+                    elif tool_call.name == "cancel_action":
+                        action = "cancel"
+                    elif tool_call.name == "present_choices":
+                        import json
+                        try:
+                            args = json.loads(tool_call.arguments)
+                            buttons_data = args
+                            session.state = ConversationState.COLLECTING_PREFERENCES
+                        except Exception as e:
+                            log.error(f"present_choices arguments parse error: {e}")
         except Exception as e:
             log.error(f"Agent analiz hatası: {e}", exc_info=True)
             # Fallback (Regex URL çıkarıcı)

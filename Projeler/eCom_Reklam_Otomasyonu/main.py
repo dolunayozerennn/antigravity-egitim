@@ -425,8 +425,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     keyboard_rows.append([InlineKeyboardButton("✍️ Kendi cevabımı yazacağım", callback_data=cb_data)])
                 
                 markup = InlineKeyboardMarkup(keyboard_rows)
-                await query.message.reply_text(btn_data["question"], reply_markup=markup, parse_mode="Markdown")
-
+                try:
+                    await query.message.reply_text(btn_data["question"], reply_markup=markup, parse_mode="Markdown")
+                except Exception:
+                    await query.message.reply_text(btn_data["question"], reply_markup=markup)
             # Eğer URL algılandıysa (Agent text handle sonrası pipeline başlatmak isterse)
             if result.get("has_url") and result.get("url"):
                 task = asyncio.create_task(
