@@ -220,11 +220,11 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `8797307d-7b80-41cb-add0-976c09eaeed4`
 - **Service ID:** `98a3be1e-f6f4-4ca2-8780-2b88bbd2125a`
 - **Environment ID:** `b8353ac5-0ec4-4785-8d72-7aae17f18e56`
-- **Deployment ID:** `96c04a0f-caae-402d-99d1-080db94d3a5f`
+- **Deployment ID:** `b0e9168b-0ea9-428a-84eb-719454756818`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-20 (fix: Agent pending_url memory + enforce present_choices)
+- **Son Deploy:** 2026-04-20 (fix: handle_preference_set made async to prevent callback exception and preserve pending_url)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID, FIRECRAWL_API_KEY
 
