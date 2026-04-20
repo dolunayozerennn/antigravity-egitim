@@ -568,21 +568,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if "Conflict" in err_str or "getUpdates" in err_str:
             global _CRASHED_WITH_CONFLICT
             _CRASHED_WITH_CONFLICT = True
-            log.warning("🔄 Conflict algılandı! Aplikasyon graceful olarak durduruluyor...")
-            
-            # Tüm process'i kill etmek loop'u kırıyordu.
-            # Bunun yerine updater ve application'ı programatik durduruyoruz.
-            async def _stop_app():
-                try:
-                    await asyncio.sleep(1)
-                    if context.application.updater.running:
-                        await context.application.updater.stop()
-                    await context.application.stop()
-                except Exception as e:
-                    log.error(f"App durdurulurken hata: {e}")
-            
-            import asyncio
-            asyncio.create_task(_stop_app())
+            log.warning("🔄 Conflict algılandı! Custom runner bunu fark edip kapatacak.")
             
     except Exception as check_exc:
         log.error(f"Conflict kontrolü sırasında hata: {check_exc}")
@@ -646,31 +632,33 @@ def main():
         # Session bellek temizleme task'ı
         asyncio.create_task(_cleanup_idle_sessions())
 
-        # GÖZLEMCİ TASK: Eğer Updater (Conflict vb. sebeple) çökerse, uygulama tamamen donsun istemiyoruz.
-        async def _watch_updater():
-            await asyncio.sleep(5)  # Updater'ın boot olmasını bekle
-            # Updater başladıktan sonra sürekli durumunu kontrol et
-            while True:
-                await asyncio.sleep(2)
-                if app_instance.updater and not app_instance.updater.running:
-                    log.error("💥 Updater durdu (Büyük ihtimalle Conflict)! Run_polling'i unblock etmek için application kapatılıyor...")
-                    try:
-                        await app_instance.stop()
-                    except:
-                        pass
-                    break
-        
-        asyncio.create_task(_watch_updater())
-
     app.post_init = _post_init
 
     log.info("🤖 Telegram polling başlatılıyor...")
-    app.run_polling(
-        allowed_updates=Update.ALL_TYPES,
-        drop_pending_updates=True,
-        poll_interval=1.0,
-        timeout=30,
-    )
+    
+    async def custom_runner():
+        await app.initialize()
+        await app.start()
+        await app.updater.start_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True,
+            poll_interval=1.0,
+            timeout=30,
+        )
+        log.info("ℹ️ Custom polling döngüsü başladı. Updater durumu izleniyor...")
+        
+        while app.updater and app.updater.running:
+            await asyncio.sleep(2)
+            
+        log.warning("🔄 Updater durdu (Büyük ihtimalle 409 Conflict sebebiyle). Custom runner döngüden çıkıyor...")
+        
+        # Cleanup
+        if app.updater:
+            await app.updater.stop()
+        await app.stop()
+        await app.shutdown()
+
+    asyncio.run(custom_runner())
     
     if _CRASHED_WITH_CONFLICT:
         raise RuntimeError("Bot durduruldu çünkü Conflict (409) hatası alındı!")
