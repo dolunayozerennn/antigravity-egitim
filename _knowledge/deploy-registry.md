@@ -161,7 +161,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Text_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 8 * * 1,4` (Haftada 2, UTC 08:00 Pazartesi+Perşembe = TR 11:00)
-- **Son Deploy:** 2026-04-11 (4 kritik fix: v2/assets→rest/images API migration + hata loglaması + wait_all_loggers + Gemini→Kie AI geçişi)
+- **Son Deploy:** 2026-04-20 (style: Görsel boyut ve kalitesini sade, uncluttered, yormayan, açık temalı ultra-minimalist tasarıma geçirecek prompt revizyonu yapıldı.)
 - **Durum:** ✅ Aktif (Haftalık AI Haberleri + AI Tavsiyesi LinkedIn postu)
 - **Env Vars:** PERPLEXITY_API_KEY, OPENAI_API_KEY, KIE_API_KEY, LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID, NOTION_DB_OPS_LOG
 
