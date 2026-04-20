@@ -38,6 +38,7 @@ def process_reels(logger):
     videos = get_ready_videos(cover_type="reels")
     if not videos:
         logger.info("İşlem bekleyen Reels videosu bulunamadı ('Çekildi - Edit YOK').")
+        ops.success("Pipeline tamamlandı (İşlem bekleyen video yok).")
         return
 
     os.makedirs("outputs", exist_ok=True)
@@ -133,6 +134,7 @@ def process_youtube(logger):
     videos = get_ready_videos(cover_type="youtube")
     if not videos:
         logger.info("İşlem bekleyen YouTube videosu bulunamadı ('Çekildi').")
+        ops.success("Pipeline tamamlandı (İşlem bekleyen video yok).")
         return
 
     os.makedirs("outputs", exist_ok=True)

@@ -5,7 +5,7 @@ import re
 from dotenv import load_dotenv
 
 load_dotenv()
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "_knowledge", "credentials", "master.env"))
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "_knowledge", "credentials", "master.env"))
 
 def get_config(cover_type: str) -> dict:
     if cover_type == "reels":

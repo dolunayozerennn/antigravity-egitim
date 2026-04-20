@@ -28,7 +28,7 @@ except ImportError:
 
 # Load project .env first, then master credentials as fallback
 load_dotenv()
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "_knowledge", "credentials", "master.env"))
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "_knowledge", "credentials", "master.env"))
 
 KIE_API_KEY = os.getenv("KIE_API_KEY")
 IMGBB_API_KEY = os.getenv("IMGBB_API_KEY")
