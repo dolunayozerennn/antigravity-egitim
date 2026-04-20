@@ -219,7 +219,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = user.first_name or user.username or ""
     
     # URL veya aksiyon algılama
-    result = conversation_mgr.handle_text_message(user.id, text, user_name)
+    result = await conversation_mgr.handle_text_message(user.id, text, user_name)
 
     # SCENARIO_APPROVAL: Metin tabanlı onay/iptal
     if result.get("action") == "approve":

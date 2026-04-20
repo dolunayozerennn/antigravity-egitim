@@ -40,12 +40,12 @@ def _get_openai_client() -> OpenAI:
 
 
 async def _call_gpt(system_prompt: str, user_message: str, temperature: float = 0.95) -> dict:
-    """GPT-4.1'i çağır ve JSON yanıtı parse et."""
+    """GPT-4o'yu çağır ve JSON yanıtı parse et."""
     try:
         client = _get_openai_client()
         response = await asyncio.to_thread(
             client.chat.completions.create,
-            model="gpt-4.1",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},

@@ -200,7 +200,7 @@ class ConversationManager:
     # 🧠 ANA MESAJ HANDLER — AGENT KATMANI
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    def handle_text_message(self, user_id: int, text: str, user_name: str = "") -> dict:
+    async def handle_text_message(self, user_id: int, text: str, user_name: str = "") -> dict:
         """
         Metin mesajını işle — akıllı agent katmanı.
 
@@ -339,7 +339,8 @@ class ConversationManager:
             if not self.openai:
                 raise ValueError("OpenAI service bulunamadı, fallback'e geçiliyor.")
                 
-            msg = self.openai.chat_with_tools(messages, tools, max_tokens=1500)
+            import asyncio
+            msg = await asyncio.to_thread(self.openai.chat_with_tools, messages, tools, max_tokens=1500)
             if getattr(msg, "tool_calls", None):
                 tool_call = msg.tool_calls[0].function
                 if tool_call.name == "process_url":

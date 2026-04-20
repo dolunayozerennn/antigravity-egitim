@@ -24,6 +24,22 @@
 > Deploy sonrası eklenen izleme kayıtları burada tutulur.
 > Her konuşma başında bu bölüm kontrol edilir — izleme süresi dolmuş ve 2 temiz kontrol geçilmişse arşive taşınır.
 
+### 🟡 48-Saat İzleme — Ceren_izlenme_notifier (Apify Limit Artırımı + Crash Fix)
+- **Deploy tarihi:** 2026-04-20
+- **İzleme bitiş:** 2026-04-22
+- **Değişiklik:** Limitler (Ig:7->20, Tk:7->20, Yt:5->25) artırıldı, ApifyClient dictionary hatalarına karşı fatal error kapatılmadan exception fırlatma düzeltildi.
+- **Kontrol 1:** ⏳ Bekliyor (Salı Cron tetiklemesi)
+- **Kontrol 2:** ⏳ Bekliyor (Perşembe Cron tetiklemesi)
+- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+
+### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (Bot URL Hafıza ve Format Zorunluluğu)
+- **Deploy tarihi:** 2026-04-20
+- **İzleme bitiş:** 2026-04-22
+- **Değişiklik:** Agent'ın pending_url ile son gönderilen linki format seçimi esnasında unutması ve process_url()'yi yanlış anda başlatması düzeltildi.
+- **Kontrol 1:** ⏳ Bekliyor (bir sonraki bot testinde veya kullanıcı kullanımında prompt akışının doğrulanması)
+- **Kontrol 2:** ⏳ Bekliyor
+- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+
 ### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (Görsel Seçim Prompt Fix)
 - **Deploy tarihi:** 2026-04-19
 - **İzleme bitiş:** 2026-04-21

@@ -255,7 +255,7 @@ async def gpt_preflight_check(prompt: str) -> tuple[str, bool, dict]:
         client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
         response = await client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": _PREFLIGHT_SYSTEM},
                 {"role": "user", "content": f"Evaluate this video prompt:\n\n{prompt}"},
@@ -335,7 +335,7 @@ async def gpt_rewrite_rejected_prompt(
         system = _RETRY_REWRITE_SYSTEM.format(rejection_reason=rejection_reason)
 
         response = await client.chat.completions.create(
-            model="gpt-4.1-mini",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": f"Rewrite this rejected prompt:\n\n{original_prompt}"},

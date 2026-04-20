@@ -5,7 +5,7 @@ Creative Engine — "Pets Got Talent" Yaratıcı Senaryo Motoru.
 
 3 Katmanlı Sistem:
   Katman 1: Hayvan + Yetenek + Sahne seed havuzu (1400+ kombinasyon)
-  Katman 2: GPT-4.1 ile absürt ama çekilebilir senaryo üretimi
+  Katman 2: GPT-4o ile absürt ama çekilebilir senaryo üretimi
   Katman 3: Sora/Seedance-optimize basit prompt'a dönüştürme
 
 Her gün benzersiz, yaratıcı, eğlenceli hayvan videoları üretir.
