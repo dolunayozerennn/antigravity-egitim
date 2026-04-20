@@ -583,6 +583,10 @@ def main():
     app = (
         Application.builder()
         .token(settings.TELEGRAM_BOT_TOKEN)
+        .connect_timeout(30)
+        .read_timeout(30)
+        .write_timeout(30)
+        .pool_timeout(30)
         .build()
     )
 
@@ -599,17 +603,54 @@ def main():
     # Global hata handler
     app.add_error_handler(error_handler)
 
-    # Session bellek temizleme task'ı
-    async def _start_cleanup(app_instance):
+    # Post-init: webhook temizle + session cleanup başlat
+    async def _post_init(app_instance):
+        # Conflict hatasını önle: eski webhook/polling session'ını temizle
+        try:
+            await app_instance.bot.delete_webhook(drop_pending_updates=True)
+            log.info("✅ Webhook temizlendi, polling için hazır")
+        except Exception as e:
+            log.warning(f"Webhook silme uyarısı (devam ediliyor): {e}")
+
+        # Session bellek temizleme task'ı
         asyncio.create_task(_cleanup_idle_sessions())
-    app.post_init = _start_cleanup
+
+    app.post_init = _post_init
 
     log.info("🤖 Telegram polling başlatılıyor...")
     app.run_polling(
         allowed_updates=Update.ALL_TYPES,
         drop_pending_updates=True,
+        poll_interval=1.0,
+        timeout=30,
     )
 
 
 if __name__ == "__main__":
-    main()
+    import time as _startup_time
+
+    MAX_RESTARTS = 10
+    restart_count = 0
+
+    while restart_count < MAX_RESTARTS:
+        try:
+            main()
+            break  # Normal çıkış — restart gerekmez
+        except SystemExit:
+            break  # Bilerek kapatıldı
+        except KeyboardInterrupt:
+            log.info("Bot kullanıcı tarafından durduruldu")
+            break
+        except Exception as e:
+            restart_count += 1
+            log.error(
+                f"💥 Bot çöktü (restart {restart_count}/{MAX_RESTARTS}): {e}",
+                exc_info=True,
+            )
+            if restart_count < MAX_RESTARTS:
+                wait = min(5 * restart_count, 30)
+                log.info(f"🔄 {wait} saniye sonra yeniden başlatılıyor...")
+                _startup_time.sleep(wait)
+            else:
+                log.error("❌ Maksimum restart sayısına ulaşıldı, bot durduruluyor")
+                sys.exit(1)
