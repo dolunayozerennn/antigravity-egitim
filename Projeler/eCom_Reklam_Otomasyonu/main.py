@@ -565,6 +565,12 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if isinstance(context.error, Conflict) or "Conflict" in str(context.error):
         global _CRASHED_WITH_CONFLICT
         _CRASHED_WITH_CONFLICT = True
+        log.warning("🔄 Conflict algılandı! Process SIGTERM gönderilerek yeniden başlatılacak...")
+        import os
+        import signal
+        import asyncio
+        # run_polling'in sonsuza kadar beklemesini önlemek için 1 sn sonra graceful kill
+        asyncio.get_running_loop().call_later(1.0, lambda: os.kill(os.getpid(), signal.SIGTERM))
 
     if update and update.effective_message:
         try:
