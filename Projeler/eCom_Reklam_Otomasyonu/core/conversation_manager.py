@@ -32,6 +32,7 @@ class ConversationState(Enum):
     URL_PROCESSING = auto()        # URL alındı, veri çıkarılıyor
     RESEARCHING = auto()           # Marka/ürün araştırma + senaryo üretimi
     SCENARIO_APPROVAL = auto()     # Senaryo onayı bekleniyor
+    COLLECTING_PREFERENCES = auto() # Agent butonlarla tercih topluyor
     PRODUCING = auto()             # Video üretim aşaması
     DELIVERED = auto()             # Teslim edildi
 
@@ -76,6 +77,13 @@ class UserSession:
         self.last_product: str | None = None
         self.welcomed: bool = False  # /start karşılaması gösterildi mi
 
+        # Agent tarafından sunulan tercihler (buton yanıtları)
+        self.preferences: dict = {}
+        # Bekleyen buton sorusu (callback veya serbest metin routing için)
+        self.pending_choice_key: str | None = None
+        # Kullanıcının gönderdiği ancak henüz işlenmemiş URL (tercihler sorulurken tutulur)
+        self.pending_url: str | None = None
+
         # Bellek yönetimi
         import time as _time
         self._last_activity: float = _time.time()
@@ -91,6 +99,10 @@ class UserSession:
         self.scenario = None
         self.production_result = None
         self.current_url = None
+        self.pending_url = None
+        self.preferences = {}
+        self.pending_choice_key = None
+        
         import time as _time
         self._last_activity = _time.time()
 
@@ -103,6 +115,7 @@ class UserSession:
         self.scenario = None
         self.production_result = None
         self.current_url = None
+        self.pending_url = None
         import time as _time
         self._last_activity = _time.time()
 
@@ -207,6 +220,12 @@ class ConversationManager:
         """
         session = self.get_session(user_id, user_name)
 
+        # Eğer mesajda yeni bir URL varsa, tercihler sorulduğunda kaybolmaması için hafızaya al
+        from core.url_data_extractor import URLDataExtractor
+        extracted_url = URLDataExtractor.extract_url_from_text(text)
+        if extracted_url:
+            session.pending_url = extracted_url
+
         # Agent sistem talimatı
         messages = [
             {
@@ -214,15 +233,21 @@ class ConversationManager:
                 "content": (
                     "Sen eCom Reklam Otomasyonu'nun akıllı asistanısın. Kullanıcılar sana e-ticaret "
                     "ürün linkleri (veya metinleri) gönderir, sen de onlara profesyonel reklam videoları üretirsin. "
-                    "Amacın konuşmayı anında URL veya ürün isteğine yönlendirmek. Kullanıcı sadece bir sitenin anasayfasına "
-                    "yönlendiren link veya herhangi bir ürün bağlantısı atarsa, MUTLAKA `process_url` aracını (tool) çağır. "
+                    "Kullanıcı bir link veya ürün gönderdiğinde (veya Sistem Verisinde 'URL Beklemede' gördüğünde) İLK OLARAK `present_choices` aracıyla "
+                    "video formatını (Örn: 9:16 Dikey, 16:9 Yatay, 1:1 Kare vb.) ve "
+                    "video tarzını (Örn: Sinematik, UGC - Doğal vb.) DİNAMİK OLARAK BUTONLARLA SOR. "
+                    "Her iki soruyu aynı anda sorabilir ya da ardışık sorabilirsin. "
+                    "Bu tercihleri (format ve tarz) toplamadan ASLA `process_url` aracını çağırma. "
+                    "Tercihler tamamlandığında veya kullanıcı 'farketmez' gibi bir yanıt verirse "
+                    "bekletmeden `process_url` aracını çağırarak süreci başlat. "
+                    "`process_url` çağırırken daima sistem verisindeki 'URL Beklemede' bilgisini veya kullanıcının gönderdiği linki kullan. "
                     "Kullanıcı e-ticaret ürününü işlemeyi onaylarsa veya \"başla\" derse `approve_scenario` yetkisini kullan. "
                     "Hiçbiri değilse, kullanıcıya nazikçe yardım et ve konuşmayı sürdür."
                 )
             },
             {
                 "role": "user",
-                "content": f"[SİSTEM VERİSİ - Mevcut Durumun: {session.state.name}, Son İşlenen Marka: {session.active_brand}]\nKullanıcı: {text}"
+                "content": f"[SİSTEM VERİSİ - Durum: {session.state.name}, Son Marka: {session.active_brand}, URL Beklemede: {session.pending_url}]\nKullanıcı: {text}"
             }
         ]
 
@@ -254,13 +279,62 @@ class ConversationManager:
                     "name": "cancel_action",
                     "description": "Kullanıcı üretimi iptal etmek isterse veya vazgeçerse çağırılır."
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "present_choices",
+                    "description": (
+                        "Kullanıcıya belirli seçenekler sunmak istediğinde buton olarak göster. "
+                        "Her seçenek bir buton olur. İsteğe bağlı olarak serbest metin girişi de açılabilir."
+                    ),
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "question": {
+                                "type": "string",
+                                "description": "Kullanıcıya gösterilecek soru metni"
+                            },
+                            "choice_key": {
+                                "type": "string", 
+                                "description": "Bu tercihin kaydedileceği anahtar (örn: video_format, video_style)"
+                            },
+                            "options": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "label": {"type": "string", "description": "Buton üzerinde gösterilecek metin"},
+                                        "value": {"type": "string", "description": "Seçildiğinde kaydedilecek değer"}
+                                    },
+                                    "required": ["label", "value"]
+                                },
+                                "description": "Buton seçenekleri"
+                            },
+                            "allow_freetext": {
+                                "type": "boolean",
+                                "description": "Butonlara ek olarak serbest metin girişine izin verilsin mi"
+                            }
+                        },
+                        "required": ["question", "choice_key", "options"]
+                    }
+                }
             }
         ]
 
         url = None
         action = None
         assistant_reply = None
+        buttons_data = None
 
+        # Serbest metin bekliyorsak
+        if session.pending_choice_key and session.state == ConversationState.COLLECTING_PREFERENCES:
+            session.preferences[session.pending_choice_key] = text
+            session.pending_choice_key = None
+            # Şimdi context'i tekrar değerlendirmek üzere tools olmadan veya normal prompt ile çağrı yapacağız
+            # LLM'e yeni tercihi bildirmek için contexti güncelle:
+            messages.append({"role": "system", "content": f"Kullanıcı {session.last_brand} için {text} seçimini yaptı."})
+           
         try:
             if not self.openai:
                 raise ValueError("OpenAI service bulunamadı, fallback'e geçiliyor.")
@@ -271,11 +345,17 @@ class ConversationManager:
                 if tool_call.name == "process_url":
                     import json
                     args = json.loads(tool_call.arguments)
-                    url = args.get("url")
+                    url = args.get("url") or session.pending_url
+                    session.pending_url = None # Tüketildi
                 elif tool_call.name == "approve_scenario":
                     action = "approve"
                 elif tool_call.name == "cancel_action":
                     action = "cancel"
+                elif tool_call.name == "present_choices":
+                    import json
+                    args = json.loads(tool_call.arguments)
+                    buttons_data = args
+                    session.state = ConversationState.COLLECTING_PREFERENCES
             else:
                 assistant_reply = msg.content
         except Exception as e:
@@ -351,6 +431,10 @@ class ConversationManager:
                 "🔗 URL algılandı! Akıllı agent sistemi devreye giriyor...\n"
                 f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
             ), has_url=True, url=url)
+
+        # Gelen yanıtta buton varsa
+        if buttons_data:
+            return self._reply(session, "", buttons=buttons_data)
 
         # Eğer URL yoksa, Agent'ın verdiği yanıtı dön
         if assistant_reply:
@@ -544,13 +628,24 @@ class ConversationManager:
 
         return {"action": "unknown", "state": session.state}
 
+    def handle_preference_set(self, user_id: int, choice_key: str, choice_value: str) -> dict:
+        """Kullanıcının tercih seçimini kaydeder ve LLM'ye bildirir."""
+        session = self.get_session(user_id)
+        session.preferences[choice_key] = choice_value
+        session.pending_choice_key = None
+        
+        # Agent'ın bir sonraki adımı belirlemesi için metin msj işleme fonk. çağrılır
+        # "Tamam <choice> seçildi" şeklinde sisteme besleriz
+        prompt = f"Şu seçim yapıldı: {choice_key} = {choice_value}. Bu bilgiye dayanarak süreci devam ettir."
+        return self.handle_text_message(user_id, prompt)
+
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 🛠️ YARDIMCI METOTLAR (Agent)
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     @staticmethod
     def _reply(session: UserSession, reply: str, has_url: bool = False,
-               url: str | None = None, action: str | None = None) -> dict:
+               url: str | None = None, action: str | None = None, buttons: dict = None) -> dict:
         """Standart reply dict oluşturur."""
         import time as _time
         session._last_activity = _time.time()
@@ -560,6 +655,7 @@ class ConversationManager:
             "has_url": has_url,
             "url": url,
             "action": action,
+            "buttons": buttons, # Yeni eklendi
         }
 
     @staticmethod
