@@ -53,14 +53,15 @@ def run_weekly_news():
         post_text = writer.write_weekly_news_post(research_content)
         ops.info("Post Yazıldı", f"{len(post_text)} karakter")
 
-        # Step 3: GPT-4.1-mini ile görsel prompt üret + Gemini ile görsel üret
+        # Step 3: GPT-4.1-mini ile görsel prompt üret + Kie AI ile görsel üret
         img_gen = ImageGenerator()
-        ops.info("Adım 3/5", "Görsel prompt üretiliyor + Gemini ile görsel oluşturuluyor")
+        ops.info("Adım 3/5", "Görsel prompt üretiliyor + Kie AI ile görsel oluşturuluyor")
         image_path = img_gen.generate_post_image(post_text)
         if image_path:
             ops.info("Görsel Üretildi", image_path)
         else:
-            ops.warning("Görsel Üretilemedi", "Sadece metin post atılacak")
+            # Görselsiz post atma — yarım görünen post sorunu yaratır
+            raise RuntimeError("Görsel üretilemedi — görselsiz post atılmaz. Pipeline durduruldu.")
 
         # Step 4: LinkedIn'e paylaş
         publisher = LinkedInPublisher()
@@ -131,14 +132,15 @@ def run_weekly_tip():
         post_text = writer.write_weekly_tip_post(research_content)
         ops.info("Post Yazıldı", f"{len(post_text)} karakter")
 
-        # Step 3: GPT-4.1-mini ile görsel prompt üret + Gemini ile görsel üret
+        # Step 3: GPT-4.1-mini ile görsel prompt üret + Kie AI ile görsel üret
         img_gen = ImageGenerator()
-        ops.info("Adım 3/5", "Görsel prompt üretiliyor + Gemini ile görsel oluşturuluyor")
+        ops.info("Adım 3/5", "Görsel prompt üretiliyor + Kie AI ile görsel oluşturuluyor")
         image_path = img_gen.generate_post_image(post_text)
         if image_path:
             ops.info("Görsel Üretildi", image_path)
         else:
-            ops.warning("Görsel Üretilemedi", "Sadece metin post atılacak")
+            # Görselsiz post atma — yarım görünen post sorunu yaratır
+            raise RuntimeError("Görsel üretilemedi — görselsiz post atılmaz. Pipeline durduruldu.")
 
         # Step 4: LinkedIn'e paylaş
         publisher = LinkedInPublisher()
