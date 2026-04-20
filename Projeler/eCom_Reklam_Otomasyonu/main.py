@@ -401,7 +401,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Butondan seçildi
             await query.edit_message_reply_markup(reply_markup=None)
             
-            result = conversation_mgr.handle_preference_set(user.id, choice_key, choice_value)
+            result = await conversation_mgr.handle_preference_set(user.id, choice_key, choice_value)
             
             if result.get("reply"):
                 try:

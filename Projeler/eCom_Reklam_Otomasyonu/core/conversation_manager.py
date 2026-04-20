@@ -629,7 +629,7 @@ class ConversationManager:
 
         return {"action": "unknown", "state": session.state}
 
-    def handle_preference_set(self, user_id: int, choice_key: str, choice_value: str) -> dict:
+    async def handle_preference_set(self, user_id: int, choice_key: str, choice_value: str) -> dict:
         """Kullanıcının tercih seçimini kaydeder ve LLM'ye bildirir."""
         session = self.get_session(user_id)
         session.preferences[choice_key] = choice_value
@@ -638,7 +638,7 @@ class ConversationManager:
         # Agent'ın bir sonraki adımı belirlemesi için metin msj işleme fonk. çağrılır
         # "Tamam <choice> seçildi" şeklinde sisteme besleriz
         prompt = f"Şu seçim yapıldı: {choice_key} = {choice_value}. Bu bilgiye dayanarak süreci devam ettir."
-        return self.handle_text_message(user_id, prompt)
+        return await self.handle_text_message(user_id, prompt)
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 🛠️ YARDIMCI METOTLAR (Agent)
