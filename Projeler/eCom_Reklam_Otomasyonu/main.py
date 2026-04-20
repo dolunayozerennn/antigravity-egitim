@@ -559,18 +559,31 @@ _CRASHED_WITH_CONFLICT = False
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Global hata yakalayıcı — Telegram bot'un çökmesini önler."""
-    log.error(f"Telegram handler hatası: {context.error}", exc_info=True)
+    
+    # Sadece exc_info'yu eğer The context.error is set, to prevent NoneType logging 
+    err_str = str(context.error)
+    log.error(f"Telegram handler hatası: {err_str}")
 
     try:
-        if "Conflict" in str(context.error) or "getUpdates" in str(context.error):
+        if "Conflict" in err_str or "getUpdates" in err_str:
             global _CRASHED_WITH_CONFLICT
             _CRASHED_WITH_CONFLICT = True
-            log.warning("🔄 Conflict algılandı! Process SIGTERM gönderilerek yeniden başlatılacak...")
-            import os
-            import signal
+            log.warning("🔄 Conflict algılandı! Aplikasyon graceful olarak durduruluyor...")
+            
+            # Tüm process'i kill etmek loop'u kırıyordu.
+            # Bunun yerine updater ve application'ı programatik durduruyoruz.
+            async def _stop_app():
+                try:
+                    await asyncio.sleep(1)
+                    if context.application.updater.running:
+                        await context.application.updater.stop()
+                    await context.application.stop()
+                except Exception as e:
+                    log.error(f"App durdurulurken hata: {e}")
+            
             import asyncio
-            # run_polling'in sonsuza kadar beklemesini önlemek için 1 sn sonra graceful kill
-            asyncio.get_running_loop().call_later(1.0, lambda: os.kill(os.getpid(), signal.SIGTERM))
+            asyncio.create_task(_stop_app())
+            
     except Exception as check_exc:
         log.error(f"Conflict kontrolü sırasında hata: {check_exc}")
 
@@ -581,7 +594,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode="Markdown",
             )
         except Exception as fallback_exc:
-            log.error(f"Kullanıcıya mesaj gönderilemedi: {fallback_exc}", exc_info=True)
+            log.error(f"Kullanıcıya mesaj gönderilemedi: {fallback_exc}")
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
