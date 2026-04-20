@@ -1,5 +1,5 @@
 from apify_client import ApifyClient
-from apify_client.errors import ApifyApiError
+from apify_client._errors import ApifyApiError
 from datetime import datetime, timedelta, timezone
 from logger import get_logger
 from config import settings
@@ -76,7 +76,7 @@ def get_instagram_data():
     try:
         post_run_input = {
             "usernames": ["dolunay_ozeren"],
-            "resultsLimit": 7
+            "resultsLimit": 20
         }
         
         client, run = call_apify_actor(settings.APIFY_INSTAGRAM_ACTOR, post_run_input)
@@ -116,7 +116,7 @@ def get_tiktok_data():
     try:
         tk_run_input = {
             "profiles": ["dolunayozeren"],
-            "resultsPerPage": 7,
+            "resultsPerPage": 20,
             "downloadVideo": False
         }
         client, run = call_apify_actor(settings.APIFY_TIKTOK_ACTOR, tk_run_input)
@@ -154,7 +154,7 @@ def get_youtube_data():
     try:
         yt_run_input = {
             "searchKeywords": "dolunayozeren",
-            "maxResults": 5,
+            "maxResults": 25,
             "maxResultStreams": 0
         }
         client, run = call_apify_actor(settings.APIFY_YOUTUBE_ACTOR, yt_run_input)
