@@ -555,9 +555,16 @@ async def _run_production(message, user_id: int):
 # ⚠️ GLOBAL HATA HANDLER
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+_CRASHED_WITH_CONFLICT = False
+
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Global hata yakalayıcı — Telegram bot'un çökmesini önler."""
     log.error(f"Telegram handler hatası: {context.error}", exc_info=True)
+
+    from telegram.error import Conflict
+    if isinstance(context.error, Conflict) or "Conflict" in str(context.error):
+        global _CRASHED_WITH_CONFLICT
+        _CRASHED_WITH_CONFLICT = True
 
     if update and update.effective_message:
         try:
@@ -575,6 +582,9 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     """Bot'u başlat ve polling modunda çalıştır."""
+    global _CRASHED_WITH_CONFLICT
+    _CRASHED_WITH_CONFLICT = False
+
     mode = "🏜️ DRY-RUN" if settings.IS_DRY_RUN else "🟢 PRODUCTION"
     log.info(f"🚀 eCom Reklam Otomasyonu v3.0 başlatılıyor... [Mod: {mode}]")
     log.info(f"📊 Model: {settings.OPENAI_MODEL}")
@@ -624,6 +634,9 @@ def main():
         poll_interval=1.0,
         timeout=30,
     )
+    
+    if _CRASHED_WITH_CONFLICT:
+        raise RuntimeError("Bot durduruldu çünkü Conflict (409) hatası alındı!")
 
 
 if __name__ == "__main__":
