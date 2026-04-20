@@ -561,16 +561,18 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Global hata yakalayıcı — Telegram bot'un çökmesini önler."""
     log.error(f"Telegram handler hatası: {context.error}", exc_info=True)
 
-    from telegram.error import Conflict
-    if isinstance(context.error, Conflict) or "Conflict" in str(context.error):
-        global _CRASHED_WITH_CONFLICT
-        _CRASHED_WITH_CONFLICT = True
-        log.warning("🔄 Conflict algılandı! Process SIGTERM gönderilerek yeniden başlatılacak...")
-        import os
-        import signal
-        import asyncio
-        # run_polling'in sonsuza kadar beklemesini önlemek için 1 sn sonra graceful kill
-        asyncio.get_running_loop().call_later(1.0, lambda: os.kill(os.getpid(), signal.SIGTERM))
+    try:
+        if "Conflict" in str(context.error) or "getUpdates" in str(context.error):
+            global _CRASHED_WITH_CONFLICT
+            _CRASHED_WITH_CONFLICT = True
+            log.warning("🔄 Conflict algılandı! Process SIGTERM gönderilerek yeniden başlatılacak...")
+            import os
+            import signal
+            import asyncio
+            # run_polling'in sonsuza kadar beklemesini önlemek için 1 sn sonra graceful kill
+            asyncio.get_running_loop().call_later(1.0, lambda: os.kill(os.getpid(), signal.SIGTERM))
+    except Exception as check_exc:
+        log.error(f"Conflict kontrolü sırasında hata: {check_exc}")
 
     if update and update.effective_message:
         try:
