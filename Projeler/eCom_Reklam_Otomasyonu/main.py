@@ -646,6 +646,22 @@ def main():
         # Session bellek temizleme task'ı
         asyncio.create_task(_cleanup_idle_sessions())
 
+        # GÖZLEMCİ TASK: Eğer Updater (Conflict vb. sebeple) çökerse, uygulama tamamen donsun istemiyoruz.
+        async def _watch_updater():
+            await asyncio.sleep(5)  # Updater'ın boot olmasını bekle
+            # Updater başladıktan sonra sürekli durumunu kontrol et
+            while True:
+                await asyncio.sleep(2)
+                if app_instance.updater and not app_instance.updater.running:
+                    log.error("💥 Updater durdu (Büyük ihtimalle Conflict)! Run_polling'i unblock etmek için application kapatılıyor...")
+                    try:
+                        await app_instance.stop()
+                    except:
+                        pass
+                    break
+        
+        asyncio.create_task(_watch_updater())
+
     app.post_init = _post_init
 
     log.info("🤖 Telegram polling başlatılıyor...")
