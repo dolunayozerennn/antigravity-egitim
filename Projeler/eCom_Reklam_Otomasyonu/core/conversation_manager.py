@@ -226,28 +226,28 @@ class ConversationManager:
         if extracted_url:
             session.pending_url = extracted_url
 
+        prefs_str = ", ".join([f"{k}={v}" for k, v in session.preferences.items()]) if session.preferences else "Yok"
+        
         # Agent sistem talimatı
         messages = [
             {
                 "role": "system",
                 "content": (
                     "Sen eCom Reklam Otomasyonu'nun akıllı asistanısın. Kullanıcılar sana e-ticaret "
-                    "ürün linkleri (veya metinleri) gönderir, sen de onlara profesyonel reklam videoları üretirsin. "
-                    "Kullanıcı bir link veya ürün gönderdiğinde (veya Sistem Verisinde 'URL Beklemede' gördüğünde) İLK OLARAK `present_choices` aracıyla "
-                    "video formatını (Örn: 9:16 Dikey, 16:9 Yatay, 1:1 Kare vb.) ve "
-                    "video tarzını (Örn: Sinematik, UGC - Doğal vb.) DİNAMİK OLARAK BUTONLARLA SOR. "
-                    "Her iki soruyu aynı anda sorabilir ya da ardışık sorabilirsin. "
-                    "Bu tercihleri (format ve tarz) toplamadan ASLA `process_url` aracını çağırma. "
-                    "Tercihler tamamlandığında veya kullanıcı 'farketmez' gibi bir yanıt verirse "
-                    "bekletmeden `process_url` aracını çağırarak süreci başlat. "
-                    "`process_url` çağırırken daima sistem verisindeki 'URL Beklemede' bilgisini veya kullanıcının gönderdiği linki kullan. "
+                    "ürün linkleri gönderir, sen de onlara profesyonel reklam videoları üretirsin. "
+                    "GEREKLİ TERCİHLER: 1. Video formatı, 2. Video tarzı.\n"
+                    "Eğer Sistem Verisinde 'URL Beklemede' bir link varsa süreci başlat:\n"
+                    "1. Eksik Tercihleri Sor: Eğer 'Toplanan Tercihler' listesinde format veya tarz EKSİKSE, `present_choices` aracıyla BUTONLARLA kullanıcının eksik seçimini sor. "
+                    "Aynı anda ikisini birden ya da sırayla sorabilirsin.\n"
+                    "2. Tercihler Tamamlandıysa İŞLEME BAŞLA: Eğer hem format hem tarz 'Toplanan Tercihler' içinde MEVCUTSA, KESİNLİKLE tekrar soru sorma ve BEKLETMEDEN `process_url` aracını çağır. "
+                    "`process_url` aracına 'URL Beklemede' olan linki parametre olarak ver.\n"
                     "Kullanıcı e-ticaret ürününü işlemeyi onaylarsa veya \"başla\" derse `approve_scenario` yetkisini kullan. "
                     "Hiçbiri değilse, kullanıcıya nazikçe yardım et ve konuşmayı sürdür."
                 )
             },
             {
                 "role": "user",
-                "content": f"[SİSTEM VERİSİ - Durum: {session.state.name}, Son Marka: {session.active_brand}, URL Beklemede: {session.pending_url}]\nKullanıcı: {text}"
+                "content": f"[SİSTEM VERİSİ - Durum: {session.state.name}, URL Beklemede: {session.pending_url}, Toplanan Tercihler: {prefs_str}]\nKullanıcı: {text}"
             }
         ]
 
