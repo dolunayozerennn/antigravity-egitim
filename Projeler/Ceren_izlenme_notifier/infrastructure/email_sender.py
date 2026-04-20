@@ -134,7 +134,7 @@ def send_performance_report(videos, report_summary=""):
         return
         
     try:
-        message = service.users().messages().send(userId="me", body={'raw': raw_msg}).execute()
+        message = service.users().messages().send(userId="me", body={'raw': raw_msg}).execute(num_retries=3)
         logger.info(f"Rapor basariyla gonderildi! Message Id: {message['id']}")
     except Exception as e:
         logger.error(f"Rapor gonderilim hatasi: {e}", exc_info=True)
@@ -180,7 +180,7 @@ def send_technical_error_report(errors):
         return
         
     try:
-        message = service.users().messages().send(userId="me", body={'raw': raw_msg}).execute()
+        message = service.users().messages().send(userId="me", body={'raw': raw_msg}).execute(num_retries=3)
         logger.info(f"Teknik hata raporu basariyla gonderildi! Message Id: {message['id']}")
     except Exception as e:
         logger.error(f"Teknik hata raporu gonderilim hatasi: {e}", exc_info=True)

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from logger import get_logger
 from config import settings
 import time
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = get_logger(__name__)
 
@@ -39,6 +40,12 @@ def call_apify_actor(actor_id, run_input):
         time.sleep(5)
     
     raise last_error or Exception(f"Tüm try/catch denemeleri tükendi! ({len(settings.APIFY_KEYS)} key)")
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+def fetch_items_with_retry(client, dataset_id):
+    """Network drop ihtimaline karşı dataset'i retry mekanizmasıyla çeker."""
+    logger.debug(f"Dataset {dataset_id} için veriler çekiliyor (retry aktif)...")
+    return list(client.dataset(dataset_id).iterate_items())
 
 def is_within_7_days(date_str):
     """
@@ -81,7 +88,8 @@ def get_instagram_data():
         
         client, run = call_apify_actor(settings.APIFY_INSTAGRAM_ACTOR, post_run_input)
         
-        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+        items = fetch_items_with_retry(client, run["defaultDatasetId"])
+        for item in items:
             # sometimesposts are inside latestPosts
             posts = item.get("latestPosts", [item]) if "latestPosts" in item else [item]
             for post in posts:
@@ -121,7 +129,8 @@ def get_tiktok_data():
         }
         client, run = call_apify_actor(settings.APIFY_TIKTOK_ACTOR, tk_run_input)
         
-        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+        items = fetch_items_with_retry(client, run["defaultDatasetId"])
+        for item in items:
             dt = item.get("createTime") or item.get("createTimeISO")
             if not is_within_7_days(dt):
                 continue
@@ -159,7 +168,8 @@ def get_youtube_data():
         }
         client, run = call_apify_actor(settings.APIFY_YOUTUBE_ACTOR, yt_run_input)
         
-        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+        items = fetch_items_with_retry(client, run["defaultDatasetId"])
+        for item in items:
             dt = item.get("uploadDate") or item.get("date")
             rel_date = str(item.get("date", "")).lower()
             

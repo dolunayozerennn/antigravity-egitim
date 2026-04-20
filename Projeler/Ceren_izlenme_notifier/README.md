@@ -71,3 +71,14 @@ python main.py
 - **Cron:** `0 8 * * 2,4` (Salı + Perşembe, TR 11:00)
 - **GitHub:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Ceren_izlenme_notifier`)
 - **Start:** `python main.py`
+
+## 📊 Gelişmiş Loglama (OpsLogger)
+Tüm operasyonel loglar (Apify Limit aşımları, başarılı çekimler, hatalar) eşzamanlı olarak Notion Operations Database'e yazılır.
+- **SUCCESS/INFO**: Baraj aşan videolar ve mailler
+- **WARNING**: Limit aşıldığında diğer API key'e geçiş
+- **ERROR**: Apify'ın tamamen çökmesi veya mail gönderim hataları
+
+## 🛡️ Stabilizasyon ve Hata Giderme (2026-04-20)
+- **Fix 1 (Network Resilience):** `apify_client.py` içerisindeki `iterate_items` çağrılarına `tenacity` paketini kullanarak otomatik HTTP stream retry'ı eklendi. Bağlantı anlık kopsa dahi dataset API'den tekrar baştan çekilerek güvenli duruma getirildi.
+- **Fix 2 (LLM Timeout):** `llm_helper.py` Groq API çağrısına 3 tekrarlı backoff/retry eklendi.
+- **Fix 3 (Mail Resilience):** `email_sender.py` içerisindeki `google-api-python-client` mesaj yollama adımına `num_retries=3` eklendi, ephemeral error ve connection reset hataları çözüldü.

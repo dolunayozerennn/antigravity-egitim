@@ -1,9 +1,11 @@
 from groq import Groq
 from logger import get_logger
 from config import settings
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = get_logger(__name__)
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 def generate_report_summary(videos):
     """
     Kisa ve profesyonel bir özet metin olusturur.
