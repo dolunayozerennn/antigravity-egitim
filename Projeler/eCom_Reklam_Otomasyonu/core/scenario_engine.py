@@ -255,12 +255,21 @@ class ScenarioEngine:
         Returns:
             str: Telegram markdown mesajı
         """
+        def safe_md(text):
+            if not text:
+                return ""
+            # Markdown parse hatalarını önlemek için _, *, [, ] gibi karakterleri güvenli hale getir
+            return str(text).replace("_", "-").replace("*", "").replace("[", "(").replace("]", ")")
+
         cost = scenario.get("cost", {})
+
+        title = safe_md(scenario.get('title', 'Reklam Videosu'))
+        summary_text = safe_md(scenario.get('summary', ''))
 
         summary = (
             f"🎬 **Senaryo Hazır!**\n\n"
-            f"**{scenario.get('title', 'Reklam Videosu')}**\n"
-            f"_{scenario.get('summary', '')}_\n\n"
+            f"**{title}**\n"
+            f"_{summary_text}_\n\n"
             f"📐 **Format:** {scenario.get('aspect_ratio', FIXED_ASPECT_RATIO)} | 720p\n"
             f"⏱ **Süre:** {scenario.get('duration', FIXED_DURATION)} saniye\n"
             f"🌍 **Dil:** {scenario.get('language', FIXED_LANGUAGE)}\n"
@@ -268,7 +277,7 @@ class ScenarioEngine:
         )
 
         # Dış ses (her zaman var)
-        voiceover = scenario.get("voiceover_text", "")
+        voiceover = safe_md(scenario.get("voiceover_text", ""))
         if voiceover:
             word_count = len(voiceover.split())
             summary += f"🎙 **Dış Ses ({word_count} kelime):** _{voiceover}_\n"
