@@ -30,7 +30,7 @@ Dolunay Özeren'in influencer olarak AI/teknoloji markalarıyla iş birliği kur
    - Hunter.io Domain Search → fallback olarak domain genelinde ara
    - Hunter.io Email Verify → emaili doğrula (sadece `deliverable`/`accept_all` kabul)
    - Doğrulanamayan email → gönderilmez
-4. **Personalize** (`personalizer.py`) — GPT-4.1-nano ile markaya özel email üretir, profesyonel signature ekler. *(Anti-klişe: "I hope this email finds you well" gibi yapay ve samimiyetsiz girişler filtrelenmiştir)*
+4. **Personalize** (`personalizer.py`) — GPT-4.1-nano ile markaya özel şık HTML email üretir, profesyonel signature ekler. Emojiler (`🚀`, `🥺`), madde işaretleri ve çoklu satır paragraflarıyla göze hoş gelen modern bir şablon kullanır. *(Anti-klişe: "I hope this email finds you well" gibi yapay ve samimiyetsiz girişler filtrelenmiştir)*
 5. **Send** (`outreach.py`) — Gmail API ile gönderim, günlük 20 email limiti, CSV'ye kayıt
 
 ### 3 Adımlı Email Sequence
