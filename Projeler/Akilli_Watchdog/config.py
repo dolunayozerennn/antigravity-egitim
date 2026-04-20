@@ -148,7 +148,7 @@ class Config:
                 "32f955140a3281c88c1fc4b29a3abeb7"
             ),
             "notion_properties": ["Video ID", "Status", "Platform", "TikTok URL", "LinkedIn URL", "Paylaşım Tarihi"],
-            "expected_daily_activity": True,  # Günlük cron UTC 10:00
+            "expected_daily_activity": False,  # Günlük cron ancak yeni TikTok videosu yoksa çalışmaz
             "shared_notion_db_group": "social_media_db",  # Aynı DB'yi paylaşan projeler
             "railway_service_id": "8e486d77-c5b1-4f70-9f29-55c8b59398f9",
         },
@@ -182,7 +182,7 @@ class Config:
                 "32f955140a3281c88c1fc4b29a3abeb7"
             ),
             "notion_properties": ["Video ID", "Platform", "Status", "TikTok URL", "Twitter URL", "Paylaşım Tarihi"],
-            "expected_daily_activity": True,  # Günde 3 kez: UTC 08/11/14
+            "expected_daily_activity": False,  # Yeni TikTok videosu yoksa çalışmaz
             "shared_notion_db_group": "social_media_db",
             "railway_service_id": "55f76475-5b45-4050-93f7-723110ab470e",
         },
