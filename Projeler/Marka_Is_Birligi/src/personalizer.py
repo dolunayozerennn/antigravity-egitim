@@ -117,21 +117,23 @@ with 100M+ organic views in Turkey, to an AI/tech brand for a potential collabor
 
 Rules:
 - Write in English (most AI brands are global)
-- Keep it SHORT — max 120 words for the body
-- Be specific about the brand's product/niche
-- Include 1-2 concrete results (mention numbers, but do NOT include URLs in body)
-- End with a LOW-PRESSURE CTA (just reply if interested)
-- Tone: Professional but warm, NOT desperate — like one person writing to another
-- Subject line: Creative, curiosity-driving (max 50 chars, NO ALL CAPS, NO exclamation marks)
-- Do NOT use "Dear" or overly formal language
-- Do NOT use emojis in subject or body
-- Do NOT use HTML formatting in body_text — write plain conversational text
-- Do NOT start with "I hope this email finds you well" or "Hope you're doing well". Start directly with the hook.
-- Do NOT start sentences with "My name is Dolunay". Just introduce yourself naturally in context or rely on the signature.
-- body_html should be a simple <p> wrapped version of body_text, NO bold, NO colors, NO tables
-- MAXIMUM 1 link allowed in body (only dolunay.ai portfolio link if needed)
-- No "Click here", "Check this out", or other spam trigger phrases
-- Avoid words: "free", "guaranteed", "act now", "limited time", "congratulations"
+- DO NOT write a single thick block of text. You MUST format the email with proper line breaks (`\\n`) and paragraphs.
+- Use bullet points for listing platforms (Instagram, TikTok, YouTube) and concrete metrics.
+- Format the email very similar to this structure:
+  Hi [Brand Name] team,
+  I'm Dolunay, a content creator... [hook]
+  My profiles:
+  - Instagram ...
+  I've collaborated with brands like [Brand names]...
+  - [X] views with [Brand]
+  I have a viral campaign idea that could make [Your Brand] stand out 🚀
+  If you're interested...
+- Emojis are ALLOWED and ENCOURAGED in the subject and body to make it stand out (e.g. 🥺, 😢, 🚀).
+- Subject line: Creative, curiosity-driving. e.g. "Sorry 🥺 I got 19M views, but it’s not [Brand] 😢". Max 60 chars.
+- `body_html` MUST use `<p>`, `<br>`, `<ul>`, `<li>` tags so it renders beautifully in email clients.
+- `body_text` must use `\\n` for line breaks and `-` for lists.
+- Be specific about the brand's product/niche!
+- End with a low-pressure CTA.
 
 Output format (JSON):
 {"subject": "...", "body_text": "...", "body_html": "..."}
@@ -229,34 +231,60 @@ def _append_signature(email_dict):
 
 def _fallback_outreach(brand_name, handle):
     """OpenAI çalışmazsa kullanılacak şablon."""
-    subject = f"100M views, but not yet with {brand_name}"
+    subject = f"Sorry 🥺 I got 19M views, but it’s not {brand_name} 😢"
     
     results = "\n".join([
-        f"- {r['brand']}: {r['views']} views — {r['url']}"
+        f"- {r['views']} views with {r['brand']}"
+        for r in DOLUNAY_PROFILE["top_results"]
+    ])
+    
+    results_html = "".join([
+        f"<li><strong>{r['views']} views</strong> with {r['brand']}</li>"
         for r in DOLUNAY_PROFILE["top_results"]
     ])
     
     body_text = f"""Hi {brand_name} team,
 
-I'm Dolunay, a content creator focused on AI, tech, and digital tools. My content has reached over 100 million organic views in Turkey.
+I’m Dolunay, a content creator focused on AI, tech, and digital tools. My videos have reached over 100 million organic views in Turkey.
 
-Recent results:
+My profiles:
+- Instagram
+- TikTok
+- YouTube
+
+I’ve collaborated with brands like Pixelcut, Nim AI, Aithor, TopView, Creatify, Lexi AI, ArtFlow, Temu, and Printify.
+
 {results}
 
-I've been following @{handle} and I have a viral campaign idea that could make {brand_name} stand out in the Turkish market.
+I have a viral campaign idea that could make {brand_name} stand out 🚀
 
-If you're interested, just reply and I'll share the concept.
+If you’re interested, just reply to this email. I’d love to share the details with you!
+
+Best,
+Dolunay
 {EMAIL_SIGNATURE_TEXT}"""
 
     body_html = f"""<p>Hi {brand_name} team,</p>
 
-<p>I'm Dolunay, a content creator focused on AI, tech, and digital tools. My content has reached over 100 million organic views in Turkey.</p>
+<p>I’m Dolunay, a content creator focused on AI, tech, and digital tools. My videos have reached over <strong>100 million organic views</strong> in Turkey.</p>
 
-<p>Recent results: {', '.join(f'{r["brand"]} ({r["views"]} views)' for r in DOLUNAY_PROFILE['top_results'])}</p>
+<p>My profiles:</p>
+<ul>
+  <li><a href="https://www.instagram.com/dolunay_ozeren/">Instagram</a></li>
+  <li><a href="https://www.tiktok.com/@dolunayozeren">TikTok</a></li>
+  <li><a href="https://www.youtube.com/@dolunayozeren/">YouTube</a></li>
+</ul>
 
-<p>I've been following @{handle} and I have a viral campaign idea that could make {brand_name} stand out in the Turkish market.</p>
+<p>I’ve collaborated with brands like Pixelcut, Nim AI, Aithor, TopView, Creatify, Lexi AI, ArtFlow, Temu, and Printify.</p>
+<ul>
+{results_html}
+</ul>
 
-<p>If you're interested, just reply and I'll share the concept.</p>
+<p>I have a viral campaign idea that could make <strong>{brand_name}</strong> stand out 🚀</p>
+
+<p>If you’re interested, just reply to this email. I’d love to share the details with you!</p>
+
+<p>Best,<br>Dolunay</p>
 {EMAIL_SIGNATURE_HTML}"""
 
     return {"subject": subject, "body_text": body_text, "body_html": body_html}

@@ -52,7 +52,15 @@ def send_outreach_emails(dry_run=False):
 
     if dry_run:
         for p in pending:
-            print(f"  [DRY-RUN] {p['marka_adi']} → {p['email']}")
+            print(f"  [DRY-RUN] {p.get('marka_adi')} → {p.get('email')}")
+            # Generate email to ensure OpenAI / logic works
+            email_content = generate_outreach_email({
+                "marka_adi": p.get("marka_adi", ""),
+                "instagram_handle": p.get("instagram_handle", ""),
+                "website": p.get("website", ""),
+                "sirket_aciklamasi": p.get("sirket_aciklamasi", ""),
+            })
+            print(f"    ↳ MOCK SUBJECT: {email_content['subject']}")
         return {"sent": 0, "failed": 0, "skipped": len(pending), "queued": queued_count}
 
     service = get_service()
@@ -77,7 +85,7 @@ def send_outreach_emails(dry_run=False):
         print(f"     Konu: {subject}")
 
         # Gönder
-        result = send_email(service, brand_row["email"], subject, body_html, body_text, plain_text_only=True)
+        result = send_email(service, brand_row["email"], subject, body_html, body_text, plain_text_only=False)
 
         if result:
             update_brand(brand_row["notion_page_id"], {
@@ -125,9 +133,6 @@ def run_full_pipeline(dry_run=False):
     # Adım 1: Scrape
     print("\n📌 ADIM 1: Influencer reels'leri scrape ediliyor...")
     reels = scrape_reels(dry_run=dry_run)
-    if dry_run:
-        print("[DRY-RUN] Scrape atlandı.")
-        return
 
     if not reels:
         print("[PIPELINE] Reel verisi bulunamadı, pipeline durduruluyor.")
@@ -147,7 +152,12 @@ def run_full_pipeline(dry_run=False):
 
     # Adım 4: Add to DB
     print("\n📌 ADIM 4: Yeni markalar veritabanına ekleniyor (Notion)...")
-    add_brands_batch(enriched)
+    if dry_run:
+        print("[DRY-RUN] Notion'a yazma atlandı. Bulunan markalar:")
+        for b in enriched:
+            print(f"  • {b.get('marka_adi')} -> email: {b.get('email_status')}")
+    else:
+        add_brands_batch(enriched)
 
     # Adım 5: Send outreach
     print("\n📌 ADIM 5: Outreach e-postaları gönderiliyor...")
