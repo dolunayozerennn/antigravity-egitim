@@ -7,20 +7,19 @@ Ceren_Marka_Takip — E-posta Bildirim Sistemi
 """
 
 import os
-import smtplib
+import base64
 import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from typing import List, Dict, Any
 
+from services.gmail_service import get_gmail_service
+
 logger = logging.getLogger(__name__)
 
-# SMTP Config
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
+# E-posta Config
 SMTP_USER = os.environ.get("SMTP_USER", "ozerendolunay@gmail.com")
-SMTP_PASS = os.environ.get("SMTP_APP_PASSWORD", "")
 
 # Alıcılar
 CEREN_EMAIL = "ceren@dolunay.ai"
@@ -28,21 +27,19 @@ ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "ozerendolunay@gmail.com")
 
 
 def _send_email(to: str, subject: str, body_html: str):
-    """SMTP ile e-posta gönder."""
-    if not SMTP_PASS:
-        raise EnvironmentError("SMTP_APP_PASSWORD tanımlanmamış!")
-
+    """Gmail API (OAuth) ile e-posta gönder."""
     msg = MIMEMultipart("alternative")
     msg["From"] = SMTP_USER
     msg["To"] = to
     msg["Subject"] = subject
     msg.attach(MIMEText(body_html, "html", "utf-8"))
 
+    raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+    body = {'raw': raw_message}
+
     try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASS)
-            server.send_message(msg)
+        service = get_gmail_service("outreach")
+        service.users().messages().send(userId='me', body=body).execute()
         logger.info(f"📧 E-posta gönderildi: {to} — {subject}")
     except Exception as e:
         logger.error(f"E-posta gönderilemedi: {to} — {e}", exc_info=True)

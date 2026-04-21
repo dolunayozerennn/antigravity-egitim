@@ -22,11 +22,15 @@ import sys
 import argparse
 import traceback
 import logging
+import socket
 from datetime import datetime
 from dotenv import load_dotenv
 
 # .env dosyasını yükle (lokal geliştirme için)
 load_dotenv()
+
+# Global socket timeout to prevent infinite blocking on external API calls
+socket.setdefaulttimeout(60)
 
 # Proje kökünü PYTHONPATH'e ekle
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -133,8 +137,6 @@ def main(dry_run: bool = False):
 def _check_environment(dry_run: bool):
     """Fail-Fast: Gerekli ortam değişkenlerini kontrol et."""
     required = ["GROQ_API_KEY"]
-    if not dry_run:
-        required.append("SMTP_APP_PASSWORD")
 
     missing = [var for var in required if not os.environ.get(var)]
     if missing:

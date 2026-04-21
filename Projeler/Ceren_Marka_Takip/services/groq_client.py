@@ -54,6 +54,7 @@ def analyze_thread(thread_messages: str, system_prompt: str) -> Optional[Dict[st
             temperature=0.1,
             max_tokens=500,
             response_format={"type": "json_object"},
+            timeout=30.0,
         )
 
         content = response.choices[0].message.content
