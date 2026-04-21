@@ -224,7 +224,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-20 (fix: handle_preference_set made async to prevent callback exception and preserve pending_url)
+- **Son Deploy:** 2026-04-20 (fix: Markdown parse errors with scenario summary resolved via safe_md cleanup and optional try/except fallback to parse_mode=None)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID, FIRECRAWL_API_KEY
 
@@ -301,3 +301,17 @@ Aşağıdaki projeler ilerleyen dönemde platformdan silinmek üzere işaretlenm
 - ~~`dolunay-youtube-kapak`~~ (`586a7bf6`) — V2'ye (Dolunay_Otonom_Kapak) taşındı. **SİLİNDİ** (2026-04-16)
 - ~~`sweatcoin-email-automation`~~ (`0c1ff084`) — Proje tamamen kapatıldı, Railway'den silindi, lokal arşive taşındı. **SİLİNDİ** (2026-04-08)
 - ~~`Emlak Arazi Drone Çekim`~~ — Local-only proje, hiç deploy edilmemişti. Lokal arşive taşındı. **ARŞİVLENDİ** (2026-04-08)
+
+### ceren-marka-takip-cron
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `c563b334-2a3c-49bf-8461-9852ca649112`
+- **Service ID:** `128e496f-9f8a-437e-b401-e89c3b0a1e08`
+- **Environment ID:** `817dd65c-57f2-4cb7-a4df-92422f9fd36a`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `/Projeler/Ceren_Marka_Takip`)
+- **Lokal Klasör:** `Projeler/Ceren_Marka_Takip/`
+- **Start Komutu:** `cd Projeler/Ceren_Marka_Takip && pip install -r requirements.txt && python main.py`
+- **Cron Schedule:** `0 */2 * * *` (iki saatte bir)
+- **Son Deploy:** 2026-04-21 (Fix: Local JSON yerine Notion Ops Log entegrasyonuyla kalıcı durum [state] yöntemi eklendi)
+- **Durum:** ✅ Aktif (Günde 12 kez)
+- **Env Vars:** GOOGLE_CEREN_TOKEN_JSON, GOOGLE_DOLUNAY_AI_TOKEN_JSON, GOOGLE_OUTREACH_TOKEN_JSON, GROQ_API_KEY, SMTP_APP_PASSWORD, NOTION_SOCIAL_TOKEN, NOTION_DB_OPS_LOG
+
