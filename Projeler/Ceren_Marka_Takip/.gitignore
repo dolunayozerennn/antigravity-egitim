@@ -1,0 +1,7 @@
+# Ceren_Marka_Takip
+
+venv/
+__pycache__/
+*.pyc
+.env
+data/reminder_history.json
