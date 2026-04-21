@@ -19,6 +19,12 @@ def generate_report_summary(videos):
         return "Bu hafta hedeflenen izlenme barajlarını aşan yeni video bulunmamaktadır."
 
     try:
+        import os
+        # Eger master.env gibi dosyalarda GROQ_BASE_URL=https://api.groq.com/openai/v1 verilmişse
+        # Groq client'i kendi default path'ini eklediğinde url /openai/v1/openai/v1 olarak bozuluyor.
+        if "GROQ_BASE_URL" in os.environ:
+            del os.environ["GROQ_BASE_URL"]
+            
         client = Groq(api_key=settings.GROQ_API_KEY)
         
         # Videolarla ilgili baglami hazirla
