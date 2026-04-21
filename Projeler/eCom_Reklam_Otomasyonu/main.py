@@ -630,7 +630,8 @@ def main():
         # Conflict hatasını önle: eski webhook/polling session'ını temizle
         try:
             await app_instance.bot.delete_webhook(drop_pending_updates=True)
-            log.info("✅ Webhook temizlendi, polling için hazır")
+            log.info("✅ Webhook temizlendi, Telegram bağlantısının kesilmesi için 2 saniye bekleniyor...")
+            await asyncio.sleep(2) # Ghost instance ve 409 riskine karşı bekleme
         except Exception as e:
             log.warning(f"Webhook silme uyarısı (devam ediliyor): {e}")
 
