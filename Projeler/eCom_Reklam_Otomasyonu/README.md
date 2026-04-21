@@ -206,6 +206,7 @@ python test_bot.py
 
 | Tarih | Değişiklik |
 |----------|------------|
+| 2026-04-21 | **v3.1 Aspect Ratio & Stability Fix** — Kullanıcı/Agent tercih girdisi (Dikey, 16:9 vb.) Kie AI tarafından istenen formatlara zorunlu normalize edildi (422 engellendi). Telegram bot 409 Conflict çökmelerini önlemek için Webhook silme sonrası `asyncio.sleep(2)` timeout eklendi. |
 | 2026-04-18 | **v3.0 Stabilizasyon** — `FIRECRAWL_API_KEY` bağımlılığı Railway'e entegre edildi, eski `web_scraper_service.py` ve `bs4`, `lxml` bağımlılıkları temizlendi. Tümüyle stabil, SIFIR hata üretim ortamı onaylandı. |
 | 2026-04-18 | **v3.0 Deterministik Otomasyon** — Firecrawl entegre edildi, WebScraper servis kaldırıldı. Nano Banana 2 kaldırılıp Seedance 2.0 image_input (reference) moduna geçildi. Sohbet adımları tamamen kaldırılıp URL okuma ve deterministik tek tuşla/onayla pipeline mimarisine geçiş yapıldı. |
 | 2026-04-18 | **v2.7 Otonomlaştırma** — ChatGPT Promptu otonomlaştırıldı, video süresi, reklam konsepti, dil ve çözünürlük için gereksiz sorular kaldırılıp sistemin kendisinin inisiyatif alması sağlandı. Karşılama akışı kısaltıldı. |
