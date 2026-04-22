@@ -371,6 +371,11 @@ class ConversationManager:
                             session.state = ConversationState.COLLECTING_PREFERENCES
                         except Exception as e:
                             log.error(f"present_choices arguments parse error: {e}")
+                            assistant_reply = (
+                                (assistant_reply or "") +
+                                "\n\n⚠️ Seçenekleri gösterirken bir sorun oluştu. "
+                                "Lütfen tekrar dene veya /start ile yeniden başla."
+                            )
         except Exception as e:
             log.error(f"Agent analiz hatası: {e}", exc_info=True)
             # Fallback (Regex URL çıkarıcı)
@@ -646,9 +651,29 @@ class ConversationManager:
         session = self.get_session(user_id)
         session.preferences[choice_key] = choice_value
         session.pending_choice_key = None
-        
-        # Agent'ın bir sonraki adımı belirlemesi için metin msj işleme fonk. çağrılır
-        # "Tamam <choice> seçildi" şeklinde sisteme besleriz
+
+        # ── Deterministik Tercih Tamamlama Kontrolü ──
+        # Gerekli tercihler tamam VE bekleyen URL var → LLM'e sormadan pipeline başlat
+        REQUIRED_PREFS = {"video_format", "video_style"}
+        collected = set(session.preferences.keys()) & REQUIRED_PREFS
+
+        if collected >= REQUIRED_PREFS and session.pending_url:
+            url = session.pending_url
+            session.pending_url = None
+            session.current_url = url
+            session.state = ConversationState.URL_PROCESSING
+            log.info(
+                f"Deterministik tercih tamamlama: tüm tercihler tamam, "
+                f"pipeline başlatılıyor — user={user_id}, url={url[:60]}"
+            )
+            return self._reply(
+                session,
+                "✅ Tercihler kaydedildi! Şimdi ürün analizi ve senaryo oluşturma başlıyor...",
+                has_url=True,
+                url=url,
+            )
+
+        # Tercihler eksik → LLM'e danış (mevcut davranış)
         prompt = f"Şu seçim yapıldı: {choice_key} = {choice_value}. Bu bilgiye dayanarak süreci devam ettir."
         return await self.handle_text_message(user_id, prompt)
 

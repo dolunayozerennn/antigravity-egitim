@@ -119,7 +119,7 @@ async def _cleanup_idle_sessions():
                     if state_name in ("IDLE", "DELIVERED") and idle_seconds > 600:
                         to_delete.append(uid)
                     # SCENARIO_APPROVAL → 30 dakika sonra temizle
-                    elif state_name in ("SCENARIO_APPROVAL") and idle_seconds > 1800:
+                    elif state_name in ("SCENARIO_APPROVAL", "COLLECTING_PREFERENCES") and idle_seconds > 1800:
                         to_delete.append(uid)
 
                 for uid in to_delete:
@@ -318,6 +318,7 @@ async def _process_url_and_scenario(message, user_id: int, url: str):
             scenario_engine.generate_scenario, session.collected_data, research_data, session.preferences
         )
         session.scenario = scenario
+        conversation_mgr.mark_scenario_approval(user_id)
 
         # Senaryo Özeti + Onay
         summary = ScenarioEngine.format_scenario_summary(scenario)

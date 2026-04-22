@@ -77,22 +77,39 @@ class OpenAIService:
     def chat_with_tools(self, messages: list[dict], tools: list[dict], max_tokens: int = 1500):
         """
         OpenAI chat completion çağrısı, ancak yetki (tools) listesiyle.
-        Agent mimarisi için.
+        Agent mimarisi için. 3 deneme ile retry yapar.
         """
-        try:
-            effective_max_tokens = max(max_tokens, 100)
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                tools=tools,
-                tool_choice="auto",
-                max_completion_tokens=effective_max_tokens,
-            )
-            log.info(f"Chat (Tools) yanıt alındı — tokens: {response.usage.total_tokens}")
-            return response.choices[0].message
-        except Exception as e:
-            log.error(f"OpenAI tools API hatası: {e}", exc_info=True)
-            raise
+        import time as _retry_time
+        effective_max_tokens = max(max_tokens, 100)
+        last_error = None
+
+        for attempt in range(1, 4):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    tools=tools,
+                    tool_choice="auto",
+                    max_completion_tokens=effective_max_tokens,
+                )
+                log.info(f"Chat (Tools) yanıt alındı — tokens: {response.usage.total_tokens}")
+                return response.choices[0].message
+            except openai.RateLimitError:
+                log.warning(f"Tools API rate limit (deneme {attempt}/3)")
+                last_error = "RateLimitError"
+                if attempt < 3:
+                    _retry_time.sleep(2 ** attempt)
+            except openai.APIError as e:
+                log.warning(f"Tools API hatası (deneme {attempt}/3): {e}")
+                last_error = e
+                if attempt < 3:
+                    _retry_time.sleep(2 ** attempt)
+            except Exception as e:
+                log.error(f"OpenAI tools API beklenmeyen hata: {e}", exc_info=True)
+                raise
+
+        log.error(f"chat_with_tools 3 denemede başarısız: {last_error}")
+        raise openai.APIError(f"3 denemede başarısız: {last_error}")
 
     # ── Görsel URL Validasyonu ──
 
@@ -242,7 +259,8 @@ class OpenAIService:
     def select_best_product_image(self, image_urls: list[str]) -> str | None:
         """
         Verilen URL havuzu içinden ürünü en net gösteren tek bir fotoğrafı seçer.
-        
+        Structured JSON output kullanır (index-based).
+
         Args:
             image_urls: Ürün görsellerinin public URL'leri (max 5-10 önerilir)
 
@@ -252,40 +270,59 @@ class OpenAIService:
         valid_urls = [url for url in image_urls if self._validate_image_url(url)]
         if not valid_urls:
             return None
-            
+
         if len(valid_urls) == 1:
             return valid_urls[0]
-            
+
         try:
-            content_list = [{"type": "text", "text": "Aşağıdaki ürün fotoğraflarını incele. Bir e-ticaret reklamı üretileceği için, ürünü en net, reklama en uygun ve yüksek kalitede gösteren TEK BİR fotoğrafın sadece tam URL'ini döndür. Asla ek metin, açıklama veya markdown ekleme, sadece URL'i string olarak ver."}]
-            for url in valid_urls[:10]: # Max 10 limit
+            # URL'leri numaralı liste olarak sun
+            url_list = "\n".join([f"{i+1}. {url}" for i, url in enumerate(valid_urls[:10])])
+
+            content_list = [
+                {
+                    "type": "text",
+                    "text": (
+                        "Aşağıdaki ürün fotoğraflarını incele. Bir e-ticaret reklamı üretileceği "
+                        "için, ürünü en net, reklama en uygun ve yüksek kalitede gösteren "
+                        "TEK BİR fotoğrafı seç.\n\n"
+                        f"URL Listesi:\n{url_list}\n\n"
+                        'JSON formatında yanıt ver: {"selected_index": <seçtiğin '
+                        "numaralı URL'nin indeksi (1'den başlar)>}"
+                    ),
+                }
+            ]
+            for url in valid_urls[:10]:
                 content_list.append({
                     "type": "image_url",
                     "image_url": {"url": url, "detail": "low"},
                 })
-                
+
             messages = [{"role": "user", "content": content_list}]
-            
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                max_completion_tokens=300,
+                max_completion_tokens=100,
+                response_format={"type": "json_object"},
             )
-            
-            selected_url = response.choices[0].message.content.strip()
-            # Markdown block'ları veya ek metinleri temizle (Eğer LLM yanlış cevap verirse)
-            selected_url = selected_url.replace("```", "").replace("json", "").replace("text", "").strip()
-            
-            if selected_url in valid_urls:
-                log.info(f"OpenAI en iyi görseli seçti: {selected_url[:60]}...")
-                return selected_url
-            else:
-                # Bazen URL'i tırnak içinde veya prefix'li dönebilir
-                for valid_url in valid_urls:
-                    if valid_url in selected_url:
-                        return valid_url
-                log.warning("OpenAI görsel seçiminde URL'i yanlış formatta döndü, fallback olarak ilk görsel kullanılıyor.")
+
+            content = response.choices[0].message.content
+            if not content:
+                log.warning("Görsel seçimi boş yanıt — fallback")
                 return valid_urls[0]
+
+            import json
+            result = json.loads(content)
+            selected_idx = result.get("selected_index", 1)
+
+            # Bounds check
+            if isinstance(selected_idx, int) and 1 <= selected_idx <= len(valid_urls):
+                selected_url = valid_urls[selected_idx - 1]
+                log.info(f"OpenAI en iyi görseli seçti (structured): {selected_url[:60]}...")
+                return selected_url
+
+            log.warning(f"Geçersiz selected_index: {selected_idx}, fallback")
+            return valid_urls[0]
 
         except Exception:
             log.error("Görsel seçme hatası", exc_info=True)
