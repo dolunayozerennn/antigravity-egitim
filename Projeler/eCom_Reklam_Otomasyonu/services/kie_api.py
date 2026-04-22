@@ -26,6 +26,60 @@ REQUEST_TIMEOUT = 30
 # File Upload
 FILE_UPLOAD_BASE_URL = "https://kieai.redpandaai.co"
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 📐 ASPECT RATIO — Geçerli Değerler (Kie AI API)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VALID_ASPECT_RATIOS = {"9:16", "16:9", "1:1", "4:3", "3:4", "21:9"}
+DEFAULT_ASPECT_RATIO = "9:16"
+
+
+def normalize_aspect_ratio(raw: str) -> str:
+    """
+    Ham aspect_ratio string'ini Kie AI'ın kabul ettiği formata dönüştürür.
+
+    Desteklenen girdi formatları:
+    - Doğrudan geçerli: "9:16", "16:9", "1:1", "4:3", "3:4", "21:9"
+    - Türkçe/İngilizce etiketler: "dikey", "yatay", "kare", "vertical", "horizontal", "square"
+    - Buton etiketleri: "Dikey (9:16)", "Yatay (16:9)", "Kare (1:1)"
+    - Separator varyasyonları: "9/16", "9x16"
+
+    Returns:
+        str: Kie AI'ın kabul ettiği geçerli aspect_ratio string'i
+    """
+    if not raw:
+        return DEFAULT_ASPECT_RATIO
+
+    cleaned = str(raw).strip().lower()
+
+    # Direkt geçerli mi kontrol et
+    if cleaned in VALID_ASPECT_RATIOS:
+        return cleaned
+
+    # Ratio pattern çıkar — parantez içi dahil: "Dikey (9:16)" → "9:16"
+    import re
+    ratio_match = re.search(r'(\d+)\s*[:x/]\s*(\d+)', cleaned)
+    if ratio_match:
+        candidate = f"{ratio_match.group(1)}:{ratio_match.group(2)}"
+        if candidate in VALID_ASPECT_RATIOS:
+            return candidate
+
+    # Türkçe/İngilizce etiket mapping
+    label_map = {
+        "dikey": "9:16", "vertical": "9:16", "portrait": "9:16",
+        "yatay": "16:9", "horizontal": "16:9", "landscape": "16:9", "widescreen": "16:9",
+        "kare": "1:1", "square": "1:1",
+        "ultrawide": "21:9", "cinematic": "21:9",
+    }
+    for keyword, ratio in label_map.items():
+        if keyword in cleaned:
+            return ratio
+
+    log.warning(
+        f"Bilinmeyen aspect_ratio normalize edildi: '{raw}' → '{DEFAULT_ASPECT_RATIO}' "
+        f"(geçerli değerler: {VALID_ASPECT_RATIOS})"
+    )
+    return DEFAULT_ASPECT_RATIO
+
 
 class KieAIService:
     """Kie AI API ile video ve görsel üretimi."""
@@ -88,10 +142,15 @@ class KieAIService:
                 "aynı anda kullanılamaz. Birini seçin."
             )
 
+        # Aspect ratio'yu Kie AI'ın kabul ettiği değere normalize et
+        safe_aspect = normalize_aspect_ratio(aspect_ratio)
+        if safe_aspect != aspect_ratio:
+            log.info(f"Aspect ratio normalize edildi: '{aspect_ratio}' → '{safe_aspect}'")
+
         input_data = {
             "prompt": prompt,
             "duration": duration,
-            "aspect_ratio": aspect_ratio,
+            "aspect_ratio": safe_aspect,
             "generate_audio": generate_audio,
             "web_search": False,
         }
@@ -147,9 +206,14 @@ class KieAIService:
         Returns:
             str: taskId
         """
+        # Aspect ratio'yu Kie AI'ın kabul ettiği değere normalize et
+        safe_aspect = normalize_aspect_ratio(aspect_ratio)
+        if safe_aspect != aspect_ratio:
+            log.info(f"Görsel aspect ratio normalize edildi: '{aspect_ratio}' → '{safe_aspect}'")
+
         input_data = {
             "prompt": prompt,
-            "aspect_ratio": aspect_ratio,
+            "aspect_ratio": safe_aspect,
         }
 
         if image_input:
@@ -447,12 +511,37 @@ class KieAIService:
         """
         url = f"{self.base_url}/jobs/createTask"
 
+        # Son savunma hattı: payload içindeki aspect_ratio'yu doğrula
+        input_block = payload.get("input", {})
+        if "aspect_ratio" in input_block:
+            validated = normalize_aspect_ratio(input_block["aspect_ratio"])
+            if validated != input_block["aspect_ratio"]:
+                log.warning(
+                    f"_create_task son savunma: aspect_ratio '{input_block['aspect_ratio']}' → '{validated}'"
+                )
+                input_block["aspect_ratio"] = validated
+
+        log.debug(
+            f"createTask payload: model={payload.get('model')}, "
+            f"aspect_ratio={input_block.get('aspect_ratio')}, "
+            f"duration={input_block.get('duration')}"
+        )
+
         response = requests.post(
             url,
             headers=self.headers,
             json=payload,
             timeout=REQUEST_TIMEOUT,
         )
+
+        # 422 hatası için detaylı loglama (debug kolaylığı)
+        if response.status_code == 422:
+            log.error(
+                f"Kie AI 422 Validation Error — "
+                f"payload_input={json.dumps(input_block, ensure_ascii=False)[:500]}, "
+                f"response={response.text[:500]}"
+            )
+
         response.raise_for_status()
         data = response.json()
 

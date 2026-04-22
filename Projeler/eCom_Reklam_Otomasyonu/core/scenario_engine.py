@@ -147,7 +147,8 @@ class ScenarioEngine:
         extra_notes = ""
         preferences = preferences or {}
         if preferences.get("video_format"):
-            aspect_ratio_override = preferences["video_format"]
+            from services.kie_api import normalize_aspect_ratio
+            aspect_ratio_override = normalize_aspect_ratio(preferences["video_format"])
         
         if preferences.get("video_style"):
             style_desc = {

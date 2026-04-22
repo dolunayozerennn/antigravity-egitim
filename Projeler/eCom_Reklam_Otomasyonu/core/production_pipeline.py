@@ -87,19 +87,12 @@ class ProductionPipeline:
         duration = scenario.get("duration", 10)
         
         preferences = preferences or {}
-        raw_aspect = str(preferences.get("video_format") or scenario.get("aspect_ratio", "9:16")).lower()
+        raw_aspect = str(preferences.get("video_format") or scenario.get("aspect_ratio", "9:16"))
         
-        # Sıkı Normalizasyon (Kie AI Valid Values: 9:16, 16:9, 1:1, 4:3, 3:4)
-        if "16:9" in raw_aspect or "yatay" in raw_aspect or "horizontal" in raw_aspect:
-            aspect_ratio = "16:9"
-        elif "1:1" in raw_aspect or "kare" in raw_aspect or "square" in raw_aspect:
-            aspect_ratio = "1:1"
-        elif "4:3" in raw_aspect:
-            aspect_ratio = "4:3"
-        elif "3:4" in raw_aspect:
-            aspect_ratio = "3:4"
-        else:
-            aspect_ratio = "9:16" # Default/Fallback: Dikey
+        # Merkezi normalizasyon (kie_api.py'deki tek kaynak)
+        from services.kie_api import normalize_aspect_ratio
+        aspect_ratio = normalize_aspect_ratio(raw_aspect)
+        log.info(f"Aspect ratio: '{raw_aspect}' → '{aspect_ratio}'")
 
         language = scenario.get("language", "Türkçe")
         cost = scenario.get("cost", {})
