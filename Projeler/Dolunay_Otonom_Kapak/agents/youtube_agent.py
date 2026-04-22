@@ -279,7 +279,7 @@ def generate_concepts(video_name: str, script_text: str, count: int = 5) -> list
     print(f"🧠 Generating {count} distinct content-aware YouTube thumbnail concepts (Video: {video_name})...")
     if not gemini_client or not script_text:
         return [
-            {"theme_name": "fallback1", "cover_text": "BUNU İZLE", "scene_description": "A widescreen cinematic portrait with dramatic side lighting, person on the left third.", "mood": "serious", "screenshot_url": None}
+            {"theme_name": "fallback1", "cover_text": "BUNU İZLE", "scene_description": "A widescreen cinematic portrait with dramatic side lighting, person on the left third.", "mood": "serious", "screenshot_url": None, "screenshot_context": ""}
             for _ in range(count)
         ]
 
@@ -295,29 +295,34 @@ def generate_concepts(video_name: str, script_text: str, count: int = 5) -> list
     === STEP 1: FIND URLs ===
     If the text contains any URLs (like a website, socialblade link, etc) that would make a great screenshot background,
     extract ONE best URL to be used for the background. If none, set "screenshot_url" to null.
+    Also provide a short "screenshot_context" explaining WHAT the screenshot is and HOW it should be cleanly integrated.
     
     === STEP 2: CREATE {count} DISTINCT CONCEPTS ===
     Each concept MUST be completely different in visual metaphor and composition.
     🚫 BANNED generic texts: "HERKES ŞAŞIRDI", "İNANILMAZ", "BUNU İZLE", "GELECEK BURADA", "TARİHİ CANLANDIR"
     🚫 BANNED visuals: "person sitting at computer", "person holding a phone", "person looking at a screen". This is strictly forbidden.
-    ✅ GOOD texts are HIGHLY PUNCHY, curiosity-inducing, and action-oriented: "BU KONSEPTİ ÇAL", "BU STRATEJİYİ ÇAL", "REKABET YOK", "YAPAY ZEKA GELİR"
-    ✅ GOOD visuals are STRONG PHYSICAL METAPHORS (e.g., standing on broken keyboards, pulling a glowing CV from a trash can).
+    ✅ GOOD texts are HIGHLY PUNCHY, curiosity-inducing, and action-oriented: "BU STRATEJİYİ ÇAL", "REKABET YOK", "YAPAY ZEKA GELİR"
     
+    CRITICAL TURKISH TEXT RULE:
+    The text MUST be perfectly idiomatic, natural-sounding Turkish! Do NOT output broken or translated phrases like "Milyonluk video dakikada". Use powerful, native hooks like "DAKİKADA MİLYON", "İZLENME SIRRI", "VİRAL OLACAK". Keep it MAX 2-3 WORDS.
+
     FORMAT: HORIZONTAL (16:9). Person on LEFT 1/3 or RIGHT 1/3.
     DESIGN RULES:
-    1. EXTREME MINIMALISM: No neon lights, no holograms, no cluttered micro-details. Big, simple, bold elements only.
-    2. SCREENSHOTS: If using a screenshot URL, DO NOT just blend it into the background. Conceptually place it smartly (e.g., "displayed cleanly on a large laptop screen").
+    1. EXTREME MINIMALISM & COLORS: No neon lights, no holograms, no cluttered micro-details. Big, simple, bold elements only. Use ONLY highly curated, aesthetic duo-tone minimal color palettes (avoid clashing colors or ugly bright yellows).
+    2. ICONS: NO standard emoji-like or cheap generic icons. Use sleek, minimal graphical elements if any, or none at all.
+    3. SCREENSHOTS: If using a screenshot URL, outline how it creatively fits the context (e.g. "displayed elegantly on a sleek floating UI panel"). Do not just blindly blend it.
     
     === OUTPUT FORMAT ===
     Return EXACTLY this JSON array with {count} objects:
     [
-        {{
+        {
             "theme_name": "short_label",
-            "cover_text": "2-4 WORD EXTREMELY PUNCHY TURKISH TEXT",
+            "cover_text": "2-3 WORD PERFECTLY IDIOMATIC TURKISH TEXT",
             "scene_description": "Detailed English scene description for 16:9 widescreen. KEEP IT MINIMALIST. No holograms, no small cluttered details.",
             "mood": "one of: confident, curious, surprised, pointing, happy, serious, mysterious",
-            "screenshot_url": "extracted url or null"
-        }}
+            "screenshot_url": "extracted url or null",
+            "screenshot_context": "Short explanation or empty string"
+        }
     ]
     """
     try:
@@ -336,7 +341,7 @@ def generate_concepts(video_name: str, script_text: str, count: int = 5) -> list
     except Exception as e:
         print(f"Error generating concepts: {e}")
         return [
-            {"theme_name": f"fallback{i}", "cover_text": "BUNU İZLE", "scene_description": "A dramatic widescreen portrait.", "mood": "serious", "screenshot_url": None}
+            {"theme_name": f"fallback{i}", "cover_text": "BUNU İZLE", "scene_description": "A dramatic widescreen portrait.", "mood": "serious", "screenshot_url": None, "screenshot_context": ""}
             for i in range(count)
         ]
 
@@ -395,7 +400,8 @@ def run_autonomous_generation(
     script_text: str = "",
     scene_description: str = "",
     extra_cutout_paths: list = None,
-    screenshot_url: str = None
+    screenshot_url: str = None,
+    screenshot_context: str = ""
 ):
     """
     Kie AI Video Production Skill (Nano Banana 2) - SELF REVIEW LOOP INCORPORATED.
@@ -435,12 +441,16 @@ def run_autonomous_generation(
 
     scene_context = f"Background concept: {scene_description}. Keep the background ULTRA-MINIMAL and free of distractions."
 
+    screenshot_instruction = ""
+    if screenshot_url and screenshot_context:
+        screenshot_instruction = f"If a screenshot was provided in references, DO NOT use it blindly as a raw full background. It shows: {screenshot_context}. Integrate it cleanly and beautifully into the composition (e.g. inside a sleek floating UI panel or smoothly blended into a minimal environment)."
+
     base_prompt = (
         f"CRITICAL INSTRUCTIONS:\n"
         f"1. FACE & IDENTITY: The person MUST be EXACTLY the reference person. The person MUST BE 100% SOLID and OPAQUE. NO semi-transparent or ghostly figures! This is a fatal error.\n"
         f"2. COMPOSITION: A cinematic HORIZONTAL WIDESCREEN (16:9) YouTube thumbnail photo. Person large, waist-up.\n"
-        f"3. MINIMALISM: ZERO micro-details, NO neon lights, NO holograms, NO visual clutter. Big, simple, highly legible elements only.\n"
-        f"4. BACKGROUND & SCREENSHOTS: ONE ultra-clean dramatic background. If a screenshot was given in references, DO NOT use it as a messy wallpaper. Integrate it intelligently, like displayed flatly on a laptop or floating cleanly with high contrast.\n"
+        f"3. MINIMALISM & COLORS: ZERO micro-details, NO neon lights, NO holograms, NO visual clutter. Big, simple, highly legible elements only. Use a highly curated, aesthetic duo-tone or minimal color palette. ENSURE MAXIMUM CONTRAST between text and background. NO UGLY GENERIC YELLOW ICONS or cheap graphics.\n"
+        f"4. BACKGROUND & SCREENSHOTS: ONE ultra-clean dramatic background. {screenshot_instruction}\n"
         f"5. BOLD TEXT OVERLAY: '{main_text}'. TEXT STYLING: HIGH CONTRAST, BRIGHT YELLOW or WHITE, HUGE THICK BOLD letters with a heavy BLACK outline. Extremely readable against background.\n\n"
         f"Special Instructions: {variant_instruction}\n"
         f"Theme: {scene_context}"

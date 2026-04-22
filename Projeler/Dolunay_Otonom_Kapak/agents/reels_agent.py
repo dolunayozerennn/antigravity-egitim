@@ -528,7 +528,7 @@ def run_autonomous_generation(local_person_image_path: str, video_topic: str, ma
         f"Font: Bold, modern sans-serif, all-caps. High contrast with background (white text with dark shadow, or bright yellow). "
         f"\n\n"
         f"Special Instructions: {variant_instruction} "
-        f"--cref {person_image_url} --cw 80"
+        f"--cref {person_image_url} --cw 100"
     )
     
     best_image_url = None

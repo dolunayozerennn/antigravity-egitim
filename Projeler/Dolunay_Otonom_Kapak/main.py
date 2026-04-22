@@ -165,6 +165,7 @@ def process_youtube(logger):
             cover_text = theme.get("cover_text", "BUNU İZLE")
             scene_description = theme.get("scene_description", "")
             screenshot_url = theme.get("screenshot_url")
+            screenshot_context = theme.get("screenshot_context", "")
             
             logger.info(f"Tema {t_idx}/{len(themes)}: {theme_name.upper()} -> '{cover_text}'")
             theme_drive_links = []
@@ -192,7 +193,8 @@ def process_youtube(logger):
                     script_text=script_content,
                     scene_description=scene_description,
                     extra_cutout_paths=extra_cutouts,
-                    screenshot_url=screenshot_url
+                    screenshot_url=screenshot_url,
+                    screenshot_context=screenshot_context
                 )
                 
                 if success:

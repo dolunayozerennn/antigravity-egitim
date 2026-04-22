@@ -20,3 +20,9 @@ assets/screenshot_*.png
 # Logs
 run.log
 *.log
+
+# Scratch / tek seferlik üretim scriptleri
+run_*.py
+scratch_*.py
+trigger_*.py
+find_*.py

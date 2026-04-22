@@ -70,6 +70,11 @@ def check_covers_exist(folder_url: str) -> bool:
         return False
 
 def count_existing_covers(folder_url: str) -> int:
+    """
+    THUMBNAIL alt klasörünün içindeki kapak dosyalarını sayar.
+    Not: Kapaklar upload_cover_to_drive() tarafından THUMBNAIL alt klasörüne yüklenir.
+    Bu fonksiyon da aynı yerde arar — tutarlılık garantisi.
+    """
     if not folder_url:
         return 0
     service = authenticate_google_drive()
@@ -79,9 +84,27 @@ def count_existing_covers(folder_url: str) -> int:
     if not folder_id:
         return 0
     try:
-        query = f"'{folder_id}' in parents and (name contains 'THUMBNAIL' or name contains 'KAPAK') and trashed = false"
-        results = service.files().list(q=query, fields="files(id, name)", pageSize=20).execute()
-        return len(results.get('files', []))
+        # 1) THUMBNAIL alt klasörünü bul
+        subfolder_query = (
+            f"'{folder_id}' in parents and name = 'THUMBNAIL' "
+            f"and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+        )
+        subfolder_results = service.files().list(
+            q=subfolder_query, fields="files(id)"
+        ).execute()
+        subfolders = subfolder_results.get('files', [])
+        if not subfolders:
+            return 0
+        # 2) Alt klasörün içindeki dosyaları say (klasörleri hariç tut)
+        thumbnail_folder_id = subfolders[0]['id']
+        count_query = (
+            f"'{thumbnail_folder_id}' in parents "
+            f"and mimeType != 'application/vnd.google-apps.folder' and trashed = false"
+        )
+        count_results = service.files().list(
+            q=count_query, fields="files(id)", pageSize=20
+        ).execute()
+        return len(count_results.get('files', []))
     except Exception as e:
         print(f"Error counting existing covers in Drive: {e}")
         return 0
