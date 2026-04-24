@@ -50,19 +50,17 @@ signal.signal(signal.SIGINT, _signal_handler)
 
 def run_cycle(reader: SheetsReader) -> dict:
     """Tek bir polling döngüsü çalıştırır."""
-    stats = {"total": 0, "notified": 0, "errors": 0}
+    stats = {"total": 0, "notified": 0, "errors": 0, "processed_row_indices": []}
 
     # 1. Yeni lead'leri tespit et
     try:
         new_leads = reader.get_new_leads()
     except Exception as e:
         logger.error(f"❌ Google Sheets okunamadı: {e}", exc_info=True)
-        reader.rollback_pending()
         return stats
 
     if not new_leads:
         logger.info("📭 Yeni lead yok")
-        reader.confirm_processed()
         return stats
 
     stats["total"] = len(new_leads)
@@ -84,6 +82,9 @@ def run_cycle(reader: SheetsReader) -> dict:
             result = process_and_notify(lead)
             if result.get("telegram") or result.get("email"):
                 stats["notified"] += 1
+                row_idx = lead.get("__row_index__")
+                if row_idx:
+                    stats["processed_row_indices"].append(row_idx)
             else:
                 stats["errors"] += 1
         except Exception as e:
@@ -91,14 +92,15 @@ def run_cycle(reader: SheetsReader) -> dict:
             stats["errors"] += 1
 
     # 4. State güncelle
-    # Kısmi hata olsa bile state güncellenir (tekrar spam engellemek için)
+    # Sadece başarılı olanların Sheet satırları update edilir.
     if stats["errors"] > 0:
         logger.warning(
             f"⚠️ {stats['errors']} lead bildirilemedi. "
-            "State yine de güncelleniyor (tekrar bildirim döngüsüne girmemesi için)."
+            "Başarısız olanlar bir sonraki döngüde tekrar denenecek."
         )
 
-    reader.confirm_processed()
+    if stats["processed_row_indices"]:
+        reader.mark_as_notified(stats["processed_row_indices"])
     return stats
 
 
@@ -160,7 +162,6 @@ def main():
             stats = run_cycle(reader)
             consecutive_failures = 0
         except Exception as e:
-            reader.rollback_pending()
             consecutive_failures += 1
             logger.error(
                 f"❌ Çekirdek hata (ardışık #{consecutive_failures}): {e}",

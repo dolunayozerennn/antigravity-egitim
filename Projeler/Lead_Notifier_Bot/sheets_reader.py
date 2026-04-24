@@ -1,14 +1,12 @@
 """
-Google Sheets Okuyucu — v3 (ID Tabanlı State)
+Google Sheets Okuyucu — v3 (Tamamen Stateless)
 
-ESKİ SORUN: Satır sayısına dayalı state → satır silinince tüm lead'ler tekrar bildiriliyordu
-YENİ ÇÖZÜM: Her lead'in benzersiz ID'sini takip et → tekrar bildirim imkansız
-
-Ek filtre: Sadece lead_status == "CREATED" olan lead'ler bildirilir.
+ESKİ SORUN: Yerel dosya (seen_ids) veya RAM tabanlı state, Railway gibi geçici dosya sistemlerinde restart anında "cold start amnesia" veya "spam" yaratıyordu.
+YENİ ÇÖZÜM: Single Source of Truth = Google Sheets. Bot sadece `lead_status == "CREATED"` satırlarını alır.
+Bildirim başarılı olunca o hücre `NOTIFIED` olarak güncellenir. Eğer bot çökerse bile veri Google Sheets'te "CREATED" kalacağı için hiçbir bildirim kaçırılmaz.
 """
 import os
 import sys
-import json
 import time
 import logging
 from datetime import datetime
@@ -21,7 +19,8 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+# Yazma yetkisi eklendi (.readonly kaldırıldı)
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 _TRANSIENT_KEYWORDS = [
     "eof", "ssl", "broken pipe", "connection reset", "timeout",
@@ -30,61 +29,24 @@ _TRANSIENT_KEYWORDS = [
     "service unavailable", "bad gateway"
 ]
 _MAX_RETRIES = 5
-_STATE_FILE = os.path.join(os.path.dirname(__file__), ".seen_lead_ids.json")
-_STATE_ENV_KEY = "LEAD_NOTIFIER_SEEN_IDS"
+
+
+def get_column_letter(col_idx: int) -> str:
+    """0-based index'i Excel sütun harfine çevirir (0=A, 25=Z, 26=AA)"""
+    letters = ""
+    col_idx += 1
+    while col_idx > 0:
+        col_idx, remainder = divmod(col_idx - 1, 26)
+        letters = chr(65 + remainder) + letters
+    return letters
 
 
 class SheetsReader:
     def __init__(self):
         self.service = None
         self._creds = None
-        self._seen_ids: set = self._load_state()
-        self._pending_ids: set = set()
         self._consecutive_errors = 0
-
-    # ── STATE YÖNETİMİ ──────────────────────────────────────
-
-    @staticmethod
-    def _load_state() -> set:
-        """Disk veya env'den seen ID'leri yükler."""
-        # 1. Diskten dene
-        try:
-            if os.path.exists(_STATE_FILE):
-                with open(_STATE_FILE, "r") as f:
-                    data = json.load(f)
-                ids = set(data.get("seen_ids", []))
-                logger.info(f"📂 Önceki state yüklendi (disk): {len(ids)} ID")
-                return ids
-        except (json.JSONDecodeError, OSError) as e:
-            logger.warning(f"⚠️ State dosyası okunamadı: {e}")
-
-        # 2. Env'den dene (Railway restart sonrası)
-        env_state = os.environ.get(_STATE_ENV_KEY, "")
-        if env_state:
-            try:
-                data = json.loads(env_state)
-                ids = set(data.get("seen_ids", []))
-                logger.info(f"📂 Önceki state yüklendi (env): {len(ids)} ID")
-                return ids
-            except json.JSONDecodeError:
-                logger.warning("⚠️ Env state parse edilemedi")
-
-        return set()
-
-    def _save_state(self):
-        """State'i hem diske hem env'ye kaydeder."""
-        state_data = {
-            "seen_ids": list(self._seen_ids),
-            "last_updated": datetime.now().isoformat()
-        }
-
-        try:
-            with open(_STATE_FILE, "w") as f:
-                json.dump(state_data, f)
-        except OSError as e:
-            logger.warning(f"⚠️ State dosyası yazılamadı (ephemeral FS?): {e}")
-
-        os.environ[_STATE_ENV_KEY] = json.dumps(state_data)
+        self._status_col_letter = None
 
     # ── HATA TESPİTİ ────────────────────────────────────────
 
@@ -135,6 +97,7 @@ class SheetsReader:
 
     def _fetch_all_rows(self) -> list[dict]:
         """Sheet'ten tüm satırları header'larla birlikte oku.
+        Sütun isimlerinden `lead_status` sütununu bulup harfini _status_col_letter olarak kaydeder.
         Transient hatalar için exponential backoff ile retry yapar.
         """
         if not self.service:
@@ -170,9 +133,18 @@ class SheetsReader:
                     return []
 
                 headers = [h.strip().lower() for h in values[0]]
+                
+                # Sütun harfini dinamik olarak tespit et
+                if "lead_status" in headers:
+                    status_col_idx = headers.index("lead_status")
+                    self._status_col_letter = get_column_letter(status_col_idx)
+                else:
+                    self._status_col_letter = None
+
                 rows = []
-                for row_values in values[1:]:
-                    row_dict = {}
+                # Header satırı 1 kabul edilir, veri 2. satırdan başlar.
+                for idx, row_values in enumerate(values[1:], start=2):
+                    row_dict = {"__row_index__": idx}
                     for i, header in enumerate(headers):
                         row_dict[header] = row_values[i] if i < len(row_values) else ""
                     rows.append(row_dict)
@@ -194,12 +166,10 @@ class SheetsReader:
     def get_new_leads(self) -> list[dict]:
         """
         Yeni lead'leri tespit eder.
-
+        
         Mantık:
         1. Tüm satırları oku
-        2. lead_status == "CREATED" olanları filtrele
-        3. ID'si seen_ids'de olmayanları yeni kabul et
-        4. İlk çalıştırmada tüm mevcut ID'leri kaydet (bildirim yapma)
+        2. lead_status == "CREATED" olanları filtrele (Google Sheets'te manuel "CREATED" yazılmış veya webhook ile gelmiş)
         """
         all_rows = self._fetch_all_rows()
 
@@ -208,63 +178,50 @@ class SheetsReader:
             return []
 
         # lead_status == "CREATED" filtresi
-        created_rows = [
+        new_leads = [
             row for row in all_rows
             if row.get("lead_status", "").strip().upper() == "CREATED"
         ]
 
-        logger.debug(
-            f"📊 Toplam: {len(all_rows)}, "
-            f"CREATED: {len(created_rows)}, "
-            f"Seen: {len(self._seen_ids)}"
-        )
-
-        # İlk çalıştırma — tüm mevcut lead'leri "görüldü" olarak kaydet
-        if not self._seen_ids:
-            all_ids = {
-                row.get("id", "").strip()
-                for row in created_rows
-                if row.get("id", "").strip()
-            }
-            if all_ids:
-                self._seen_ids = all_ids
-                self._save_state()
-                logger.info(
-                    f"📊 İlk çalıştırma — Mevcut {len(all_ids)} CREATED lead "
-                    "atlanıyor. Bundan sonraki yeni lead'ler bildirilecek."
-                )
-            return []
-
-        # Yeni lead tespiti
-        new_leads = []
-        for row in created_rows:
-            lead_id = row.get("id", "").strip()
-            if not lead_id:
-                continue
-            if lead_id not in self._seen_ids:
-                new_leads.append(row)
-                self._pending_ids.add(lead_id)
-
         if new_leads:
-            logger.info(f"📥 {len(new_leads)} yeni CREATED lead bulundu")
+            logger.info(f"📥 {len(new_leads)} yeni CREATED lead bulundu (Stateless Mod)")
 
         return new_leads
 
-    # ── STATE ONAY / GERİ ALMA ──────────────────────────────
+    # ── GOOGLE SHEETS GÜNCELLEME ─────────────────────────────
 
-    def confirm_processed(self):
-        """Başarılı bildirim sonrası pending ID'leri seen'e taşı."""
-        if self._pending_ids:
-            self._seen_ids.update(self._pending_ids)
-            self._pending_ids.clear()
-            self._save_state()
-            logger.debug("✅ Yeni ID'ler kaydedildi")
+    def mark_as_notified(self, row_indices: list[int]):
+        """Google Sheets'te ilgili satırların lead_status değerlerini 'NOTIFIED' yapar."""
+        if not self.service:
+            logger.error("❌ API bağlı değil.")
+            return
 
-    def rollback_pending(self):
-        """Hata durumunda pending'i geri al — sonraki döngüde tekrar denensin."""
-        if self._pending_ids:
-            logger.info(f"↩️ {len(self._pending_ids)} pending ID geri alındı")
-            self._pending_ids.clear()
+        if not getattr(self, "_status_col_letter", None):
+            logger.error("❌ 'lead_status' sütunu bulunamadı! Güncelleme yapılamıyor.")
+            return
+
+        data = []
+        for r_idx in row_indices:
+            range_name = f"'{Config.SHEET_TAB}'!{self._status_col_letter}{r_idx}"
+            data.append({
+                "range": range_name,
+                "values": [["NOTIFIED"]]
+            })
+
+        body = {
+            "valueInputOption": "USER_ENTERED",
+            "data": data
+        }
+
+        try:
+            self.service.spreadsheets().values().batchUpdate(
+                spreadsheetId=Config.SPREADSHEET_ID,
+                body=body
+            ).execute()
+            logger.info(f"✅ {len(row_indices)} lead Google Sheets üzerinde 'NOTIFIED' olarak güncellendi.")
+        except Exception as e:
+            logger.error(f"❌ Google Sheets update hatası: {e}", exc_info=True)
+            self._consecutive_errors += 1
 
     @property
     def is_healthy(self) -> bool:
