@@ -94,7 +94,11 @@ async function createSubscriber(phoneNumber, firstName) {
 
     // Subscriber zaten varsa hata döner — normal, findByCustomField ile bul
     log.warn(`[manychat:api] ⚠️ createSubscriber başarısız (büyük ihtimalle mevcut).`, { message: data.message });
-    return await findSubscriberByPhone(phoneNumber);
+    let existingId = await findSubscriberByPhone(phoneNumber);
+    if (!existingId) {
+      existingId = await findSubscriberBySystemPhone(phoneNumber);
+    }
+    return existingId;
 
   } catch (error) {
     log.error(`[manychat:api] ❌ createSubscriber ağ hatası: ${error.message}`, error);

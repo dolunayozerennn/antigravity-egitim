@@ -121,13 +121,24 @@ app.post('/webhook/membership-questions', async (req, res) => {
         return res.status(200).json({ success: true, skipped: true });
       }
 
-      // 5. Notion'ı güncelle
+      // 5. ManyChat'te subscriber oluştur + Gün 0 flow'unu tetikle
+      // NOT: Bu işlem Notion güncellemesinden ÖNCE yapılmalıdır.
+      // Eğer ManyChat hata verirse (örn. API down), webhook 500 döner ve Zapier retry eder.
+      // Notion güncellenmediği için retry başarılı olur.
+      await manychat.ensureSubscriberAndSendFlow(
+        phoneResult.normalized,
+        first_name,
+        ONBOARDING_FLOWS[0].flow_id
+      );
+
+      // 6. Notion'ı güncelle
       // Gece 00:00-06:00 arası kayıt → startDate'i 1 gün geri al
       // Böylece öğlen cron'u daysDiff=1 hesaplar ve Day 1 aynı gün gider
       const nowWa = moment().tz('Europe/Istanbul');
       const startDateWa = nowWa.hour() < 6
         ? nowWa.clone().subtract(1, 'day').format('YYYY-MM-DD')
         : nowWa.format('YYYY-MM-DD');
+      
       await notion.updatePage(member.id, {
         phone: phoneResult.normalized,
         onboardingStatus: "whatsapp",
@@ -135,13 +146,6 @@ app.post('/webhook/membership-questions', async (req, res) => {
         onboardingStep: 0,
         onboardingStartDate: startDateWa
       });
-
-      // 6. ManyChat'te subscriber oluştur + Gün 0 flow'unu tetikle
-      await manychat.ensureSubscriberAndSendFlow(
-        phoneResult.normalized,
-        first_name,
-        ONBOARDING_FLOWS[0].flow_id
-      );
 
       log.info(`[membership-questions] WhatsApp onboarding başlatıldı: ${first_name} → ${phoneResult.normalized} (Güven: ${phoneResult.confidence})`);
 
@@ -155,6 +159,14 @@ app.post('/webhook/membership-questions', async (req, res) => {
       const startDateEmail = nowEmail.hour() < 6
         ? nowEmail.clone().subtract(1, 'day').format('YYYY-MM-DD')
         : nowEmail.format('YYYY-MM-DD');
+
+      // 5. Email onboarding başlat (eğer email varsa)
+      // Notion'dan ÖNCE yapılmalıdır. Hata fırlatırsa webhook 500 döner ve Zapier retry eder.
+      if (member.email) {
+        await resend.sendOnboardingEmail(member.email, first_name, 0);
+      }
+
+      // 6. Notion'ı güncelle
       await notion.updatePage(member.id, {
         onboardingStatus: "email",
         onboardingChannel: "email",
@@ -162,15 +174,6 @@ app.post('/webhook/membership-questions', async (req, res) => {
         onboardingStartDate: startDateEmail,
         notes: `Telefon cevabı: "${answer_1}" — Sebep: ${failReason} (Güven: ${confidenceStr})`
       });
-
-      // Email onboarding başlat (eğer email varsa)
-      if (member.email) {
-        try {
-          await resend.sendOnboardingEmail(member.email, first_name, 0);
-        } catch (emailErr) {
-          log.error(`[membership-questions] Email fallback hatası: ${emailErr.message}`, emailErr.stack);
-        }
-      }
 
       log.info(`[membership-questions] Email fallback: ${first_name} — ${phoneResult.reason}`);
     }
