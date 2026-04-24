@@ -18,8 +18,8 @@ from services.gmail_service import get_gmail_service
 
 logger = logging.getLogger(__name__)
 
-# E-posta Config
-SMTP_USER = os.environ.get("SMTP_USER", "ozerendolunay@gmail.com")
+# E-posta Config — Gmail OAuth ile gönderim (outreach hesabı üzerinden)
+FROM_EMAIL = "ozerendolunay@gmail.com"
 
 # Alıcılar
 CEREN_EMAIL = "ceren@dolunay.ai"
@@ -29,7 +29,7 @@ ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "ozerendolunay@gmail.com")
 def _send_email(to: str, subject: str, body_html: str):
     """Gmail API (OAuth) ile e-posta gönder."""
     msg = MIMEMultipart("alternative")
-    msg["From"] = SMTP_USER
+    msg["From"] = FROM_EMAIL
     msg["To"] = to
     msg["Subject"] = subject
     msg.attach(MIMEText(body_html, "html", "utf-8"))
@@ -47,12 +47,7 @@ def _send_email(to: str, subject: str, body_html: str):
 
 
 def send_reminder_to_ceren(threads: List[Dict[str, Any]]):
-    """
-    Ceren'e stale thread hatırlatması gönder.
-    
-    Args:
-        threads: Analiz edilmiş ve bildirilecek thread listesi
-    """
+    """Ceren'e stale thread hatırlatması gönder."""
     if not threads:
         logger.info("Bildirilecek thread yok, Ceren'e mail gönderilmiyor")
         return
@@ -60,7 +55,6 @@ def send_reminder_to_ceren(threads: List[Dict[str, Any]]):
     count = len(threads)
     subject = f"🔔 Hatırlatma: {count} marka thread'i cevap bekliyor"
 
-    # Thread listesini HTML olarak oluştur
     thread_rows = ""
     for i, t in enumerate(threads, 1):
         brand = t.get("brand_name", "Bilinmeyen Marka")
@@ -123,10 +117,7 @@ def send_reminder_to_ceren(threads: List[Dict[str, Any]]):
 
 
 def send_error_alert(error_message: str):
-    """
-    Dolunay'a hata bildirimi gönder.
-    Sistem çalışamadığında anında tetiklenir.
-    """
+    """Dolunay'a hata bildirimi gönder."""
     subject = "⚡ Ceren_Marka_Takip — Sistem Hatası"
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -144,17 +135,11 @@ def send_error_alert(error_message: str):
     try:
         _send_email(ALERT_EMAIL, subject, body_html)
     except Exception as e:
-        # Alert gönderilemezse en azından logla
         logger.critical(f"ALERT E-POSTASI DA GÖNDERİLEMEDİ: {e}", exc_info=True)
 
 
 def send_weekly_report(stats: Dict[str, Any]):
-    """
-    Dolunay'a haftalık özet rapor gönder (her Pazartesi).
-    
-    Args:
-        stats: Çalışma istatistikleri
-    """
+    """Dolunay'a haftalık özet rapor gönder (her Pazartesi)."""
     subject = "📊 Ceren_Marka_Takip — Haftalık Rapor"
     now = datetime.utcnow().strftime("%Y-%m-%d")
 
