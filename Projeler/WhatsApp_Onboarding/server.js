@@ -101,7 +101,8 @@ app.post('/webhook/membership-questions', async (req, res) => {
     }
 
     // 3. Deduplication kontrolü
-    if (member.onboardingStatus === 'whatsapp' || member.onboardingStatus === 'tamamlandı') {
+    const skipStatuses = ['whatsapp', 'email', 'tamamlandı', 'error'];
+    if (skipStatuses.includes(member.onboardingStatus)) {
       log.info(`[membership-questions] Zaten onboarding'de veya tamamlanmış, atlanıyor: ${transaction_id}`);
       return res.status(200).json({ success: true, skipped: true });
     }
