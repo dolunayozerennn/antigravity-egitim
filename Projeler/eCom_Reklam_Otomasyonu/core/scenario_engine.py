@@ -77,6 +77,66 @@ SCENARIO_SYSTEM_PROMPT = """Sen profesyonel bir reklam film yönetmenisin. Veril
 """
 
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 🎬 UGC MULTI-SCENE SYSTEM PROMPT
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# UGC pipeline oturumundan (23 Nisan 2026) öğrenilen multi-scene prompt yapısı.
+# "ugc" style seçildiğinde bu prompt kullanılır.
+
+UGC_MULTI_SCENE_SYSTEM_PROMPT = """Sen profesyonel bir UGC (User Generated Content) reklam film yönetmenisin. Verilen marka, ürün ve konsept bilgilerine göre 3 ayrı sahnelik bir reklam senaryosu üretiyorsun.
+
+## Çıktı Formatı (JSON):
+```json
+{
+  "title": "Senaryo başlığı (Türkçe)",
+  "summary": "1-2 cümlelik Türkçe özet",
+  "scenes": [
+    {
+      "scene_name": "Sahne adı (İngilizce, kısa)",
+      "video_prompt": "Seedance 2.0 için DETAYLI İngilizce video promptu"
+    },
+    {
+      "scene_name": "...",
+      "video_prompt": "..."
+    },
+    {
+      "scene_name": "...",
+      "video_prompt": "..."
+    }
+  ],
+  "voiceover_text": "Türkçe dış ses metni (tüm video için, ~25 kelime ±3)",
+  "technical_notes": "Teknik notlar"
+}
+```
+
+## KRİTİK KURALLAR (İSTİSNASIZ UYGULA):
+
+### Sahne Yapısı (3 sahne × ~3.3 saniye = ~10 saniye toplam):
+1. **Sahne 1 — Reveal/Unboxing:** Ürünün ilk tanıtımı. Kutudan çıkarma, el ile tutma, masa üstünde sergileme. Handheld, POV tarzı kamera.
+2. **Sahne 2 — Product-in-Use:** Ürünün kullanımda görünmesi. Styling, uygulama, giyinme. Doğal aydınlatma, samimi açılar.
+3. **Sahne 3 — Hero/Power Shot:** Ürünün en etkileyici gösterimi. Tracking shot, slow motion vurgu, cinematic close-up.
+
+### Video Prompt (İngilizce — HER SAHNE İÇİN AYRI):
+1. Her zaman İNGİLİZCE yaz
+2. Her sahne prompt'unun SONUNA mutlaka ekle: "No character dialogue, no speaking, no lip movement. Enable ambient and environmental sounds, natural atmosphere."
+3. UGC tarzı kamera: handheld, POV, slightly shaky, selfie angle, natural lighting
+4. Ürünün orijinal rengini ve görünümünü prompt'ta spesifik olarak belirt (örn: "glossy red stiletto", "matte black backpack")
+5. Her sahne bağımsız ama birbiriyle uyumlu olmalı — aynı ortam/ışık tutarlılığı
+6. Macro shot, tracking shot, slow reveal gibi dinamik kamera hareketleri kullan
+7. Reference image modu kullanılacak — görsel sadakati prompt'ta vurgula
+
+### Dış Ses (Türkçe — TÜM VİDEO İÇİN TEK):
+1. Türkçe, ~25 kelime (±3)
+2. Tüm 3 sahneyi kapsayan akıcı bir metin
+3. UGC tarzı: samimi, kişisel deneyim paylaşır gibi ("Bu ayakkabıyı ilk gördüğümde...")
+4. Sosyal medya reklamına uygun ton: enerjik ama doğal
+
+### Genel:
+1. title ve summary TÜRKÇE olmalı
+2. scene_name İngilizce, kısa ve açıklayıcı olmalı ("Unboxing", "Styling", "Power Walk")
+"""
+
+
 class ScenarioEngine:
     """Senaryo üretim motoru — araştırma, analiz, senaryo ve maliyet."""
 
@@ -151,6 +211,10 @@ class ScenarioEngine:
             aspect_ratio_override = normalize_aspect_ratio(preferences["video_format"])
         
         if preferences.get("video_style"):
+            # UGC multi-scene seçildiyse ayrı metoda yönlendir
+            if preferences["video_style"] == "ugc":
+                return self.generate_ugc_scenario(collected_data, research_data, preferences)
+
             style_desc = {
                 "cinematic": "Profesyonel çekim, sinematik ışıklandırma, ürün odaklı",
                 "ugc": "Samimi, User Generated Content tarzı, doğal ve gerçekçi",
@@ -210,36 +274,127 @@ class ScenarioEngine:
         return scenario
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🎬 UGC MULTI-SCENE SENARYO ÜRETİMİ
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    def generate_ugc_scenario(self, collected_data: dict, research_data: dict, preferences: dict = None) -> dict:
+        """
+        UGC tarzı 3 sahneli multi-scene senaryo üretir.
+        Her sahne ayrı Seedance 2.0 task'ı olarak üretilecek ve sonra concat edilecek.
+
+        Args:
+            collected_data: URLDataExtractor'dan gelen veriler
+            research_data: research() çıktısı
+            preferences: Kullanıcı tercihleri
+
+        Returns:
+            dict: Multi-scene senaryo bilgileri + maliyet
+        """
+        brand = collected_data.get("brand_name", "")
+        product = collected_data.get("product_name", "")
+        concept = collected_data.get("ad_concept", "")
+        description = collected_data.get("product_description", "")
+        target_audience = collected_data.get("target_audience", "")
+        has_images = bool(collected_data.get("best_image_urls"))
+
+        preferences = preferences or {}
+        aspect_ratio_override = FIXED_ASPECT_RATIO
+        if preferences.get("video_format"):
+            from services.kie_api import normalize_aspect_ratio
+            aspect_ratio_override = normalize_aspect_ratio(preferences["video_format"])
+
+        extra_notes = ""
+        if preferences.get("custom_note"):
+            extra_notes += f"- Kullanıcı Notu: {preferences['custom_note']}\n"
+
+        user_brief = (
+            f"## Proje Bilgileri:\n"
+            f"- Marka: {brand}\n"
+            f"- Ürün: {product}\n"
+            f"- Ürün Açıklaması: {description}\n"
+            f"- Reklam Konsepti: {concept}\n"
+            f"- Hedef Kitle: {target_audience}\n"
+            f"- Video Süresi: {FIXED_DURATION} saniye toplam (3 sahne × ~3.3s)\n"
+            f"- Format: {aspect_ratio_override}\n"
+            f"- Dil: {FIXED_LANGUAGE}\n"
+            f"- Tarz: UGC (User Generated Content) — Multi-Scene\n"
+            f"- Ürün Referans Görseli: {'Var (reference image modu)' if has_images else 'Yok (text-to-video)'}\n"
+        )
+
+        if extra_notes:
+            user_brief += f"\n## Kullanıcı Tercihleri:\n{extra_notes}\n"
+
+        user_brief += f"\n## Marka Araştırması:\n{research_data.get('brand_research', 'N/A')}\n"
+
+        messages = [
+            {"role": "system", "content": UGC_MULTI_SCENE_SYSTEM_PROMPT},
+            {"role": "user", "content": user_brief},
+        ]
+
+        log.info(f"UGC multi-scene senaryo üretimi başlıyor: {brand} — {product}")
+
+        try:
+            scenario = self.openai.chat_json(messages, temperature=0.8, max_tokens=3000)
+        except Exception:
+            log.error("UGC senaryo üretimi hatası", exc_info=True)
+            raise
+
+        # Multi-scene maliyet: 3 sahne × Seedance + concat + voiceover merge
+        scene_count = len(scenario.get("scenes", []))
+        if scene_count < 2:
+            scene_count = 3  # Fallback
+        cost = self.calculate_cost(FIXED_DURATION, has_images, scene_count=scene_count)
+
+        scenario["duration"] = FIXED_DURATION
+        scenario["aspect_ratio"] = aspect_ratio_override
+        scenario["language"] = FIXED_LANGUAGE
+        scenario["has_reference_images"] = has_images
+        scenario["cost"] = cost
+        scenario["is_multi_scene"] = True
+        scenario["scene_count"] = scene_count
+
+        log.info(
+            f"UGC senaryo üretildi: '{scenario.get('title', '?')}' — "
+            f"{scene_count} sahne, ${cost['total_usd']:.3f}"
+        )
+
+        return scenario
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 💰 MALİYET HESAPLAMA
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     @staticmethod
     def calculate_cost(duration: int = FIXED_DURATION,
-                       has_reference_image: bool = True) -> dict:
+                       has_reference_image: bool = True,
+                       scene_count: int = 1) -> dict:
         """
-        Seedance 2.0 maliyet hesaplama (tek tier: 720p + reference image).
+        Seedance 2.0 maliyet hesaplama.
 
         Args:
-            duration: Video süresi (saniye)
+            duration: Video süresi (saniye) — her sahne için
             has_reference_image: Reference image var mı
+            scene_count: Sahne sayısı (multi-scene için 2+)
 
         Returns:
             dict: Maliyet bilgileri
         """
         credits_per_sec = SEEDANCE_CREDITS_PER_SECOND
-        total_credits = credits_per_sec * duration
+        total_credits = credits_per_sec * duration * scene_count
         total_usd = total_credits * CREDIT_TO_USD
 
         mode_label = "reference-image" if has_reference_image else "text-to-video"
+        scene_label = f"{scene_count} sahne" if scene_count > 1 else "tek sahne"
 
         return {
             "credits_per_second": credits_per_sec,
             "total_credits": total_credits,
             "total_usd": round(total_usd, 3),
+            "scene_count": scene_count,
             "breakdown": (
-                f"{duration}s × {credits_per_sec} credit/s = "
+                f"{scene_count}× {duration}s × {credits_per_sec} credit/s = "
                 f"{total_credits} credits (${total_usd:.3f}) "
-                f"[720p, {mode_label}]"
+                f"[720p, {mode_label}, {scene_label}]"
             ),
         }
 
@@ -276,6 +431,15 @@ class ScenarioEngine:
             f"🌍 **Dil:** {scenario.get('language', FIXED_LANGUAGE)}\n"
             f"🖼 **Referans Görsel:** {'Var' if scenario.get('has_reference_images') else 'Yok'}\n"
         )
+
+        # Multi-scene bilgisi (UGC)
+        if scenario.get("is_multi_scene") and scenario.get("scenes"):
+            scenes = scenario["scenes"]
+            summary += f"🎬 **Stil:** UGC ({len(scenes)} sahne)\n"
+            for i, scene in enumerate(scenes, 1):
+                scene_name = safe_md(scene.get("scene_name", f"Sahne {i}"))
+                summary += f"   {i}. {scene_name}\n"
+            summary += "\n"
 
         # Dış ses (her zaman var)
         voiceover = safe_md(scenario.get("voiceover_text", ""))

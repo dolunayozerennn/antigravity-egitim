@@ -218,3 +218,122 @@ class ReplicateService:
         except Exception:
             log.error(f"Prediction sorgulama hatası: {prediction_id}", exc_info=True)
             return {"status": "error", "output": None, "error": "Sorgulama başarısız"}
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🔗 VIDEO CONCAT — Multi-Scene Birleştirme
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # Model: lucataco/video-merge
+    # UGC pipeline oturumundan (23 Nisan 2026) öğrenilen model ve format.
+    # Input: pipe-separated video URL'leri (video1|video2|video3)
+
+    VIDEO_MERGE_VERSION = "14273448a57117b5d424410e2e79700ecde6cc7d60bf522a769b9c7cf989eba7"
+
+    def concat_videos(self, video_urls: list[str]) -> str:
+        """
+        Birden fazla video dosyasını sırayla birleştirir (concat).
+
+        Args:
+            video_urls: Video URL'leri listesi (en az 2, max 10)
+
+        Returns:
+            str: Birleştirilmiş video URL'i
+
+        Raises:
+            ValueError: 2'den az video verilirse
+            RuntimeError: Birleştirme başarısız olursa
+        """
+        if len(video_urls) < 2:
+            raise ValueError(f"Concat için en az 2 video gerekli, {len(video_urls)} verildi")
+
+        pipe_input = "|".join(video_urls)
+        log.info(f"Video concat başlatılıyor: {len(video_urls)} video")
+
+        try:
+            prediction = self.client.predictions.create(
+                version=self.VIDEO_MERGE_VERSION,
+                input={"video_files": pipe_input},
+            )
+            log.info(f"Concat prediction oluşturuldu: {prediction.id}")
+
+            for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
+                prediction.reload()
+
+                if prediction.status == "succeeded":
+                    output_url = prediction.output
+                    if isinstance(output_url, list):
+                        output_url = output_url[0] if output_url else None
+                    output_url = str(output_url) if output_url else None
+                    if not output_url or not output_url.startswith("http"):
+                        raise RuntimeError(f"Concat geçersiz output: {output_url}")
+                    log.info(f"Video concat tamamlandı: {prediction.id} ({attempt} deneme)")
+                    return output_url
+
+                if prediction.status in ("failed", "canceled"):
+                    error = prediction.error or "Bilinmeyen hata"
+                    raise RuntimeError(f"Video concat başarısız: {error}")
+
+                log.info(f"Concat polling [{attempt}/{MAX_POLL_ATTEMPTS}]: status={prediction.status}")
+                time.sleep(POLL_INTERVAL_SECONDS)
+
+            raise TimeoutError(f"Concat timeout: {prediction.id}")
+
+        except (RuntimeError, TimeoutError, ValueError):
+            raise
+        except Exception:
+            log.error("Video concat genel hatası", exc_info=True)
+            raise
+
+    async def async_concat_videos(self, video_urls: list[str]) -> str:
+        """
+        Birden fazla video dosyasını async olarak birleştirir.
+        asyncio.sleep() kullanır → event loop'u bloke etmez.
+
+        Args:
+            video_urls: Video URL'leri listesi (en az 2)
+
+        Returns:
+            str: Birleştirilmiş video URL'i
+        """
+        import asyncio as _asyncio
+
+        if len(video_urls) < 2:
+            raise ValueError(f"Concat için en az 2 video gerekli, {len(video_urls)} verildi")
+
+        pipe_input = "|".join(video_urls)
+        log.info(f"Async video concat başlatılıyor: {len(video_urls)} video")
+
+        try:
+            prediction = await _asyncio.to_thread(
+                self.client.predictions.create,
+                version=self.VIDEO_MERGE_VERSION,
+                input={"video_files": pipe_input},
+            )
+            log.info(f"Concat prediction oluşturuldu: {prediction.id}")
+
+            for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
+                await _asyncio.to_thread(prediction.reload)
+
+                if prediction.status == "succeeded":
+                    output_url = prediction.output
+                    if isinstance(output_url, list):
+                        output_url = output_url[0] if output_url else None
+                    output_url = str(output_url) if output_url else None
+                    if not output_url or not output_url.startswith("http"):
+                        raise RuntimeError(f"Concat geçersiz output: {output_url}")
+                    log.info(f"Async concat tamamlandı: {prediction.id} ({attempt} deneme)")
+                    return output_url
+
+                if prediction.status in ("failed", "canceled"):
+                    error = prediction.error or "Bilinmeyen hata"
+                    raise RuntimeError(f"Video concat başarısız: {error}")
+
+                log.info(f"Concat polling [{attempt}/{MAX_POLL_ATTEMPTS}]: status={prediction.status}")
+                await _asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+            raise TimeoutError(f"Concat timeout: {prediction.id}")
+
+        except (RuntimeError, TimeoutError, ValueError):
+            raise
+        except Exception:
+            log.error("Async video concat genel hatası", exc_info=True)
+            raise

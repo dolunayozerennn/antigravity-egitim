@@ -2,6 +2,7 @@
 
 > Telegram bot ile profesyonel ürün reklam videoları üretim otomasyonu.
 > Seedance 2.0 + ElevenLabs + Replicate pipeline.
+> UGC (User Generated Content) multi-scene desteği ile dinamik reklam üretimi.
 
 **Proje:** Antigravity Ecosystem  
 **Tip:** Telegram Bot (Worker — Polling)  
@@ -18,10 +19,18 @@ Kullanıcı Telegram'dan bir ürün ve marka bilgisi paylaşır → Bot doğal s
 2. **Araştırma** — Perplexity ile marka analizi + GPT-4.1 Vision ile ürün görseli analizi
 3. **Senaryo** — AI ile shot listesi, dış ses metni, maliyet hesaplama
 4. **Görsel** — Nano Banana 2 ile sinematik giriş karesi
-5. **Video** — Seedance 2.0 ile reklam videosu üretimi
+5. **Video** — Seedance 2.0 ile reklam videosu üretimi (tek sahne veya multi-scene UGC)
 6. **Dış Ses** — ElevenLabs ile profesyonel Türkçe seslendirme
-7. **Birleştirme** — Replicate ile video + ses merge
+7. **Birleştirme** — Replicate ile video + ses merge (+ multi-scene concat)
 8. **Teslim** — Video Telegram'a gönderilir + Notion'a loglanır
+
+### UGC Multi-Scene Pipeline:
+UGC (User Generated Content) stili seçildiğinde 3 sahneli dinamik akış aktive olur:
+- **Sahne 1:** Unboxing / First Impression
+- **Sahne 2:** Product-in-Use
+- **Sahne 3:** Hero Shot / CTA
+
+Her sahne paralel olarak Seedance 2.0'da üretilir ve `lucataco/video-merge` modeli ile birleştirilir.
 
 ---
 
@@ -49,7 +58,7 @@ eCom_Reklam_Otomasyonu/
     ├── imgbb_service.py         ← Görsel → Public URL
     ├── kie_api.py               ← Seedance 2.0 + Nano Banana 2
     ├── elevenlabs_service.py    ← Doğrudan ElevenLabs TTS
-    ├── replicate_service.py     ← Video + ses birleştirme
+    ├── replicate_service.py     ← Video + ses birleştirme + multi-scene concat
     ├── notion_service.py        ← Notion loglama
     └── chat_logger.py           ← Notion Chat Hafızası
 ```
@@ -206,6 +215,7 @@ python test_bot.py
 
 | Tarih | Değişiklik |
 |----------|------------|
+| 2026-04-24 | **v3.2 UGC Multi-Scene Pipeline** — UGC tarzı 3 sahneli (Unboxing, Product-in-Use, Hero Shot) video üretim desteği eklendi. Paralel Seedance 2.0 görevleri + `lucataco/video-merge` ile sahne birleştirme. `scenario_engine.py`, `production_pipeline.py` ve `replicate_service.py` güncellendi. |
 | 2026-04-21 | **v3.1 Aspect Ratio & Stability Fix** — Kullanıcı/Agent tercih girdisi (Dikey, 16:9 vb.) Kie AI tarafından istenen formatlara zorunlu normalize edildi (422 engellendi). Telegram bot 409 Conflict çökmelerini önlemek için Webhook silme sonrası `asyncio.sleep(2)` timeout eklendi. |
 | 2026-04-18 | **v3.0 Stabilizasyon** — `FIRECRAWL_API_KEY` bağımlılığı Railway'e entegre edildi, eski `web_scraper_service.py` ve `bs4`, `lxml` bağımlılıkları temizlendi. Tümüyle stabil, SIFIR hata üretim ortamı onaylandı. |
 | 2026-04-18 | **v3.0 Deterministik Otomasyon** — Firecrawl entegre edildi, WebScraper servis kaldırıldı. Nano Banana 2 kaldırılıp Seedance 2.0 image_input (reference) moduna geçildi. Sohbet adımları tamamen kaldırılıp URL okuma ve deterministik tek tuşla/onayla pipeline mimarisine geçiş yapıldı. |
