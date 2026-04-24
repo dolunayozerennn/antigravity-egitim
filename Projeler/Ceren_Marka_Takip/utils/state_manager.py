@@ -186,11 +186,29 @@ def update_state(notified_threads: List[Dict]):
     logger.info(f"State güncellendi: {len(notified_threads)} yeni hatırlatma Notion/Lokal'e kaydedildi")
 
 def get_run_stats() -> Dict[str, Any]:
-    """Son çalışma istatistiklerini döndür."""
-    state = _load_state()
+    """
+    Son çalışma istatistiklerini döndür.
+    Railway'de lokal dosya her deploy'da sıfırlandığı için Notion-first çalışır.
+    """
+    # Notion'dan aktif hatırlatma sayısı
+    notion_reminders = _query_notion_state()
+    active_threads = len(notion_reminders)
+    
+    # Lokal state'ten ek bilgiler (varsa)
+    state = {"last_run": None, "stats": {"total_runs": 0, "total_reminders": 0}}
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, 'r') as f:
+                state = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    
     return {
         "last_run": state.get("last_run"),
         "total_runs": state.get("stats", {}).get("total_runs", 0),
-        "total_reminders": state.get("stats", {}).get("total_reminders", 0),
-        "active_threads": len(state.get("reminders", {})),
+        "total_reminders": max(
+            state.get("stats", {}).get("total_reminders", 0),
+            active_threads
+        ),
+        "active_threads": active_threads,
     }

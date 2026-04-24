@@ -6,34 +6,75 @@ Model: openai/gpt-oss-120b
 """
 
 import os
+import re
 import json
 import logging
+import time
 from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
 # Groq config
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 GROQ_MODEL = "openai/gpt-oss-120b"
+MAX_RETRIES = 2
 
 
 def _get_client():
     """Groq client oluştur (lazy init)."""
     from groq import Groq
     
-    api_key = GROQ_API_KEY
+    api_key = os.environ.get("GROQ_API_KEY", "")
     if not api_key:
         raise EnvironmentError(
             "GROQ_API_KEY tanımlanmamış. master.env'den yükle veya env'e set et."
         )
     
-    return Groq(api_key=api_key)
+    return Groq(api_key=api_key, timeout=30.0)
+
+
+def _extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
+    """
+    LLM çıktısından JSON objesini regex ile çıkar.
+    Model bazen ```json ... ``` wrapper ekliyor veya ek açıklama yazıyor.
+    """
+    if not text:
+        return None
+    
+    # 1) Direkt parse dene
+    try:
+        return json.loads(text.strip())
+    except json.JSONDecodeError:
+        pass
+    
+    # 2) ```json ... ``` bloğu ara
+    match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+    
+    # 3) İlk { ... } bloğunu bul
+    match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
+    
+    return None
+
+
+def _validate_result(result: Dict[str, Any]) -> bool:
+    """Sonuçta zorunlu alanların olup olmadığını kontrol et."""
+    required = ["is_brand_collaboration"]
+    return all(k in result for k in required)
 
 
 def analyze_thread(thread_messages: str, system_prompt: str) -> Optional[Dict[str, Any]]:
     """
     Thread mesajlarını LLM ile analiz et.
+    Retry + JSON extraction fallback ile dayanıklı.
     
     Args:
         thread_messages: Thread'deki mesajların metin hali
@@ -42,29 +83,42 @@ def analyze_thread(thread_messages: str, system_prompt: str) -> Optional[Dict[st
     Returns:
         JSON parse edilmiş analiz sonucu veya None (hata durumunda)
     """
-    try:
-        client = _get_client()
+    client = _get_client()
+    last_error = None
+    
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": thread_messages},
+                ],
+                temperature=0.1,
+                max_tokens=500,
+                response_format={"type": "json_object"},
+            )
+
+            content = response.choices[0].message.content
+            result = _extract_json_from_text(content)
+            
+            if result and _validate_result(result):
+                logger.debug(f"LLM analiz sonucu: {result}")
+                return result
+            
+            logger.warning(
+                f"LLM yanıtı geçersiz (attempt {attempt + 1}/{MAX_RETRIES}): "
+                f"{content[:200] if content else '(boş)'}"
+            )
+            last_error = f"Geçersiz JSON yapısı: {content[:100] if content else '(boş)'}"
+
+        except Exception as e:
+            last_error = str(e)
+            logger.warning(f"Groq API hatası (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
         
-        response = client.chat.completions.create(
-            model=GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": thread_messages},
-            ],
-            temperature=0.1,
-            max_tokens=500,
-            response_format={"type": "json_object"},
-            timeout=30.0,
-        )
-
-        content = response.choices[0].message.content
-        result = json.loads(content)
-        logger.debug(f"LLM analiz sonucu: {result}")
-        return result
-
-    except json.JSONDecodeError as e:
-        logger.error(f"LLM yanıtı JSON parse edilemedi: {e}", exc_info=True)
-        return None
-    except Exception as e:
-        logger.error(f"Groq API hatası: {e}", exc_info=True)
-        return None
+        # Son denemede bekleme yapma
+        if attempt < MAX_RETRIES - 1:
+            time.sleep(1)
+    
+    logger.error(f"LLM analizi {MAX_RETRIES} denemeden sonra başarısız: {last_error}")
+    return None
