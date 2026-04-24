@@ -32,6 +32,18 @@
 - **Kontrol 2:** ⏳ Bekliyor (Perşembe Cron tetiklemesi)
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
+### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (HTTP 512 Upstream Retry Fix)
+- **Deploy tarihi:** 2026-04-24 ✅ Push tamamlandı (5c48046)
+- **İzleme bitiş:** 2026-04-26
+- **Değişiklik:** 
+  1. `retry.py`: HTTP 512 kodu RETRYABLE_STATUS_CODES'a eklendi + genel 5xx (500-599) aralığı retry desteği
+  2. `kie_api.py`: 5xx/512 upstream proxy hataları için detaylı loglama
+  3. `production_pipeline.py`: Hata sınıflandırması (upstream/timeout/safety) ve Türkçe kullanıcı mesajları
+- **Push durumu:** ✅ Başarıyla GitHub'a gönderildi. (Ek olarak README.md, scenario_engine.py ve replicate_service.py güncellemeleri de `53ab387` ile gönderildi)
+- **Kontrol 1:** ⏳ Push sonrası Railway deploy doğrulanacak
+- **Kontrol 2:** ⏳ Bekliyor
+- **Sonuç:** ⏳ 512 hatası tekrarlanmazsa kapatılır
+
 ### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (Bot URL Hafıza, Tool Parse ve Format Zorunluluğu)
 - **Deploy tarihi:** 2026-04-20
 - **İzleme bitiş:** 2026-04-22
@@ -57,13 +69,13 @@
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 ardışık videoda tamamen photorealism yakalandıysa kapatılır
 
-### 🟡 48-Saat İzleme — LinkedIn_Text_Paylasim (Görsel Sadeleştirme)
-- **Deploy tarihi:** 2026-04-20
-- **İzleme bitiş:** 2026-04-22
-- **Değişiklik:** Görsel üretim promptu açık temalı, ultra-sade ve karmaşadan uzak (abstract flow) stile geçirildi. (Cyberpunk/Aşırı ikon kullanımı engellendi).
-- **Kontrol 1:** ⏳ Bekliyor (bir sonraki LinkedIn paylaşımında görsel analizi yapılacak)
+### 🟡 48-Saat İzleme — LinkedIn_Text_Paylasim (Görsel Sadeleştirme ve Fix)
+- **Deploy tarihi:** 2026-04-24 (commit 6a9a579)
+- **İzleme bitiş:** 2026-04-26
+- **Değişiklik:** Aşırı sade/boş görsel üretimi problemi düzeltildi. Görsel üretim promptu "profesyonel, 3D teknoloji illüstrasyonları (parlayan düğümler, soyut veri akışları vb.)" üretecek şekilde dengelendi.
+- **Kontrol 1:** ⏳ Bekliyor (bir sonraki otonom LinkedIn paylaşımında görselin boş olmadığı ve profesyonel göründüğü doğrulanacak)
 - **Kontrol 2:** ⏳ Bekliyor
-- **Sonuç:** ⏳ İki ardışık postta yormayan/sade görsellere ulaşılırsa kapatılır
+- **Sonuç:** ⏳ İki ardışık postta istenilen profesyonel/dolu görsel yapısına ulaşılırsa kapatılır
 
 
 ---
@@ -142,13 +154,19 @@
 > - **Sonuç:** 2 temiz kontrol → arşive taşı
 > ```
 
-### 🟡 48-Saat İzleme — Twitter_Video_Paylasim
-- **Deploy tarihi:** 2026-04-16
-- **İzleme bitiş:** 2026-04-18
-- **Durum:** ✅ ffmpeg hatası çözüldü (nixPkgs -> aptPkgs migration), sıradaki Cron tetiklenmesi bekleniyor.
-- **Kontrol 1:** ⏳ Bekliyor
+### 🟡 48-Saat İzleme — Twitter_Video_Paylasim (3 Kritik Fix)
+- **Deploy tarihi:** 2026-04-24 (push bekliyor — sandbox DNS kısıtlaması)
+- **İzleme bitiş:** 2026-04-26
+- **Lokal commit:** `fac5aaa` — push yapılması gerekiyor (`git push origin main`)
+- **Değişiklikler:**
+  1. `notion_logger.py`: Platform filtresi eklendi — LinkedIn/Twitter aynı DB ID'yi paylaşıyordu, duplikasyon karışıklığı düzeltildi
+  2. `notion_logger.py`: Fail-safe `return True` → `return False` (API hatasında sessiz atlamayı önler)
+  3. `nixpacks.toml`: `nixPkgs` → `aptPkgs` (ffmpeg PATH çözümleme güvenilirliği)
+  4. `requirements.txt`: `yt-dlp` 2026.3.17 → 2026.4.24 (TikTok scraping uyumluluğu)
+- **Kontrol 1:** ⏳ Push sonrası Railway deploy doğrulanacak
 - **Kontrol 2:** ⏳ Bekliyor
-- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+- **Sonuç:** ⏳ Push + ilk başarılı tweet doğrulanınca kapatılır
+- **⚠️ NOT:** `NOTION_TWITTER_DB_ID` = `NOTION_LINKEDIN_DB_ID` (aynı ID). Kod seviyesinde platform filtresiyle düzeltildi ama ileride ayrı DB oluşturulması tavsiye edilir.
 
 ### 🟡 48-Saat İzleme — ecom-reklam-otomasyonu
 - **Deploy tarihi:** 2026-04-20
@@ -164,23 +182,27 @@
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
-### 🟡 48-Saat İzleme — whatsapp-onboarding
-- **Deploy tarihi:** 2026-04-23
-- **İzleme bitiş:** 2026-04-25
-- **Değişiklik:** Fallback Webhook (/webhook/wa-failed) uç noktası eklendi, Notion error state'leri güncellendi. ManyChat flow'unda opt-in kurgusu ve external request entegre edildi. 
-- **Bekleyen Aksiyonlar (Kullanıcı Tarafında):**
-  1. Zapier "Membership Questions" webhook'undaki answer_1 alanının eşleştirilmesi
-  2. ManyChat akışının Update/Publish edilerek canlıya alınması
-  3. Gerçek Skool üye katılımıyla end-to-end (uçtan uca) canlı test yapılması
-- **Kontrol 1:** ⏳ Bekliyor
+### 🟡 48-Saat İzleme — whatsapp-onboarding (Stabilizasyon Tamamlandı)
+- **Son deploy:** 2026-04-24 (dedup fix commit `088d68e`)
+- **İzleme bitiş:** 2026-04-26
+- **Tamamlanan audit:** 7/7 ✅ (Railway, Notion şema, Git sync, E2E test, ManyChat, güvenlik, dedup)
+- **Değişiklikler:**
+  1. Notion şemasına `errorCount`, `lastError`, `error` status eklendi
+  2. Dedup kontrolü genişletildi: `['whatsapp','email','tamamlandı','error']`
+  3. wa-failed endpoint aktif, email fallback çalışıyor
+  4. **YENI — Commit `1ad5f7b`:** Day 4 YouTube linki güncellendi (`6A7GF394128`), WA CTA mesaj metni değiştirildi
+- **⚠️ PUSH BEKLİYOR:** Lokal commit `1ad5f7b` → GitHub'a push gerekiyor (`git push origin main`)
+  - GitHub MCP servisi + DNS çözümleme sandbox kısıtlaması nedeniyle push yapılamadı
+  - Ağ düzelince manuel push gerekli
+- **Kontrol 1:** ⏳ Bekliyor (26 Nisan öğlen cron tetiklemesi + health check)
 - **Kontrol 2:** ⏳ Bekliyor
-- **Sonuç:** ⏳ 2 başarılı testten sonra kapatılır
+- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
 ### 🟡 48-Saat İzleme — Lead_Notifier_Bot
 - **Deploy tarihi:** 2026-04-24
 - **İzleme bitiş:** 2026-04-26
 - **Değişiklik:** V3 yükseltmesi yapıldı. Satır sayısı bazlı takip ID bazlı (benzersiz UUID) state'e geçirildi. Filtreleme eklendi (sadece lead_status == "CREATED"). Fail-fast environment validation ve Spam koruması eklendi.
-- **Kontrol 1:** ⏳ Bekliyor (Railway üzerindeki servis loglarında ilk gerçek lead gelişinin kontrolü)
+- **Kontrol 1:** ✅ Local dry-run ve bağlantı testi başarılı. (Railway üzerindeki servis loglarında ilk gerçek lead gelişinin kontrolü bekleniyor)
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
