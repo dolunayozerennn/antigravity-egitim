@@ -4,12 +4,12 @@ Ceren_Marka_Takip — Ana Orkestrasyon
 CronJob entry point. Her gün 10:00 TR'de çalışır.
 
 Akış:
-1. Gmail inbox'larını tara (son 15 gün)
+1. Ceren'in Gmail inbox'ını tara (son 15 gün)
 2. Stale thread'leri filtrele (48+ iş saati)
 3. LLM ile marka işbirliği analizi
 4. Duplicate hatırlatma kontrolü (2 gün cooldown)
 5. Ceren'e hatırlatma e-postası gönder
-6. Hata durumunda Dolunay'a alert
+6. Hata durumunda Ceren'e alert
 7. Her Pazartesi haftalık rapor
 
 Kullanım:
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         error_msg = traceback.format_exc()
         logging.getLogger(__name__).critical(f"FATAL: {error_msg}")
         
-        # Dolunay'a hata alert'i gönder
+        # Ceren'e hata alert'i gönder
         try:
             notifier.send_error_alert(error_msg)
         except Exception:

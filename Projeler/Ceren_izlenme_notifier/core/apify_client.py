@@ -90,9 +90,11 @@ def get_instagram_data():
         
         items = fetch_items_with_retry(client, run["defaultDatasetId"])
         for item in items:
-            # sometimesposts are inside latestPosts
+            # Profil scraper kullanıldığında postlar latestPosts içinde gelebilir, 
+            # ya da direkt item post olabilir.
             posts = item.get("latestPosts", [item]) if "latestPosts" in item else [item]
             for post in posts:
+                # Instagram API'den gelen ISO tarih
                 dt = post.get("timestamp") or post.get("postedAt")
                 if not is_within_7_days(dt):
                     continue
@@ -101,11 +103,17 @@ def get_instagram_data():
                 
                 if is_video:
                     views = post.get("videoViewCount") or post.get("viewCount") or 0
-                    if int(views) >= 200000:
+                    if isinstance(views, str):
+                        try:
+                            views = int(views.replace(",", ""))
+                        except ValueError:
+                            views = 0
+                            
+                    if views >= 200000:
                         videos.append({
                             "platform": "Instagram Reels",
                             "url": post.get("url"),
-                            "views": views,
+                            "views": int(views),
                             "date": dt
                         })
                     
@@ -131,19 +139,23 @@ def get_tiktok_data():
         
         items = fetch_items_with_retry(client, run["defaultDatasetId"])
         for item in items:
-            dt = item.get("createTime") or item.get("createTimeISO")
+            # Apify TikTok JSON schema: createTimeISO for standard ISO 8601
+            dt = item.get("createTimeISO") or item.get("createTime")
             if not is_within_7_days(dt):
                 continue
                 
             views = item.get("playCount") or 0
             if isinstance(views, str):
-                views = int(views.replace(",", ""))
+                try:
+                    views = int(views.replace(",", ""))
+                except ValueError:
+                    views = 0
                 
             if views >= 100000:
                 videos.append({
                     "platform": "TikTok",
                     "url": item.get("webVideoUrl") or item.get("videoUrl"),
-                    "views": views,
+                    "views": int(views),
                     "date": dt
                 })
                 
@@ -170,23 +182,10 @@ def get_youtube_data():
         
         items = fetch_items_with_retry(client, run["defaultDatasetId"])
         for item in items:
-            dt = item.get("uploadDate") or item.get("date")
-            rel_date = str(item.get("date", "")).lower()
+            # JSON format returns full iso format in 'date' field
+            dt = item.get("date") or item.get("uploadDate")
             
-            is_recent = False
-            if "hour" in rel_date or "minute" in rel_date or "second" in rel_date:
-                is_recent = True
-            elif "day" in rel_date:
-                try:
-                    num = int(rel_date.split(" ")[0])
-                    if num <= 7:
-                        is_recent = True
-                except (ValueError, IndexError) as e:
-                    logger.debug(f"rel_date parselama atlandi: {rel_date} - {e}")
-            elif is_within_7_days(dt):
-                is_recent = True
-                
-            if not is_recent:
+            if not is_within_7_days(dt):
                 continue
                 
             # Must be from our channel to be sure
@@ -196,34 +195,29 @@ def get_youtube_data():
                 logger.debug(f"Baska kanal videosu atlandi: {channel}")
                 continue
                 
-            views = item.get("viewCount") or item.get("views") or 0
-            views_str = str(views).strip().upper().replace(",", "").replace(" ", "")
-            try:
-                if "M" in views_str:
-                    views_num = int(float(views_str.replace("M", "")) * 1_000_000)
-                elif "K" in views_str:
-                    views_num = int(float(views_str.replace("K", "")) * 1_000)
-                else:
-                    views_num = int(float(views_str.replace(".", "")))
-            except (ValueError, TypeError):
-                views_num = 0
+            views_num = item.get("viewCount") or item.get("views") or 0
+            if isinstance(views_num, str):
+                try:
+                    views_num = int(views_num.replace(",", ""))
+                except ValueError:
+                    views_num = 0
                     
             url = item.get("url") or item.get("videoUrl") or ""
-            is_shorts = "/shorts/" in url or item.get("isShorts")
+            is_shorts = item.get("isShorts", False) or "/shorts/" in url
             
             if is_shorts and views_num >= 100000:
                 videos.append({
                     "platform": "YouTube Shorts",
                     "url": url,
                     "views": int(views_num),
-                    "date": dt or rel_date
+                    "date": dt
                 })
             elif not is_shorts and views_num >= 10000:
                 videos.append({
                     "platform": "YouTube Long Video",
                     "url": url,
                     "views": int(views_num),
-                    "date": dt or rel_date
+                    "date": dt
                 })
 
     except Exception as e:

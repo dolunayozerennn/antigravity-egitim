@@ -2,8 +2,8 @@
 Ceren_Marka_Takip — E-posta Bildirim Sistemi
 ===============================================
 - Ceren'e hatırlatma e-postası
-- Dolunay'a hata alert e-postası
-- Dolunay'a haftalık özet rapor
+- Ceren'e hata alert e-postası
+- Ceren'e haftalık özet rapor
 """
 
 import os
@@ -18,12 +18,12 @@ from services.gmail_service import get_gmail_service
 
 logger = logging.getLogger(__name__)
 
-# E-posta Config — Gmail OAuth ile gönderim (outreach hesabı üzerinden)
-FROM_EMAIL = "ozerendolunay@gmail.com"
+# E-posta Config — Gmail OAuth ile gönderim (Ceren hesabı üzerinden)
+FROM_EMAIL = "ceren@dolunay.ai"
 
-# Alıcılar
+# Alıcılar — tüm bildirimler Ceren'e gider
 CEREN_EMAIL = "ceren@dolunay.ai"
-ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "ozerendolunay@gmail.com")
+ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "ceren@dolunay.ai")
 
 
 def _send_email(to: str, subject: str, body_html: str):
@@ -38,7 +38,7 @@ def _send_email(to: str, subject: str, body_html: str):
     body = {'raw': raw_message}
 
     try:
-        service = get_gmail_service("outreach")
+        service = get_gmail_service("ceren")
         service.users().messages().send(userId='me', body=body).execute()
         logger.info(f"📧 E-posta gönderildi: {to} — {subject}")
     except Exception as e:
@@ -117,7 +117,10 @@ def send_reminder_to_ceren(threads: List[Dict[str, Any]]):
 
 
 def send_error_alert(error_message: str):
-    """Dolunay'a hata bildirimi gönder."""
+    """
+    Ceren'e hata bildirimi gönder.
+    Sistem çalışamadığında anında tetiklenir.
+    """
     subject = "⚡ Ceren_Marka_Takip — Sistem Hatası"
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -139,7 +142,12 @@ def send_error_alert(error_message: str):
 
 
 def send_weekly_report(stats: Dict[str, Any]):
-    """Dolunay'a haftalık özet rapor gönder (her Pazartesi)."""
+    """
+    Ceren'e haftalık özet rapor gönder (her Pazartesi).
+    
+    Args:
+        stats: Çalışma istatistikleri
+    """
     subject = "📊 Ceren_Marka_Takip — Haftalık Rapor"
     now = datetime.utcnow().strftime("%Y-%m-%d")
 

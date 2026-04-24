@@ -208,7 +208,7 @@ def get_run_stats() -> Dict[str, Any]:
         "total_runs": state.get("stats", {}).get("total_runs", 0),
         "total_reminders": max(
             state.get("stats", {}).get("total_reminders", 0),
-            active_threads
+            active_threads  # Notion'daki kayıt sayısı her zaman daha güvenilir
         ),
         "active_threads": active_threads,
     }

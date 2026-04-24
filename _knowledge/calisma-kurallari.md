@@ -333,21 +333,19 @@ Herhangi bir 3. parti API entegrasyonu yazılmadan ÖNCE:
 - Parametre ismini hafızadan veya tahminle yazmak
 - Dökümantasyon okumadan entegrasyon kodlamak
 
-## 🧪 Uçtan Uca Çıktı Doğrulaması (ZORUNLU — Nisan 2026+)
+## 🧪 Sıfır Varsayım & Canlı Kanıt Doktrini (ZORUNLU)
 
 > **"Log'da hata yok" ≠ "Çalışıyor"**
+> **"Teorik olarak yazdım" = YASAK.**
 
-### Kural:
-Pipeline projeleri (3+ adım, dış API kullanan) için deploy sonrası:
-1. **Minimum 1 test** gerçek veriyle (mock/dummy değil) çalıştırılır
-2. **Somut çıktı kontrol edilir** — video üretildiyse izlenir, email atıldıysa alınır, veri yazıldıysa okunur
-3. Stabilize-Lite kontrol listesine **6. madde** olarak eklenir
+### Kural (Uçtan Uca Gerçek Dünya Testi):
+Eğer bir otomasyon "gerçek dünyada bir değişiklik" yapıyorsa (post paylaşmak, mail göndermek, video/ses render almak, DB güncellemek, API üzerinden sipariş/talep oluşturmak vb.):
+1. **Fiziksel Kanıt Üretilecek:** Sırf "HTTP 200 OK yanıtı döndü" veya "Log'da hata yok" diyerek işlem tamamlanmış SAYILAMAZ.
+2. **Doğrulama Ajana Aittir:** İşlemin sonucunun gerçekten oluşup oluşmadığını (videonun byte boyutu, mailin gelen kutusuna düşmesi, postun gerçek URL'si, DB'deki gerçek satır kaydı) agent bizzat test script'i ile doğrular.
+3. İstenen nihai hedefin GERÇEKLÜKTE (canlı sistemde) sorunsuz oluştuğunu kullanıcıya kanıtlamadan, "Görev bitti" ya da "Kodu senin için ayarladım" denilmesi kesinlikle yasaktır.
 
-### Mevcut Stabilize-Lite'a Eklenen 6. Madde:
-```
-6. Pipeline projesi ise → 1 adet gerçek veriyle uçtan uca test çalıştır
-   → Somut çıktı (dosya, mesaj, kayıt) gözle doğrula
-```
+### Anti-pattern (YASAK):
+- Hiçbir gerçek dünya tetiklemesi yapmadan "Sistemi istenen formatta güncelledim, deneyebilirsin" demek. Ürün her zaman kanıtıyla teslim edilir.
 
 ## 🏗️ Proof of Concept Before Pipeline (ZORUNLU — Nisan 2026+)
 
@@ -396,4 +394,23 @@ Her pipeline projesi bir `contract_test.py` dosyası içerir. Bu dosya:
 - **Mevcut projeler:** Peyderpey eklenir (Küçük Parça Prensibi)
 - **Çalıştırma:** Deploy workflow'unun import testi adımından hemen sonra
 
+## 🧱 Antigravity Node Architecture (ANA) & Simülasyon Testi (Nisan 2026+)
 
+> **Sorun:** Projelerimizi "Happy Path" (mutlu senaryo) ile yazıp canlıya aldıktan sonra, trigger geldiğinde (webhook, sheets, zamanlı görev) beklenmedik edge-caseler yüzünden çökmeler yaşanıyordu.
+> **Çözüm:** Tıpkı n8n/Make gibi platformlarda olduğu gibi, dış kütüphaneler özel node'lara çevrilecek, raw payload kaydedilecek ve mock data ile simülasyon testleri yapılacaktır.
+
+### 1. Payload Record & Replay (Gölge Modu / Snapshot)
+- Sistemin dış dünyadan tetiklendiği her fonksiyon (Webhook handler, API endpoint, mesaj listener vb.), işleme ORTASINDA çökmeden **HEMEN ÖNCE** gelen RAW JSON/Data payload'unu bir log dosyasına (örn: `scratch_test.json`) veya sistem loglarına kaydetmelidir.
+- Hata veren bir süreci debug ederken, hayali parametreler girmek yerine **KESİNLİKLE** kaydedilen bu **gerçek payload snapshot'ı** kullanılarak lokalde "replay" testi yapılmalıdır.
+
+### 2. Standart "Antigravity Provider" (Kendi Modüllerimiz) 
+- ElevenLabs, LinkedIn, Meta, Groq gibi harici servislere **her projede sıfırdan raw request atılmaz**.
+- Bunun yerine `_skills/providers/` dizini altında resmi, hataya dayanıklı (fault-tolerant) sarmalayıcı node modülleri geliştirilir. Projeler bu fonksiyonları re-use eder.
+- **Bir Node'un Taşıması Gereken Zorunluluklar:**
+  * **Exponential Retry:** 500/502 Service Unavailable gibi gateway hataları geldiğinde pes edilmez, `tenacity` veya aralıklarla en az 3 Retry yapılmalıdır.
+  * **Timeout & Fallback (B Planı):** Her HTTP isteğinin bir timeout'u olmalı. Eğer API cevap vermiyorsa sistemi patlatmak yerine fallback tasarlanmalıdır (Örn: "Fotoğraf servisi yanıt vermiyorsa gönderiyi sırf metinle (text-only) at ama akışı kitleme.")
+  * **Gözlemlenebilir Catch:** Genel bir `Exception` basıp geçmek yerine "🚨 [LinkedIn Node] API 422 Döndü, Resim boyutu limit aşıldı" gibi açık seçik exception mesajları oluşturulur.
+
+### 3. Simulasyon / Fuzzing / "Kıyamet" Testi
+- Sistemi kurguladıktan sonra ana çalışmasını gördüğümüz an bırakmıyoruz. Otomasyona bilerek "kötü niyetli/bozuk" mockup veriler (Empty payload, eksik keys, hatalı auth vb.) gönderilip scriptin exception fırlatıp çökmediği ve "graceful" kapandığı **simüle edilmeden** onaylanmaz.
+- Bunu sağlamak için `mock_data` veya `scratch_mock_e2e.py` gibi uçtan uca senaryo simülasyonları tasarlanarak sistemin çökme direnci test edilir.

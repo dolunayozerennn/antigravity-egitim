@@ -1,7 +1,7 @@
 """
 Ceren_Marka_Takip — Gmail Thread Tarama
 ==========================================
-3 farklı inbox'tan thread'leri çeker ve deduplicate eder.
+Ceren'in inbox'ından thread'leri çeker.
 """
 
 import logging
@@ -15,7 +15,7 @@ from services.gmail_service import get_gmail_service
 logger = logging.getLogger(__name__)
 
 # Taranacak hesaplar
-SCAN_ACCOUNTS = ["ceren", "dolunay_ai", "outreach"]
+SCAN_ACCOUNTS = ["ceren"]
 
 # Her hesaptan maksimum çekilecek thread sayısı (API/LLM maliyetini sınırla)
 MAX_THREADS_PER_ACCOUNT = 300
@@ -23,8 +23,6 @@ MAX_THREADS_PER_ACCOUNT = 300
 # E-posta adresleri (thread'de kimin yazdığını belirlemek için)
 KNOWN_EMAILS = {
     "ceren@dolunay.ai": "ceren",
-    "dolunay@dolunay.ai": "dolunay",
-    "ozerendolunay@gmail.com": "dolunay",
 }
 
 # ── Pre-LLM Filtreleri (LLM API çağrısı yapmadan elenecekler) ──
@@ -153,12 +151,8 @@ def _scan_inbox(account: str, days: int) -> List[Dict[str, Any]]:
     service = get_gmail_service(account)
     
     # Son N gündeki mesajları çek
-    # NOT: category:primary sadece Gmail consumer hesaplarında (sekmeli) çalışır,
-    # Google Workspace hesaplarında (ceren, dolunay_ai) sekmeler yok → filtre uygulanmaz
     after_date = (datetime.utcnow() - timedelta(days=days)).strftime("%Y/%m/%d")
     query = f"after:{after_date}"
-    if account == "outreach":
-        query += " category:primary"
 
     threads = []
     skipped = 0
@@ -270,7 +264,7 @@ def _get_header(message: dict, header_name: str) -> Optional[str]:
 
 
 def _extract_email(from_str: str) -> str:
-    """'Dolunay Özeren <dolunay@dolunay.ai>' → 'dolunay@dolunay.ai'"""
+    """'Ceren <ceren@dolunay.ai>' → 'ceren@dolunay.ai'"""
     if '<' in from_str and '>' in from_str:
         return from_str.split('<')[1].split('>')[0].strip().lower()
     return from_str.strip().lower()

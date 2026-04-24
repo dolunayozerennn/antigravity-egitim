@@ -154,10 +154,15 @@ def scrape_reels(dry_run=False):
     urls = read_profiles()
 
     if dry_run:
-        print("[DRY-RUN] Aşağıdaki profiller scrape edilecek:")
+        print("[DRY-RUN] Aşağıdaki profiller scrape edilecek (Simülasyon):")
         for u in urls:
             print(f"  • {u}")
         print(f"[DRY-RUN] Toplam tahmini sonuç: {len(urls) * RESULTS_PER_PROFILE}")
+        if os.path.exists(OUTPUT_PATH):
+            print(f"[DRY-RUN] {OUTPUT_PATH} dosyası bulundu, simülasyon için kullanılıyor...")
+            with open(OUTPUT_PATH, "r", encoding="utf-8-sig") as f:
+                return json.load(f)
+        print("[DRY-RUN] Local data bulunamadı, simülasyon devam edemiyor.")
         return []
 
     keys = get_all_apify_tokens()

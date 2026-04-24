@@ -261,10 +261,10 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
   - `POST /webhook/new-paid-member` (Zapier Zap #1)
   - `POST /webhook/membership-questions` (Zapier Zap #2)
   - `GET /health` (Monitoring)
-- **Son Deploy:** 2026-04-17 (v1.0.0 — İlk deploy)
-- **Durum:** ✅ Aktif (Notion DB paylaşımı bekliyor)
+- **Son Deploy:** 2026-04-22 (fix: Notion Database ID güncellendi, Resend logları optimize edildi, test_groq silindi)
+- **Durum:** ✅ Aktif (Uçtan uca test için Zapier webhook kurulumu bekleniyor)
 - **Env Vars:** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL
-- **Not:** ManyChat Day 2-6 flow'ları henüz oluşturulmadı (TODO). ✅ Resend email fallback yapılandırıldı (dolunay.ai, EU-West).
+- **Not:** ✅ Resend email fallback yapılandırıldı (dolunay.ai, EU-West).
 
 ---
 
@@ -273,6 +273,21 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 | Dubai Emlak İçerik | `Projeler/Dubai_Emlak_İçerik_Yazarı/` | `local-only` | 2026-03-09 | ⏸️ Askıda | Script koleksiyonu (transcript, currency, calculator). Deploy planı yok, geliştirme aşamasında |
 
 ---
+
+### lead-notifier-bot-v3
+- **Platform:** `railway`
+- **Railway Project ID:** `7c5d3081-1487-4b02-a60f-1cb7a04bb135`
+- **Service ID:** `2563df9f-37ac-4ab2-80f6-06ac8d19aec3`
+- **Environment ID:** `a0ffd17c-0de3-4759-ba48-c04b96bb96b8`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Lead_Notifier_Bot`)
+- **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/`
+- **Start Komutu:** `python main.py`
+- **Son Deploy:** 2026-04-24 (Railway deploy tetiklendi)
+- **Durum:** ⏳ Deploy Bekleniyor / ✅ Başarılı (Railway dashboard'dan kontrol edilecek)
+- **Env Vars:** TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_OUTREACH_TOKEN_JSON, NOTIFY_EMAIL, SENDER_EMAIL, POLL_INTERVAL_SECONDS, MAX_BATCH_SIZE
+
+---
+
 
 ## 🗂 Lokal Servisler (LaunchAgent / Cron)
 
@@ -310,8 +325,8 @@ Aşağıdaki projeler ilerleyen dönemde platformdan silinmek üzere işaretlenm
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `/Projeler/Ceren_Marka_Takip`)
 - **Lokal Klasör:** `Projeler/Ceren_Marka_Takip/`
 - **Start Komutu:** `cd Projeler/Ceren_Marka_Takip && pip install -r requirements.txt && python main.py`
-- **Cron Schedule:** `0 */2 * * *` (iki saatte bir)
-- **Son Deploy:** 2026-04-21 (Fix: Local JSON yerine Notion Ops Log entegrasyonuyla kalıcı durum [state] yöntemi eklendi)
-- **Durum:** ✅ Aktif (Günde 12 kez)
-- **Env Vars:** GOOGLE_CEREN_TOKEN_JSON, GOOGLE_DOLUNAY_AI_TOKEN_JSON, GOOGLE_OUTREACH_TOKEN_JSON, GROQ_API_KEY, SMTP_APP_PASSWORD, NOTION_SOCIAL_TOKEN, NOTION_DB_OPS_LOG
+- **Cron Schedule:** `0 7 * * *` (Günde 1 kez, UTC 07:00 = İstanbul 10:00)
+- **Son Deploy:** 2026-04-24 (Fix: Groq timeout bug, business_hours fix, SMTP cleanup, nixpacks.toml eklendi, cron 2h→günlük)
+- **Durum:** ✅ Aktif (Günde 1 kez, sabah 10:00 İstanbul)
+- **Env Vars:** GOOGLE_CEREN_TOKEN_JSON, GOOGLE_DOLUNAY_AI_TOKEN_JSON, GOOGLE_OUTREACH_TOKEN_JSON, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_OPS_LOG
 

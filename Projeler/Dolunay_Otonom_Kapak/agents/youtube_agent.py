@@ -100,14 +100,18 @@ def upload_to_imgbb(image_path: str) -> str:
         with open(image_path, "rb") as file:
             payload = {"reqtype": "fileupload"}
             files = {"fileToUpload": file}
-            response = requests.post(url, data=payload, files=files, timeout=REQUEST_TIMEOUT)
-            
-            if response.status_code == 200:
-                img_url = response.text.strip()
-                print(f"Uploaded successfully to Catbox: {img_url}")
-                return img_url
-            else:
-                print(f"Catbox upload failed: {response.text}")
+            try:
+                response = requests.post(url, data=payload, files=files, timeout=REQUEST_TIMEOUT)
+                
+                if response.status_code == 200:
+                    img_url = response.text.strip()
+                    print(f"Uploaded successfully to Catbox: {img_url}")
+                    return img_url
+                else:
+                    print(f"Catbox upload failed: {response.text}")
+                    return None
+            except requests.exceptions.RequestException as e:
+                print(f"Catbox network error: {e}")
                 return None
     except Exception as e:
         print(f"Error uploading to Catbox: {e}")
@@ -131,6 +135,8 @@ def capture_screenshot(url: str) -> str:
             return out_path
         else:
             print(f"ScreenshotAPI failed: {response.status_code} - {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"ScreenshotAPI network error: {e}")
     except Exception as e:
         print(f"Error capturing screenshot: {e}")
     return None
@@ -163,9 +169,13 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
         }
     }
     
-    response = requests.post(create_url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT)
-    if response.status_code != 200:
-        print(f"Failed to create task: {response.text}")
+    try:
+        response = requests.post(create_url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT)
+        if response.status_code != 200:
+            print(f"Failed to create task: {response.text}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Kie AI network error during task creation: {e}")
         return None
         
     task_id = response.json().get("data", {}).get("taskId")
@@ -180,11 +190,16 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
     max_polls = 60  # 60 × 10s = 10 minutes
     
     for poll_count in range(max_polls):
-        poll_resp = requests.get(poll_url, headers=headers, timeout=REQUEST_TIMEOUT)
-        if poll_resp.status_code != 200:
-             print(f"Polling failed: {poll_resp.text}")
-             time.sleep(10)
-             continue
+        try:
+            poll_resp = requests.get(poll_url, headers=headers, timeout=REQUEST_TIMEOUT)
+            if poll_resp.status_code != 200:
+                 print(f"Polling failed: {poll_resp.text}")
+                 time.sleep(10)
+                 continue
+        except requests.exceptions.RequestException as e:
+            print(f"Polling network error: {e}")
+            time.sleep(10)
+            continue
              
         data = poll_resp.json().get("data", {})
         state = data.get("state")
@@ -470,10 +485,14 @@ def run_autonomous_generation(
             
         print(f"Image generated! URL: {generated_image_url}")
         
-        img_data = requests.get(generated_image_url, timeout=REQUEST_TIMEOUT).content
-        with open(output_path, 'wb') as handler:
-            handler.write(img_data)
-        print(f"Final cover saved to {output_path}")
+        try:
+            img_data = requests.get(generated_image_url, timeout=REQUEST_TIMEOUT).content
+            with open(output_path, 'wb') as handler:
+                handler.write(img_data)
+            print(f"Final cover saved to {output_path}")
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to download generated image: {e}")
+            return False
 
         # Self-Review Phase
         review = review_thumbnail_with_gemini(output_path, main_text)

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reklam Pipeline — Pro Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh; color: #fff; padding: 1.5rem;
+        }
+        .container { max-width: 860px; margin: 0 auto; }
+        h1 {
+            font-size: 2rem; font-weight: 800; text-align: center; margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #ff6b6b, #ee5a24, #ff9f43);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .subtitle { text-align: center; color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-bottom: 2rem; }
+        .card {
+            background: rgba(255,255,255,0.06); backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+            padding: 1.5rem; margin-bottom: 1.5rem;
+        }
+        .card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+        .card h2 .step { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #6c5ce7, #a29bfe); font-size: 0.75rem; font-weight: 800; }
+        .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+        .b-idle { background: rgba(255,255,255,0.15); color: #ddd; }
+        .b-proc { background: #3498db; color: #fff; animation: pulse 1.5s infinite; }
+        .b-ok { background: #00b894; color: #000; }
+        .b-err { background: #e74c3c; color: #fff; }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.7} }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; border-radius: 10px; border: none; font-family: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all .3s; margin: .4rem .4rem 0 0; }
+        .btn-p { background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; }
+        .btn-s { background: linear-gradient(135deg,#00b894,#55efc4); color: #000; }
+        .btn-w { background: linear-gradient(135deg,#fdcb6e,#f39c12); color: #000; }
+        .btn-d { background: linear-gradient(135deg,#e74c3c,#fd79a8); color: #fff; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+        .btn:disabled { opacity:.5; cursor:not-allowed; transform:none!important; }
+        input[type="text"] { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: #fff; padding: 8px 14px; border-radius: 10px; font-family: monospace; font-size: .85rem; width: 100%; margin-top: .5rem; }
+        .log { background: rgba(0,0,0,.35); border-radius: 10px; padding: 1rem; font-family: 'SF Mono',monospace; font-size: .78rem; max-height: 250px; overflow-y: auto; margin-top: 1rem; line-height: 1.8; }
+        .log .t{color:#74b9ff}.log .ok{color:#55efc4}.log .err{color:#ff7675}.log .warn{color:#fdcb6e}
+        .dl { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 8px; }
+        .dl a { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; background: linear-gradient(135deg,#00b894,#55efc4); color: #000; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: .85rem; transition: all .3s; }
+        .dl a:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.3); }
+        .sp { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top: 2px solid #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        video { margin-top: 1rem; border-radius: 12px; max-width: 100%; max-height: 400px; }
+        .info { background: rgba(0,0,0,.2); border-radius: 8px; padding: .8rem; font-size: .78rem; color: rgba(255,255,255,.6); line-height: 1.5; max-height: 80px; overflow-y: auto; margin-top: .5rem; }
+        .pbar { width: 100%; height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; margin-top: 1rem; overflow: hidden; display: none; }
+        .pbar .fill { height: 100%; background: linear-gradient(90deg,#6c5ce7,#00b894); transition: width .5s; border-radius: 2px; }
+        .success-banner { background: linear-gradient(135deg, #00b894, #55efc4); border-radius: 12px; padding: 1.5rem; text-align: center; color: #000; margin-bottom: 1.5rem; }
+        .success-banner h2 { color: #000; justify-content: center; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎬 Topuklu Ayakkabı Reklam Pipeline</h1>
+    <p class="subtitle">Seedance 2.0 · ElevenLabs · Replicate Merge · Supabase Storage</p>
+
+    <!-- SUCCESS BANNER -->
+    <div class="success-banner" id="successBanner" style="display:none">
+        <h2>🎉 Final Reklam Videosu Hazır!</h2>
+        <p style="margin-top:.5rem">Video + Türkçe seslendirme birleştirildi</p>
+        <div class="dl" style="justify-content:center;margin-top:1rem" id="finalDL"></div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="card">
+        <h2><span class="step">1</span> Video Üretimi (Seedance 2.0)</h2>
+        <div>
+            <label style="font-size:.8rem;color:rgba(255,255,255,.5)">Görsel URL</label>
+            <input type="text" id="imageUrl" value="https://lh3.googleusercontent.com/d/1FkLv4wy89T-Wb2MNJrE23ORJyPk4GKT4">
+        </div>
+        <div style="margin-top:.8rem">
+            <label style="font-size:.8rem;color:rgba(255,255,255,.5)">Task ID</label>
+            <input type="text" id="taskId" value="a225d209b95626dfa1b77e72d2021bed">
+        </div>
+        <div style="margin-top:1rem">Durum: <span id="vSt" class="badge b-ok">✅ Tamamlandı</span></div>
+        <div style="margin-top:1rem">
+            <button class="btn btn-p" id="btnStart" onclick="startVideo()">🚀 Yeni Video Başlat</button>
+            <button class="btn btn-w" onclick="pollVideo()">🔄 Durumu Kontrol</button>
+            <button class="btn btn-s" id="btnAP" onclick="toggleAP()">⚡ Otomatik Takip</button>
+        </div>
+        <div class="pbar" id="vPB"><div class="fill" id="vPF" style="width:100%"></div></div>
+        <div id="vLinks" class="dl"></div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="card">
+        <h2><span class="step">2</span> Seslendirme (ElevenLabs)</h2>
+        <div class="info"><strong>Metin:</strong> "Zarafet, her adımda hissedilir. Kırmızının gücüyle kendine güvenle yürü. Cesur, şık ve unutulmaz… Çünkü tarz, detaylarda gizlidir."</div>
+        <div class="dl" style="margin-top:1rem">
+            <a href="https://xsmhuhrfgthrhlakcltm.supabase.co/functions/v1/reklam-pipeline?action=voiceover-download" download="reklam_voiceover.mp3">🎙️ Seslendirmeyi İndir (MP3)</a>
+        </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="card">
+        <h2><span class="step">3</span> Video + Ses Birleştirme</h2>
+        <p style="color:rgba(255,255,255,.5);font-size:.85rem;margin-bottom:1rem">Supabase Storage → Replicate ffmpeg merge</p>
+        <div>
+            <label style="font-size:.8rem;color:rgba(255,255,255,.5)">Kie Video URL (Step 1'den)</label>
+            <input type="text" id="mergeUrl" placeholder="Step 1 tamamlanınca otomatik doldurulur">
+        </div>
+        <div style="margin-top:1rem">Durum: <span id="mSt" class="badge b-idle">Bekliyor</span></div>
+        <div style="margin-top:1rem">
+            <button class="btn btn-p" id="btnMerge" onclick="startFullMerge()">🔀 Birleştir (Otomatik)</button>
+        </div>
+        <div id="mLinks" class="dl"></div>
+        <video id="mPrev" controls style="display:none"></video>
+    </div>
+
+    <!-- LOGS -->
+    <div class="card">
+        <h2>📋 Pipeline Logları</h2>
+        <div class="log" id="logArea"><div><span class="t">[Start]</span> <span class="ok">Dashboard v9 yüklendi</span></div></div>
+    </div>
+</div>
+
+<script>
+const B = 'https://xsmhuhrfgthrhlakcltm.supabase.co/functions/v1/reklam-pipeline';
+let ap = null, pc = 0;
+
+function L(m, c='ok') {
+    const el = document.getElementById('logArea');
+    el.innerHTML += `<div><span class="t">[${new Date().toLocaleTimeString('tr-TR')}]</span> <span class="${c}">${m}</span></div>`;
+    el.scrollTop = el.scrollHeight;
+}
+function S(id, txt, cls) { const el = document.getElementById(id); el.textContent = txt; el.className = `badge b-${cls}`; }
+function P(pct) { document.getElementById('vPB').style.display='block'; document.getElementById('vPF').style.width=`${pct}%`; }
+
+async function startVideo() {
+    const imgUrl = document.getElementById('imageUrl').value.trim();
+    if (!imgUrl) { L('Görsel URL boş!','err'); return; }
+    const btn = document.getElementById('btnStart');
+    btn.disabled = true; btn.innerHTML = '<span class="sp"></span> Başlatılıyor...';
+    S('vSt','ImgBB yükleniyor...','proc');
+    L('🚀 Video başlatılıyor...');
+    try {
+        const r = await fetch(`${B}?action=start&imageUrl=${encodeURIComponent(imgUrl)}`);
+        const d = await r.json();
+        if (d.success) {
+            document.getElementById('taskId').value = d.videoTaskId;
+            S('vSt','Task oluşturuldu','proc'); L(`✅ Task: ${d.videoTaskId}`);
+            startAP();
+        } else throw new Error(d.error);
+    } catch (e) { S('vSt','Hata!','err'); L(`❌ ${e.message}`,'err'); }
+    btn.disabled = false; btn.innerHTML = '🚀 Yeni Video Başlat';
+}
+
+async function pollVideo() {
+    const tid = document.getElementById('taskId').value.trim();
+    if (!tid) { L('Task ID boş!','err'); return; }
+    try {
+        pc++;
+        const r = await fetch(`${B}?action=poll&taskId=${tid}`);
+        const d = await r.json();
+        if (d.state === 'success' && d.urls?.length) {
+            S('vSt','✅ Tamamlandı!','ok'); L(`🎉 Video hazır!`);
+            document.getElementById('vLinks').innerHTML = d.urls.map((u,i) => `<a href="${u}" target="_blank">📥 Video ${i+1}</a>`).join('');
+            document.getElementById('mergeUrl').value = d.urls[0];
+            P(100); stopAP();
+        } else if (d.state === 'failed' || d.state === 'fail') {
+            S('vSt','❌ Başarısız','err'); stopAP();
+        } else {
+            S('vSt',`⏳ ${d.state||'processing'}...`,'proc');
+            L(`⏳ [${pc}] ${d.state}`); P(Math.min(90, pc*3));
+        }
+    } catch (e) { L(`❌ ${e.message}`,'err'); }
+}
+
+function toggleAP() { ap ? stopAP() : startAP(); }
+function startAP() { L('⚡ Otomatik polling (15sn)','warn'); pc=0; P(0); pollVideo(); ap = setInterval(pollVideo, 15000); document.getElementById('btnAP').innerHTML='<span class="sp"></span> Aktif'; document.getElementById('btnAP').className='btn btn-d'; }
+function stopAP() { if(ap){clearInterval(ap);ap=null;} document.getElementById('btnAP').innerHTML='⚡ Otomatik Takip'; document.getElementById('btnAP').className='btn btn-s'; }
+
+// FULL MERGE: prepare-merge → merge-start → merge-poll
+async function startFullMerge() {
+    const vUrl = document.getElementById('mergeUrl').value.trim();
+    if (!vUrl) { L('Video URL boş!','err'); return; }
+    const btn = document.getElementById('btnMerge');
+    btn.disabled = true; btn.innerHTML = '<span class="sp"></span> İşleniyor...';
+
+    // Step 1: Prepare (download + upload to storage + generate audio)
+    S('mSt','Video indiriliyor + ses üretiliyor...','proc');
+    L('📦 Prepare: Video indirme + ses üretme + Storage yükleme...');
+    try {
+        const r1 = await fetch(`${B}?action=prepare-merge&videoUrl=${encodeURIComponent(vUrl)}`);
+        const d1 = await r1.json();
+        if (!d1.success) throw new Error(d1.error);
+        L(`✅ Storage'a yüklendi. Video: ${(d1.videoSize/1024/1024).toFixed(1)}MB, Audio: ${(d1.audioSize/1024).toFixed(0)}KB`);
+
+        // Step 2: Start merge
+        S('mSt','Replicate merge başlatılıyor...','proc');
+        L('🔀 Replicate merge başlatılıyor...');
+        const r2 = await fetch(`${B}?action=merge-start&videoUrl=${encodeURIComponent(d1.videoUrl)}&audioUrl=${encodeURIComponent(d1.audioUrl)}`);
+        const d2 = await r2.json();
+        if (!d2.success) throw new Error(d2.error);
+        L(`⏳ Prediction: ${d2.predictionId}`);
+
+        // Step 3: Poll
+        S('mSt','Replicate işliyor...','proc');
+        pollMerge(d2.predictionId);
+    } catch (e) {
+        S('mSt','❌ Hata','err'); L(`❌ ${e.message}`,'err');
+        btn.disabled = false; btn.innerHTML = '🔀 Birleştir (Otomatik)';
+    }
+}
+
+function pollMerge(predId) {
+    let attempts = 0;
+    const iv = setInterval(async () => {
+        attempts++;
+        try {
+            const r = await fetch(`${B}?action=merge-poll&predictionId=${predId}&_t=${attempts}`);
+            const d = await r.json();
+            L(`🔄 [${attempts}] ${d.status}`);
+            if (d.status === 'succeeded' && d.output) {
+                clearInterval(iv); showMergeResult(d.output);
+                document.getElementById('btnMerge').disabled = false;
+                document.getElementById('btnMerge').innerHTML = '🔀 Birleştir (Otomatik)';
+            } else if (d.status === 'failed') {
+                clearInterval(iv); S('mSt','❌ Başarısız','err');
+                L(`❌ ${d.error||'Merge failed'}`,'err');
+                document.getElementById('btnMerge').disabled = false;
+                document.getElementById('btnMerge').innerHTML = '🔀 Birleştir (Otomatik)';
+            }
+        } catch (e) { L(`❌ ${e.message}`,'err'); }
+        if (attempts >= 60) { clearInterval(iv); L('⏱️ Timeout','err'); }
+    }, 5000);
+}
+
+function showMergeResult(url) {
+    S('mSt','✅ Birleştirildi!','ok');
+    L(`🎉 Final video hazır!`);
+    document.getElementById('mLinks').innerHTML = `<a href="${url}" target="_blank">📥 Final Video İndir</a>`;
+    const p = document.getElementById('mPrev'); p.src = url; p.style.display = 'block';
+    // Show success banner
+    document.getElementById('successBanner').style.display = 'block';
+    document.getElementById('finalDL').innerHTML = `<a href="${url}" target="_blank" style="font-size:1.1rem;padding:14px 28px">📥 Final Reklam Videosunu İndir</a>`;
+}
+</script>
+</body>
+</html>

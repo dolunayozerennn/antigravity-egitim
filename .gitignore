@@ -130,3 +130,34 @@ Projeler/Lead_Pipeline/.state_*.json
 
 # Lead Notifier state files
 Projeler/Lead_Notifier_Bot/.last_row_counts.json
+
+# ==========================================
+# 🚫 GEÇİCİ PUSH/DEPLOY/TEST SCRIPTLERİ
+# ==========================================
+# Token içerebilecek geçici helper dosyaları
+_push_helper.py
+**/push_to_github.*
+**/push_to_monorepo.*
+**/push_bypass_dns.*
+**/deploy_railway.py
+**/check_notion.js
+**/test_apify_temp.py
+**/check_railway.py
+test_railway.py
+
+# Geçici venv klasörleri
+**/tmp_venv/
+
+# Scratch/test dosyaları
+**/scratch_*.py
+**/scratch_*.js
+
+# Netlify local state
+**/.netlify/
+
+# Araştırma/output dosyaları
+**/output.json
+**/research_*.py
+**/mcp_files.json
+**/samples.json
+**/schema.json

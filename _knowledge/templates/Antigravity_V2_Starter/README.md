@@ -9,4 +9,6 @@ Bu proje, otonom agent'ların ve Mono-Repo dağıtımlarının standart mimarisi
 4. **`requirements.txt`**: Tüm bağımlılıklar versiyonlanmalı eşleşmiş olmalıdır.
 5. **`nixpacks.toml`**: Railway'de sistem seviyesi bağımlılıklar (ffmpeg, chromium vb.) **SADECE** bu dosya ile yüklenir. `Aptfile` ve `apt.txt` dosyaları Nixpacks builder tarafından YOKSAYILIR.
 
+> 🛡️ **AGENT SKILL KONTROLÜ**: Yeni bir entegrasyon ekliyorsanız (Örn: Supabase, Apify, Notion, Telegram), kod yazmadan **ÖNCE** sistem kök dizinindeki `_skills/` klasöründe yer alan ilgili yetkinlik belgesini (`SKILL.md`) okumak **ZORUNLUDUR**.
+
 > Yeni bir projeye başlarken AI bu template içeriğini ilgili klasöre kopyalar (`cp -r` ile).

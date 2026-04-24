@@ -29,16 +29,6 @@ ACCOUNTS = {
         "token_file": "gmail-ceren-token.json",
         "token_env": "GOOGLE_CEREN_TOKEN_JSON",
     },
-    "dolunay_ai": {
-        "email": "dolunay@dolunay.ai",
-        "token_file": "gmail-dolunay-ai-token.json",
-        "token_env": "GOOGLE_DOLUNAY_AI_TOKEN_JSON",
-    },
-    "outreach": {
-        "email": "ozerendolunay@gmail.com",
-        "token_file": "gmail-outreach-token.json",
-        "token_env": "GOOGLE_OUTREACH_TOKEN_JSON",
-    },
 }
 
 ALL_SCOPES = [
@@ -52,7 +42,7 @@ def _get_credentials(account: str) -> Credentials:
     Token al — lokal dosya veya Railway env variable.
     
     Args:
-        account: "ceren", "dolunay_ai", veya "outreach"
+        account: "ceren"
     
     Returns:
         Geçerli Google OAuth Credentials

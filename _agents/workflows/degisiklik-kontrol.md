@@ -21,6 +21,17 @@ git diff --stat
 
 Eğer değişen dosya yoksa → "✅ Değişiklik yok, kontrol tamamlandı" mesajı ver ve çık.
 
+## Adım 1.5 — Skill İhlal Kontrolü (Mimari Güvenlik Ağı)
+
+Projede aşağıdaki servislerden biri kullanıldıysa, yapılan değişikliğin `_skills/` altındaki ilgili standartları ihlal etmediğini onayla:
+- **Supabase:** RLS ve indexler kontrol edildi mi? (bkz: `_skills/supabase-postgres-best-practices/SKILL.md`)
+- **Notion:** Idempotency ve Rate Limit gözetildi mi? (bkz: `_skills/notion-api-rules/SKILL.md`)
+- **Apify:** Actor Proxy kullanıldı mı? (bkz: `_skills/apify-scraping-rules/SKILL.md`)
+- **Telegram:** Alarm yorgunluğunu önleyen P1/P2 standartı uygulandı mı? (bkz: `_skills/telegram-bot-rules/SKILL.md`)
+- **LLM Output:** Pydantic schema zorunluluğu sağlandı mı? (bkz: `_skills/llm-structured-output-rules/SKILL.md`)
+
+Eğer bir ihlal varsa → DURMA. Kodu düzelt, tekrar kontrol et.
+
 ## Adım 2 — Syntax Kontrolü
 
 Tüm Python dosyalarında syntax hatası olup olmadığını kontrol et:
@@ -113,10 +124,7 @@ git push origin main
    - `Traceback` → Runtime hatası
 
 ```bash
-curl -s "https://backboard.railway.com/graphql/v2" \
-  -H "Authorization: Bearer $RAILWAY_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"query { deployments(input: { projectId: \"<PROJECT_ID>\" }) { edges { node { id status } } } }"}'
+_skills/use-railway/scripts/railway-api.sh '{ deployments(input: { projectId: "<PROJECT_ID>" }) { edges { node { id status } } } }'
 ```
 
 **Fatal error varsa → Düzelt, tekrar push et, tekrar kontrol et.**

@@ -10,7 +10,7 @@ from fpdf.enums import XPos, YPos
 class TaxInvoicePDF(FPDF):
     pass
 
-def generate_invoice(brand_name, company_name, company_email, company_address, amount, currency, output_dir, description_override=None, qty=1, unit_cost=None):
+def generate_invoice(brand_name, company_name, company_email, company_address, amount, currency, output_dir, description_override=None, qty=1, unit_cost=None, bank_details=None):
     today = datetime.now()
     issue_date = today.strftime('%d/%m/%Y')
     invoice_number = f"INV-{today.strftime('%Y%m%d')}-{random.randint(100, 999)}"
@@ -132,6 +132,15 @@ def generate_invoice(brand_name, company_name, company_email, company_address, a
         
         pdf.ln(5)
         
+        if bank_details:
+            pdf.set_font("Roboto", "B", 10)
+            pdf.cell(0, 6, "Bank Details:", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font("Roboto", "", 9)
+            details_lines = bank_details.split('\\n')
+            for line in details_lines:
+                pdf.cell(0, 5, line.strip(), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.ln(5)
+            
         # Last row has terms on left and auth signatory on right
         payment_width = w_sno + w_desc + w_qty + w_rate + w_amt
         pdf.set_font("Roboto", "B", 10)
@@ -168,6 +177,7 @@ if __name__ == "__main__":
     parser.add_argument("--description", default="", help="Custom description for the invoice line item")
     parser.add_argument("--qty", type=int, default=1, help="Quantity of items (e.g. 3)")
     parser.add_argument("--unit-cost", default="", help="Per-unit cost (e.g. 500). If not given, amount is used.")
+    parser.add_argument("--bank-details", default="", help="Bank details info to append, use \\n for newlines.")
     parser.add_argument("--output", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "uretilen-faturalar"), help="Output directory")
     
     args = parser.parse_args()
@@ -182,5 +192,6 @@ if __name__ == "__main__":
         os.path.abspath(args.output),
         args.description or None,
         qty=args.qty,
-        unit_cost=args.unit_cost or None
+        unit_cost=args.unit_cost or None,
+        bank_details=args.bank_details or None
     )

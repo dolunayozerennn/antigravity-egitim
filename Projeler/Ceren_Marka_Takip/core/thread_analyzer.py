@@ -24,16 +24,14 @@ Görevin:
 
 Önemli bilgi:
 - ceren@dolunay.ai = Marka ilişkileri yöneticisi (Ceren)
-- dolunay@dolunay.ai = Influencer (Dolunay)
-- ozerendolunay@gmail.com = Influencer (Dolunay, alternatif mail)
-- Bunların dışındaki e-postalar = Marka / Dış taraf
+- Bunun dışındaki e-postalar = Marka / Dış taraf
 
 Yanıtını SADECE aşağıdaki JSON formatında ver. Başka bir şey yazma:
 
 {
   "is_brand_collaboration": true/false,
   "brand_name": "Marka adı veya null",
-  "last_sender": "brand" | "ceren" | "dolunay" | "other",
+  "last_sender": "brand" | "ceren" | "other",
   "action_needed_by_ceren": true/false,
   "reason": "Kısa Türkçe açıklama (max 100 karakter)",
   "thread_status": "active" | "closed" | "waiting_for_brand",
@@ -45,10 +43,9 @@ Kurallar:
 - "last_sender" thread'deki SON mesajı kimin attığını belirler
 - "action_needed_by_ceren" = true sadece şu durumlarda:
   - Son mesajı marka attıysa VE cevap bekleniyorsa
-  - Son mesajı Dolunay attıysa VE Ceren'in haberi olmayabilirse
 - "thread_status":
   - "closed" = İşbirliği reddedildi, iptal edildi, veya tamamlandı
-  - "waiting_for_brand" = Ceren/Dolunay yazdı, markadan cevap bekleniyor
+  - "waiting_for_brand" = Ceren yazdı, markadan cevap bekleniyor
   - "active" = Devam eden aktif konuşma
 - "urgency": high = fiyat/brief bekleyen, medium = genel takip, low = bilgilendirme
 """

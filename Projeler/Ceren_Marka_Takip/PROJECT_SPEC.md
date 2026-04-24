@@ -3,42 +3,38 @@
 > Bu dosya projenin tam teknik ve iş spesifikasyonunu içerir.
 > Yeni bir chat açıldığında bu dosya okunarak devam edilebilir.
 
-**Son güncelleme:** 2026-04-21
-**Durum:** İskelet oluşturuldu, implementasyon başlamadı
+**Son güncelleme:** 2026-04-24
+**Durum:** Ceren-only mimariye geçirildi
 
 ---
 
 ## 1. Problem
 
-Dolunay influencer olarak marka işbirliklerini Ceren aracılığıyla e-posta üzerinden yönetiyor.
-Ceren bazı thread'leri unutuyor/kaçırıyor → markaya dönüş yapılmıyor → iş gecikiyor.
+Ceren, marka işbirliklerini e-posta üzerinden yönetiyor.
+Bazı thread'ler unutuluyor/kaçırılıyor → markaya dönüş yapılmıyor → iş gecikiyor.
 
 ## 2. Çözüm
 
 Günlük çalışan bir CronJob:
-1. Gmail API ile 3 inbox'ı tarar (son 15 gün)
+1. Gmail API ile Ceren'in inbox'ını tarar (son 15 gün)
 2. 48+ iş saati sessiz thread'leri bulur
 3. LLM ile marka işbirliği thread'lerini tespit eder
 4. Ceren'e aksiyon gerektiren thread'ler için hatırlatma maili gönderir
-5. Hata durumunda Dolunay'a alert gönderir
+5. Hata durumunda Ceren'e alert gönderir
 
 ## 3. Konfigürasyon
 
 ### E-posta Hesapları
 | Hesap | OAuth Account Key | Rol |
 |-------|-------------------|-----|
-| `ceren@dolunay.ai` | `ceren` | ANA TARAMA — Ceren'in inbox'ı |
-| `dolunay@dolunay.ai` | `dolunay_ai` | YARDIMCI — Dolunay'ın workspace maili |
-| `ozerendolunay@gmail.com` | `outreach` | YARDIMCI — Dolunay'ın Gmail'i |
+| `ceren@dolunay.ai` | `ceren` | TARAMA + GÖNDERİM — Ceren'in inbox'ı |
 
 ### OAuth Token'ları
 Tüm token'lar merkezi depoda hazır:
 - `_knowledge/credentials/oauth/gmail-ceren-token.json` ✅ (21 Nisan 2026 oluşturuldu)
-- `_knowledge/credentials/oauth/gmail-dolunay-ai-token.json` ✅
-- `_knowledge/credentials/oauth/gmail-outreach-token.json` ✅
 
 Auth modülü: `_knowledge/credentials/oauth/google_auth.py`
-Kullanım: `get_gmail_service("ceren")`, `get_gmail_service("dolunay_ai")`, `get_gmail_service("outreach")`
+Kullanım: `get_gmail_service("ceren")`
 
 ### LLM
 - **Provider:** Groq
@@ -48,8 +44,8 @@ Kullanım: `get_gmail_service("ceren")`, `get_gmail_service("dolunay_ai")`, `get
 
 ### Bildirimler
 - **Ceren hatırlatması:** E-posta → `ceren@dolunay.ai`
-- **Dolunay hata alerti:** E-posta → `ozerendolunay@gmail.com`
-- **Dolunay haftalık rapor:** E-posta → `ozerendolunay@gmail.com` (her Pazartesi)
+- **Hata alerti:** E-posta → `ceren@dolunay.ai`
+- **Haftalık rapor:** E-posta → `ceren@dolunay.ai` (her Pazartesi)
 
 ### Deploy
 - **Platform:** Railway CronJob
@@ -60,7 +56,7 @@ Kullanım: `get_gmail_service("ceren")`, `get_gmail_service("dolunay_ai")`, `get
 
 ### Tarama
 - Son **15 gün**deki thread'ler taranır
-- Her 3 inbox'tan thread'ler çekilir ve deduplicate edilir (aynı thread farklı inbox'larda olabilir)
+- Sadece `ceren@dolunay.ai` inbox'ı taranır
 
 ### Stale Eşiği
 - **48 iş saati** (2 iş günü) sessizlik → hatırlatma tetiklenir
@@ -72,7 +68,7 @@ Kullanım: `get_gmail_service("ceren")`, `get_gmail_service("dolunay_ai")`, `get
 {
   "is_brand_collaboration": true,
   "brand_name": "Nike Türkiye",
-  "last_sender": "brand | ceren | dolunay | other",
+  "last_sender": "brand | ceren | other",
   "action_needed_by_ceren": true,
   "reason": "Marka fiyat teklifi istedi, Ceren henüz cevap vermedi",
   "thread_status": "active | closed | waiting_for_brand",
@@ -84,7 +80,6 @@ Kullanım: `get_gmail_service("ceren")`, `get_gmail_service("dolunay_ai")`, `get
 | Son mesajı atan | 48+ saat sessiz | Aksiyon |
 |-----------------|-----------------|---------|
 | Marka | Evet | ⚠️ Ceren'e hatırlatma |
-| Dolunay | Evet | ⚠️ Ceren'e bildir (Ceren habersiz olabilir) |
 | Ceren | Evet | ℹ️ Markadan cevap bekleniyor — hatırlatma YOK |
 | Thread kapanmış | - | ❌ Atla |
 
@@ -93,8 +88,8 @@ Kullanım: `get_gmail_service("ceren")`, `get_gmail_service("dolunay_ai")`, `get
 - Sonsuz hatırlatma — thread cevaplandığında otomatik durur
 
 ### Monitoring
-| Durum | Dolunay'a Bildirim |
-|-------|-------------------|
+| Durum | Ceren'e Bildirim |
+|-------|-----------------|
 | Hatasız çalıştı, 0 stale thread | Log tutulur, bildirim yok |
 | Çalıştı, N hatırlatma gönderildi | Log tutulur, bildirim yok |
 | Sistem ÇALIŞAMADI (crash/API hatası) | ⚡ Anlık e-posta alert |
@@ -138,34 +133,31 @@ Ceren_Marka_Takip/
 ```python
 # Pseudocode
 def main():
-    # 1. Tüm inbox'lardan thread'leri topla
+    # 1. Ceren'in inbox'ından thread'leri topla
     threads = gmail_scanner.scan_all_inboxes(days=15)
     
-    # 2. Deduplicate (aynı thread farklı inbox'larda olabilir)
-    unique_threads = deduplicate(threads)
+    # 2. Stale thread'leri filtrele (48+ iş saati sessiz)
+    stale_threads = stale_detector.filter_stale(threads, threshold_hours=48)
     
-    # 3. Stale thread'leri filtrele (48+ iş saati sessiz)
-    stale_threads = stale_detector.filter_stale(unique_threads, threshold_hours=48)
-    
-    # 4. LLM ile analiz et
+    # 3. LLM ile analiz et
     analyzed = []
     for thread in stale_threads:
         result = thread_analyzer.analyze(thread)
         if result.is_brand_collaboration and result.action_needed_by_ceren:
             analyzed.append(result)
     
-    # 5. Duplicate hatırlatma kontrolü (2 gün arayla)
+    # 4. Duplicate hatırlatma kontrolü (2 gün arayla)
     to_notify = state_manager.filter_already_notified(analyzed, cooldown_days=2)
     
-    # 6. Ceren'e hatırlatma gönder
+    # 5. Ceren'e hatırlatma gönder
     if to_notify:
         notifier.send_reminder_to_ceren(to_notify)
     
-    # 7. State güncelle
+    # 6. State güncelle
     state_manager.update(to_notify)
     
-    # 8. Log
-    logger.info(f"Taranan: {len(unique_threads)}, Stale: {len(stale_threads)}, Bildirim: {len(to_notify)}")
+    # 7. Log
+    logger.info(f"Taranan: {len(threads)}, Stale: {len(stale_threads)}, Bildirim: {len(to_notify)}")
 ```
 
 ## 7. Environment Variables (Railway)
@@ -173,18 +165,16 @@ def main():
 ```env
 # Gmail OAuth (JSON string olarak)
 GOOGLE_CEREN_TOKEN_JSON=<ceren token json>
-GOOGLE_DOLUNAY_AI_TOKEN_JSON=<dolunay_ai token json>
-GOOGLE_OUTREACH_TOKEN_JSON=<outreach token json>
 
 # Groq LLM
 GROQ_API_KEY=<groq api key>
 
-# SMTP (Alert e-postaları için)
-SMTP_USER=ozerendolunay@gmail.com
-SMTP_APP_PASSWORD=<app password>
+# Notion Ops Logger (State yönetimi)
+NOTION_SOCIAL_TOKEN=<notion token>
+NOTION_DB_OPS_LOG=<notion db id>
 
 # Monitoring
-ALERT_EMAIL=ozerendolunay@gmail.com
+ALERT_EMAIL=ceren@dolunay.ai
 ```
 
 ## 8. Notion Entegrasyonu (Phase 2 — Gelecek)
@@ -207,7 +197,7 @@ Mevcut Notion DB: `27b955140a32838589eb813222d532a2` ("Dolunay Reels")
 - [x] `utils/state_manager.py` — Duplicate engeli
 - [x] `main.py` — Ana orkestrasyon
 - [x] Syntax + import + birim testleri geçti
-- [ ] SMTP App Password set et (Railway env veya .env)
+- [x] Ceren-only mimariye geçiş (24 Nisan 2026)
 - [ ] Lokal test (dry-run) → `python main.py --dry-run`
 - [ ] Railway deploy
 - [ ] 48-saat izleme

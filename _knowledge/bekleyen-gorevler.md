@@ -4,7 +4,7 @@
 > Yarım kalan işler, TODO'lar ve takip gereken konular burada tutulur.
 > Görev tamamlandığında bu dosyadan silinir.
 
-**Son güncelleme:** 12 Nisan 2026
+**Son güncelleme:** 22 Nisan 2026
 
 ---
 
@@ -32,11 +32,11 @@
 - **Kontrol 2:** ⏳ Bekliyor (Perşembe Cron tetiklemesi)
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
-### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (Bot URL Hafıza ve Format Zorunluluğu)
+### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (Bot URL Hafıza, Tool Parse ve Format Zorunluluğu)
 - **Deploy tarihi:** 2026-04-20
 - **İzleme bitiş:** 2026-04-22
-- **Değişiklik:** Agent'ın pending_url ile son gönderilen linki format seçimi esnasında unutması ve process_url()'yi yanlış anda başlatması düzeltildi.
-- **Kontrol 1:** ⏳ Bekliyor (bir sonraki bot testinde veya kullanıcı kullanımında prompt akışının doğrulanması)
+- **Değişiklik:** 1) Agent'ın pending_url ile son gönderilen linki format seçimi esnasında unutması ve process_url()'yi yanlış anda başlatması düzeltildi. 2) msg.tool_calls listesinde tüm tool'ların (hem format sunumu hem URL yakalama aynı gelse bile) parse edilmesi sağlandı ve hatalı model markdown syntax'ları try/except fallback'e alındı.
+- **Kontrol 1:** ⏳ Bekliyor (kullanıcının kendi denemesinde buton tıkladıktan sonra 'Nothing/Crashed' hatasının yaşanmadığı doğrulanacak)
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
@@ -71,6 +71,10 @@
 ## Tamamlanan TODO'lar (Arşiv)
 
 > Aşağıdaki görevler tamamlanmış ve referans amaçlı saklanmaktadır.
+
+### ✅ eCom Reklam Otomasyonu — GitHub Push (23 Nisan 2026)
+- **Kaynak:** Deploy Sonrası İzleme ve Manuel Kontrol
+- **Yapılanlar:** `conversation_manager.py` ve `main.py` dosyalarının başarıyla `9405cb2` commit'iyle GitHub'da güncel olduğu ve lokal SHA'ları ile birebir eşleştiği doğrulandı.
 
 ### ✅ Dolunay_Otonom_Kapak (Reels + YouTube) — İzleme Başarılı (14 Nisan 2026)
 - **Kaynak:** Deploy Sonrası İzleme
@@ -145,3 +149,38 @@
 - **Kontrol 1:** ⏳ Bekliyor
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+
+### 🟡 48-Saat İzleme — ecom-reklam-otomasyonu
+- **Deploy tarihi:** 2026-04-20
+- **İzleme bitiş:** 2026-04-22
+- **Kontrol 1:** ⏳ Bekliyor (ilk konuşmada Railway logları kontrol edilecek)
+- **Kontrol 2:** ⏳ Bekliyor
+- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+
+### 🟡 48-Saat İzleme — Ceren_Marka_Takip
+- **Deploy tarihi:** 2026-04-21
+- **İzleme bitiş:** 2026-04-23
+- **Kontrol 1:** ⏳ Bekliyor (ilk konuşmada Railway logları kontrol edilecek)
+- **Kontrol 2:** ⏳ Bekliyor
+- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+
+### 🟡 48-Saat İzleme — whatsapp-onboarding
+- **Deploy tarihi:** 2026-04-23
+- **İzleme bitiş:** 2026-04-25
+- **Değişiklik:** Fallback Webhook (/webhook/wa-failed) uç noktası eklendi, Notion error state'leri güncellendi. ManyChat flow'unda opt-in kurgusu ve external request entegre edildi. 
+- **Bekleyen Aksiyonlar (Kullanıcı Tarafında):**
+  1. Zapier "Membership Questions" webhook'undaki answer_1 alanının eşleştirilmesi
+  2. ManyChat akışının Update/Publish edilerek canlıya alınması
+  3. Gerçek Skool üye katılımıyla end-to-end (uçtan uca) canlı test yapılması
+- **Kontrol 1:** ⏳ Bekliyor
+- **Kontrol 2:** ⏳ Bekliyor
+- **Sonuç:** ⏳ 2 başarılı testten sonra kapatılır
+
+### 🟡 48-Saat İzleme — Lead_Notifier_Bot
+- **Deploy tarihi:** 2026-04-24
+- **İzleme bitiş:** 2026-04-26
+- **Değişiklik:** V3 yükseltmesi yapıldı. Satır sayısı bazlı takip ID bazlı (benzersiz UUID) state'e geçirildi. Filtreleme eklendi (sadece lead_status == "CREATED"). Fail-fast environment validation ve Spam koruması eklendi.
+- **Kontrol 1:** ⏳ Bekliyor (Railway üzerindeki servis loglarında ilk gerçek lead gelişinin kontrolü)
+- **Kontrol 2:** ⏳ Bekliyor
+- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+

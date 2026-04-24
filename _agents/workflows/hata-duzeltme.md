@@ -32,6 +32,10 @@ view_file → _knowledge/hatalar-ve-cozumler.md
 - Aynı pattern varsa → kanıtlanmış çözümü uygula, tekerleği yeniden icat etme
 - Yoksa → web araştırması yap (platform belgelerini kontrol et)
 
+### Soru 4: "Bu hata sistem skill'lerine aykırı mı?"
+- Hata bir entegrasyonla ilgiliyse (Railway, Supabase, Apify, Notion, Telegram vb.)
+- Kod yazmadan önce `_skills/` dizinindeki ilgili `SKILL.md` kurallarını oku. Sorun kural ihlali kaynaklı olabilir.
+
 ## Adım 2: PLANLA — Fix Planını Sun
 
 Kullanıcıya kısa ve net bir plan sun:

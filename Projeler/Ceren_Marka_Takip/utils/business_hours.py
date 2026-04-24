@@ -58,7 +58,7 @@ def business_days_since(last_message_time: datetime, now: Optional[datetime] = N
     count = 0
     current = last_message_time.date() + timedelta(days=1)
     while current <= now.date():
-        if current.weekday() < 5:
+        if current.weekday() < 5:  # Pazartesi-Cuma
             count += 1
         current += timedelta(days=1)
     return count

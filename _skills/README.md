@@ -28,7 +28,12 @@ Antigravity bir göreve başlamadan önce ilgili skill'i okuyarak nasıl davrana
 | 15 | `servis-izleyici` | Railway + Cron + Lokal proje sağlık kontrolü | Tüm agent'lar |
 | 16 | `reels-kapak` | AI ile Instagram Reels kapak görseli üretimi (Kie AI pipeline) | 🤖 `icerik-uretim` |
 | 17 | `telefon-formatlayici` | Telefon numarası formatlama ve doğrulama | — (bağımsız) |
-
+| 18 | `supabase-postgres-best-practices` | Supabase RLS, veritabanı fonksiyonları ve query optimizasyonu kuralları | Tüm projeler |
+| 19 | `notion-api-rules` | Notion MCP/API dualite, Idempotency ve Rate Limiting standartları | Tüm projeler |
+| 20 | `railway-deploy-rules` | Railway startup delays, fail-fast env config ve deploy stabilitesi | Tüm projeler |
+| 21 | `apify-scraping-rules` | Apify Store hazır aktör kullanımı, maliyet/hız optimizasyonu (Cheerio) | 🤖 `musteri-kazanim` vb. |
+| 22 | `telegram-bot-rules` | getUpdates conflict çözümü (webhook/polling), alert fatigue önleme | Tüm projeler |
+| 23 | `llm-structured-output-rules` | OpenAI/Anthropic/Groq için Pydantic ve JSON output zorunlulukları | Tüm projeler |
 ---
 
 ## Yeni Skill Nasıl Eklenir?

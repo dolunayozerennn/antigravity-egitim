@@ -1,0 +1,14 @@
+node_modules/
+.npm-cache/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+antigravity_whatsapp_onboarding_v2.md
+test_*.js
+push_to_github.js
+push_bypass_dns.js
+push_to_monorepo.js
+sync_all_to_github.js
+mcp_files.json

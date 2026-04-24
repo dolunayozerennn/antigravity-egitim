@@ -34,13 +34,17 @@ def upload_to_imgbb(image_path: str) -> str:
         "key": IMGBB_API_KEY,
         "image": encoded_image
     }
-    response = requests.post(url, data=payload, timeout=30)
-    if response.status_code == 200:
-        img_url = response.json()["data"]["url"]
-        print(f"Uploaded successfully to ImgBB: {img_url}")
-        return img_url
-    else:
-        print(f"ImgBB upload failed: {response.text}")
+    try:
+        response = requests.post(url, data=payload, timeout=30)
+        if response.status_code == 200:
+            img_url = response.json()["data"]["url"]
+            print(f"Uploaded successfully to ImgBB: {img_url}")
+            return img_url
+        else:
+            print(f"ImgBB upload failed: {response.text}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"ImgBB network error: {e}")
         return None
 
 def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: list = None) -> str:
@@ -70,9 +74,13 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
         }
     }
     
-    response = requests.post(create_url, headers=headers, json=payload, timeout=30)
-    if response.status_code != 200:
-        print(f"Failed to create task: {response.text}")
+    try:
+        response = requests.post(create_url, headers=headers, json=payload, timeout=30)
+        if response.status_code != 200:
+            print(f"Failed to create task: {response.text}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Kie AI network error during task creation: {e}")
         return None
         
     task_id = response.json().get("data", {}).get("taskId")
@@ -94,11 +102,16 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
             print(f"⏱️ Polling timeout ({max_poll_seconds}s). Aborting.")
             return None
         
-        poll_resp = requests.get(poll_url, headers=headers, timeout=30)
-        if poll_resp.status_code != 200:
-             print(f"Polling failed: {poll_resp.text}")
-             time.sleep(5)
-             continue
+        try:
+            poll_resp = requests.get(poll_url, headers=headers, timeout=30)
+            if poll_resp.status_code != 200:
+                 print(f"Polling failed: {poll_resp.text}")
+                 time.sleep(5)
+                 continue
+        except requests.exceptions.RequestException as e:
+            print(f"Polling network error: {e}")
+            time.sleep(5)
+            continue
              
         data = poll_resp.json().get("data", {})
         state = data.get("state")

@@ -92,24 +92,27 @@ def process_reels(logger):
                 safe_video_name = "".join([c for c in video['name'] if c.isalpha() or c.isdigit() or c==' ']).rstrip()
                 final_cover_path = os.path.join("outputs", f"{safe_video_name}_T{t_idx}_V{v_idx}.png")
                 
-                success = run_autonomous_generation(
-                    local_person_image_path=cutout_path,
-                    video_topic=topic,
-                    main_text=cover_text,
-                    output_path=final_cover_path,
-                    max_retries=2,
-                    variant_index=v_idx,
-                    script_text=script_content,
-                    scene_description=scene_description,
-                    extra_cutout_paths=extra_cutout_paths
-                )
-                
-                if success:
-                    drive_file_name = f"Kapak T{t_idx} ({theme_name}) V{v_idx}.png"
-                    upload_cover_to_drive(final_cover_path, drive_url, file_name=drive_file_name)
-                    theme_drive_links.append({"variant": v_idx, "url": drive_url})
-                else:
-                    logger.warning(f"Tema {t_idx} Varyasyon {v_idx} başarısız oldu.")
+                try:
+                    success = run_autonomous_generation(
+                        local_person_image_path=cutout_path,
+                        video_topic=topic,
+                        main_text=cover_text,
+                        output_path=final_cover_path,
+                        max_retries=2,
+                        variant_index=v_idx,
+                        script_text=script_content,
+                        scene_description=scene_description,
+                        extra_cutout_paths=extra_cutout_paths
+                    )
+                    
+                    if success:
+                        drive_file_name = f"Kapak T{t_idx} ({theme_name}) V{v_idx}.png"
+                        upload_cover_to_drive(final_cover_path, drive_url, file_name=drive_file_name)
+                        theme_drive_links.append({"variant": v_idx, "url": drive_url})
+                    else:
+                        logger.warning(f"Tema {t_idx} Varyasyon {v_idx} başarısız oldu.")
+                except Exception as e:
+                    logger.error(f"Kritik hata (Tema {t_idx} V{v_idx}): {e}")
             
             themes_with_links.append({
                 "theme_index": t_idx,
@@ -183,26 +186,29 @@ def process_youtube(logger):
                 safe_video_name = "".join([c for c in video['name'] if c.isalpha() or c.isdigit() or c==' ']).rstrip()
                 final_cover_path = os.path.join("outputs", f"{safe_video_name}_THUMBNAIL_T{t_idx}_V{v_idx}.png")
                 
-                success = run_autonomous_generation(
-                    local_person_image_path=base_cutout,
-                    video_topic=topic,
-                    main_text=cover_text,
-                    output_path=final_cover_path,
-                    max_retries=5,
-                    variant_index=v_idx,
-                    script_text=script_content,
-                    scene_description=scene_description,
-                    extra_cutout_paths=extra_cutouts,
-                    screenshot_url=screenshot_url,
-                    screenshot_context=screenshot_context
-                )
-                
-                if success:
-                    drive_file_name = f"Thumbnail T{t_idx} ({theme_name}) V{v_idx}.png"
-                    upload_cover_to_drive(final_cover_path, drive_url, file_name=drive_file_name)
-                    theme_drive_links.append({"variant": v_idx, "url": drive_url})
-                else:
-                    logger.warning(f"Tema {t_idx} Varyasyon {v_idx} başarısız oldu.")
+                try:
+                    success = run_autonomous_generation(
+                        local_person_image_path=base_cutout,
+                        video_topic=topic,
+                        main_text=cover_text,
+                        output_path=final_cover_path,
+                        max_retries=5,
+                        variant_index=v_idx,
+                        script_text=script_content,
+                        scene_description=scene_description,
+                        extra_cutout_paths=extra_cutouts,
+                        screenshot_url=screenshot_url,
+                        screenshot_context=screenshot_context
+                    )
+                    
+                    if success:
+                        drive_file_name = f"Thumbnail T{t_idx} ({theme_name}) V{v_idx}.png"
+                        upload_cover_to_drive(final_cover_path, drive_url, file_name=drive_file_name)
+                        theme_drive_links.append({"variant": v_idx, "url": drive_url})
+                    else:
+                        logger.warning(f"Tema {t_idx} Varyasyon {v_idx} başarısız oldu.")
+                except Exception as e:
+                    logger.error(f"Kritik hata (Tema {t_idx} V{v_idx}): {e}")
             
             themes_with_links.append({
                 "theme_index": t_idx,

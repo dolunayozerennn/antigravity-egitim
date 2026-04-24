@@ -295,16 +295,10 @@ TOKEN="14ac7442-43fc-480a-b7e2-e8b5dacf1bb3"
 # deploy-registry.md'den proje ID'lerini al
 
 # Son deployment'ı bul
-curl -s -X POST https://backboard.railway.app/graphql/v2 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"query":"{ deployments(first: 1, input: { projectId: \"<PROJE_ID>\", serviceId: \"<SERVIS_ID>\" }) { edges { node { id status createdAt } } } }"}'
+_skills/use-railway/scripts/railway-api.sh '{ deployments(first: 1, input: { projectId: "<PROJE_ID>", serviceId: "<SERVIS_ID>" }) { edges { node { id status createdAt } } } }'
 
 # Logları çek
-curl -s -X POST https://backboard.railway.app/graphql/v2 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"query":"{ deploymentLogs(deploymentId: \"<DEPLOYMENT_ID>\", limit: 200) { message severity timestamp } }"}'
+_skills/use-railway/scripts/railway-api.sh '{ deploymentLogs(deploymentId: "<DEPLOYMENT_ID>", limit: 200) { message severity timestamp } }'
 ```
 
 Fatal Pattern'leri Ara:
@@ -376,16 +370,10 @@ Fix yaptıysan → aşağıdaki döngüyü çalıştır:
 TOKEN="14ac7442-43fc-480a-b7e2-e8b5dacf1bb3"
 
 # Son deployment ID'yi bul
-DEPLOYMENT_ID=$(curl -s -X POST https://backboard.railway.app/graphql/v2 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"query":"{ deployments(first: 1, input: { projectId: \"<PROJE_ID>\", serviceId: \"<SERVIS_ID>\" }) { edges { node { id status } } } }"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['deployments']['edges'][0]['node']['id'])")
+DEPLOYMENT_ID=$(_skills/use-railway/scripts/railway-api.sh '{ deployments(first: 1, input: { projectId: "<PROJE_ID>", serviceId: "<SERVIS_ID>" }) { edges { node { id status } } } }' | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['deployments']['edges'][0]['node']['id'])")
 
 # Manuel redeploy tetikle (cron job'u hemen çalıştırır)
-curl -s -X POST https://backboard.railway.app/graphql/v2 \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d "{\"query\":\"mutation { serviceInstanceRedeploy(serviceId: \\\"<SERVIS_ID>\\\", environmentId: \\\"<ENV_ID>\\\") }\"}"
+_skills/use-railway/scripts/railway-api.sh 'mutation { serviceInstanceRedeploy(serviceId: "<SERVIS_ID>", environmentId: "<ENV_ID>") }'
 ```
 
 ### 6.2 — Çalıştırma Sonrası Log İzleme
