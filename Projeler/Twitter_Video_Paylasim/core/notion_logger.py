@@ -15,7 +15,8 @@ class NotionLogger:
 
     def is_video_posted(self, video_id: str) -> bool:
         """
-        Check if the given video_id has already been posted successfully.
+        Check if the given video_id has already been posted successfully to X (Twitter).
+        Uses platform filter to avoid confusion with LinkedIn entries sharing the same DB.
         """
         try:
             url = f"https://api.notion.com/v1/databases/{self.db_id}/query"
@@ -33,6 +34,12 @@ class NotionLogger:
                             "select": {
                                 "equals": "Success"
                             }
+                        },
+                        {
+                            "property": "Platform",
+                            "select": {
+                                "equals": "X (Twitter)"
+                            }
                         }
                     ]
                 }
@@ -43,9 +50,9 @@ class NotionLogger:
             return len(data.get("results", [])) > 0
         except Exception as e:
             ops.error(f"Error checking Notion for video_id {video_id}: {e}", exception=e)
-            # Fail safe: if we can't check, assume it might not be posted, but maybe return True to prevent double post? 
-            # Better return True to avoid spamming if API is down.
-            return True
+            # Fail-OPEN: API hatasında paylaşmayı dene.
+            # En kötü ihtimalle duplicate tweet olur ama hiç paylaşmamaktan iyidir.
+            return False
 
     def log_video(self, video_id: str, platform: str, status: str, tiktok_url: str, twitter_url: str):
         """
