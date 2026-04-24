@@ -64,14 +64,33 @@ def process_reels(logger):
         script_content = video.get('script_text', '')
         topic = video['name']
         
-        # Select single random cutout for all themes for identity lock
-        cutout_name = random.choice(available_cutouts)
+        # IDENTITY LOCK: Master Anchor sistemi — rastgele değil, sabit referanslar
+        tags_path = os.path.join(project_dir, "agents", "cutout_tags.json")
+        try:
+            import json as _json
+            with open(tags_path, "r") as _f:
+                cutout_config = _json.load(_f)
+            master_name = cutout_config.get("master_anchor")
+            secondary_names = cutout_config.get("secondary_anchors", [])
+        except Exception as _e:
+            logger.warning(f"cutout_tags.json okunamadı ({_e}), fallback: ilk cutout kullanılacak.")
+            master_name = sorted(available_cutouts)[0]
+            secondary_names = sorted(available_cutouts)[1:3]
+        
+        cutout_name = master_name
         cutout_path = os.path.join(cutout_dir, cutout_name)
+        if not os.path.exists(cutout_path):
+            logger.warning(f"Master anchor '{cutout_name}' bulunamadı, fallback kullanılıyor.")
+            cutout_name = available_cutouts[0]
+            cutout_path = os.path.join(cutout_dir, cutout_name)
         
-        other_cutouts = [f for f in available_cutouts if f != cutout_name]
-        extra_cutout_paths = [os.path.join(cutout_dir, c) for c in random.sample(other_cutouts, min(2, len(other_cutouts)))] if other_cutouts else []
+        extra_cutout_paths = []
+        for sec_name in secondary_names:
+            sec_path = os.path.join(cutout_dir, sec_name)
+            if os.path.exists(sec_path) and sec_name != cutout_name:
+                extra_cutout_paths.append(sec_path)
         
-        logger.info(f"🧑 Cutout referansı: {cutout_name}")
+        logger.info(f"🧑 Master Anchor: {cutout_name} | Extra Refs: {[os.path.basename(p) for p in extra_cutout_paths]}")
         
         try:
             themes = generate_three_themes(topic, script_content)
