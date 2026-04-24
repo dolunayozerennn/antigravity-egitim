@@ -12,3 +12,10 @@ push_bypass_dns.js
 push_to_monorepo.js
 sync_all_to_github.js
 mcp_files.json
+Eski Onboarding Workflow*
+check_railway.py
+check_notion.js
+samples.json
+schema.json
+test-runner.html
+test_commands.sh

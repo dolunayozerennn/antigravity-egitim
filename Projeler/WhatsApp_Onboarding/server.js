@@ -6,6 +6,8 @@
 // Endpoints:
 //   POST /webhook/new-paid-member    — Zapier Zap #1
 //   POST /webhook/membership-questions — Zapier Zap #2
+//   POST /webhook/wa-optin           — ManyChat WhatsApp Opt-in (Hibrit Fallback)
+//   POST /webhook/wa-failed          — ManyChat Fallback
 //   GET  /health                     — Monitoring
 // ============================================================
 
@@ -181,6 +183,77 @@ app.post('/webhook/membership-questions', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// POST /webhook/wa-optin — ManyChat WhatsApp Opt-in (Hibrit Fallback)
+// ─────────────────────────────────────────────────────────────
+app.post('/webhook/wa-optin', async (req, res) => {
+  try {
+    const { phone, first_name } = req.body;
+
+    log.info(`[wa-optin] Gelen veri: ${JSON.stringify(req.body)}`);
+
+    if (!phone) {
+      log.warn('[wa-optin] phone eksik, atlanıyor');
+      return res.status(400).json({ error: 'phone zorunlu' });
+    }
+
+    // 1. Notion'da üyeyi bul
+    const member = await notion.findByPhone(phone);
+    if (!member) {
+      log.warn(`[wa-optin] Notion'da kullanıcı bulunamadı: ${phone}`);
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+
+    // 2. Sadece "email" statüsündeyse devam et
+    if (member.onboardingStatus !== 'email') {
+      log.info(`[wa-optin] Statü "email" değil (${member.onboardingStatus}), atlanıyor: ${phone}`);
+      return res.status(200).json({ success: true, skipped: true, reason: `Statü: ${member.onboardingStatus}` });
+    }
+
+    // 3. Notion'ı güncelle — email'den WhatsApp'a geçiş
+    const currentNotes = member.notes ? `${member.notes}\n` : '';
+    const newNote = `${currentNotes}[WA-OPTIN] Kullanıcı email'den WhatsApp'a geçiş yaptı — ${new Date().toISOString()}`;
+
+    const currentStep = member.onboardingStep || 0;
+
+    if (currentStep >= 6) {
+      // Onboarding zaten son adımda → tamamlandı olarak işaretle
+      await notion.updatePage(member.id, {
+        onboardingStatus: "tamamlandı",
+        onboardingChannel: "whatsapp",
+        notes: newNote
+      });
+      log.info(`[wa-optin] Step >= 6, onboarding tamamlandı olarak işaretlendi: ${member.firstName} (${phone})`);
+    } else {
+      // Bir sonraki günün flow'unu ManyChat'ten hemen tetikle
+      const nextStep = currentStep + 1;
+      const nextFlow = ONBOARDING_FLOWS[nextStep];
+
+      if (nextFlow && nextFlow.flow_id) {
+        await manychat.ensureSubscriberAndSendFlow(
+          phone,
+          first_name || member.firstName,
+          nextFlow.flow_id
+        );
+        log.info(`[wa-optin] ManyChat flow tetiklendi: Step ${nextStep} → ${nextFlow.flow_id}`);
+      }
+
+      await notion.updatePage(member.id, {
+        onboardingStatus: "whatsapp",
+        onboardingChannel: "whatsapp",
+        onboardingStep: nextStep,
+        notes: newNote
+      });
+      log.info(`[wa-optin] Email'den WhatsApp'a geçiş tamamlandı: ${member.firstName} (${phone}), Step: ${currentStep} → ${nextStep}`);
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    log.error(`[wa-optin] HATA: ${error.message}`, error.stack);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // POST /webhook/wa-failed — ManyChat Fallback
 // ─────────────────────────────────────────────────────────────
 app.post('/webhook/wa-failed', async (req, res) => {
@@ -213,8 +286,8 @@ app.post('/webhook/wa-failed', async (req, res) => {
 
     if (member.email) {
       try {
-        await resend.sendOnboardingEmail(member.email, member.firstName, member.onboardingStep || 0);
-        log.info(`[wa-failed] Email fallback tetiklendi: ${member.email}`);
+        await resend.sendHybridFallbackEmail(member.email, member.firstName, member.onboardingStep || 0, config.waBusinessPhone);
+        log.info(`[wa-failed] Hibrit fallback email tetiklendi: ${member.email}`);
       } catch (emailErr) {
         log.error(`[wa-failed] Email gönderme hatası: ${emailErr.message}`, emailErr.stack);
       }
@@ -266,5 +339,7 @@ app.listen(PORT, '0.0.0.0', () => {
   log.info(`Webhook URL'ler:`);
   log.info(`  POST /webhook/new-paid-member`);
   log.info(`  POST /webhook/membership-questions`);
+  log.info(`  POST /webhook/wa-optin`);
+  log.info(`  POST /webhook/wa-failed`);
   log.info(`  GET  /health`);
 });

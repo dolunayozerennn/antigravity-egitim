@@ -26,6 +26,8 @@ Skool (yeni üye) → Zapier (2 webhook) → Railway (Express) → Notion CRM + 
 |----------|-----------|----------|
 | `POST /webhook/new-paid-member` | Zapier Zap #1 | Yeni ödeme yapan üyeyi Notion'a kaydeder |
 | `POST /webhook/membership-questions` | Zapier Zap #2 | Telefon numarasını valide eder, WhatsApp onboarding başlatır |
+| `POST /webhook/wa-optin` | ManyChat | Email fallback'teki kullanıcı WhatsApp'tan mesaj attığında, kanalı WhatsApp'a geçirir |
+| `POST /webhook/wa-failed` | ManyChat | WhatsApp mesajı başarısız olursa hibrit fallback email gönderir |
 | `GET /health` | Monitoring | Servis sağlık kontrolü |
 
 ## WhatsApp 24-Saat Window Stratejisi (Nisan 2026)
@@ -73,6 +75,7 @@ Tüm 7 onboarding mesajı (Gün 0'dan Gün 6'ya kadar) istisnasız **WhatsApp Te
 | `CRON_SCHEDULE` | 0 12 * * * | ✅ |
 | `RESEND_API_KEY` | Email fallback (opsiyonel) | ❌ Henüz yok |
 | `RESEND_FROM_EMAIL` | Gönderici email | ❌ Henüz yok |
+| `WA_BUSINESS_PHONE` | WhatsApp Business numarası (hibrit fallback) | ❌ Henüz yok |
 
 ## Zapier Konfigürasyonu
 
@@ -147,6 +150,6 @@ Railway üzerinde worker olarak çalışır. GitHub push → auto-deploy.
 - Health check: `status: "ok"` ✅
 
 **Proje:** Antigravity Ekosistemi  
-**Versiyon:** 1.0.0  
+**Versiyon:** 1.1.0  
 **İlk deploy:** 17 Nisan 2026  
-**Son güncelleme:** 21 Nisan 2026
+**Son güncelleme:** 24 Nisan 2026
