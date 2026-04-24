@@ -170,79 +170,93 @@ class ProductionPipeline:
 
         try:
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # ADIM 1: Video Üretimi (Seedance 2.0 — Reference Image)
+            # MULTI-SCENE BRANCHING (UGC tarzı)
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            if progress_callback:
-                ref_count = len(reference_images) if reference_images else 0
-                await progress_callback(
-                    "step_1",
-                    f"🎬 Video üretiliyor (Seedance 2.0, {ref_count} referans görsel)... "
-                    f"Bu 3-5 dakika sürebilir."
+            if scenario.get("is_multi_scene"):
+                raw_video_url = await self._produce_multi_scene(
+                    scenario=scenario,
+                    reference_images=reference_images,
+                    duration=duration,
+                    aspect_ratio=aspect_ratio,
+                    progress_callback=progress_callback,
+                )
+                result["raw_video_url"] = raw_video_url
+                log.info(f"Multi-scene video üretildi: {raw_video_url[:60]}...")
+            else:
+                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                # ADIM 1: Video Üretimi (Seedance 2.0 — Reference Image) [TEK SAHNE]
+                # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                if progress_callback:
+                    ref_count = len(reference_images) if reference_images else 0
+                    await progress_callback(
+                        "step_1",
+                        f"🎬 Video üretiliyor (Seedance 2.0, {ref_count} referans görsel)... "
+                        f"Bu 3-5 dakika sürebilir."
+                    )
+
+                video_prompt = scenario.get("video_prompt", "")
+
+                # Güvenlik: Konuşma yasağını prompt'a zorla ekle
+                no_dialogue_clause = "No character dialogue, no speaking, no lip movement. Enable ambient and environmental sounds, natural atmosphere."
+                if "no dialogue" not in video_prompt.lower() and "no speaking" not in video_prompt.lower():
+                    video_prompt += f" {no_dialogue_clause}"
+
+                video_task = await asyncio.to_thread(
+                    self.kie.create_video,
+                    prompt=video_prompt,
+                    duration=duration,
+                    aspect_ratio=aspect_ratio,
+                    generate_audio=True,  # Ambient sesler AÇIK
+                    reference_images=reference_images if reference_images else None,
                 )
 
-            video_prompt = scenario.get("video_prompt", "")
+                log.info(f"Seedance 2.0 video görevi: {video_task}")
 
-            # Güvenlik: Konuşma yasağını prompt'a zorla ekle
-            no_dialogue_clause = "No character dialogue, no speaking, no lip movement. Enable ambient and environmental sounds, natural atmosphere."
-            if "no dialogue" not in video_prompt.lower() and "no speaking" not in video_prompt.lower():
-                video_prompt += f" {no_dialogue_clause}"
+                # Async polling — event loop'u bloke etmez
+                video_result = await self.kie.async_poll_task(video_task)
 
-            video_task = await asyncio.to_thread(
-                self.kie.create_video,
-                prompt=video_prompt,
-                duration=duration,
-                aspect_ratio=aspect_ratio,
-                generate_audio=True,  # Ambient sesler AÇIK
-                reference_images=reference_images if reference_images else None,
-            )
-
-            log.info(f"Seedance 2.0 video görevi: {video_task}")
-
-            # Async polling — event loop'u bloke etmez
-            video_result = await self.kie.async_poll_task(video_task)
-
-            if video_result["status"] != "success" or not video_result.get("urls"):
-                error_msg = video_result.get("error", "Video üretimi başarısız")
-                
-                # Safety filter — prompt rewrite ile tekrar dene
-                if any(keyword in error_msg.lower() for keyword in ["safety", "sensitive", "content policy", "nsfw"]):
-                    log.warning(f"Safety filter tetiklendi: {error_msg[:100]}. Prompt yeniden yazılıyor...")
-                    if progress_callback:
-                        await progress_callback("retry_safety", "⚠️ Güvenlik filtresi tetiklendi — prompt yeniden yazılıyor...")
+                if video_result["status"] != "success" or not video_result.get("urls"):
+                    error_msg = video_result.get("error", "Video üretimi başarısız")
                     
-                    try:
-                        rewritten_prompt = await self._rewrite_prompt_for_safety(video_prompt)
-                        if rewritten_prompt and rewritten_prompt != video_prompt:
-                            log.info(f"Prompt yeniden yazıldı: {len(video_prompt)} -> {len(rewritten_prompt)} karakter")
-                            video_task2 = await asyncio.to_thread(
-                                self.kie.create_video,
-                                prompt=rewritten_prompt,
-                                duration=duration,
-                                aspect_ratio=aspect_ratio,
-                                generate_audio=True,
-                                reference_images=reference_images if reference_images else None,
-                            )
-                            video_result2 = await self.kie.async_poll_task(video_task2)
-                            if video_result2["status"] == "success" and video_result2.get("urls"):
-                                raw_video_url = video_result2["urls"][0]
-                                result["raw_video_url"] = raw_video_url
-                                log.info(f"Safety rewrite başarılı: {raw_video_url[:60]}...")
+                    # Safety filter — prompt rewrite ile tekrar dene
+                    if any(keyword in error_msg.lower() for keyword in ["safety", "sensitive", "content policy", "nsfw"]):
+                        log.warning(f"Safety filter tetiklendi: {error_msg[:100]}. Prompt yeniden yazılıyor...")
+                        if progress_callback:
+                            await progress_callback("retry_safety", "⚠️ Güvenlik filtresi tetiklendi — prompt yeniden yazılıyor...")
+                        
+                        try:
+                            rewritten_prompt = await self._rewrite_prompt_for_safety(video_prompt)
+                            if rewritten_prompt and rewritten_prompt != video_prompt:
+                                log.info(f"Prompt yeniden yazıldı: {len(video_prompt)} -> {len(rewritten_prompt)} karakter")
+                                video_task2 = await asyncio.to_thread(
+                                    self.kie.create_video,
+                                    prompt=rewritten_prompt,
+                                    duration=duration,
+                                    aspect_ratio=aspect_ratio,
+                                    generate_audio=True,
+                                    reference_images=reference_images if reference_images else None,
+                                )
+                                video_result2 = await self.kie.async_poll_task(video_task2)
+                                if video_result2["status"] == "success" and video_result2.get("urls"):
+                                    raw_video_url = video_result2["urls"][0]
+                                    result["raw_video_url"] = raw_video_url
+                                    log.info(f"Safety rewrite başarılı: {raw_video_url[:60]}...")
+                                else:
+                                    raise RuntimeError(f"Seedance 2.0 safety rewrite de başarısız: {video_result2.get('error', '?')}")
                             else:
-                                raise RuntimeError(f"Seedance 2.0 safety rewrite de başarısız: {video_result2.get('error', '?')}")
-                        else:
-                            raise RuntimeError(f"Seedance 2.0 hatası: {error_msg}")
-                    except RuntimeError:
-                        raise
-                    except Exception as rewrite_err:
-                        log.error(f"Prompt rewrite hatası: {rewrite_err}", exc_info=True)
-                        raise RuntimeError(f"Seedance 2.0 hatası (safety): {error_msg}")
+                                raise RuntimeError(f"Seedance 2.0 hatası: {error_msg}")
+                        except RuntimeError:
+                            raise
+                        except Exception as rewrite_err:
+                            log.error(f"Prompt rewrite hatası: {rewrite_err}", exc_info=True)
+                            raise RuntimeError(f"Seedance 2.0 hatası (safety): {error_msg}")
+                    else:
+                        raise RuntimeError(f"Seedance 2.0 hatası: {error_msg}")
                 else:
-                    raise RuntimeError(f"Seedance 2.0 hatası: {error_msg}")
-            else:
-                raw_video_url = video_result["urls"][0]
-                result["raw_video_url"] = raw_video_url
+                    raw_video_url = video_result["urls"][0]
+                    result["raw_video_url"] = raw_video_url
 
-            log.info(f"Video üretildi: {raw_video_url[:60]}...")
+                log.info(f"Video üretildi: {raw_video_url[:60]}...")
 
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             # ADIM 2: Türkçe Dış Ses (ElevenLabs)
@@ -357,6 +371,27 @@ class ProductionPipeline:
 
         except Exception as e:
             error_msg = str(e)[:500]
+            
+            # Hata sınıflandırması — kullanıcıya anlamlı mesaj
+            user_facing_msg = error_msg
+            if any(code in error_msg for code in ["512", "502", "503", "504", "500"]):
+                user_facing_msg = (
+                    "🔄 Video üretim servisi geçici olarak meşgul (upstream API hatası). "
+                    "Otomatik yeniden deneme yapıldı ancak başarısız oldu. "
+                    "Lütfen birkaç dakika sonra tekrar deneyin."
+                )
+                log.warning(f"Pipeline upstream API hatası (retry sonrası): {error_msg}")
+            elif "timeout" in error_msg.lower() or "Polling timeout" in error_msg:
+                user_facing_msg = (
+                    "⏱️ Video üretimi zaman aşımına uğradı. "
+                    "Sunucu yoğunluğu nedeniyle olabilir — lütfen tekrar deneyin."
+                )
+            elif "safety" in error_msg.lower() or "content policy" in error_msg.lower():
+                user_facing_msg = (
+                    "🛡️ İçerik güvenlik filtresi tetiklendi. "
+                    "Farklı bir ürün/konsept ile tekrar deneyin."
+                )
+            
             result["error"] = error_msg
             log.error(f"Pipeline hatası: {error_msg}", exc_info=True)
 
@@ -374,7 +409,7 @@ class ProductionPipeline:
                         log.error("Notion 'Hata' güncellemesi başarısız", exc_info=True)
 
             if progress_callback:
-                await progress_callback("error", f"❌ Üretim hatası: {error_msg[:200]}")
+                await progress_callback("error", f"❌ {user_facing_msg[:200]}")
 
         return result
 
@@ -431,3 +466,105 @@ class ProductionPipeline:
             from logger import get_logger
             get_logger("production_pipeline").error(f"Prompt rewrite hatası: {e}", exc_info=True)
             return ""
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🎬 MULTI-SCENE ÜRETİM (UGC Pipeline)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # UGC pipeline oturumundan (23 Nisan 2026) öğrenilen multi-scene akış.
+    # 3 sahneyi paralel üretip lucataco/video-merge ile birleştirir.
+
+    async def _produce_multi_scene(
+        self,
+        scenario: dict,
+        reference_images: list,
+        duration: int,
+        aspect_ratio: str,
+        progress_callback=None,
+    ) -> str:
+        """
+        Multi-scene video üretim akışı.
+
+        1. Her sahne için paralel Seedance 2.0 task'ı başlat
+        2. Tüm sahneleri bekle (asyncio.gather)
+        3. Replicate video-merge ile birleştir
+
+        Args:
+            scenario: UGC senaryo (scenes listesi içerir)
+            reference_images: Ürün görselleri
+            duration: Toplam video süresi
+            aspect_ratio: Video formatı
+            progress_callback: İlerleme callback'i
+
+        Returns:
+            str: Birleştirilmiş video URL'i
+        """
+        scenes = scenario.get("scenes", [])
+        if not scenes:
+            raise RuntimeError("Multi-scene senaryo 'scenes' listesi boş")
+
+        scene_count = len(scenes)
+        per_scene_duration = max(5, duration // scene_count)  # Minimum 5 saniye/sahne
+
+        if progress_callback:
+            await progress_callback(
+                "step_1",
+                f"🎬 {scene_count} sahne paralel üretiliyor (Seedance 2.0)... "
+                f"Bu 3-5 dakika sürebilir."
+            )
+
+        # No-dialogue güvenlik cümlesi
+        no_dialogue = (
+            "No character dialogue, no speaking, no lip movement. "
+            "Enable ambient and environmental sounds, natural atmosphere."
+        )
+
+        # ── PARALEL SAHNE ÜRETİMİ ──
+        async def _produce_single_scene(scene: dict, idx: int) -> str:
+            """Tek sahneyi üretir ve video URL'ini döner."""
+            prompt = scene.get("video_prompt", "")
+            scene_name = scene.get("scene_name", f"Scene_{idx}")
+
+            if "no dialogue" not in prompt.lower() and "no speaking" not in prompt.lower():
+                prompt += f" {no_dialogue}"
+
+            log.info(f"Sahne {idx+1}/{scene_count} başlatılıyor: {scene_name}")
+
+            task = await asyncio.to_thread(
+                self.kie.create_video,
+                prompt=prompt,
+                duration=per_scene_duration,
+                aspect_ratio=aspect_ratio,
+                generate_audio=True,
+                reference_images=reference_images if reference_images else None,
+            )
+
+            result = await self.kie.async_poll_task(task)
+
+            if result["status"] != "success" or not result.get("urls"):
+                error = result.get("error", "Bilinmeyen hata")
+                raise RuntimeError(f"Sahne '{scene_name}' üretimi başarısız: {error}")
+
+            url = result["urls"][0]
+            log.info(f"Sahne {idx+1}/{scene_count} tamamlandı: {scene_name} → {url[:50]}...")
+            return url
+
+        # Paralel çalıştır
+        scene_tasks = [
+            _produce_single_scene(scene, idx)
+            for idx, scene in enumerate(scenes)
+        ]
+        scene_video_urls = await asyncio.gather(*scene_tasks)
+
+        log.info(f"Tüm {scene_count} sahne üretildi, concat başlıyor")
+
+        # ── VIDEO CONCAT ──
+        if progress_callback:
+            await progress_callback(
+                "step_1b",
+                f"🔗 {scene_count} sahne birleştiriliyor..."
+            )
+
+        concat_url = await self.replicate.async_concat_videos(list(scene_video_urls))
+        log.info(f"Multi-scene concat tamamlandı: {concat_url[:60]}...")
+
+        return concat_url

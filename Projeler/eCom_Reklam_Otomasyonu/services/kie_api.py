@@ -542,6 +542,16 @@ class KieAIService:
                 f"response={response.text[:500]}"
             )
 
+        # 5xx / 512 upstream proxy hatası için detaylı loglama
+        if response.status_code >= 500:
+            log.error(
+                f"Kie AI upstream hatası: HTTP {response.status_code} — "
+                f"model={payload.get('model')}, "
+                f"aspect_ratio={input_block.get('aspect_ratio')}, "
+                f"duration={input_block.get('duration')}, "
+                f"response_body={response.text[:500]}"
+            )
+
         response.raise_for_status()
         data = response.json()
 

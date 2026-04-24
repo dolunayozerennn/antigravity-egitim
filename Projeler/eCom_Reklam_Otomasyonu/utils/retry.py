@@ -18,7 +18,8 @@ log = get_logger("retry")
 # Yeniden denenecek HTTP status kodları
 # NOT: 401 eklendi — ElevenLabs gibi servisler geçici 401 dönebiliyor
 # (deploy sırasında env yavaş yüklenmesi, servis tarafı geçici auth hatası)
-RETRYABLE_STATUS_CODES = {401, 408, 429, 500, 502, 503, 504}
+# NOT: 512 eklendi — Kie AI reverse proxy (CloudFlare/nginx) upstream aşırı yüklenme kodu
+RETRYABLE_STATUS_CODES = {401, 408, 429, 500, 502, 503, 504, 512}
 
 # Yeniden denenecek exception türleri
 RETRYABLE_EXCEPTIONS = (
@@ -63,7 +64,9 @@ def retry_api_call(
                     return func(*args, **kwargs)
                 except requests.exceptions.HTTPError as e:
                     status = e.response.status_code if e.response is not None else 0
-                    if status not in RETRYABLE_STATUS_CODES:
+                    # Retryable kontrol: sabit liste VEYA genel 5xx aralığı (500-599)
+                    is_retryable = status in RETRYABLE_STATUS_CODES or (500 <= status <= 599)
+                    if not is_retryable:
                         # Kalıcı hata — retry yapma
                         raise
                     last_exception = e
