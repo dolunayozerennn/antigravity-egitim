@@ -190,7 +190,8 @@ app.post('/webhook/membership-questions', async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 app.post('/webhook/wa-optin', async (req, res) => {
   try {
-    const { phone, first_name } = req.body;
+    const { phone: rawPhone, first_name } = req.body;
+    const phone = rawPhone ? rawPhone.replace(/^\+/, '') : null;
 
     log.info(`[wa-optin] Gelen veri: ${JSON.stringify(req.body)}`);
 
@@ -261,7 +262,8 @@ app.post('/webhook/wa-optin', async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 app.post('/webhook/wa-failed', async (req, res) => {
   try {
-    const { phone, reason } = req.body;
+    const { phone: rawPhone, reason } = req.body;
+    const phone = rawPhone ? rawPhone.replace(/^\+/, '') : null;
 
     log.info(`[wa-failed] Gelen veri: ${JSON.stringify(req.body)}`);
 
