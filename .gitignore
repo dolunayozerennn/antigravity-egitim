@@ -93,6 +93,7 @@ yarn-error.log*
 # Log dosyaları
 *.log
 .railway-token
+.railway/
 railway-token.txt
 
 
@@ -132,7 +133,7 @@ Projeler/Lead_Pipeline/.state_*.json
 Projeler/Lead_Notifier_Bot/.last_row_counts.json
 
 # ==========================================
-# 🚫 GEÇİCİ PUSH/DEPLOY/TEST SCRIPTLERİ
+# 🚫 GEÇİCİ PUSH/DEPLOY/TEST SCRİPTLERİ
 # ==========================================
 # Token içerebilecek geçici helper dosyaları
 _push_helper.py

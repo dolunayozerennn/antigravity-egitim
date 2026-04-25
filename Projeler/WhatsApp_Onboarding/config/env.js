@@ -18,7 +18,9 @@ const REQUIRED_VARS = [
 const OPTIONAL_VARS = [
   'RESEND_API_KEY',
   'RESEND_FROM_EMAIL',
-  'WA_BUSINESS_PHONE'
+  'WA_BUSINESS_PHONE',
+  'WEBHOOK_SECRET',
+  'ADMIN_SECRET'
 ];
 
 function validateEnv() {
@@ -51,6 +53,8 @@ module.exports = {
     resendFromEmail: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
     cronTimezone: process.env.CRON_TIMEZONE || 'Europe/Istanbul',
     cronSchedule: process.env.CRON_SCHEDULE || '0 12 * * *',
-    waBusinessPhone: process.env.WA_BUSINESS_PHONE || ''
+    waBusinessPhone: process.env.WA_BUSINESS_PHONE || '',
+    webhookSecret: process.env.WEBHOOK_SECRET || null,
+    adminSecret: process.env.ADMIN_SECRET || null
   }
 };
