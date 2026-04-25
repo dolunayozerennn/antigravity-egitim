@@ -50,8 +50,8 @@ app.post('/webhook/message', async (req, res) => {
       subscriber = await createSubscriber(subscriberId, phoneNumber);
       
       // Yeni kullanıcıya doğrudan KVKK mesajı gönder
-      await setCustomField(subscriberId, config.manychatFieldId, KVKK_MESSAGE);
-      await sendFlow(subscriberId, config.manychatFlowId);
+      await setCustomField(subscriberId, "13424657", KVKK_MESSAGE);
+      await sendFlow(subscriberId, "content20250823101653_898847");
       return;
     }
 
@@ -64,12 +64,12 @@ app.post('/webhook/message', async (req, res) => {
         log.info(`[webhook] Kullanıcı KVKK onayladı.`, { subscriberId });
         await acceptKVKK(subscriberId);
         
-        await setCustomField(subscriberId, config.manychatFieldId, WELCOME_MESSAGE);
-        await sendFlow(subscriberId, config.manychatFlowId);
+        await setCustomField(subscriberId, "13424657", WELCOME_MESSAGE);
+        await sendFlow(subscriberId, "content20250823101653_898847");
       } else {
         log.info(`[webhook] Kullanıcı henüz KVKK onaylamadı, hatırlatma gönderiliyor.`, { subscriberId });
-        await setCustomField(subscriberId, config.manychatFieldId, KVKK_MESSAGE);
-        await sendFlow(subscriberId, config.manychatFlowId);
+        await setCustomField(subscriberId, "13424657", KVKK_MESSAGE);
+        await sendFlow(subscriberId, "content20250823101653_898847");
       }
       return;
     }
@@ -81,8 +81,8 @@ app.post('/webhook/message', async (req, res) => {
         messageContent = await transcribeAudio(messageContent);
       } catch (err) {
         log.error(`[webhook] Ses mesajı çevrilemedi, kullanıcıya bilgi veriliyor.`, err);
-        await setCustomField(subscriberId, config.manychatFieldId, "Özür dilerim, sesli mesajını şu an dinleyemiyorum. Lütfen bana yazılı olarak iletebilir misin?");
-        await sendFlow(subscriberId, config.manychatFlowId);
+        await setCustomField(subscriberId, "13424657", "Özür dilerim, sesli mesajını şu an dinleyemiyorum. Lütfen bana yazılı olarak iletebilir misin?");
+        await sendFlow(subscriberId, "content20250823101653_898847");
         return;
       }
     }
@@ -100,8 +100,8 @@ app.post('/webhook/message', async (req, res) => {
     await saveMessage(subscriberId, 'assistant', aiResponse);
 
     // 6. ManyChat'e gönder
-    await setCustomField(subscriberId, config.manychatFieldId, aiResponse);
-    await sendFlow(subscriberId, config.manychatFlowId);
+    await setCustomField(subscriberId, "13424657", aiResponse);
+    await sendFlow(subscriberId, "content20250823101653_898847");
     
     log.info(`[webhook] İşlem başarıyla tamamlandı.`, { subscriberId });
 
