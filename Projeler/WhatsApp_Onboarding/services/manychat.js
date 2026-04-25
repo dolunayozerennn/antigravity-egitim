@@ -14,6 +14,32 @@ const headers = {
   'Content-Type': 'application/json'
 };
 
+let customFieldsCache = null;
+
+async function getCustomFieldId(fieldName) {
+  if (customFieldsCache && customFieldsCache[fieldName]) {
+    return customFieldsCache[fieldName];
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/subscriber/getCustomFields`, {
+      method: 'GET',
+      headers
+    });
+    const data = await response.json();
+    if (data.status === 'success' && data.data) {
+      customFieldsCache = {};
+      for (const field of data.data) {
+        customFieldsCache[field.name] = field.id;
+      }
+      return customFieldsCache[fieldName] || null;
+    }
+  } catch (error) {
+    log.error(`[manychat:api] getCustomFields hatası: ${error.message}`, error);
+  }
+  return null;
+}
+
 /**
  * Ana fonksiyon: subscriber yoksa oluştur, custom field'ları set et, flow'u tetikle
  */
@@ -108,17 +134,19 @@ async function createSubscriber(phoneNumber, firstName) {
 
 async function findSubscriberByPhone(phoneNumber) {
   try {
-    const payload = {
-      field_name: "whatsapp_phone_text",
-      field_value: phoneNumber
-    };
+    const fieldId = await getCustomFieldId('whatsapp_phone_text');
+    if (!fieldId) {
+      log.warn(`[manychat:api] whatsapp_phone_text custom field ID alınamadı.`);
+      return null;
+    }
+
+    const url = `${API_URL}/subscriber/findByCustomField?field_id=${fieldId}&field_value=${encodeURIComponent(phoneNumber)}`;
     
-    log.debug(`[manychat:api] findByCustomField isteği atılıyor.`, payload);
+    log.debug(`[manychat:api] findByCustomField isteği atılıyor.`, { url });
     
-    const response = await fetch(`${API_URL}/subscriber/findByCustomField`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
+    const response = await fetch(url, {
+      method: 'GET',
+      headers
     });
 
     const data = await response.json();
@@ -152,9 +180,20 @@ async function findSubscriberBySystemPhone(phoneNumber) {
     const data = await response.json();
     log.debug(`[manychat:api] findBySystemField (phone) yanıtı.`, data);
 
+    // data.data can be an array if search results are returned, or an object if it's a direct match.
+    // Also, if it's an empty array `[]`, it shouldn't be treated as a successful find.
+    let foundId = null;
     if (data.status === 'success' && data.data) {
-      log.info(`[manychat:api] ✅ Subscriber system field üzerinden bulundu.`, { id: data.data.id });
-      return data.data.id;
+      if (Array.isArray(data.data) && data.data.length > 0) {
+        foundId = data.data[0].id;
+      } else if (!Array.isArray(data.data) && data.data.id) {
+        foundId = data.data.id;
+      }
+    }
+
+    if (foundId) {
+      log.info(`[manychat:api] ✅ Subscriber system field üzerinden bulundu.`, { id: foundId });
+      return foundId;
     }
 
     log.info(`[manychat:api] ℹ️ Subscriber system field ile bulunamadı.`);
@@ -166,10 +205,22 @@ async function findSubscriberBySystemPhone(phoneNumber) {
 }
 
 async function setCustomFields(subscriberId, fields) {
-  const fieldArray = Object.entries(fields).map(([name, value]) => ({
-    field_name: name,
-    field_value: String(value)
-  }));
+  const fieldArray = [];
+  for (const [name, value] of Object.entries(fields)) {
+    const fieldId = await getCustomFieldId(name);
+    if (fieldId) {
+      fieldArray.push({
+        field_id: fieldId,
+        field_value: String(value)
+      });
+    } else {
+      // Fallback: If ID not found, try sending with field_name
+      fieldArray.push({
+        field_name: name,
+        field_value: String(value)
+      });
+    }
+  }
 
   const payload = {
     subscriber_id: subscriberId,
