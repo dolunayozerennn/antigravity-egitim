@@ -1,6 +1,6 @@
 {
   "name": "whatsapp-onboarding",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "description": "AI Factory WhatsApp Onboarding System — 7-day drip via ManyChat + Notion CRM",
   "main": "server.js",
   "scripts": {
