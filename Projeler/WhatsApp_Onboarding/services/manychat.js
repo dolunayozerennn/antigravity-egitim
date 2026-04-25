@@ -15,8 +15,9 @@ const headers = {
 };
 
 let customFieldsCache = null;
-let customFieldsFetchPromise = null;
+let customFieldsFetchPromise = null; // Fix: Cache stampede önleme
 
+// Fix: fetchWithRetry — 8s timeout + 1 retry
 async function fetchWithRetry(url, options, retries = 1) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -35,6 +36,7 @@ async function fetchWithRetry(url, options, retries = 1) {
   }
 }
 
+// Fix: Telefon numarası normalizasyonu
 function normalizePhone(phone) {
   if (!phone) return phone;
   let cleaned = phone.replace(/[\s\-()]/g, '');
@@ -47,6 +49,7 @@ async function getCustomFieldId(fieldName) {
     return customFieldsCache[fieldName];
   }
 
+  // Fix: Cache stampede — aynı anda birden fazla çağrıyı engelle
   if (customFieldsFetchPromise) {
     await customFieldsFetchPromise;
     return customFieldsCache?.[fieldName] || null;
@@ -74,22 +77,30 @@ async function getCustomFieldId(fieldName) {
   return null;
 }
 
+/**
+ * Ana fonksiyon: subscriber yoksa oluştur, custom field'ları set et, flow'u tetikle
+ */
 async function ensureSubscriberAndSendFlow(phoneNumber, firstName, flowId) {
   let subscriberId;
+  // Fix: Telefon numarasını normalize et
   phoneNumber = normalizePhone(phoneNumber);
   const context = { phoneNumber, firstName, flowId };
   
   log.info(`[manychat:engine] Flow tetikleme işlemi başlatıldı.`, context);
 
+  // 1. Subscriber'ı bulmaya çalış (custom field üzerinden)
   subscriberId = await findSubscriberByPhone(phoneNumber);
   log.debug(`[manychat:engine] Arama sonucu (Custom Field):`, { subscriberId });
 
   if (!subscriberId) {
+    // 2. Eğer Custom Field'da yoksa, System Field (phone) üzerinden ara 
+    // Önceden WhatsApp'tan yazmış kişiler otomatik olarak bu alana kaydedilmiş olabilir.
     subscriberId = await findSubscriberBySystemPhone(phoneNumber);
     log.debug(`[manychat:engine] Arama sonucu (System Field):`, { subscriberId });
   }
 
   if (!subscriberId) {
+    // 3. Hala yoksa oluştur
     log.info(`[manychat:engine] Subscriber bulunamadı, oluşturuluyor...`);
     subscriberId = await createSubscriber(phoneNumber, firstName);
   } else {
@@ -102,12 +113,14 @@ async function ensureSubscriberAndSendFlow(phoneNumber, firstName, flowId) {
     throw new Error(errMsg);
   }
 
+  // 4. Custom field'ları güncelle (template değişkenleri için)
   log.debug(`[manychat:engine] Custom fields güncelleniyor...`, { subscriberId });
   await setCustomFields(subscriberId, {
     onboarding_name: firstName,
     whatsapp_phone_text: phoneNumber
   });
 
+  // 4. Flow'u tetikle (template mesajı bu flow'un içinde)
   log.info(`[manychat:engine] Flow gönderimi çağrılıyor...`, { subscriberId, flowId });
   const flowResult = await sendFlow(subscriberId, flowId);
 
@@ -144,6 +157,7 @@ async function createSubscriber(phoneNumber, firstName) {
       return data.data.id;
     }
 
+    // Fix: Subscriber conflict — zaten varsa bul
     log.warn(`[manychat:api] ⚠️ createSubscriber başarısız (büyük ihtimalle mevcut).`, { message: data.message });
     let existingId = await findSubscriberByPhone(phoneNumber);
     if (!existingId) {
@@ -195,6 +209,8 @@ async function findSubscriberByPhone(phoneNumber) {
 
 async function findSubscriberBySystemPhone(phoneNumber) {
   try {
+    // ManyChat system field araması GET isteği ile yapılır.
+    // Telefon numaralarındaki artı işareti vb. encode edilmeli.
     const url = `${API_URL}/subscriber/findBySystemField?phone=${encodeURIComponent(phoneNumber)}`;
     log.debug(`[manychat:api] findBySystemField (phone) isteği atılıyor.`, { url });
 
@@ -206,6 +222,8 @@ async function findSubscriberBySystemPhone(phoneNumber) {
     const data = await response.json();
     log.debug(`[manychat:api] findBySystemField (phone) yanıtı.`, data);
 
+    // data.data can be an array if search results are returned, or an object if it's a direct match.
+    // Also, if it's an empty array `[]`, it shouldn't be treated as a successful find.
     let foundId = null;
     if (data.status === 'success' && data.data) {
       if (Array.isArray(data.data) && data.data.length > 0) {
@@ -238,6 +256,7 @@ async function setCustomFields(subscriberId, fields) {
         field_value: String(value)
       });
     } else {
+      // Fallback: If ID not found, try sending with field_name
       fieldArray.push({
         field_name: name,
         field_value: String(value)
