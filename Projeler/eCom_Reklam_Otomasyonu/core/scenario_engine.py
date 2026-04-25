@@ -33,7 +33,7 @@ CREDIT_TO_USD = 0.005  # 1 credit = $0.005
 FIXED_DURATION = 10       # saniye
 FIXED_ASPECT_RATIO = "9:16"
 FIXED_LANGUAGE = "Türkçe"
-TARGET_WORD_COUNT = 25    # ~2.5 kelime/saniye × 10s
+TARGET_WORD_COUNT = int(FIXED_DURATION * 2.0)    # ~2.0 kelime/saniye × duration
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -48,7 +48,7 @@ SCENARIO_SYSTEM_PROMPT = """Sen profesyonel bir reklam film yönetmenisin. Veril
   "title": "Senaryo başlığı (Türkçe)",
   "summary": "1-2 cümlelik Türkçe özet",
   "video_prompt": "Seedance 2.0 için DETAYLI İngilizce video promptu",
-  "voiceover_text": "Türkçe dış ses metni (tam 25 kelime ±3)",
+  "voiceover_text": "Türkçe dış ses metni (tam {TARGET_WORD_COUNT} kelime ±3)",
   "technical_notes": "Teknik notlar"
 }
 ```
@@ -66,7 +66,7 @@ SCENARIO_SYSTEM_PROMPT = """Sen profesyonel bir reklam film yönetmenisin. Veril
 
 ### Dış Ses (Türkçe):
 1. Her zaman TÜRKÇE yaz
-2. Tam 25 kelime (±3 kelime tolerans) — 10 saniyelik video = 2.5 kelime/saniye
+2. Tam {TARGET_WORD_COUNT} kelime (±3 kelime tolerans) — {FIXED_DURATION} saniyelik video = 2.0 kelime/saniye
 3. Metnin başı videonun başına, sonu videonun sonuna denk gelecek şekilde kurgula
 4. Etkileyici, akılda kalıcı ve ürünün faydalarını vurgulayan bir dış ses yaz
 5. Sosyal medya reklamına uygun ton: enerjik ama samimi
@@ -104,7 +104,7 @@ UGC_MULTI_SCENE_SYSTEM_PROMPT = """Sen profesyonel bir UGC (User Generated Conte
       "video_prompt": "..."
     }
   ],
-  "voiceover_text": "Türkçe dış ses metni (tüm video için, ~25 kelime ±3)",
+  "voiceover_text": "Türkçe dış ses metni (tüm video için, ~{TARGET_WORD_COUNT} kelime ±3)",
   "technical_notes": "Teknik notlar"
 }
 ```
@@ -126,7 +126,7 @@ UGC_MULTI_SCENE_SYSTEM_PROMPT = """Sen profesyonel bir UGC (User Generated Conte
 7. Reference image modu kullanılacak — görsel sadakati prompt'ta vurgula
 
 ### Dış Ses (Türkçe — TÜM VİDEO İÇİN TEK):
-1. Türkçe, ~25 kelime (±3)
+1. Türkçe, ~{TARGET_WORD_COUNT} kelime (±3)
 2. Tüm 3 sahneyi kapsayan akıcı bir metin
 3. UGC tarzı: samimi, kişisel deneyim paylaşır gibi ("Bu ayakkabıyı ilk gördüğümde...")
 4. Sosyal medya reklamına uygun ton: enerjik ama doğal
@@ -242,8 +242,11 @@ class ScenarioEngine:
 
         user_brief += f"\n## Marka Araştırması:\n{research_data.get('brand_research', 'N/A')}\n"
 
+        system_prompt = SCENARIO_SYSTEM_PROMPT.replace("{TARGET_WORD_COUNT}", str(TARGET_WORD_COUNT))
+        system_prompt = system_prompt.replace("{FIXED_DURATION}", str(FIXED_DURATION))
+
         messages = [
-            {"role": "system", "content": SCENARIO_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_brief},
         ]
 
@@ -326,8 +329,11 @@ class ScenarioEngine:
 
         user_brief += f"\n## Marka Araştırması:\n{research_data.get('brand_research', 'N/A')}\n"
 
+        system_prompt = UGC_MULTI_SCENE_SYSTEM_PROMPT.replace("{TARGET_WORD_COUNT}", str(TARGET_WORD_COUNT))
+        system_prompt = system_prompt.replace("{FIXED_DURATION}", str(FIXED_DURATION))
+
         messages = [
-            {"role": "system", "content": UGC_MULTI_SCENE_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_brief},
         ]
 

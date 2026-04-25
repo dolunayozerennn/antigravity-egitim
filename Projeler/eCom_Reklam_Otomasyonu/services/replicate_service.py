@@ -58,6 +58,7 @@ class ReplicateService:
                     "video_file": video_url,
                     "audio_file": audio_url,
                     "replace_audio": replace_audio,
+                    "duration_mode": "video",
                 },
             )
 
@@ -145,6 +146,7 @@ class ReplicateService:
                     "video_file": video_url,
                     "audio_file": audio_url,
                     "replace_audio": replace_audio,
+                    "duration_mode": "video",
                 },
             )
 

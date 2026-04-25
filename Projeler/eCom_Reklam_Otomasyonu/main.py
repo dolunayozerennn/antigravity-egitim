@@ -580,6 +580,12 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         log.error(f"Conflict kontrolü sırasında hata: {check_exc}")
 
     if update and update.effective_message:
+        # TIMEOUT veya NETWORK ERROR gibi durumlarda (örneğin video yüklerken) 
+        # kullanıcıya yanıltıcı "Hata" mesajı gönderme.
+        if any(e in err_str for e in ["Timed out", "NetworkError", "httpx", "Connection"]):
+            log.warning("Kullanıcıya mesaj gönderilmeyecek (Timeout/NetworkError).")
+            return
+
         try:
             await update.effective_message.reply_text(
                 "⚠️ Bir hata oluştu. Lütfen tekrar dene.",

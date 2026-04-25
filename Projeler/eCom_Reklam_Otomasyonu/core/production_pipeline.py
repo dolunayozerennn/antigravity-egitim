@@ -276,8 +276,8 @@ class ProductionPipeline:
                     # Dış ses süre kontrolü — video süresini aşarsa metni kırp
                     from services.elevenlabs_service import ElevenLabsService
                     est_duration = ElevenLabsService.estimate_duration_seconds(voiceover_text)
-                    if est_duration > duration + 2:  # 2 saniye tolerans
-                        target_words = int(duration * 2.5)  # ~2.5 kelime/saniye
+                    if est_duration > duration + 1:  # 1 saniye tolerans
+                        target_words = int(duration * 2.0)  # ~2.0 kelime/saniye
                         words = voiceover_text.split()
                         if len(words) > target_words:
                             voiceover_text = " ".join(words[:target_words])

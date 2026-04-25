@@ -185,10 +185,10 @@ class ElevenLabsService:
             return []
 
     @staticmethod
-    def estimate_duration_seconds(text: str, words_per_second: float = 2.5) -> float:
+    def estimate_duration_seconds(text: str, words_per_second: float = 2.0) -> float:
         """
         Metin uzunluğundan tahmini ses süresini hesaplar.
-        Türkçe ortalama: ~2.5 kelime/saniye
+        Türkçe ortalama: ~2.0 kelime/saniye
 
         Args:
             text: Ses metni
