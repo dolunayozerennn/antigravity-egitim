@@ -16,12 +16,10 @@ const manychat = require('./services/manychat');
 const resend = require('./services/resend');
 const log = require('./utils/logger');
 
-// ─── WhatsApp Onboarding Cron ───
 cron.schedule(config.cronSchedule, async () => {
   log.info('=== Günlük onboarding cron başladı ===');
 
   try {
-    // ─── WhatsApp kanalı ───
     const members = await notion.getActiveOnboardingMembers();
     log.info(`${members.length} aktif WhatsApp onboarding üyesi bulundu`);
 
@@ -38,13 +36,11 @@ cron.schedule(config.cronSchedule, async () => {
 
         const expectedDay = member.onboardingStep + 1;
 
-        // Zamanı gelmediyse atla
         if (daysDiff <= member.onboardingStep) {
           skipped++;
           continue;
         }
 
-        // 7. günden sonra tamamla
         if (expectedDay > 6) {
           await notion.updatePage(member.id, { onboardingStatus: "tamamlandı" });
           log.info(`Tamamlandı: ${member.firstName} ${member.lastName}`);
@@ -52,7 +48,6 @@ cron.schedule(config.cronSchedule, async () => {
           continue;
         }
 
-        // Flow bilgisini al
         const flowConfig = ONBOARDING_FLOWS[expectedDay];
         if (!flowConfig || !flowConfig.flow_id || flowConfig.flow_id.startsWith('TODO_')) {
           log.error(`Flow ID yapılandırılmamış: Gün ${expectedDay} — ${member.firstName} atlanıyor`);
@@ -60,14 +55,12 @@ cron.schedule(config.cronSchedule, async () => {
           continue;
         }
 
-        // ManyChat'ten gönder
         await manychat.ensureSubscriberAndSendFlow(
           member.phone,
           member.firstName,
           flowConfig.flow_id
         );
 
-        // Notion güncelle
         await notion.updatePage(member.id, { 
           onboardingStep: expectedDay,
           errorCount: 0,
@@ -77,26 +70,28 @@ cron.schedule(config.cronSchedule, async () => {
         log.info(`Gün ${expectedDay} gönderildi: ${member.firstName} (${member.phone})`);
         sent++;
 
-        // Rate limiting — 2 saniye bekle
         await new Promise(resolve => setTimeout(resolve, 2000));
 
       } catch (memberError) {
         log.error(`Üye hatası (${member.firstName}): ${memberError.message}`, memberError.stack);
         
-        // Dead-Letter Queue (DLQ)
         const newErrorCount = (member.errorCount || 0) + 1;
-        if (newErrorCount >= 3) {
-          await notion.updatePage(member.id, { 
-            errorCount: newErrorCount, 
-            lastError: memberError.message,
-            onboardingStatus: "error"
-          });
-          log.info(`Üye error statüsüne alındı (DLQ): ${member.firstName} (${member.phone})`);
-        } else {
-          await notion.updatePage(member.id, { 
-            errorCount: newErrorCount, 
-            lastError: memberError.message 
-          });
+        try {
+          if (newErrorCount >= 3) {
+            await notion.updatePage(member.id, { 
+              errorCount: newErrorCount, 
+              lastError: memberError.message,
+              onboardingStatus: "error"
+            });
+            log.info(`Üye error statüsüne alındı (DLQ): ${member.firstName} (${member.phone})`);
+          } else {
+            await notion.updatePage(member.id, { 
+              errorCount: newErrorCount, 
+              lastError: memberError.message 
+            });
+          }
+        } catch (dlqErr) {
+          log.error(`DLQ güncelleme hatası (${member.firstName}): ${dlqErr.message}`);
         }
         
         errors++;
@@ -104,7 +99,7 @@ cron.schedule(config.cronSchedule, async () => {
       }
     }
 
-    // ─── Email kanalı (fallback) ───
+    // Email kanalı (fallback)
     let emailSent = 0;
     if (config.resendApiKey) {
       try {
@@ -137,20 +132,23 @@ cron.schedule(config.cronSchedule, async () => {
           } catch (emailErr) {
             log.error(`Email üye hatası (${member.firstName}): ${emailErr.message}`, emailErr.stack);
             
-            // Dead-Letter Queue (DLQ)
             const newErrorCount = (member.errorCount || 0) + 1;
-            if (newErrorCount >= 3) {
-              await notion.updatePage(member.id, { 
-                errorCount: newErrorCount, 
-                lastError: emailErr.message,
-                onboardingStatus: "error"
-              });
-              log.info(`Email üye error statüsüne alındı (DLQ): ${member.firstName} (${member.email})`);
-            } else {
-              await notion.updatePage(member.id, { 
-                errorCount: newErrorCount, 
-                lastError: emailErr.message 
-              });
+            try {
+              if (newErrorCount >= 3) {
+                await notion.updatePage(member.id, { 
+                  errorCount: newErrorCount, 
+                  lastError: emailErr.message,
+                  onboardingStatus: "error"
+                });
+                log.info(`Email üye error statüsüne alındı (DLQ): ${member.firstName} (${member.email})`);
+              } else {
+                await notion.updatePage(member.id, { 
+                  errorCount: newErrorCount, 
+                  lastError: emailErr.message 
+                });
+              }
+            } catch (dlqErr) {
+              log.error(`Email DLQ güncelleme hatası (${member.firstName}): ${dlqErr.message}`);
             }
             
             errors++;
