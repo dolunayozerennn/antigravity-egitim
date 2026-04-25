@@ -40,7 +40,6 @@ Antigravity/
 | Isbirligi_Tahsilat_Takip | Tahsilat hatırlatma otomasyonu | Railway Cron (günde 1x) |
 | Akilli_Watchdog | LLM-destekli pipeline sağlık izleme | Railway Cron (günde 1x) |
 | Marka_Is_Birligi | Marka outreach + follow-up | Railway Cron (zamanlanmış) |
-| Blog_Yazici | YouTube → Blog pipeline | Lokal (geliştirme) |
 | Dolunay_YouTube_Kapak | YouTube thumbnail üretimi | Lokal (geliştirme) |
 | Dubai_Emlak_İçerik_Yazarı | İçerik üretim sistemi | Lokal (geliştirme) |
 | Emlak_Arazi_Drone_Çekim | Drone çekim video pipeline'ı | Lokal (aktif) — `/drone-cekim` |
@@ -70,6 +69,7 @@ Yeni proje oluşturulduğunda, arşive taşındığında veya silindiğinde şu 
 2. **Deploy registry** → `_knowledge/deploy-registry.md` (Railway/cron varsa)
 3. **Skills README** → `_skills/README.md` (yeni skill oluşturulduysa)
 4. **API anahtarları** → `_knowledge/api-anahtarlari.md` + `master.env` (yeni servis eklendiyse)
+5. **🐕 Akıllı Watchdog config** → `Projeler/Akilli_Watchdog/config.py` → `MONITORED_PROJECTS` listesine yeni proje eklenir (Railway service ID + pipeline tipi ile). Kullanıcı söylemeden OTOMATİK yapılır.
 
 ### Merkezi Depo
 - **Tokenlar:** `_knowledge/credentials/master.env`

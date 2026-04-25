@@ -153,9 +153,12 @@ def check_railway_deployments() -> list[dict]:
             resp.raise_for_status()
             data = resp.json()
 
-            edges = data.get("data", {}).get("deployments", {}).get("edges", [])
+            # Null-safe chain — Railway API bazen "data": null dönebilir
+            data_root = data.get("data") or {}
+            deployments = data_root.get("deployments") or {}
+            edges = deployments.get("edges") or []
             if edges:
-                node = edges[0]["node"]
+                node = edges[0].get("node") or {}
                 deploy_status = node.get("status", "UNKNOWN")
                 created_at = node.get("createdAt", "?")
                 # Railway deployment statuses: SUCCESS, FAILED, CRASHED, BUILDING, DEPLOYING, SKIPPED, etc.
@@ -270,6 +273,7 @@ def run_health_check(force_email: bool = False) -> dict:
             logger.warning(f"  ⚠️ {project['name']} → {len(result['issues'])} sorun")
 
     # 1b. Notion kontrolü (sheets_to_notion + custom_notion pipeline'ları)
+    # railway_only projeler Notion kontrolünden hariç tutulur
     notion_pipelines = ("sheets_to_notion", "custom_notion")
     notion_projects = [
         p for p in Config.MONITORED_PROJECTS
