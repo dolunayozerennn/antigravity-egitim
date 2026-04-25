@@ -321,6 +321,53 @@ app.post('/webhook/wa-failed', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// POST /admin/trigger-flow — Manuel ManyChat Flow Tetikleme
+// ─────────────────────────────────────────────────────────────
+// Kullanım: Groq hatalı validasyon gibi durumlarda kaçırılan
+// flow'ları manuel olarak tetiklemek için.
+// ─────────────────────────────────────────────────────────────
+app.post('/admin/trigger-flow', async (req, res) => {
+  try {
+    const { phone, first_name, flow_step } = req.body;
+
+    log.info(`[admin/trigger-flow] Gelen istek: ${JSON.stringify(req.body)}`);
+
+    if (!phone || !first_name) {
+      return res.status(400).json({ error: 'phone ve first_name zorunlu' });
+    }
+
+    const step = flow_step !== undefined ? flow_step : 0;
+    const flowConfig = ONBOARDING_FLOWS[step];
+
+    if (!flowConfig || !flowConfig.flow_id) {
+      return res.status(400).json({ error: `Geçersiz flow_step: ${step}` });
+    }
+
+    // ManyChat'te subscriber oluştur + flow tetikle
+    const subscriberId = await manychat.ensureSubscriberAndSendFlow(
+      phone,
+      first_name,
+      flowConfig.flow_id
+    );
+
+    log.info(`[admin/trigger-flow] ✅ Başarılı: ${first_name} → Step ${step} (${flowConfig.description})`);
+
+    res.status(200).json({
+      success: true,
+      subscriberId,
+      flow: {
+        step,
+        flow_id: flowConfig.flow_id,
+        description: flowConfig.description
+      }
+    });
+  } catch (error) {
+    log.error(`[admin/trigger-flow] HATA: ${error.message}`, error.stack);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // GET /health — Monitoring & Watchdog
 // ─────────────────────────────────────────────────────────────
 app.get('/health', async (req, res) => {
@@ -359,5 +406,6 @@ app.listen(PORT, '0.0.0.0', () => {
   log.info(`  POST /webhook/membership-questions`);
   log.info(`  POST /webhook/wa-optin`);
   log.info(`  POST /webhook/wa-failed`);
+  log.info(`  POST /admin/trigger-flow`);
   log.info(`  GET  /health`);
 });
