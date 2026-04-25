@@ -162,7 +162,7 @@ class LinkedInPublisher:
                         ops.info(f"Unknown status '{status}', waiting... (attempt {attempt+1})")
                         time.sleep(10)
                 else:
-                    ops.warning(f"Status check returned {resp.status_code}, retrying...")
+                    ops.warning(f"Status check returned {resp.status_code}, retrying... Response: {resp.text[:500]}")
                     time.sleep(10)
             except Exception as e:
                 ops.error(f"Error checking video status: {e}", exception=e)
