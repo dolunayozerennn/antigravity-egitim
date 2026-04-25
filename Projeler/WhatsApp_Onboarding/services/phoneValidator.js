@@ -1,8 +1,9 @@
 // ============================================================
-// services/phoneValidator.js — Groq LLM Telefon Validasyonu
+// services/phoneValidator.js — Hibrit Telefon Validasyonu
 // ============================================================
-// Primary: Groq GPT-OSS 120B (hızlı, ucuz, JSON mode)
-// Fallback: Basit regex (Groq down ise)
+// Katman 1: Regex pre-validation (hızlı, kesin, ücretsiz)
+// Katman 2: Groq GPT-OSS 120B (karmaşık girdiler için LLM)
+// Katman 3: Regex override (Groq hatalıysa güvenlik ağı)
 // ============================================================
 
 const { config } = require('../config/env');
@@ -21,12 +22,41 @@ KURALLAR (KRİTİK):
 2. Sadece boşlukları ve tireleri temizle.
 3. Numara '5' ile başlıyorsa ve toplam 10 rakamsa başa '+90' ekle.
 4. Numara '05' ile başlıyorsa ve toplam 11 rakamsa başa '+9' ekle.
-5. Kullanıcı sohbet veya itiraz ediyorsa valid: false döndür.
-6. ÇOKLU NUMARA DURUMU: Eğer metinde birden fazla numara varsa, bağlama bakarak "güncel", "yeni" veya "benim" gibi kelimelerle ilişkilendirilen numarayı seç. 
-7. BELİRSİZ ÇOKLU NUMARA DURUMU: Eğer bağlam belirsizse (hangisinin doğru olduğu açık değilse), metinde geçen EN SON numarayı baz al. Ancak bu durumda "confidence" (güven) değerini düşür (örneğin 0.4). Tek numara varsa veya açıkça hangisi olduğu belliyse confidence'ı yüksek tut (örneğin 0.9 - 1.0 arası).`;
+5. Numara '905' ile başlıyorsa ve toplam 12 rakamsa başa '+' ekle.
+6. Kullanıcı sohbet veya itiraz ediyorsa valid: false döndür.
+7. ÇOKLU NUMARA DURUMU: Eğer metinde birden fazla numara varsa, bağlama bakarak "güncel", "yeni" veya "benim" gibi kelimelerle ilişkilendirilen numarayı seç. 
+8. BELİRSİZ ÇOKLU NUMARA DURUMU: Eğer bağlam belirsizse (hangisinin doğru olduğu açık değilse), metinde geçen EN SON numarayı baz al. Ancak bu durumda "confidence" (güven) değerini düşür (örneğin 0.4). Tek numara varsa veya açıkça hangisi olduğu belliyse confidence'ı yüksek tut (örneğin 0.9 - 1.0 arası).`;
 
-async function validatePhone(input) {
-  // PRIMARY: Groq LLaMA 3.3 70B (Düşük halüsinasyon, net JSON formatı)
+// ─── KATMAN 1: Regex Pre-Validation ─────────────────────────
+function regexValidate(input) {
+  const cleaned = input.trim();
+  const digits = cleaned.replace(/[\s\-\(\)\.\/]/g, '');
+
+  if (!/^[\d\s\-\(\)\.\+\/]+$/.test(cleaned)) {
+    return null;
+  }
+
+  if (/^905\d{8}$/.test(digits)) {
+    return { valid: true, normalized: `+${digits}`, reason: "regex-direct (905)", confidence: 1.0, extracted_raw: input };
+  }
+  if (/^\+905\d{8}$/.test(cleaned.replace(/[\s\-]/g, ''))) {
+    return { valid: true, normalized: cleaned.replace(/[\s\-]/g, ''), reason: "regex-direct (+905)", confidence: 1.0, extracted_raw: input };
+  }
+  if (/^05\d{9}$/.test(digits)) {
+    return { valid: true, normalized: `+9${digits}`, reason: "regex-direct (05)", confidence: 1.0, extracted_raw: input };
+  }
+  if (/^5\d{9}$/.test(digits)) {
+    return { valid: true, normalized: `+90${digits}`, reason: "regex-direct (5)", confidence: 1.0, extracted_raw: input };
+  }
+  if (/^\d{10,15}$/.test(digits) && !digits.startsWith('90')) {
+    return { valid: true, normalized: `+${digits}`, reason: "regex-direct (uluslararası)", confidence: 0.8, extracted_raw: input };
+  }
+
+  return null;
+}
+
+// ─── KATMAN 2: Groq LLM Validasyonu ─────────────────────────
+async function groqValidate(input) {
   try {
     const response = await fetch(GROQ_API_URL, {
       method: 'POST',
@@ -35,7 +65,7 @@ async function validatePhone(input) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "gpt-oss-120b",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: input }
@@ -55,12 +85,13 @@ async function validatePhone(input) {
     log.info(`[phoneValidator] Groq sonuç: ${JSON.stringify(result)}`);
     return result;
 
-  } catch (primaryError) {
-    log.error(`[phoneValidator] Groq hatası, regex fallback: ${primaryError.message}`, primaryError.stack);
-    return regexFallback(input);
+  } catch (error) {
+    log.error(`[phoneValidator] Groq hatası: ${error.message}`, error.stack);
+    return null;
   }
 }
 
+// ─── KATMAN 3: Regex Fallback (Groq'a override) ─────────────
 function regexFallback(input) {
   const digits = input.replace(/\D/g, '');
 
@@ -73,12 +104,38 @@ function regexFallback(input) {
   if (/^5\d{9}$/.test(digits)) {
     return { valid: true, normalized: `+90${digits}`, reason: "regex fallback", confidence: 1.0, extracted_raw: input };
   }
-  // Uluslararası format
   if (/^\d{10,15}$/.test(digits) && !digits.startsWith('90')) {
     return { valid: true, normalized: `+${digits}`, reason: "regex fallback - uluslararası", confidence: 1.0, extracted_raw: input };
   }
 
-  return { valid: false, normalized: null, reason: "Geçerli telefon numarası bulunamadı (regex fallback)", confidence: 0.0, extracted_raw: input };
+  return { valid: false, normalized: null, reason: "Geçerli telefon numarası bulunamadı", confidence: 0.0, extracted_raw: input };
+}
+
+// ─── ANA FONKSİYON ──────────────────────────────────────────
+async function validatePhone(input) {
+  const regexResult = regexValidate(input);
+  if (regexResult) {
+    log.info(`[phoneValidator] ✅ Regex pre-validation başarılı: ${JSON.stringify(regexResult)}`);
+    return regexResult;
+  }
+
+  log.info(`[phoneValidator] Regex eşleşmedi, Groq GPT-OSS 120B'ye gönderiliyor: "${input}"`);
+  const groqResult = await groqValidate(input);
+
+  if (groqResult) {
+    if (!groqResult.valid) {
+      const overrideResult = regexFallback(input);
+      if (overrideResult.valid) {
+        log.warn(`[phoneValidator] ⚠️ GROQ OVERRIDE: Groq false dedi ama regex geçerli numara buldu. Regex sonucu kullanılıyor.`);
+        overrideResult.reason = `groq-override (Groq: ${groqResult.reason})`;
+        return overrideResult;
+      }
+    }
+    return groqResult;
+  }
+
+  log.warn(`[phoneValidator] Groq tamamen başarısız, regex fallback kullanılıyor.`);
+  return regexFallback(input);
 }
 
 module.exports = { validatePhone };
