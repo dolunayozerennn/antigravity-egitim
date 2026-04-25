@@ -28,12 +28,16 @@ KURALLAR (KRİTİK):
 8. BELİRSİZ ÇOKLU NUMARA DURUMU: Eğer bağlam belirsizse (hangisinin doğru olduğu açık değilse), metinde geçen EN SON numarayı baz al. Ancak bu durumda "confidence" (güven) değerini düşür (örneğin 0.4). Tek numara varsa veya açıkça hangisi olduğu belliyse confidence'ı yüksek tut (örneğin 0.9 - 1.0 arası).`;
 
 // ─── KATMAN 1: Regex Pre-Validation ─────────────────────
+// Basit numerik girdiler için Groq'u çağırmaya gerek yok.
+// Bu katman hem daha hızlı, hem daha güvenilir, hem de ücretsiz.
 function regexValidate(input) {
   const cleaned = input.trim();
   const digits = cleaned.replace(/[\s\-\(\)\.\/]/g, '');
 
+  // Sadece rakam + boşluk + tire + nokta + parantez içeriyorsa
+  // "saf numara" girdisi kabul et
   if (!/^[\d\s\-\(\)\.\+\/]+$/.test(cleaned)) {
-    return null;
+    return null; // Metin içeriyor → Groq'a gönder
   }
 
   // Standart Türk GSM formatları
@@ -54,10 +58,11 @@ function regexValidate(input) {
     return { valid: true, normalized: `+${digits}`, reason: "regex-direct (uluslararası)", confidence: 0.8, extracted_raw: input };
   }
 
-  return null;
+  return null; // Tanımlanamadı → Groq'a gönder
 }
 
 // ─── KATMAN 2: Groq LLM Validasyonu ─────────────────────
+// Karmaşık girdiler için (metin + numara karışık, çoklu numara vb.)
 async function groqValidate(input) {
   try {
     const response = await fetch(GROQ_API_URL, {
@@ -66,7 +71,7 @@ async function groqValidate(input) {
         'Authorization': `Bearer ${config.groqApiKey}`,
         'Content-Type': 'application/json'
       },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(5000), // Fix: 5s timeout — Groq yanıt vermezse regex fallback devreye girer
       body: JSON.stringify({
         model: "gpt-oss-120b",
         messages: [
@@ -90,11 +95,12 @@ async function groqValidate(input) {
 
   } catch (error) {
     log.error(`[phoneValidator] Groq hatası: ${error.message}`, error.stack);
-    return null;
+    return null; // Groq başarısız → null dön, fallback devreye girsin
   }
 }
 
 // ─── KATMAN 3: Regex Fallback (Groq'a override) ─────────────
+// Groq down ise VEYA Groq hatalı sonuç döndürse
 function regexFallback(input) {
   const digits = input.replace(/\D/g, '');
 
@@ -115,22 +121,26 @@ function regexFallback(input) {
   return { valid: false, normalized: null, reason: "Geçerli telefon numarası bulunamadı", confidence: 0.0, extracted_raw: input };
 }
 
-// ─── ANA FONKSİYON ──────────────────────────────────
+// ─── ANA FONKSİYON ──────────────────────────────────────────
 async function validatePhone(input) {
+  // KATMAN 1: Regex pre-validation (sadece numerik girdiler için)
   const regexResult = regexValidate(input);
   if (regexResult) {
     log.info(`[phoneValidator] ✅ Regex pre-validation başarılı: ${JSON.stringify(regexResult)}`);
     return regexResult;
   }
 
+  // KATMAN 2: Groq LLM (karmaşık girdiler için)
   log.info(`[phoneValidator] Regex eşleşmedi, Groq GPT-OSS 120B'ye gönderiliyor: "${input}"`);
   const groqResult = await groqValidate(input);
 
   if (groqResult) {
+    // KATMAN 3: Groq override kontrolü
+    // Groq "false" dedi ama regex bir numara bulabiliyorsa → regex kazanır
     if (!groqResult.valid) {
       const overrideResult = regexFallback(input);
       if (overrideResult.valid) {
-        log.warn(`[phoneValidator] ⚠️ GROQ OVERRIDE: Groq false dedi ama regex geçerli numara buldu.`);
+        log.warn(`[phoneValidator] ⚠️ GROQ OVERRIDE: Groq false dedi ama regex geçerli numara buldu. Regex sonucu kullanılıyor.`);
         overrideResult.reason = `groq-override (Groq: ${groqResult.reason})`;
         return overrideResult;
       }
@@ -138,6 +148,7 @@ async function validatePhone(input) {
     return groqResult;
   }
 
+  // Groq tamamen başarısız oldu → regex fallback
   log.warn(`[phoneValidator] Groq tamamen başarısız, regex fallback kullanılıyor.`);
   return regexFallback(input);
 }
