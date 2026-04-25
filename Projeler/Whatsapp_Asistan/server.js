@@ -2,158 +2,207 @@
 const express = require('express');
 const { config } = require('./config/env');
 const log = require('./utils/logger');
+
+// ManyChat field ve flow ID'leri
+const FIELD_ID = config.manychatFieldId;
+const FLOW_ID = config.manychatFlowId;
+
+// Servisler
 const { getSubscriber, createSubscriber, acceptKVKK, saveMessage } = require('./services/memory');
-const { setCustomField, sendFlow } = require('./services/manychat');
-const { generateResponse } = require('./services/ai_engine');
+const { isAudioUrl, transcribeAudio } = require('./services/transcription');
 const { detectLanguage } = require('./services/language_detector');
-const { transcribeAudio, isAudioUrl } = require('./services/transcription');
+const { generateResponse } = require('./services/ai_engine');
+const { setCustomField, sendFlow } = require('./services/manychat');
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
 
-// ============================================
-// Health Check
-// ============================================
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'whatsapp-asistan', timestamp: new Date().toISOString() });
-});
+// KVKK Aydinlatma Mesaji
+const KVKK_MESSAGE = `Merhaba! \ud83d\udc4b Ben Dolunay \u00d6zeren'in yapay zek\u00e2 asistan\u0131y\u0131m.
 
-// ============================================
-// Ana Webhook Endpoint — ManyChat'ten gelen mesajlar
-// ============================================
+Sana yard\u0131mc\u0131 olabilmem i\u00e7in ki\u015fisel verilerin hakk\u0131nda bilgilendirme yapmam gerekiyor.
+
+KVKK Ayd\u0131nlatma Metni: https://dolunay.ai/sozlesmeler/kvkk
+
+Devam etmek i\u00e7in l\u00fctfen "Onayl\u0131yorum" yaz.`;
+
+// Hosgeldin Mesaji
+const WELCOME_MESSAGE = `Te\u015fekk\u00fcrler! \ud83d\ude4f Art\u0131k sana AI Factory hakk\u0131nda her konuda yard\u0131mc\u0131 olabilirim. Sormak istedi\u011fin bir \u015fey var m\u0131?`;
+
 app.post('/webhook/message', async (req, res) => {
-  const startTime = Date.now();
+  // ManyChat webhook timeoutlari icin hemen 200 donulur
+  res.status(200).send({ status: 'received' });
   
   try {
-    const { subscriber_id, text, phone } = req.body;
-    
-    if (!subscriber_id) {
-      log.warn('[webhook] subscriber_id eksik.');
-      return res.status(400).json({ error: 'subscriber_id gerekli' });
+    const payload = req.body;
+    const subscriberId = payload.kullanici_id;
+    let messageContent = payload.last_text_input;
+    const phoneNumber = payload.phone_number || '';
+
+    if (!subscriberId || !messageContent) {
+      log.warn(`[webhook] Eksik payload verisi.`, { subscriberId, messageContent: !!messageContent });
+      return;
     }
 
-    const rawText = text || '';
-    log.info(`[webhook] Mesaj alındı.`, { subscriber_id, textLength: rawText.length });
+    log.info(`[webhook] Yeni mesaj alindi.`, { subscriberId });
 
-    // 1. Subscriber kontrolü (yoksa oluştur)
-    let subscriber = await getSubscriber(subscriber_id);
+    // 1. Subscriber kontrolu
+    let subscriber = await getSubscriber(subscriberId);
     if (!subscriber) {
-      subscriber = await createSubscriber(subscriber_id, phone || null);
-      log.info(`[webhook] Yeni subscriber oluşturuldu.`, { subscriber_id });
+      log.info(`[webhook] Yeni subscriber olusturuluyor...`, { subscriberId });
+      subscriber = await createSubscriber(subscriberId, phoneNumber);
+      
+      // Yeni kullaniciya dogrudan KVKK mesaji gonder
+      await setCustomField(subscriberId, FIELD_ID, KVKK_MESSAGE);
+      await sendFlow(subscriberId, FLOW_ID);
+      return;
     }
 
-    // 2. KVKK kontrolü
+    // 2. KVKK kontrolu
     if (!subscriber.kvkk_accepted) {
-      return await handleKVKK(subscriber, rawText, res);
+      const lowerMsg = messageContent.toLowerCase().trim();
+      const isAccepted = lowerMsg === 'onayliyorum' || lowerMsg === 'evet' || lowerMsg === 'kabul ediyorum' || lowerMsg === 'kabul';
+      
+      if (isAccepted) {
+        log.info(`[webhook] Kullanici KVKK onayladi.`, { subscriberId });
+        await acceptKVKK(subscriberId);
+        
+        await setCustomField(subscriberId, FIELD_ID, WELCOME_MESSAGE);
+        await sendFlow(subscriberId, FLOW_ID);
+      } else {
+        log.info(`[webhook] Kullanici henuz KVKK onaylamadi, hatirlatma gonderiliyor.`, { subscriberId });
+        await setCustomField(subscriberId, FIELD_ID, KVKK_MESSAGE);
+        await sendFlow(subscriberId, FLOW_ID);
+      }
+      return;
     }
 
-    // 3. Ses mesajı kontrolü
-    let processedText = rawText;
-    if (isAudioUrl(rawText)) {
-      log.info(`[webhook] Ses mesajı tespit edildi, transkripsiyon başlıyor...`);
+    // 3. Ses mesaji kontrolu ve transkripsiyon
+    if (isAudioUrl(messageContent)) {
+      log.info(`[webhook] Ses mesaji algilandi, transkribe ediliyor...`, { subscriberId });
       try {
-        processedText = await transcribeAudio(rawText);
-        log.info(`[webhook] Transkripsiyon tamamlandı: ${processedText.substring(0, 50)}...`);
-      } catch (e) {
-        log.error(`[webhook] Transkripsiyon başarısız, metin olarak devam ediyor.`, e);
-        processedText = rawText;
+        messageContent = await transcribeAudio(messageContent);
+      } catch (err) {
+        log.error(`[webhook] Ses mesaji cevrilemedi, kullaniciya bilgi veriliyor.`, err);
+        await setCustomField(subscriberId, FIELD_ID, "Ozur dilerim, sesli mesajini su an dinleyemiyorum. Lutfen bana yazili olarak iletebilir misin?");
+        await sendFlow(subscriberId, FLOW_ID);
+        return;
       }
     }
 
-    // 4. Dil tespiti
-    const detectedLanguage = await detectLanguage(processedText);
+    // Kullanici mesajini kaydet
+    await saveMessage(subscriberId, 'user', messageContent);
 
-    // 5. Kullanıcı mesajını kaydet
-    await saveMessage(subscriber_id, 'user', processedText);
+    // 4. Dil algilama
+    const detectedLanguage = await detectLanguage(messageContent);
 
-    // 6. AI ile cevap üret
-    const aiResponse = await generateResponse(subscriber_id, processedText, detectedLanguage);
+    // 5. AI cevabi uret (RAG ve hafiza islemleri ai_engine icinde)
+    const aiResponse = await generateResponse(subscriberId, messageContent, detectedLanguage);
 
-    // 7. Cevabı kaydet
-    await saveMessage(subscriber_id, 'assistant', aiResponse);
+    // AI cevabini kaydet
+    await saveMessage(subscriberId, 'assistant', aiResponse);
 
-    // 8. ManyChat'e cevabı gönder (Custom Field üzerinden)
-    const fieldSet = await setCustomField(subscriber_id, config.manychatFieldId, aiResponse);
-    if (!fieldSet) {
-      log.error(`[webhook] ManyChat Custom Field güncellenemedi!`);
-    }
-
-    // 9. ManyChat Flow'unu tetikle (cevabı göndermek için)
-    await sendFlow(subscriber_id, config.manychatFlowId);
-
-    const elapsed = Date.now() - startTime;
-    log.info(`[webhook] İşlem tamamlandı`, { subscriber_id, elapsed_ms: elapsed });
-
-    return res.json({ 
-      status: 'ok', 
-      response: aiResponse,
-      elapsed_ms: elapsed 
-    });
+    // 6. ManyChat'e gonder
+    await setCustomField(subscriberId, FIELD_ID, aiResponse);
+    await sendFlow(subscriberId, FLOW_ID);
+    
+    log.info(`[webhook] Islem basariyla tamamlandi.`, { subscriberId });
 
   } catch (error) {
-    log.error(`[webhook] İşlem hatası: ${error.message}`, error);
-    return res.status(500).json({ error: 'Sunucu hatası' });
+    log.error(`[webhook] Beklenmeyen hata: ${error.message}`, error);
   }
 });
 
-// ============================================
-// KVKK Akışı
-// ============================================
-async function handleKVKK(subscriber, text, res) {
-  const normalizedText = text.toLowerCase().trim();
-  
-  // "onay" veya "kabul" kelimelerini ara
-  const isApproval = ['onay', 'kabul', 'onaylıyorum', 'kabul ediyorum', 'evet'].some(keyword => 
-    normalizedText.includes(keyword)
-  );
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
-  if (isApproval) {
-    await acceptKVKK(subscriber.subscriber_id);
-    
-    const approvalMessage = 'KVKK onayınız alınmıştır. Artık size yardımcı olabilirim! Nasıl yardımcı olabilirim?';
-    await setCustomField(subscriber.subscriber_id, config.manychatFieldId, approvalMessage);
-    await sendFlow(subscriber.subscriber_id, config.manychatFlowId);
-    
-    log.info(`[kvkk] KVKK onayı alındı.`, { subscriber_id: subscriber.subscriber_id });
-    return res.json({ status: 'kvkk_accepted', response: approvalMessage });
-  } else {
-    const kvkkMessage = `Merhaba! AI Factory WhatsApp asistanı olarak size yardımcı olabilmem için kişisel verilerinizin işlenmesine ilişkin KVKK aydınlatma metnini onaylamanız gerekmektedir.\n\nOnaylamak için "Onay" yazın.`;
-    await setCustomField(subscriber.subscriber_id, config.manychatFieldId, kvkkMessage);
-    await sendFlow(subscriber.subscriber_id, config.manychatFlowId);
-    
-    log.info(`[kvkk] KVKK onay bekleniyor.`, { subscriber_id: subscriber.subscriber_id });
-    return res.json({ status: 'kvkk_pending', response: kvkkMessage });
-  }
-}
-
-// ============================================
-// Admin: Bilgi Tabanını Seed Et
-// ============================================
+// Admin: RAG bilgi tabanini seed et
 app.post('/admin/seed-knowledge', async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || authHeader !== `Bearer ${config.manychatApiToken}`) {
-    return res.status(401).json({ error: 'Yetkisiz erişim' });
-  }
-
   try {
-    const { exec } = require('child_process');
-    exec('node scripts/seed_knowledge.js', { cwd: __dirname }, (error, stdout, stderr) => {
-      if (error) {
-        log.error(`[admin] Seed başarısız: ${error.message}`);
-        return res.status(500).json({ error: error.message });
+    const fs = require('fs');
+    const path = require('path');
+    const OpenAI = require('openai');
+    const { supabase } = require('./services/memory');
+    const openai = new OpenAI({ apiKey: config.openaiApiKey });
+
+    // Body'den markdown icerigi al, yoksa dosyadan oku
+    let mdContent = req.body.markdown_content;
+    if (!mdContent) {
+      const mdPath = path.join(__dirname, 'ai-factory-asistan-bilgi-tabani-v2.md');
+      if (!fs.existsSync(mdPath)) {
+        return res.status(404).json({ error: 'Bilgi tabani dosyasi bulunamadi. Body ile markdown_content gonderin.' });
       }
-      log.info(`[admin] Seed tamamlandı.`);
-      return res.json({ status: 'ok', output: stdout });
-    });
+      mdContent = fs.readFileSync(mdPath, 'utf8');
+    }
+    
+    // Markdown'i chunk'lara ayir
+    const chunks = [];
+    const lines = mdContent.split('\n');
+    let currentSection = '', currentTitle = '', currentContent = [];
+
+    for (const line of lines) {
+      if (line.startsWith('## ') || line.startsWith('### ')) {
+        if (currentContent.length > 0 && currentTitle) {
+          chunks.push({ section: currentSection || '0', section_title: currentTitle, content: currentContent.join('\n').trim() });
+          currentContent = [];
+        }
+        const titleText = line.replace(/^#+\s/, '');
+        const sectionMatch = titleText.match(/^([\d.]+)\s*/);
+        if (sectionMatch) {
+          currentSection = sectionMatch[1].trim();
+          currentTitle = titleText.substring(sectionMatch[0].length).trim();
+        } else {
+          currentTitle = titleText;
+        }
+      } else {
+        currentContent.push(line);
+      }
+    }
+    if (currentContent.length > 0 && currentTitle) {
+      chunks.push({ section: currentSection || '0', section_title: currentTitle, content: currentContent.join('\n').trim() });
+    }
+
+    // Eski verileri temizle
+    await supabase.from('knowledge_chunks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+    let processedCount = 0;
+    for (const chunk of chunks) {
+      if (!chunk.content || chunk.content.trim() === '') continue;
+
+      const embeddingResponse = await openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: `[${chunk.section_title}]\n${chunk.content}`,
+        dimensions: 1536
+      });
+
+      const embedding = embeddingResponse.data[0].embedding;
+
+      const { error } = await supabase.from('knowledge_chunks').insert({
+        section: chunk.section,
+        section_title: chunk.section_title,
+        content: chunk.content,
+        embedding: embedding,
+        metadata: { source: 'ai-factory-asistan-bilgi-tabani-v2' }
+      });
+
+      if (error) {
+        log.error(`[seed] Kayit hatasi: ${chunk.section_title} - ${error.message}`);
+      } else {
+        processedCount++;
+      }
+
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    log.info(`[seed] ${processedCount} chunk kaydedildi.`);
+    res.json({ status: 'ok', chunks_processed: processedCount, total_chunks: chunks.length });
   } catch (error) {
-    log.error(`[admin] Seed hatası: ${error.message}`, error);
-    return res.status(500).json({ error: error.message });
+    log.error(`[seed] Seed hatasi: ${error.message}`, error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// ============================================
-// Sunucu Başlatma
-// ============================================
-app.listen(config.port, '0.0.0.0', () => {
-  log.info(`[server] Whatsapp_Asistan çalışıyor`, { port: config.port });
+app.listen(config.port, () => {
+  log.info(`[server] Whatsapp_Asistan ${config.port} portunda calisiyor.`);
 });
