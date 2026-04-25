@@ -20,14 +20,14 @@ async function generateResponse(subscriberId, currentMessage, detectedLanguage) 
     // 3. System prompt'u hazırla
     const todayDate = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
     
-    const systemPrompt = `
+    const systemPrompt = \`
 [ROL]
 Sen, Dolunay Özeren'in yapay zekâ asistanısın. AI Factory hakkında 
-sorularını yanıtlamak için buradasın. ${detectedLanguage} dilinde cevap üret.
+sorularını yanıtlamak için buradasın. \${detectedLanguage} dilinde cevap üret.
 
 [İLETİŞİM KURALLARI]
 - Kısa ve öz yaz. Ideal 2-4 cümle, maksimum 6-8 cümle.
-- Özel biçimlendirme kullanma (*, **, \`, #, > gibi karakterler YOK). Sadece düz metin yaz.
+- Özel biçimlendirme kullanma (*, **, \\\`, #, > gibi karakterler YOK). Sadece düz metin yaz.
 - Emoji çok az veya hiç kullanma. Mesaj başına en fazla 1.
 - "Sen" dilini kullan, samimi ol.
 - Cevap uzayacaksa parçalara böl.
@@ -44,11 +44,11 @@ sorularını yanıtlamak için buradasın. ${detectedLanguage} dilinde cevap ür
 - Kayıt linki: https://www.skool.com/yapay-zeka-factory/about (Sadece kişi açıkça istediğinde veya itirazlar çürüdükten sonra paylaş)
 
 [BUGÜNÜN TARİHİ]
-${todayDate}
+\${todayDate}
 
 [İLGİLİ BİLGİLER]
-${ragChunks}
-    `.trim();
+\${ragChunks}
+    \`.trim();
 
     // 4. API'ye gönderilecek mesaj listesini oluştur
     const messages = [
@@ -63,7 +63,7 @@ ${ragChunks}
     // Mevcut mesajı ekle
     messages.push({ role: 'user', content: currentMessage });
 
-    log.debug(`[ai_engine] OpenAI API'sine istek atılıyor...`);
+    log.debug(\`[ai_engine] OpenAI API'sine istek atılıyor...\`);
     const response = await openai.chat.completions.create({
       model: 'gpt-4.1-mini',
       messages: messages,
@@ -71,11 +71,11 @@ ${ragChunks}
     });
 
     const aiResponse = response.choices[0].message.content.trim();
-    log.info(`[ai_engine] AI cevabı başarıyla üretildi.`);
+    log.info(\`[ai_engine] AI cevabı başarıyla üretildi.\`);
     
     return aiResponse;
   } catch (error) {
-    log.error(`[ai_engine] generateResponse hatası: ${error.message}`, error);
+    log.error(\`[ai_engine] generateResponse hatası: \${error.message}\`, error);
     throw error;
   }
 }

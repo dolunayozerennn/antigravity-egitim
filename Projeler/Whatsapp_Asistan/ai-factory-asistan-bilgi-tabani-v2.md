@@ -151,7 +151,7 @@ Asistan, uygun bir bağlamda bunları sosyal kanıt olarak kullanabilir. Üyeyi 
 
 - **YouTube Otomasyonu** — Onlarca üye kanalını tam otomatik çalıştırıyor. Ortalama Shorts izlenmeleri 10-20 bin civarı; Murat gibi milyonlarca izlenmeye ulaşan üyeler de var.
 - **Otel/Mesajlaşma Otomasyonu** — Üye Rustam bir Kung Fu hocasına bu otomasyonu uyarladı, hocanın tüm Instagram mesajları otomatik yanıtlanıyor. Üye Ziya otelciye uyarladı, otelin WhatsApp ve Instagram mesajları tam otomatik.
-- **E-Ticaret Otomasyonu** — Üye Emil, kendi markası için tam otomatik reklam videoları üretiyor. Üye Savaş bu otomasyonu bir Print on Demand mağazasına sattı; mağazaya yüklenen tüm ürün görselleri otomatik üretiliyor.
+- **E-Ticaret Otomasyonu** — Üye Emil, kendi markası için tam otomatik reklam videoları üretir. Üye Savaş bu otomasyonu bir Print on Demand mağazasına sattı; mağazaya yüklenen tüm ürün görselleri otomatik üretiliyor.
 - **Süpermarket Otomasyonu** — Dolunay'ın bir süpermarket müşterisine $4.000'a sattığı otomasyonun benzerini üye Eren başka bir müşteriye sattı (rakam gizlilik nedeniyle paylaşılmıyor).
 - **Influencer Otomasyonu** — Bu otomasyonun en büyük kanıtı Dolunay'ın kendisi: 1,5 yılda 150 bin gerçek takipçi ve onlarca ücretli marka iş birliği.
 
@@ -264,7 +264,7 @@ A: Evet, kurduğun otomasyonu istediğin kadar farklı kanal veya müşteri içi
 **Q: YouTube otomasyonu kaç dakikalık video yapabiliyor?**
 A: Süre sınırı yok ama günümüz AI modelleri 10 dakikadan uzun videolarda kalite kaybediyor. Genelde 3-7 dakikalık videolar tavsiye ediliyor.
 
-**Q: Birebir destek alabiliyor jump mu?**
+**Q: Birebir destek alabiliyor muyum?**
 A: Topluluk üyelerine Skool üzerinden yazılı sınırsız soru-cevap yapılıyor. Premium paketi haftada 1 AnyDesk kurulum seansı + işletmeye özel AI planı içeriyor. VIP haftalık görüşme + kurumsal danışmanlık ekliyor.
 
 **Q: Affiliate / referans sistemi var mı?**
