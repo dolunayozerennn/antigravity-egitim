@@ -2,6 +2,8 @@ import logging
 import time
 import schedule
 
+import config  # Load environment variables first
+
 from core.tiktok_scraper import TikTokScraper
 from core.video_processor import VideoProcessor
 from core.content_filter import ContentFilter
