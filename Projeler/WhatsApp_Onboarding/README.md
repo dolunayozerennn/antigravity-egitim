@@ -80,4 +80,7 @@ Railway üzerinde worker olarak çalışır. GitHub push → auto-deploy.
 **Proje:** Antigravity Ekosistemi
 **Versiyon:** 1.2.0
 **İlk deploy:** 17 Nisan 2026
-**Son güncelleme:** 24 Nisan 2026
+**Son güncelleme:** 25 Nisan 2026
+
+## Canlı Test Geçmişi
+- **25 Nisan 2026:** Zapier (new-paid-member, membership-questions) ve ManyChat (wa-failed) webhook'ları başarıyla canlı test edildi. Hibrit fallback (WhatsApp yoksa/ulaşmazsa Notion güncellenip otomatik email atılması) doğrulandı.

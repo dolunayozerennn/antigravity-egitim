@@ -193,8 +193,8 @@
   4. Notion şemasına `errorCount`, `lastError`, `error` status eklendi, Dedup kontrolü genişletildi.
   5. YENİ — Skool ID property number→rich_text'e çevrildi, `notion.js` filtresi güncellendi (hex transaction_id kısaltılmadan saklanıyor).
   6. YENİ — Zapier Zap 1 (new-paid-member) ve Zap 2 (membership-questions) kuruldu, test edildi ve **publish** edildi.
-- **Durum:** ✅ Deploy SUCCESS (`a6cfce94`), Health check OK, Zapier canlı testleri başarılı.
-- **Kontrol 1:** ✅ 25 Nisan 2026 — Zapier Zap 1 & 2 canlı webhook testi başarılı. Railway logları hatasız. Groq validasyonu, Notion CRUD, dedup kontrolü çalışıyor. Test kayıtları temizlendi.
+- **Durum:** ✅ Deploy SUCCESS (`a6cfce94`), Health check OK, Zapier ve ManyChat canlı testleri başarılı.
+- **Kontrol 1:** ✅ 25 Nisan 2026 — Zapier Zap 1 & 2 canlı webhook testi başarılı. ManyChat webhook (wa-failed ve wa-optin) testleri yapıldı, hibrit fallback email sistemi doğrulandı. Railway logları hatasız. Groq validasyonu, Notion CRUD, dedup kontrolü çalışıyor. Test kayıtları temizlendi.
 - **Kontrol 2:** ⏳ Bekliyor (gerçek kullanıcı kaydı ile doğrulanacak)
 - **Sonuç:** ⏳ Kontrol 2 temizse kapatılır
 
