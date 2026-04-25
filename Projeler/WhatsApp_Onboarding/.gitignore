@@ -19,3 +19,7 @@ samples.json
 schema.json
 test-runner.html
 test_commands.sh
+
+# Veri dosyaları — kişisel bilgi içerir, repo'ya GITMEMELI
+*.csv
+import_old_users.js
