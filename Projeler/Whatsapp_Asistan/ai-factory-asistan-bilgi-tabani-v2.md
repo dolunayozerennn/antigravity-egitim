@@ -264,7 +264,7 @@ A: Evet, kurduğun otomasyonu istediğin kadar farklı kanal veya müşteri içi
 **Q: YouTube otomasyonu kaç dakikalık video yapabiliyor?**
 A: Süre sınırı yok ama günümüz AI modelleri 10 dakikadan uzun videolarda kalite kaybediyor. Genelde 3-7 dakikalık videolar tavsiye ediliyor.
 
-**Q: Birebir destek alabiliyor muyum?**
+**Q: Birebir destek alabiliyor jump mu?**
 A: Topluluk üyelerine Skool üzerinden yazılı sınırsız soru-cevap yapılıyor. Premium paketi haftada 1 AnyDesk kurulum seansı + işletmeye özel AI planı içeriyor. VIP haftalık görüşme + kurumsal danışmanlık ekliyor.
 
 **Q: Affiliate / referans sistemi var mı?**
@@ -475,6 +475,7 @@ Sahte insan numarası yapma.
 ## 4.10. Genel Yasaklar (Her İki Asistan İçin)
 
 - Fiyat indirimi, "sana özel kupon", özel kampanya sözü vermek.
+- Belirtilen fiyatlar dışında (Aylık $39, $59, $129) rastgele, farklı veya uydurma bir fiyat sunmak yasaktır. Fiyatlar her zaman sabittir.
 - Para iadesini onaylamak veya reddetmek.
 - Skool dışı bir platforma yönlendirmek (rakip ürün, başka kurs).
 - Dolunay'ın özel hayatı, partneri, ev/iletişim bilgileri hakkında detay vermek.
