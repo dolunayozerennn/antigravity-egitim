@@ -75,13 +75,32 @@ app.post('/webhook/new-paid-member', async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 app.post('/webhook/membership-questions', async (req, res) => {
   try {
-    const { transaction_id, first_name, last_name, answer_1 } = req.body;
+    const { transaction_id, first_name, last_name, answer_1, email } = req.body;
 
     log.info(`[membership-questions] Gelen veri: ${JSON.stringify(req.body)}`);
 
     if (!answer_1) {
       log.warn('[membership-questions] answer_1 boş, atlanıyor');
       return res.status(400).json({ error: 'answer_1 zorunlu' });
+    }
+
+    // 0. Eski üye kontrolü (E-mail veya İsim üzerinden)
+    const isEmailValid = email && email !== "No data" && email.trim() !== "";
+    if (isEmailValid) {
+      const existingByEmail = await notion.findByEmail(email.trim());
+      if (existingByEmail && existingByEmail.onboardingStatus === 'atlandı') {
+        log.info(`[membership-questions] Eski üye atlanıyor (email eşleşmesi): ${email}`);
+        return res.status(200).json({ success: true, skipped: true, reason: 'eski_uye' });
+      }
+    } else {
+      // Zapier'dan email "No data" veya boş geldiyse isim üzerinden tam eşleşme arıyoruz
+      if (first_name && first_name !== "No data") {
+        const existingByName = await notion.findByName(first_name, last_name);
+        if (existingByName && existingByName.onboardingStatus === 'atlandı') {
+          log.info(`[membership-questions] Eski üye atlanıyor (isim eşleşmesi): ${first_name} ${last_name}`);
+          return res.status(200).json({ success: true, skipped: true, reason: 'eski_uye' });
+        }
+      }
     }
 
     // 1. Telefon numarasını Groq LLM ile valide et
@@ -200,27 +219,22 @@ app.post('/webhook/wa-optin', async (req, res) => {
       return res.status(400).json({ error: 'phone zorunlu' });
     }
 
-    // 1. Notion'da üyeyi bul
     const member = await notion.findByPhone(phone);
     if (!member) {
       log.warn(`[wa-optin] Notion'da kullanıcı bulunamadı: ${phone}`);
       return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
     }
 
-    // 2. Sadece "email" statüsündeyse devam et
     if (member.onboardingStatus !== 'email') {
       log.info(`[wa-optin] Statü "email" değil (${member.onboardingStatus}), atlanıyor: ${phone}`);
       return res.status(200).json({ success: true, skipped: true, reason: `Statü: ${member.onboardingStatus}` });
     }
 
-    // 3. Notion'ı güncelle — email'den WhatsApp'a geçiş
     const currentNotes = member.notes ? `${member.notes}\n` : '';
     const newNote = `${currentNotes}[WA-OPTIN] Kullanıcı email'den WhatsApp'a geçiş yaptı — ${new Date().toISOString()}`;
-
     const currentStep = member.onboardingStep || 0;
 
     if (currentStep >= 6) {
-      // Onboarding zaten son adımda → tamamlandı olarak işaretle
       await notion.updatePage(member.id, {
         onboardingStatus: "tamamlandı",
         onboardingChannel: "whatsapp",
@@ -228,7 +242,6 @@ app.post('/webhook/wa-optin', async (req, res) => {
       });
       log.info(`[wa-optin] Step >= 6, onboarding tamamlandı olarak işaretlendi: ${member.firstName} (${phone})`);
     } else {
-      // Bir sonraki günün flow'unu ManyChat'ten hemen tetikle
       const nextStep = currentStep + 1;
       const nextFlow = ONBOARDING_FLOWS[nextStep];
 
