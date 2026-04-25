@@ -15,6 +15,8 @@ async function getHistory(subscriberId, limit = 20) {
       .limit(limit);
 
     if (error) throw error;
+
+    // Supabase'den en yeni mesajlar önce gelir, OpenAI için eski -> yeni sıralaması gerekir.
     return data.reverse();
   } catch (error) {
     log.error(`[memory] getHistory hatası: ${error.message}`, error);
@@ -26,7 +28,12 @@ async function saveMessage(subscriberId, role, content) {
   try {
     const { error } = await supabase
       .from('conversations')
-      .insert({ subscriber_id: subscriberId, role: role, content: content });
+      .insert({
+        subscriber_id: subscriberId,
+        role: role,
+        content: content
+      });
+
     if (error) throw error;
     log.debug(`[memory] Mesaj kaydedildi`, { subscriberId, role });
   } catch (error) {
@@ -41,7 +48,8 @@ async function getSubscriber(subscriberId) {
       .select('*')
       .eq('subscriber_id', subscriberId)
       .single();
-    if (error && error.code !== 'PGRST116') throw error;
+    
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is not found
     return data;
   } catch (error) {
     log.error(`[memory] getSubscriber hatası: ${error.message}`, error);
@@ -53,9 +61,14 @@ async function createSubscriber(subscriberId, phoneNumber) {
   try {
     const { data, error } = await supabase
       .from('subscribers')
-      .insert({ subscriber_id: subscriberId, phone_number: phoneNumber, kvkk_accepted: false })
+      .insert({
+        subscriber_id: subscriberId,
+        phone_number: phoneNumber,
+        kvkk_accepted: false
+      })
       .select()
       .single();
+
     if (error) throw error;
     return data;
   } catch (error) {
@@ -68,8 +81,12 @@ async function acceptKVKK(subscriberId) {
   try {
     const { error } = await supabase
       .from('subscribers')
-      .update({ kvkk_accepted: true, kvkk_accepted_at: new Date().toISOString() })
+      .update({
+        kvkk_accepted: true,
+        kvkk_accepted_at: new Date().toISOString()
+      })
       .eq('subscriber_id', subscriberId);
+
     if (error) throw error;
     log.info(`[memory] KVKK kabul edildi`, { subscriberId });
   } catch (error) {
@@ -77,4 +94,11 @@ async function acceptKVKK(subscriberId) {
   }
 }
 
-module.exports = { getHistory, saveMessage, getSubscriber, createSubscriber, acceptKVKK, supabase };
+module.exports = {
+  getHistory,
+  saveMessage,
+  getSubscriber,
+  createSubscriber,
+  acceptKVKK,
+  supabase
+};

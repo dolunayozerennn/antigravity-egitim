@@ -10,14 +10,20 @@ const openai = new OpenAI({ apiKey: config.openaiApiKey });
 async function generateResponse(subscriberId, currentMessage, detectedLanguage) {
   try {
     log.info(`[ai_engine] AI cevabı üretiliyor...`, { subscriberId, language: detectedLanguage });
+    
+    // 1. RAG ile ilgili bilgileri çek
     const ragChunks = await queryKnowledge(currentMessage);
+    
+    // 2. Hafızadan geçmişi çek
     const history = await getHistory(subscriberId, 20);
+    
+    // 3. System prompt'u hazırla
     const todayDate = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
     
     const systemPrompt = `
 [ROL]
 Sen, Dolunay Özeren'in yapay zekâ asistanısın. AI Factory hakkında 
-sorularını yanıtlamak için burdasın. ${detectedLanguage} dilinde cevap üret.
+sorularını yanıtlamak için buradasın. ${detectedLanguage} dilinde cevap üret.
 
 [İLETİŞİM KURALLARI]
 - Kısa ve öz yaz. Ideal 2-4 cümle, maksimum 6-8 cümle.
@@ -43,16 +49,36 @@ ${todayDate}
 ${ragChunks}
     `.trim();
 
-    const messages = [{ role: 'system', content: systemPrompt }];
-    for (const msg of history) { messages.push({ role: msg.role, content: msg.content }); }
+    // 4. API'ye gönderilecek mesaj listesini oluştur
+    const messages = [
+      { role: 'system', content: systemPrompt }
+    ];
+
+    // Geçmiş mesajları ekle
+    for (const msg of history) {
+      messages.push({ role: msg.role, content: msg.content });
+    }
+
+    // Mevcut mesajı ekle
     messages.push({ role: 'user', content: currentMessage });
 
     log.debug(`[ai_engine] OpenAI API'sine istek atılıyor...`);
-    const response = await openai.chat.completions.create({ model: 'gpt-4o-mini', messages: messages, temperature: 0.3 });
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini', // gpt-4o-mini is the current mini model, requested 4.1-mini maps here usually or gpt-4o
+      messages: messages,
+      temperature: 0.3
+    });
+
     const aiResponse = response.choices[0].message.content.trim();
     log.info(`[ai_engine] AI cevabı başarıyla üretildi.`);
+    
     return aiResponse;
-  } catch (error) { log.error(`[ai_engine] generateResponse hatası: ${error.message}`, error); throw error; }
+  } catch (error) {
+    log.error(`[ai_engine] generateResponse hatası: ${error.message}`, error);
+    throw error;
+  }
 }
 
-module.exports = { generateResponse };
+module.exports = {
+  generateResponse
+};

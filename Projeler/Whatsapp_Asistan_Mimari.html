@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp AI Asistan - Mimari Çerçeve</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --primary: #10b981; /* WhatsApp Green */
+            --primary-glow: rgba(16, 185, 129, 0.4);
+            --secondary: #6366f1; /* Indigo for AI/Logic */
+            --secondary-glow: rgba(99, 102, 241, 0.4);
+            --accent1: #f43f5e; /* Rose for Escalation */
+            --accent2: #f59e0b; /* Amber for Database */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #10b981, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
+        }
+
+        p.subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .architecture-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 40px;
+            max-width: 1200px;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Connecting Lines (Simplified with CSS) */
+        .architecture-container::before {
+            content: '';
+            position: absolute;
+            top: 150px;
+            bottom: 150px;
+            left: 50%;
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, var(--secondary), transparent);
+            z-index: -1;
+            transform: translateX(-50%);
+        }
+
+        .node {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .node::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: var(--node-color, var(--primary));
+            opacity: 0.8;
+        }
+
+        .node:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px var(--node-glow, var(--primary-glow));
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .node-icon {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+        }
+
+        .node-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .node-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .tech-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Grid Positioning */
+        .input-layer {
+            grid-column: 1 / 2;
+            grid-row: 2 / 3;
+            --node-color: var(--primary);
+            --node-glow: var(--primary-glow);
+            animation: slideInLeft 0.8s ease-out;
+        }
+
+        .ai-layer {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+            --node-color: #a855f7;
+            --node-glow: rgba(168, 85, 247, 0.4);
+            animation: fadeInDown 0.8s ease-out 0.2s both;
+        }
+
+        .core-layer {
+            grid-column: 2 / 3;
+            grid-row: 2 / 3;
+            --node-color: var(--secondary);
+            --node-glow: var(--secondary-glow);
+            transform: scale(1.05);
+            z-index: 2;
+            animation: zoomIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.4s both;
+        }
+
+        .core-layer:hover {
+            transform: scale(1.1) translateY(-10px);
+        }
+
+        .data-layer {
+            grid-column: 3 / 4;
+            grid-row: 2 / 3;
+            --node-color: var(--accent2);
+            --node-glow: rgba(245, 158, 11, 0.4);
+            animation: slideInRight 0.8s ease-out 0.6s both;
+        }
+
+        .escalation-layer {
+            grid-column: 2 / 3;
+            grid-row: 3 / 4;
+            --node-color: var(--accent1);
+            --node-glow: rgba(244, 63, 94, 0.4);
+            animation: fadeInUp 0.8s ease-out 0.8s both;
+        }
+
+        /* Arrows styling */
+        .arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: rgba(255,255,255,0.2);
+            animation: pulseArrow 2s infinite;
+        }
+
+        @keyframes pulseArrow {
+            0% { opacity: 0.2; transform: translateX(-5px); }
+            50% { opacity: 0.8; transform: translateX(5px); color: var(--secondary); }
+            100% { opacity: 0.2; transform: translateX(-5px); }
+        }
+
+        @keyframes pulseArrowVertical {
+            0% { opacity: 0.2; transform: translateY(-5px); }
+            50% { opacity: 0.8; transform: translateY(5px); color: var(--secondary); }
+            100% { opacity: 0.2; transform: translateY(-5px); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .architecture-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                gap: 20px;
+            }
+            .architecture-container::before {
+                display: none;
+            }
+            .input-layer { grid-column: 1; grid-row: 1; }
+            .core-layer { grid-column: 1; grid-row: 2; transform: none; }
+            .ai-layer { grid-column: 1; grid-row: 3; }
+            .data-layer { grid-column: 1; grid-row: 4; }
+            .escalation-layer { grid-column: 1; grid-row: 5; }
+            
+            .core-layer:hover { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>WhatsApp Asistan Mimarisi</h1>
+        <p class="subtitle">Çift-personalı AI Engine, RAG tabanlı bilgi yönetimi ve webhook odaklı modern altyapı.</p>
+    </header>
+
+    <div class="architecture-container">
+        
+        <!-- Input Layer -->
+        <div class="node input-layer">
+            <div class="node-icon">💬</div>
+            <div class="node-title">Kullanıcı & ManyChat</div>
+            <div class="node-desc">
+                Kullanıcılar WhatsApp üzerinden etkileşime girer. ManyChat mesajları karşılar ve webhook üzerinden sisteme iletir.
+            </div>
+            <div class="tech-stack">
+                <span class="tech-badge">WhatsApp API</span>
+                <span class="tech-badge">ManyChat Webhooks</span>
+            </div>
+        </div>
+
+        <!-- AI Layer -->
+        <div class="node ai-layer">
+            <div class="node-icon">🧠</div>
+            <div class="node-title">AI Engine & RAG</div>
+            <div class="node-desc">
+                <strong>Dual-Persona:</strong> Pre-sales (Satış Öncesi) ve Member Support (Üye Destek) modları.<br><br>
+                Sesli mesaj transkripsiyonu ve Vektör araması ile bağlama uygun yanıt üretimi.
+            </div>
+            <div class="tech-stack">
+                <span class="tech-badge">Groq/OpenAI</span>
+                <span class="tech-badge">Whisper (Audio)</span>
+                <span class="tech-badge">RAG</span>
+            </div>
+        </div>
+
+        <!-- Core Layer -->
+        <div class="node core-layer">
+            <div class="node-icon">⚡</div>
+            <div class="node-title">Orchestration (Node.js)</div>
+            <div class="node-desc">
+                Sistemin kalbi. Gelen webhook'ları dinler, abone durumunu doğrular, KVKK akışını yönetir, AI'dan yanıt alır ve ManyChat'e geri yollar.
+            </div>
+            <div class="tech-stack">
+                <span class="tech-badge">Node.js</span>
+                <span class="tech-badge">Express</span>
+                <span class="tech-badge">Railway Deploy</span>
+            </div>
+        </div>
+
+        <!-- Data Layer -->
+        <div class="node data-layer">
+            <div class="node-icon">🗄️</div>
+            <div class="node-title">Database & CRM</div>
+            <div class="node-desc">
+                <strong>Supabase:</strong> pgvector tabanlı bilgi bankası (knowledge_chunks), aboneler ve mesaj geçmişi.<br>
+                <strong>Notion:</strong> Etkileşimlerin CRM kaydı ve takibi.
+            </div>
+            <div class="tech-stack">
+                <span class="tech-badge">Supabase (PostgreSQL)</span>
+                <span class="tech-badge">pgvector</span>
+                <span class="tech-badge">Notion API</span>
+            </div>
+        </div>
+
+        <!-- Escalation Layer -->
+        <div class="node escalation-layer">
+            <div class="node-icon">🚨</div>
+            <div class="node-title">Eskalasyon & Bildirim</div>
+            <div class="node-desc">
+                AI'ın çözemediği karmaşık durumlarda veya VIP taleplerinde insan desteği için otomatik Telegram bildirimi atılır.
+            </div>
+            <div class="tech-stack">
+                <span class="tech-badge">Telegram Bot API</span>
+                <span class="tech-badge">Human Handoff</span>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
