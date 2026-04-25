@@ -134,13 +134,7 @@ async function createSubscriber(phoneNumber, firstName) {
 
 async function findSubscriberByPhone(phoneNumber) {
   try {
-    const fieldId = await getCustomFieldId('whatsapp_phone_text');
-    if (!fieldId) {
-      log.warn(`[manychat:api] whatsapp_phone_text custom field ID alınamadı.`);
-      return null;
-    }
-
-    const url = `${API_URL}/subscriber/findByCustomField?field_id=${fieldId}&field_value=${encodeURIComponent(phoneNumber)}`;
+    const url = `${API_URL}/subscriber/findByCustomField?field_name=whatsapp_phone_text&field_value=${encodeURIComponent(phoneNumber)}`;
     
     log.debug(`[manychat:api] findByCustomField isteği atılıyor.`, { url });
     
