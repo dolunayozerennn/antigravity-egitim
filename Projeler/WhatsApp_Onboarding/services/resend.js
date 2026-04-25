@@ -71,6 +71,7 @@ function buildEmailHtml(firstName, bodyText, videoUrl, thumbnailUrl, footerHtml)
     <tr>
       <td align="center" style="padding:24px 12px;">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:600px; background-color:#ffffff; border-radius:12px; overflow:hidden;">
+          <!-- WA_CTA_PLACEHOLDER -->
           <tr>
             <td style="padding:20px 24px 8px 24px; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:20px; font-weight:700; color:#111827;">
               Merhaba ${firstName} 👋
@@ -95,7 +96,6 @@ function buildEmailHtml(firstName, bodyText, videoUrl, thumbnailUrl, footerHtml)
               ${footerHtml}
             </td>
           </tr>
-          <!-- WA_CTA_PLACEHOLDER -->
           <tr>
             <td style="padding:12px 24px 20px 24px; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:11px; line-height:1.4; color:#9CA3AF; text-align:center;">
               Bu e-mail AI Factory topluluğuna kaydolduğun için gönderildi.
@@ -141,7 +141,7 @@ function getEmailContent(firstName, dayNumber) {
               <br><br>
               Aşağıdaki videoya tıklayarak izleyebilirsin. 👇
               <br><br>
-              Önümüzdeki 7 gün boyunca her gün sana böyle kısa bir video göndereceğim,
+              Önümüzdeki 6 gün boyunca her gün sana böyle kısa bir video göndereceğim,
               <br>
               e-posta kutunu ara ara kontrol etmeyi unutma. 🚀`,
       footer: `AI Factory topluluğunu incelemek istersen
@@ -269,7 +269,7 @@ const WA_CTA_HTML = `<tr>
       </tr>
       <tr>
         <td align="center" style="padding:8px 20px 16px 20px;">
-          <a href="https://wa.me/905374799287?text=Selam!%20AI%20Factory%20videolar%C4%B1m%C4%B1%20buradan%20almak%20istiyorum%20%F0%9F%93%B2"
+          <a href="https://wa.me/905374799287?text=Selam!%20AI%20Factory%20videolar%C4%B1m%C4%B1%20buradan%20almak%20istiyorum"
              target="_blank"
              style="display:inline-block; background-color:#25D366; color:#ffffff; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:15px; font-weight:600; padding:12px 28px; border-radius:8px; text-decoration:none;">
             WhatsApp'tan Al

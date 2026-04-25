@@ -182,21 +182,21 @@
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
-### 🟡 48-Saat İzleme — whatsapp-onboarding (Stabilizasyon Tamamlandı)
-- **Son deploy:** 2026-04-24 (dedup fix commit `088d68e`)
-- **İzleme bitiş:** 2026-04-26
+### 🟡 48-Saat İzleme — whatsapp-onboarding (Idempotency ve System Fallback + Zapier Kurulumu)
+- **Son deploy:** 2026-04-25 (commit `a6cfce94` — Skool ID number→rich_text fix)
+- **İzleme bitiş:** 2026-04-27
 - **Tamamlanan audit:** 7/7 ✅ (Railway, Notion şema, Git sync, E2E test, ManyChat, güvenlik, dedup)
 - **Değişiklikler:**
-  1. Notion şemasına `errorCount`, `lastError`, `error` status eklendi
-  2. Dedup kontrolü genişletildi: `['whatsapp','email','tamamlandı','error']`
-  3. wa-failed endpoint aktif, email fallback çalışıyor
-  4. **YENI — Commit `1ad5f7b`:** Day 4 YouTube linki güncellendi (`6A7GF394128`), WA CTA mesaj metni değiştirildi
-- **⚠️ PUSH BEKLİYOR:** Lokal commit `1ad5f7b` → GitHub'a push gerekiyor (`git push origin main`)
-  - GitHub MCP servisi + DNS çözümleme sandbox kısıtlaması nedeniyle push yapılamadı
-  - Ağ düzelince manuel push gerekli
-- **Kontrol 1:** ⏳ Bekliyor (26 Nisan öğlen cron tetiklemesi + health check)
-- **Kontrol 2:** ⏳ Bekliyor
-- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+  1. Webhook Idempotency: API'ler (Manychat, Resend) Notion güncellenmeden önce tetiklenerek Zapier retry'larına dirençli hale getirildi.
+  2. Manychat servisi custom_field ile numara bulamazsa System Phone üzerinden (lookup_user_by_system_field) arama yapacak şekilde fallback eklendi.
+  3. Resend template'lerinde `firstName` değişkenleri ve yeni YouTube URL (Day 4) aktif edildi.
+  4. Notion şemasına `errorCount`, `lastError`, `error` status eklendi, Dedup kontrolü genişletildi.
+  5. YENİ — Skool ID property number→rich_text'e çevrildi, `notion.js` filtresi güncellendi (hex transaction_id kısaltılmadan saklanıyor).
+  6. YENİ — Zapier Zap 1 (new-paid-member) ve Zap 2 (membership-questions) kuruldu, test edildi ve **publish** edildi.
+- **Durum:** ✅ Deploy SUCCESS (`a6cfce94`), Health check OK, Zapier canlı testleri başarılı.
+- **Kontrol 1:** ✅ 25 Nisan 2026 — Zapier Zap 1 & 2 canlı webhook testi başarılı. Railway logları hatasız. Groq validasyonu, Notion CRUD, dedup kontrolü çalışıyor. Test kayıtları temizlendi.
+- **Kontrol 2:** ⏳ Bekliyor (gerçek kullanıcı kaydı ile doğrulanacak)
+- **Sonuç:** ⏳ Kontrol 2 temizse kapatılır
 
 ### 🟡 48-Saat İzleme — Lead_Notifier_Bot
 - **Deploy tarihi:** 2026-04-24

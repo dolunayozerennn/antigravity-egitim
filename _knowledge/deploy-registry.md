@@ -182,23 +182,6 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ---
 
-### blog-yazici-cron
-- **Platform:** `railway-cron`
-- **Railway Project ID:** `49e850fc-df64-43eb-a839-18976b3965ff`
-- **Service ID:** `bdaaa906-abed-477c-b67c-dacec39fe733`
-- **Environment ID:** `84e15123-336f-4a16-8fea-5c12fa932760`
-- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo)
-- **Root Directory:** `Projeler/Blog_Yazici/`
-- **Lokal Klasör:** `Projeler/Blog_Yazici/`
-- **Start Komutu:** `python run_pipeline.py --from-notion`
-- **Cron Schedule:** `0 3 * * 1` (Haftalık Pazartesi, UTC 03:00 = TR 06:00)
-- **Son Deploy:** 2026-04-11 (fix: Gemini → OpenAI GPT-4.1 geçişi — Gemini free tier quota crash çözüldü)
-- **Cron Değişiklik:** 2026-04-10 — Günlükten haftalığa çekildi (Netlify free plan kredi optimizasyonu: her deploy 15 kredi, günlük=450/ay aşım, haftalık=60/ay güvenli)
-- **Durum:** ✅ Aktif (Haftalık Pazartesi UTC 03:00, Notion'dan yeni "Yayınlandı" videoları seçip otomatik blog üretip dolunay.ai'ye publish eder)
-- **Env Vars:** GROQ_API_KEY, OPENAI_API_KEY_DOLUNAY_AI, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, KIE_API_KEY, IMGBB_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON (base64), GITHUB_TOKEN
-
----
-
 ### supplement-telegram-bot
 - **Platform:** `railway`
 - **Railway Project ID:** `35acfbc5-f058-45f9-ba76-373b47e66b07`
@@ -224,7 +207,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-21 (fix: Aspect Ratio Normalization added against Kie AI 422 errors and asyncio.sleep(2) added against Telegram 409 Conflict overlaps)
+- **Son Deploy:** 2026-04-25 (fix: Telegram Timeout hata yönetimi eklendi, Dış ses kelime hedefi dinamikleştirildi)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID, FIRECRAWL_API_KEY
 
@@ -252,7 +235,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `5f346c33-6af1-4788-8405-34133c98451b`
 - **Service ID:** `64673112-d65a-4286-abc7-808af50901ce`
 - **Environment ID:** `f2000489-b711-4224-9fd4-44791bdb59d4`
-- **GitHub Repo:** `dolunayozerennn/whatsapp-onboarding` (standalone Node.js repo)
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/WhatsApp_Onboarding`)
 - **Lokal Klasör:** `Projeler/WhatsApp_Onboarding/`
 - **Start Komutu:** `node server.js`
 - **Cron Schedule:** `0 12 * * *` (Günlük, UTC 09:00 = TR 12:00 — app-level cron)
@@ -260,11 +243,13 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Webhook URL'ler:**
   - `POST /webhook/new-paid-member` (Zapier Zap #1)
   - `POST /webhook/membership-questions` (Zapier Zap #2)
+  - `POST /webhook/wa-optin` (ManyChat — Email→WhatsApp kanal geçişi)
+  - `POST /webhook/wa-failed` (ManyChat — Hibrit fallback email tetikleyici)
   - `GET /health` (Monitoring)
-- **Son Deploy:** 2026-04-22 (fix: Notion Database ID güncellendi, Resend logları optimize edildi, test_groq silindi)
-- **Durum:** ✅ Aktif (Uçtan uca test için Zapier webhook kurulumu bekleniyor)
-- **Env Vars:** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL
-- **Not:** ✅ Resend email fallback yapılandırıldı (dolunay.ai, EU-West).
+- **Son Deploy:** 2026-04-24 (feat: Hibrit fallback — wa-optin/wa-failed endpoints, zengin HTML email template, WhatsApp CTA enjeksiyonu, Day4 video fix, dedup güçlendirme)
+- **Durum:** ✅ Aktif (Health check OK — 2 aktif onboarding, tüm servisler connected/configured)
+- **Env Vars:** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL, WA_BUSINESS_PHONE
+- **Not:** ✅ Hibrit fallback aktif: WA teslim başarısızsa → Resend email (dolunay.ai) + WhatsApp CTA butonu. v1.2.0
 
 ---
 
@@ -316,6 +301,7 @@ Aşağıdaki projeler ilerleyen dönemde platformdan silinmek üzere işaretlenm
 - ~~`dolunay-youtube-kapak`~~ (`586a7bf6`) — V2'ye (Dolunay_Otonom_Kapak) taşındı. **SİLİNDİ** (2026-04-16)
 - ~~`sweatcoin-email-automation`~~ (`0c1ff084`) — Proje tamamen kapatıldı, Railway'den silindi, lokal arşive taşındı. **SİLİNDİ** (2026-04-08)
 - ~~`Emlak Arazi Drone Çekim`~~ — Local-only proje, hiç deploy edilmemişti. Lokal arşive taşındı. **ARŞİVLENDİ** (2026-04-08)
+- ~~`blog-yazici-cron`~~ (`49e850fc`) — Lokal arşive taşındı. **ARŞİVLENDİ** (2026-04-24)
 
 ### ceren-marka-takip-cron
 - **Platform:** `railway-cron`

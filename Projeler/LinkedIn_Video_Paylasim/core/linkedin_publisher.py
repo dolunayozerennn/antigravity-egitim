@@ -88,6 +88,7 @@ class LinkedInPublisher:
 
             video_urn = data.get("value", {}).get("video")
             upload_instructions = data.get("value", {}).get("uploadInstructions", [])
+            upload_token = data.get("value", {}).get("uploadToken", "")
 
             if not video_urn:
                 ops.error(f"No video URN in initialize response: {data}")
@@ -95,6 +96,7 @@ class LinkedInPublisher:
 
             # Store upload instructions for chunk upload
             self._upload_instructions = upload_instructions
+            self._upload_token = upload_token
             ops.info(f"Upload initialized. Video URN: {video_urn}, Chunks: {len(upload_instructions)}")
             return video_urn
 
@@ -106,16 +108,21 @@ class LinkedInPublisher:
 
     def _upload_file_chunks(self, video_path: str, video_urn: str, file_size: int) -> bool:
         """Upload the video file in chunks according to upload instructions."""
+        self._uploaded_part_ids = []
         try:
             with open(video_path, "rb") as f:
                 for i, instruction in enumerate(self._upload_instructions):
                     upload_url = instruction.get("uploadUrl")
+                    first_byte = instruction.get("firstByte", 0)
+                    last_byte = instruction.get("lastByte", 0)
+                    chunk_size = (last_byte - first_byte + 1) if last_byte else self.CHUNK_SIZE
+                    
                     if not upload_url:
                         ops.error(f"No upload URL for chunk {i}")
                         return False
 
-                    # Read the chunk
-                    chunk_data = f.read(self.CHUNK_SIZE)
+                    f.seek(first_byte)
+                    chunk_data = f.read(chunk_size)
                     if not chunk_data:
                         break
 
@@ -130,6 +137,12 @@ class LinkedInPublisher:
                     if resp.status_code not in (200, 201):
                         ops.error(f"Chunk {i+1} upload failed: {resp.status_code} - {resp.text[:300]}")
                         return False
+                        
+                    etag = resp.headers.get("ETag")
+                    if etag:
+                        self._uploaded_part_ids.append(etag)
+                    else:
+                        ops.warning(f"No ETag found in response for chunk {i+1}")
 
             ops.info("All chunks uploaded successfully.")
             return True
@@ -140,6 +153,28 @@ class LinkedInPublisher:
 
     def _finalize_upload(self, video_urn: str) -> bool:
         """Finalize the video upload by checking processing status."""
+        
+        # 1. Action Finalize
+        finalize_url = f"{self.API_BASE}/rest/videos?action=finalizeUpload"
+        finalize_payload = {
+            "finalizeUploadRequest": {
+                "video": video_urn,
+                "uploadToken": getattr(self, '_upload_token', ""),
+                "uploadedPartIds": getattr(self, '_uploaded_part_ids', [])
+            }
+        }
+        
+        try:
+            resp = requests.post(finalize_url, headers=self.headers, json=finalize_payload, timeout=30)
+            if resp.status_code not in (200, 201, 204):
+                ops.error(f"Finalize upload failed: {resp.status_code} - {resp.text[:500]}")
+                return False
+            ops.info("Upload finalized successfully. Polling status...")
+        except Exception as e:
+            ops.error(f"Error finalizing upload: {e}", exception=e)
+            return False
+
+        # 2. Poll for status
         url = f"{self.API_BASE}/rest/videos/{video_urn}"
 
         max_retries = 90  # Wait up to 15 minutes

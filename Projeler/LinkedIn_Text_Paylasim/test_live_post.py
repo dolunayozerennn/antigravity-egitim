@@ -28,8 +28,7 @@ def test_pipeline():
     
     # URL oluşturma
     try:
-        post_id = post_urn.split(':')[-1]
-        url = f"https://www.linkedin.com/feed/update/urn:li:ugcPost:{post_id}/"
+        url = f"https://www.linkedin.com/feed/update/{post_urn}/"
         print("\n✅ TEST BAŞARILI! Görmek için tıklayın:")
         print(url)
     except Exception as e:
