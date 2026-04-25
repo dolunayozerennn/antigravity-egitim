@@ -197,7 +197,7 @@ function parseMember(page) {
   };
 }
 
-// ─── NOT EKLEME HELPER ────────────────────────────────────────────────────────
+// ─── NOT EKLEME HELPER ──────────────────────────────────────────
 // Mevcut notları silmeden yeni not ekler. Notion rich_text 2000 karakter limiti.
 async function appendNote(pageId, newNote) {
   try {
