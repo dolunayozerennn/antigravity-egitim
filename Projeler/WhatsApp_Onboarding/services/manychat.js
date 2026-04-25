@@ -56,7 +56,7 @@ async function getCustomFieldId(fieldName) {
   }
 
   try {
-    customFieldsFetchPromise = fetchWithRetry(`${API_URL}/subscriber/getCustomFields`, {
+    customFieldsFetchPromise = fetchWithRetry(`${API_URL}/page/getCustomFields`, {
       method: 'GET',
       headers
     });
