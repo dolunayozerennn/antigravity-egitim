@@ -13,7 +13,7 @@ const requiredEnvs = [
 
 for (const env of requiredEnvs) {
   if (!process.env[env]) {
-    throw new Error(`EnvironmentError: Gerekli ortam değişkeni eksik: ${env}`);
+    throw new Error(`EnvironmentError: Gerekli ortam degiskeni eksik: ${env}`);
   }
 }
 

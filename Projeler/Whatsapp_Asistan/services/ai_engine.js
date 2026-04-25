@@ -64,7 +64,7 @@ ${ragChunks}
 
     log.debug(`[ai_engine] OpenAI API'sine istek atılıyor...`);
     const response = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini', // gpt-4o-mini is the current mini model, requested 4.1-mini maps here usually or gpt-4o
+      model: 'gpt-4.1-mini',
       messages: messages,
       temperature: 0.3
     });
