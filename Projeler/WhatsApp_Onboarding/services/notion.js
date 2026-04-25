@@ -11,12 +11,6 @@ const log = require('../utils/logger');
 const notion = new Client({ auth: config.notionApiKey });
 const DATABASE_ID = config.notionDatabaseId;
 
-// ─── Notion Database Şeması ───
-// İsim (title), Soyisim (text), Email (email), Telefon (phone_number),
-// Skool ID (rich_text), Kayıt Tarihi (date), Onboarding Durumu (select),
-// Onboarding Kanalı (select), Onboarding Adımı (number),
-// Onboarding Başlangıcı (date), Notlar (text)
-
 async function findByTransactionId(transactionId) {
   if (!transactionId) return null;
 
@@ -197,6 +191,22 @@ function parseMember(page) {
   };
 }
 
+async function appendNote(pageId, newNote) {
+  try {
+    const page = await notion.pages.retrieve({ page_id: pageId });
+    const existing = page.properties["Notlar"]?.rich_text?.[0]?.text?.content || '';
+    const timestamp = new Date().toISOString().split('T')[0];
+    const entry = `[${timestamp}] ${newNote}`;
+    const combined = existing ? `${existing}\n${entry}` : entry;
+    const trimmed = combined.slice(-2000);
+    
+    await updatePage(pageId, { notes: trimmed });
+    log.info(`[notion] Not eklendi: ${pageId} → ${entry.slice(0, 80)}...`);
+  } catch (error) {
+    log.error(`[notion] appendNote hatası (${pageId}): ${error.message}`);
+  }
+}
+
 module.exports = {
   findByTransactionId,
   findByPhone,
@@ -205,5 +215,6 @@ module.exports = {
   createMember,
   updatePage,
   getActiveOnboardingMembers,
-  getActiveEmailMembers
+  getActiveEmailMembers,
+  appendNote
 };
