@@ -2,17 +2,26 @@
 Akıllı Watchdog — Konfigürasyon Modülü
 LLM-destekli pipeline sağlık kontrolü.
 
-İzlenen projeler:
-  1. Tele Satış CRM (Sheets → Notion)
-  2. Lead Notifier Bot (Sheets → Telegram/Email)
-  3. Tele Satış Notifier (Sheets → Email zamanlı)
-  4. Marka İş Birliği (Notion custom)
-  5. Blog Yazıcı (Notion Operations Log)
-  6. Dolunay Reels Kapak (Notion)
-  7. İşbirliği Tahsilat Takip (Notion)
-  8. LinkedIn Video Paylaşım (Notion)
-  9. LinkedIn Text Paylaşım (Notion)
-  10. Twitter Video Paylaşım (Notion)
+İzlenen projeler (Nisan 2026 — tüm aktif ekosistem):
+  ── Notion + Railway ──
+  1. Marka İş Birliği (Notion custom — haftada 2)
+  2. Dolunay Reels Kapak (Notion — günlük)
+  3. Dolunay YouTube Kapak (Notion — günlük)
+  4. İşbirliği Tahsilat Takip (Notion — cron)
+  5. LinkedIn Video Paylaşım (Notion — günlük)
+  6. LinkedIn Text Paylaşım (Notion — haftada 2)
+  7. Twitter Video Paylaşım (Notion — günde 3)
+  8. eCom Reklam Otomasyonu (Notion — 7/24 bot)
+  9. YouTube Otomasyonu V3 (Notion — günlük)
+
+  ── Railway Only (Notion DB'siz) ──
+  10. WhatsApp Onboarding (Express + Cron — 7/24 worker)
+  11. Ceren İzlenme Notifier (CronJob — haftada 2)
+  12. Ceren Marka Takip (CronJob — günlük)
+  13. Lead Pipeline (CronJob — 10 dk)
+  14. Lead Notifier Bot V3 (Worker — 7/24)
+  15. Shorts Demo Bot (Worker — 7/24 Telegram)
+  16. Supplement Telegram Bot (Worker — 7/24 Telegram)
 
 Ek Katmanlar:
   - Token Freshness: LinkedIn OAuth2 token expire takibi (14 gün kala uyarı)
@@ -73,6 +82,7 @@ class Config:
     # ── İzlenen Projeler ──────────────────────────────────
     MONITORED_PROJECTS = [
 
+        # ── Notion + Railway Projeleri ────────────────────────
         {
             "name": "Marka İş Birliği",
             "spreadsheet_id": "",
@@ -89,20 +99,6 @@ class Config:
             "expected_daily_activity": False,  # Pipeline runs 2 days a week
             "railway_service_id": "997b869b-bd24-4be5-b37f-d5ff2f85232b",
         },
-        # ── Yeni Projeler (Mart 2026) ────────────────────────
-        {
-            "name": "Blog Yazıcı",
-            "spreadsheet_id": "",
-            "sheet_tabs": [],
-            "expected_columns": [],
-            "expected_column_keywords": [],
-            "pipeline": "custom_notion",
-            "notion_token_key": "NOTION_SOCIAL_TOKEN",
-            "notion_db_id": "32f955140a3281fe965bc2e227046837",
-            "notion_properties": ["Title", "Message", "Level", "Component", "Zaman"],
-            "expected_daily_activity": False,  # Günlük cron ama her çalışmada yeni blog üretilmeyebilir
-            "railway_service_id": "bdaaa906-abed-477c-b67c-dacec39fe733",
-        },
         {
             "name": "Dolunay Reels Kapak",
             "spreadsheet_id": "",
@@ -117,7 +113,24 @@ class Config:
             ),
             "notion_properties": ["Name", "Status"],
             "expected_daily_activity": False,  # Her çalışmada üretim olmayabilir
-            "railway_service_id": "98fa5736-7e6f-454a-a648-22e47a92c28a",
+            "railway_service_id": "3afcca6e-8f29-4ea6-bc99-b212a4269e34",
+        },
+        {
+            "name": "Dolunay YouTube Kapak",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "custom_notion",
+            "notion_token_key": "NOTION_SOCIAL_TOKEN",
+            "notion_db_id": os.environ.get(
+                "NOTION_DB_REELS_KAPAK",
+                "27b955140a32838589eb813222d532a2"
+            ),
+            "notion_properties": ["Name", "Status"],
+            "expected_daily_activity": False,
+            "shared_notion_db_group": "otonom_kapak_db",  # Reels ile aynı Notion DB
+            "railway_service_id": "0bfc46ea-887f-4a62-a3da-bc7fb824eb3c",
         },
         {
             "name": "İşbirliği Tahsilat Takip",
@@ -185,6 +198,104 @@ class Config:
             "expected_daily_activity": False,  # Yeni TikTok videosu yoksa çalışmaz
             "shared_notion_db_group": "social_media_db",
             "railway_service_id": "55f76475-5b45-4050-93f7-723110ab470e",
+        },
+        {
+            "name": "eCom Reklam Otomasyonu",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "custom_notion",
+            "notion_token_key": "NOTION_SOCIAL_TOKEN",
+            "notion_db_id": os.environ.get(
+                "NOTION_DB_ECOM_REKLAM",
+                ""  # Watchdog'un kendi env'inde tanımlı değilse boş — sadece Railway probe çalışır
+            ),
+            "notion_properties": [],  # Notion erişim kontrolü yeterli
+            "expected_daily_activity": False,  # Talep bazlı bot
+            "railway_service_id": "98a3be1e-f6f4-4ca2-8780-2b88bbd2125a",
+        },
+        {
+            "name": "YouTube Otomasyonu V3",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "custom_notion",
+            "notion_token_key": "NOTION_SOCIAL_TOKEN",
+            "notion_db_id": os.environ.get(
+                "NOTION_DB_YOUTUBE_OTOMASYON",
+                ""  # Watchdog'un kendi env'inde tanımlı değilse boş — sadece Railway probe çalışır
+            ),
+            "notion_properties": [],
+            "expected_daily_activity": False,  # Günlük cron ama her gün üretim olmayabilir
+            "railway_service_id": "d17abb9e-3ef1-4f50-98c1-f4290bb2f090",
+        },
+
+        # ── Railway Only Projeler (Notion DB'siz) ────────────
+        {
+            "name": "WhatsApp Onboarding",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "railway_only",
+            "railway_service_id": "64673112-d65a-4286-abc7-808af50901ce",
+            "health_endpoint": "https://whatsapp-onboarding-production.up.railway.app/health",
+        },
+        {
+            "name": "Ceren İzlenme Notifier",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "railway_only",
+            "railway_service_id": "058d3d5c-9589-4c49-aca2-f6965207aa38",
+        },
+        {
+            "name": "Ceren Marka Takip",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "railway_only",
+            "railway_service_id": "128e496f-9f8a-437e-b401-e89c3b0a1e08",
+        },
+        {
+            "name": "Lead Pipeline",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "railway_only",
+            "railway_service_id": "b4a28784-6e03-473f-b8fa-c1021820d703",
+        },
+        {
+            "name": "Lead Notifier Bot V3",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "railway_only",
+            "railway_service_id": "2563df9f-37ac-4ab2-80f6-06ac8d19aec3",
+        },
+        {
+            "name": "Shorts Demo Bot",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "railway_only",
+            "railway_service_id": "151725ce-0416-41dd-9b94-768353c919b5",
+        },
+        {
+            "name": "Supplement Telegram Bot",
+            "spreadsheet_id": "",
+            "sheet_tabs": [],
+            "expected_columns": [],
+            "expected_column_keywords": [],
+            "pipeline": "railway_only",
+            "railway_service_id": "0a3f240f-6fea-4176-b480-a2cdb99e4a93",
         },
 
     ]
