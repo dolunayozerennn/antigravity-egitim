@@ -4,9 +4,14 @@
   "description": "AI Factory WhatsApp Asistanı",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "npm run seed && node server.js",
     "dev": "node server.js",
-    "seed": "node scripts/seed_knowledge.js"
+    "seed": "node scripts/seed_knowledge.js",
+    "kb:list": "node scripts/kb_manager.js list",
+    "kb:search": "node scripts/kb_manager.js search",
+    "kb:validate": "node scripts/kb_manager.js validate",
+    "kb:stats": "node scripts/kb_manager.js stats",
+    "kb:diff": "node scripts/kb_manager.js diff"
   },
   "dependencies": {
     "express": "4.21.2",

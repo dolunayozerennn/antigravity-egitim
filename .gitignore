@@ -133,7 +133,7 @@ Projeler/Lead_Pipeline/.state_*.json
 Projeler/Lead_Notifier_Bot/.last_row_counts.json
 
 # ==========================================
-# 🚫 GEÇİCİ PUSH/DEPLOY/TEST SCRİPTLERİ
+# 🚫 GEÇİCİ PUSH/DEPLOY/TEST SCRIPTLERİ
 # ==========================================
 # Token içerebilecek geçici helper dosyaları
 _push_helper.py

@@ -1,7 +1,20 @@
 import json
 import urllib.request
 
-token = "14ac7442-43fc-480a-b7e2-e8b5dacf1bb3"
+import os
+def get_railway_token():
+    try:
+        with open("/Users/dolunayozeren/Desktop/Antigravity/_knowledge/credentials/master.env", "r") as f:
+            for line in f:
+                if line.startswith("RAILWAY_TOKEN="):
+                    return line.strip().split("=")[1].strip('\'"')
+    except:
+        pass
+    return os.environ.get("RAILWAY_TOKEN", "")
+
+# token variable
+token_val = get_railway_token()
+token = token_val
 project_id = "87e24335-52c9-460f-8b2e-0f481f5501bd"
 service_id = "d17abb9e-3ef1-4f50-98c1-f4290bb2f090"
 

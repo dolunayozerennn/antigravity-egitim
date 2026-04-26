@@ -18,6 +18,7 @@ Lead_Notifier_Bot/
 ├── config.py            # Env-only konfigürasyon
 ├── sheets_reader.py     # Google Sheets — ID tabanlı state, lead_status filtresi
 ├── notifier.py          # Telegram + Gmail API bildirim
+├── share_sheet.py       # Google Sheets manuel yetkilendirme betiği
 ├── requirements.txt     # Kilitli versiyonlar
 ├── railway.json         # Railway deployment config
 ├── .gitignore           # Güvenlik kuralları
@@ -36,7 +37,7 @@ Lead_Notifier_Bot/
 | `NOTIFY_EMAIL` | Bildirim alacak e-posta | Hayır (default: `savasgocgen@gmail.com`) |
 | `SENDER_EMAIL` | Gönderici e-posta | Hayır (default: `ozerendolunay@gmail.com`) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Google SA JSON (Railway) | ✅ (Production) |
-| `GOOGLE_OUTREACH_TOKEN_JSON` | Gmail OAuth token (Railway) | Email için |
+| `GOOGLE_OUTREACH_TOKEN_JSON` | Gmail/Sheets OAuth token | Email ve Sheets için |
 | `MAX_BATCH_SIZE` | Tek döngüde max bildirim | Hayır (default: `10`) |
 
 ## 🚀 Kullanım

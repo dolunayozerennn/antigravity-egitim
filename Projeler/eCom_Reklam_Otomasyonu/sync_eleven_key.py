@@ -19,7 +19,20 @@ projectId = "8797307d-7b80-41cb-add0-976c09eaeed4"
 environmentId = "b8353ac5-0ec4-4785-8d72-7aae17f18e56"
 serviceId = "98a3be1e-f6f4-4ca2-8780-2b88bbd2125a"
 
-railway_token = "14ac7442-43fc-480a-b7e2-e8b5dacf1bb3"
+import os
+def get_railway_token():
+    try:
+        with open("/Users/dolunayozeren/Desktop/Antigravity/_knowledge/credentials/master.env", "r") as f:
+            for line in f:
+                if line.startswith("RAILWAY_TOKEN="):
+                    return line.strip().split("=")[1].strip('\'"')
+    except:
+        pass
+    return os.environ.get("RAILWAY_TOKEN", "")
+
+# token variable
+token_val = get_railway_token()
+railway_token = token_val
 headers = {"Authorization": f"Bearer {railway_token}", "Content-Type": "application/json"}
 
 # Upsert variable mutation

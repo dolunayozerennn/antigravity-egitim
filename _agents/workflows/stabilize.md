@@ -291,7 +291,7 @@ Eşleşme varsa ve Dockerfile'da eksikse → ❌ Docker build veya runtime'da ç
 
 ### 3.1 — Railway Log Analizi (Railway projeleri için)
 ```bash
-TOKEN="14ac7442-43fc-480a-b7e2-e8b5dacf1bb3"
+TOKEN="<READ FROM master.env>"
 # deploy-registry.md'den proje ID'lerini al
 
 # Son deployment'ı bul
@@ -367,7 +367,7 @@ Fix yaptıysan → aşağıdaki döngüyü çalıştır:
 
 ### 6.1 — Manuel Tetikleme (Railway)
 ```bash
-TOKEN="14ac7442-43fc-480a-b7e2-e8b5dacf1bb3"
+TOKEN="<READ FROM master.env>"
 
 # Son deployment ID'yi bul
 DEPLOYMENT_ID=$(_skills/use-railway/scripts/railway-api.sh '{ deployments(first: 1, input: { projectId: "<PROJE_ID>", serviceId: "<SERVIS_ID>" }) { edges { node { id status } } } }' | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['deployments']['edges'][0]['node']['id'])")

@@ -150,6 +150,10 @@ fi
 - Sistem bağımlılığı gerektiren kod var ama `nixpacks.toml` yoksa → ❌ PUSH YAPMA, `nixpacks.toml` oluştur!
 - `nixpacks.toml`'da gerekli paket eksikse → ❌ PUSH YAPMA, `nixPkgs`'e ekle!
 
+> **💡 NODE.JS BİLGİ NOTU (PRE-START SCRIPTS):**
+> Eğer projeniz Node.js ise ve container kalkmadan önce `seed`, `migrate` veya `build` gibi bir komut çalıştırmak istiyorsanız bunu `nixpacks.toml`'da `[start] cmd="..."` olarak belirtmek Railway'de GÖZARDI EDİLEBİLİR. Bunun yerine en güvenli yöntem **`package.json` içindeki `start` script'ini** modifiye etmektir:
+> `"start": "npm run seed && node server.js"`
+
 ### 2.5.8 — Lokal ↔ GitHub Diff Kontrolü (Re-deploy için)
 ```
 Re-deploy ise:
@@ -275,27 +279,34 @@ docker run --rm -e ENV=development railtest
 
 **⚠️ NOT:** Docker Desktop yoksa veya proje sistem bağımlılığı kullanmıyorsa bu adım ATLANABİLİR.
 
-## Adım 3: GitHub'a Push (Native Mono-Repo)
+## Adım 3: GitHub'a Push ve Railway Deploy (DNS Bypass)
 
 > **DİKKAT:** Sistemin mimarisi Native Mono-Repo'ya geçmiştir. Railway için ayrı GitHub reposu OLUŞTURULMAZ. Tüm kod `dolunayozerennn/antigravity-egitim` üzerinde yaşar.
-> **KRİTİK KURAL (DNS BYPASS):** Agent sandbox ortamında DNS engeli olduğu için `git push` YASAKTIR. Dosyaları terminalden değil, doğrudan MCP aracıyla otonom olarak pushlamalısın!
+> **KRİTİK KURAL (DNS BYPASS VE RAILWAY MCP):** Agent sandbox ortamında DNS engeli olduğu için terminalden `git push` VEYA `railway up` ÇALIŞTIRMAK YASAKTIR. Bu işlemleri her zaman MCP araçlarıyla yapacaksın!
 
-1. **Değişiklikleri MCP Aracı İle Pushla:**
-   - Hangi dosyaların değiştiğini bul (`git diff --name-only` veya önceden biliyorsan).
+1. **Lokal Kodu Railway'e Doğrudan Deploy Et (`mcp_railway_deploy`):**
+   - Sandbox DNS engelini aşmanın EN KESİN yolu doğrudan Railway MCP Sunucusu'nu kullanmaktır.
+   - `mcp_railway_deploy` aracını çağır ve `workspacePath` olarak projenin tam yolunu ver.
+   - Bu araç GitHub push ihtiyacı olmadan lokaldeki kodu anında Railway'e gönderip derlemeyi başlatır.
+
+2. **Değişiklikleri GitHub'a Senkronize Et (`mcp_github-mcp-server_push_files`):**
+   - Hangi dosyaların değiştiğini bul (`git diff --name-only`).
    - Değişen dosyaları okuyup `mcp_github-mcp-server_push_files` aracına ver.
      - `owner`: "dolunayozerennn"
      - `repo`: "antigravity-egitim"
      - `branch`: "main"
      - `message`: "deploy: [PROJE_ADI] güncel kod (otonom mcp push)"
      - `files`: {path: "...", content: "..."} dizisi.
-   - Sadece kodu, `requirements.txt` / `package.json` vb. anlamlı dosyaları pushla. `venv`, `__pycache__` gibi dosyaları kesinlikle hariç tut.
+   - Sadece kodu, `requirements.txt` / `package.json` vb. anlamlı dosyaları pushla. `venv`, `__pycache__` gibi dosyaları hariç tut.
 
-2. **Lokal Senkronizasyon (Opsiyonel):**
+3. **Lokal Senkronizasyon (Opsiyonel):**
    - MCP API ile push yapıldığı için lokal git ağacı geri kalabilir. Gerekirse terminale `git pull --rebase origin main` (veya `git fetch` vb.) önererek lokal senkronizasyonu sağla ama otonom pushu bekleme.
 
 ## Adım 4: Railway Proje Oluştur (API ile)
 
 ```bash
+export RAILWAY_TOKEN=$(grep RAILWAY_TOKEN _knowledge/credentials/master.env | cut -d '=' -f2)
+
 # 4.1 — Proje oluştur
 _skills/use-railway/scripts/railway-api.sh 'mutation { projectCreate(input: { name: "PROJE_ADI" }) { id environments { edges { node { id name } } } } }'
 
@@ -307,6 +318,8 @@ _skills/use-railway/scripts/railway-api.sh 'mutation { projectCreate(input: { na
 ## Adım 5: Railway Servis Oluştur + GitHub Bağla (API ile)
 
 ```bash
+export RAILWAY_TOKEN=$(grep RAILWAY_TOKEN _knowledge/credentials/master.env | cut -d '=' -f2)
+
 # 5.1 — GitHub repo'dan servis oluştur
 # DİKKAT: repo her zaman "dolunayozerennn/antigravity-egitim" olmalıdır.
 _skills/use-railway/scripts/railway-api.sh 'mutation { serviceCreate(input: { projectId: "PROJE_ID", name: "SERVIS_ADI", source: { repo: "dolunayozerennn/antigravity-egitim" }, branch: "main" }) { id name } }'
@@ -334,16 +347,16 @@ _skills/use-railway/scripts/railway-api.sh 'mutation { variableCollectionUpsert(
 
 1. `deploy-registry.md`'den Proje ID, Servis ID, Environment ID ve **GitHub Repo** oku
 2. **Adım 2.5'i çalıştır** — Kod sağlık kontrolü (ZORUNLU!)
-3. **⚠️ MONO-REPO SYNC (MCP PUSH):**
-   - Eski kopuk (multi-repo) mimariden **Native Mono-Repo**'ya geçilmiştir.
-   - Değişen proje dosyalarını bul ve `mcp_github-mcp-server_push_files` aracıyla doğrudan pushla! (Terminal komutu ÖNERME).
-   - Railway, `Root Directory` ayarı sayesinde monorepo üzerinden sadece ilgili projeyi bulup derleyecektir.
-4. Deploy loglarını kontrol et — fatal error pattern'leri ara
-5. Başarısızsa → düzelt, tekrar push, tekrar deploy
+3. **⚠️ DOĞRUDAN DEPLOY (mcp_railway_deploy):**
+   - Değişen proje klasöründe `mcp_railway_deploy` aracını çalıştır. Bu işlem DNS engellerine takılmadan lokal kodu Railway'e taşır ve deploy'u başlatır.
+   - İşlem bittikten sonra `mcp_github-mcp-server_push_files` ile değişiklikleri GitHub repository'e gönder.
+4. Deploy loglarını kontrol et (`mcp_railway_get-logs`) — fatal error pattern'leri ara.
+5. Başarısızsa → düzelt, tekrar `mcp_railway_deploy` çalıştır.
 
 ## Adım 7: Deploy Durumunu Takip Et
 
 ```bash
+export RAILWAY_TOKEN=$(grep RAILWAY_TOKEN _knowledge/credentials/master.env | cut -d '=' -f2)
 # 30 saniye bekle, sonra kontrol et
 _skills/use-railway/scripts/railway-api.sh '{ deployments(first: 3, input: { projectId: "PROJE_ID", environmentId: "ENV_ID", serviceId: "SERVIS_ID" }) { edges { node { id status createdAt } } } }'
 ```
@@ -361,6 +374,7 @@ _skills/use-railway/scripts/railway-api.sh '{ deployments(first: 3, input: { pro
 
 2. **Son deployment'ın loglarını çek:**
 ```bash
+export RAILWAY_TOKEN=$(grep RAILWAY_TOKEN _knowledge/credentials/master.env | cut -d '=' -f2)
 _skills/use-railway/scripts/railway-api.sh '{ deploymentLogs(deploymentId: "DEPLOYMENT_ID", limit: 100) { message severity timestamp } }'
 ```
 
@@ -392,6 +406,7 @@ _skills/use-railway/scripts/railway-api.sh '{ deploymentLogs(deploymentId: "DEPL
 
 ### Kontrol 2: Runtime Log Taraması
 ```bash
+export RAILWAY_TOKEN=$(grep RAILWAY_TOKEN _knowledge/credentials/master.env | cut -d '=' -f2)
 # Son 100 log satırında fatal error ara
 _skills/use-railway/scripts/railway-api.sh '{ deploymentLogs(deploymentId: "DEPLOYMENT_ID", limit: 100) { message severity timestamp } }'
 ```

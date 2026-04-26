@@ -203,11 +203,11 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `8797307d-7b80-41cb-add0-976c09eaeed4`
 - **Service ID:** `98a3be1e-f6f4-4ca2-8780-2b88bbd2125a`
 - **Environment ID:** `b8353ac5-0ec4-4785-8d72-7aae17f18e56`
-- **Deployment ID:** `b0e9168b-0ea9-428a-84eb-719454756818`
+- **Deployment ID:** `a1790e37-08ee-45a7-b3ec-a522ebaf9fec`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-25 (fix: Telegram Timeout hata yönetimi eklendi, Dış ses kelime hedefi dinamikleştirildi)
+- **Son Deploy:** 2026-04-25 (feat: v3.3 Producer LLM Mimari refactoring tamamlandı)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID, FIRECRAWL_API_KEY
 
@@ -246,7 +246,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
   - `POST /webhook/wa-optin` (ManyChat — Email→WhatsApp kanal geçişi)
   - `POST /webhook/wa-failed` (ManyChat — Hibrit fallback email tetikleyici)
   - `GET /health` (Monitoring)
-- **Son Deploy:** 2026-04-24 (feat: Hibrit fallback — wa-optin/wa-failed endpoints, zengin HTML email template, WhatsApp CTA enjeksiyonu, Day4 video fix, dedup güçlendirme)
+- **Son Deploy:** 2026-04-26 (feat: Race condition lock, global error handling ve admin email alerts ile DLQ yapısı eklendi)
 - **Durum:** ✅ Aktif (Health check OK — 2 aktif onboarding, tüm servisler connected/configured)
 - **Env Vars:** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL, WA_BUSINESS_PHONE
 - **Not:** ✅ Hibrit fallback aktif: WA teslim başarısızsa → Resend email (dolunay.ai) + WhatsApp CTA butonu. v1.2.0
@@ -267,8 +267,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Lead_Notifier_Bot`)
 - **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-24 (Railway deploy tetiklendi)
-- **Durum:** ⏳ Deploy Bekleniyor / ✅ Başarılı (Railway dashboard'dan kontrol edilecek)
+- **Son Deploy:** 2026-04-26 (Fix: OAuth fallback (GOOGLE_OUTREACH_TOKEN_JSON) eklendi, manuel yetki için share_sheet.py eklendi)
+- **Durum:** ✅ Aktif (Railway deploy başarılı ve çalışıyor)
 - **Env Vars:** TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_OUTREACH_TOKEN_JSON, NOTIFY_EMAIL, SENDER_EMAIL, POLL_INTERVAL_SECONDS, MAX_BATCH_SIZE
 
 ---

@@ -1,11 +1,15 @@
 // ============================================================
-// services/phoneValidator.js — Hibrit Telefon Validasyonu
+// services/phoneValidator.js — Hibrit Telefon Validasyonu v2
 // ============================================================
-// Katman 1: Regex pre-validation (hızlı, kesin, ücretsiz)
-// Katman 2: Groq GPT-OSS 120B (karmaşık girdiler için LLM)
-// Katman 3: Regex override (Groq hatalıysa güvenlik ağı)
+// Katman 1: libphonenumber-js (Google kütüphanesi — deterministik)
+// Katman 2: Groq GPT-OSS 120B (metin+numara karışık girdiler için)
+// Katman 3: libphonenumber-js override (Groq hatalıysa güvenlik ağı)
+// ============================================================
+// v2 Değişiklik: El yazısı regex kaldırıldı → libphonenumber-js
+// Sebep: Regex'teki hane sayısı hataları tekrarlayan bug'lara yol açıyordu
 // ============================================================
 
+const { parsePhoneNumberFromString } = require('libphonenumber-js');
 const { config } = require('../config/env');
 const log = require('../utils/logger');
 
@@ -27,41 +31,47 @@ KURALLAR (KRİTİK):
 7. ÇOKLU NUMARA DURUMU: Eğer metinde birden fazla numara varsa, bağlama bakarak "güncel", "yeni" veya "benim" gibi kelimelerle ilişkilendirilen numarayı seç. 
 8. BELİRSİZ ÇOKLU NUMARA DURUMU: Eğer bağlam belirsizse (hangisinin doğru olduğu açık değilse), metinde geçen EN SON numarayı baz al. Ancak bu durumda "confidence" (güven) değerini düşür (örneğin 0.4). Tek numara varsa veya açıkça hangisi olduğu belliyse confidence'ı yüksek tut (örneğin 0.9 - 1.0 arası).`;
 
-// ─── KATMAN 1: Regex Pre-Validation ─────────────────────
-// Basit numerik girdiler için Groq'u çağırmaya gerek yok.
-// Bu katman hem daha hızlı, hem daha güvenilir, hem de ücretsiz.
-function regexValidate(input) {
+// ─── KATMAN 1: libphonenumber-js Pre-Validation ─────────────
+// Saf numerik girdiler için. Deterministik, ücretsiz, hatasız.
+// Google'ın kütüphanesi tüm ülke formatlarını bilir.
+function libraryValidate(input) {
   const cleaned = input.trim();
-  const digits = cleaned.replace(/[\s\-\(\)\.\/]/g, '');
 
-  // Sadece rakam + boşluk + tire + nokta + parantez içeriyorsa
-  // "saf numara" girdisi kabul et
+  // Metin içeriyorsa (harf, özel karakter) → kütüphane parse edemez, LLM'e gönder
   if (!/^[\d\s\-\(\)\.\+\/]+$/.test(cleaned)) {
-    return null; // Metin içeriyor → Groq'a gönder
+    return null;
   }
 
-  // Standart Türk GSM formatları
-  if (/^905\d{8}$/.test(digits)) {
-    return { valid: true, normalized: `+${digits}`, reason: "regex-direct (905)", confidence: 1.0, extracted_raw: input };
+  // Türkiye varsayılan ülke olarak denenecek formatlar
+  // libphonenumber birçok formatı otomatik tanır
+  const candidates = [cleaned];
+
+  // Başında + yoksa ve sadece rakamlardan oluşuyorsa, + ekli versiyonu da dene
+  const digitsOnly = cleaned.replace(/\D/g, '');
+  if (!cleaned.startsWith('+') && digitsOnly.length >= 10) {
+    candidates.push(`+${digitsOnly}`);
   }
-  if (/^\+905\d{8}$/.test(cleaned.replace(/[\s\-]/g, ''))) {
-    return { valid: true, normalized: cleaned.replace(/[\s\-]/g, ''), reason: "regex-direct (+905)", confidence: 1.0, extracted_raw: input };
-  }
-  if (/^05\d{9}$/.test(digits)) {
-    return { valid: true, normalized: `+9${digits}`, reason: "regex-direct (05)", confidence: 1.0, extracted_raw: input };
-  }
-  if (/^5\d{9}$/.test(digits)) {
-    return { valid: true, normalized: `+90${digits}`, reason: "regex-direct (5)", confidence: 1.0, extracted_raw: input };
-  }
-  // Uluslararası format (10-15 haneli, TR değil)
-  if (/^\d{10,15}$/.test(digits) && !digits.startsWith('90')) {
-    return { valid: true, normalized: `+${digits}`, reason: "regex-direct (uluslararası)", confidence: 0.8, extracted_raw: input };
+
+  for (const candidate of candidates) {
+    // Varsayılan ülke TR olarak parse et
+    const phone = parsePhoneNumberFromString(candidate, 'TR');
+    if (phone && phone.isValid()) {
+      const normalized = phone.number; // E.164 format: +905380168954
+      log.info(`[phoneValidator] ✅ libphonenumber başarılı: "${input}" → ${normalized} (${phone.country})`);
+      return {
+        valid: true,
+        normalized,
+        reason: `libphonenumber (${phone.country})`,
+        confidence: 1.0,
+        extracted_raw: input
+      };
+    }
   }
 
   return null; // Tanımlanamadı → Groq'a gönder
 }
 
-// ─── KATMAN 2: Groq LLM Validasyonu ─────────────────────
+// ─── KATMAN 2: Groq LLM Validasyonu ─────────────────────────
 // Karmaşık girdiler için (metin + numara karışık, çoklu numara vb.)
 async function groqValidate(input) {
   try {
@@ -71,7 +81,7 @@ async function groqValidate(input) {
         'Authorization': `Bearer ${config.groqApiKey}`,
         'Content-Type': 'application/json'
       },
-      signal: AbortSignal.timeout(5000), // Fix: 5s timeout — Groq yanıt vermezse regex fallback devreye girer
+      signal: AbortSignal.timeout(5000), // 5s timeout
       body: JSON.stringify({
         model: "gpt-oss-120b",
         messages: [
@@ -95,27 +105,49 @@ async function groqValidate(input) {
 
   } catch (error) {
     log.error(`[phoneValidator] Groq hatası: ${error.message}`, error.stack);
+
+    // Groq tamamen down — admin'e alert gönder (1 saat cooldown, spam önleme)
+    if (!global._groqAlertSent) {
+      global._groqAlertSent = true;
+      setTimeout(() => { global._groqAlertSent = false; }, 3600000);
+      try {
+        const resend = require('./resend');
+        await resend.sendAdminAlertEmail({
+          subject: '[PHONE] Groq API down — fallback aktif',
+          body: `Groq API'ye ulaşılamıyor. Tüm telefon validasyonları libphonenumber fallback'ine düşüyor.\n\nHata: ${error.message}`
+        });
+      } catch (_) { /* alert gönderilemezse bile devam et */ }
+    }
+
     return null; // Groq başarısız → null dön, fallback devreye girsin
   }
 }
 
-// ─── KATMAN 3: Regex Fallback (Groq'a override) ─────────────
-// Groq down ise VEYA Groq hatalı sonuç döndürse
-function regexFallback(input) {
-  const digits = input.replace(/\D/g, '');
+// ─── KATMAN 3: libphonenumber Fallback (Groq'a override) ────
+// Groq down ise VEYA Groq hatalı sonuç döndürürse,
+// girdiden rakamları çıkarıp kütüphaneye son kez sor.
+function libraryFallback(input) {
+  const digitsOnly = input.replace(/\D/g, '');
 
-  if (/^905\d{8}$/.test(digits)) {
-    return { valid: true, normalized: `+${digits}`, reason: "regex fallback", confidence: 1.0, extracted_raw: input };
-  }
-  if (/^05\d{9}$/.test(digits)) {
-    return { valid: true, normalized: `+9${digits}`, reason: "regex fallback", confidence: 1.0, extracted_raw: input };
-  }
-  if (/^5\d{9}$/.test(digits)) {
-    return { valid: true, normalized: `+90${digits}`, reason: "regex fallback", confidence: 1.0, extracted_raw: input };
-  }
-  // Uluslararası format
-  if (/^\d{10,15}$/.test(digits) && !digits.startsWith('90')) {
-    return { valid: true, normalized: `+${digits}`, reason: "regex fallback - uluslararası", confidence: 1.0, extracted_raw: input };
+  // Farklı prefix kombinasyonlarını dene
+  const candidates = [
+    `+${digitsOnly}`,      // +905380168954
+    `+90${digitsOnly}`,    // Başında ülke kodu yoksa ekle
+    digitsOnly             // Ham rakamlar
+  ];
+
+  for (const candidate of candidates) {
+    const phone = parsePhoneNumberFromString(candidate, 'TR');
+    if (phone && phone.isValid()) {
+      log.info(`[phoneValidator] ✅ libphonenumber fallback başarılı: "${input}" → ${phone.number}`);
+      return {
+        valid: true,
+        normalized: phone.number,
+        reason: `libphonenumber fallback (${phone.country})`,
+        confidence: 1.0,
+        extracted_raw: input
+      };
+    }
   }
 
   return { valid: false, normalized: null, reason: "Geçerli telefon numarası bulunamadı", confidence: 0.0, extracted_raw: input };
@@ -123,24 +155,37 @@ function regexFallback(input) {
 
 // ─── ANA FONKSİYON ──────────────────────────────────────────
 async function validatePhone(input) {
-  // KATMAN 1: Regex pre-validation (sadece numerik girdiler için)
-  const regexResult = regexValidate(input);
-  if (regexResult) {
-    log.info(`[phoneValidator] ✅ Regex pre-validation başarılı: ${JSON.stringify(regexResult)}`);
-    return regexResult;
+  // KATMAN 1: libphonenumber pre-validation (saf numerik girdiler)
+  const libResult = libraryValidate(input);
+  if (libResult) {
+    return libResult;
   }
 
   // KATMAN 2: Groq LLM (karmaşık girdiler için)
-  log.info(`[phoneValidator] Regex eşleşmedi, Groq GPT-OSS 120B'ye gönderiliyor: "${input}"`);
+  log.info(`[phoneValidator] Kütüphane eşleşmedi, Groq GPT-OSS 120B'ye gönderiliyor: "${input}"`);
   const groqResult = await groqValidate(input);
 
   if (groqResult) {
-    // KATMAN 3: Groq override kontrolü
-    // Groq "false" dedi ama regex bir numara bulabiliyorsa → regex kazanır
+    // Groq bir numara çıkardıysa, kütüphane ile doğrula
+    if (groqResult.valid && groqResult.normalized) {
+      const verifyPhone = parsePhoneNumberFromString(groqResult.normalized, 'TR');
+      if (verifyPhone && verifyPhone.isValid()) {
+        groqResult.normalized = verifyPhone.number; // E.164 normalize
+        groqResult.reason = `groq+libphonenumber (${verifyPhone.country})`;
+        return groqResult;
+      }
+      // Groq'un çıkardığı numara kütüphaneden geçemediyse → düşük güven
+      log.warn(`[phoneValidator] ⚠️ Groq valid dedi ama libphonenumber doğrulamadı: ${groqResult.normalized}`);
+      groqResult.confidence = Math.min(groqResult.confidence || 0, 0.4);
+      groqResult.reason = `groq-only (libphonenumber doğrulamadı)`;
+      return groqResult;
+    }
+
+    // Groq "false" dedi → fallback ile son şans
     if (!groqResult.valid) {
-      const overrideResult = regexFallback(input);
+      const overrideResult = libraryFallback(input);
       if (overrideResult.valid) {
-        log.warn(`[phoneValidator] ⚠️ GROQ OVERRIDE: Groq false dedi ama regex geçerli numara buldu. Regex sonucu kullanılıyor.`);
+        log.warn(`[phoneValidator] ⚠️ GROQ OVERRIDE: Groq false dedi ama libphonenumber geçerli numara buldu.`);
         overrideResult.reason = `groq-override (Groq: ${groqResult.reason})`;
         return overrideResult;
       }
@@ -148,9 +193,9 @@ async function validatePhone(input) {
     return groqResult;
   }
 
-  // Groq tamamen başarısız oldu → regex fallback
-  log.warn(`[phoneValidator] Groq tamamen başarısız, regex fallback kullanılıyor.`);
-  return regexFallback(input);
+  // Groq tamamen başarısız oldu → kütüphane fallback
+  log.warn(`[phoneValidator] Groq tamamen başarısız, libphonenumber fallback kullanılıyor.`);
+  return libraryFallback(input);
 }
 
 module.exports = { validatePhone };

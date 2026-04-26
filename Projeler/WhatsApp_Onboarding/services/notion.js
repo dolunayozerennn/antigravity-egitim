@@ -11,6 +11,23 @@ const log = require('../utils/logger');
 const notion = new Client({ auth: config.notionApiKey });
 const DATABASE_ID = config.notionDatabaseId;
 
+async function notionRequest(fn, maxRetries = 2) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (err?.status === 429 && attempt < maxRetries) {
+        const waitMs = (err?.headers?.['retry-after'] || 1) * 1000;
+        log.warn(`[NOTION] Rate limited, ${waitMs}ms bekleniyor...`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+
 // ─── Notion Database Şeması ───
 // İsim (title), Soyisim (text), Email (email), Telefon (phone_number),
 // Skool ID (rich_text), Kayıt Tarihi (date), Onboarding Durumu (select),
@@ -20,26 +37,26 @@ const DATABASE_ID = config.notionDatabaseId;
 async function findByTransactionId(transactionId) {
   if (!transactionId) return null;
 
-  const response = await notion.databases.query({
+  const response = await notionRequest(() => notion.databases.query({
     database_id: DATABASE_ID,
     filter: {
       property: "Skool ID",
       rich_text: { equals: String(transactionId) }
     }
-  });
+  }));
 
   if (response.results.length === 0) return null;
   return parseMember(response.results[0]);
 }
 
 async function findByPhone(phone) {
-  const response = await notion.databases.query({
+  const response = await notionRequest(() => notion.databases.query({
     database_id: DATABASE_ID,
     filter: {
       property: "Telefon",
       phone_number: { equals: phone }
     }
-  });
+  }));
 
   if (response.results.length === 0) return null;
   return parseMember(response.results[0]);
@@ -48,13 +65,13 @@ async function findByPhone(phone) {
 async function findByEmail(email) {
   if (!email) return null;
   
-  const response = await notion.databases.query({
+  const response = await notionRequest(() => notion.databases.query({
     database_id: DATABASE_ID,
     filter: {
       property: "Email",
       email: { equals: email }
     }
-  });
+  }));
 
   if (response.results.length === 0) return null;
   return parseMember(response.results[0]);
@@ -84,10 +101,10 @@ async function findByName(firstName, lastName) {
     });
   }
 
-  const response = await notion.databases.query({
+  const response = await notionRequest(() => notion.databases.query({
     database_id: DATABASE_ID,
     filter: filter
-  });
+  }));
 
   if (response.results.length === 0) return null;
   return parseMember(response.results[0]);
@@ -104,10 +121,10 @@ async function createMember({ firstName, lastName, email, transactionId, registr
   if (transactionId) properties["Skool ID"] = { rich_text: [{ text: { content: String(transactionId) } }] };
   if (registrationDate) properties["Kayıt Tarihi"] = { date: { start: registrationDate } };
 
-  const page = await notion.pages.create({
+  const page = await notionRequest(() => notion.pages.create({
     parent: { database_id: DATABASE_ID },
     properties
-  });
+  }));
 
   log.info(`[notion] Yeni üye oluşturuldu: ${firstName} (${page.id})`);
   return parseMember(page);
@@ -125,9 +142,12 @@ async function updatePage(pageId, updates) {
   if (updates.onboardingStartDate) properties["Onboarding Başlangıcı"] = { date: { start: updates.onboardingStartDate } };
   if (updates.notes) properties["Notlar"] = { rich_text: [{ text: { content: updates.notes } }] };
   if (updates.errorCount !== undefined) properties["errorCount"] = { number: updates.errorCount };
-  if (updates.lastError !== undefined) properties["lastError"] = { rich_text: [{ text: { content: updates.lastError } }] };
+  if (updates.lastError !== undefined) {
+    const safeError = String(updates.lastError).slice(0, 1900);
+    properties["lastError"] = { rich_text: [{ text: { content: safeError } }] };
+  }
 
-  await notion.pages.update({ page_id: pageId, properties });
+  await notionRequest(() => notion.pages.update({ page_id: pageId, properties }));
 }
 
 async function getActiveOnboardingMembers() {
@@ -136,7 +156,7 @@ async function getActiveOnboardingMembers() {
   let startCursor = undefined;
 
   while (hasMore) {
-    const response = await notion.databases.query({
+    const response = await notionRequest(() => notion.databases.query({
       database_id: DATABASE_ID,
       filter: {
         and: [
@@ -145,7 +165,7 @@ async function getActiveOnboardingMembers() {
         ]
       },
       start_cursor: startCursor
-    });
+    }));
 
     allMembers.push(...response.results.map(parseMember));
     hasMore = response.has_more;
@@ -161,7 +181,7 @@ async function getActiveEmailMembers() {
   let startCursor = undefined;
 
   while (hasMore) {
-    const response = await notion.databases.query({
+    const response = await notionRequest(() => notion.databases.query({
       database_id: DATABASE_ID,
       filter: {
         and: [
@@ -170,7 +190,7 @@ async function getActiveEmailMembers() {
         ]
       },
       start_cursor: startCursor
-    });
+    }));
 
     allMembers.push(...response.results.map(parseMember));
     hasMore = response.has_more;
@@ -197,11 +217,11 @@ function parseMember(page) {
   };
 }
 
-// ─── NOT EKLEME HELPER ──────────────────────────────────────────
+// ─── NOT EKLEME HELPER ────────────────────────────────────────
 // Mevcut notları silmeden yeni not ekler. Notion rich_text 2000 karakter limiti.
 async function appendNote(pageId, newNote) {
   try {
-    const page = await notion.pages.retrieve({ page_id: pageId });
+    const page = await notionRequest(() => notion.pages.retrieve({ page_id: pageId }));
     const existing = page.properties["Notlar"]?.rich_text?.[0]?.text?.content || '';
     const timestamp = new Date().toISOString().split('T')[0];
     const entry = `[${timestamp}] ${newNote}`;

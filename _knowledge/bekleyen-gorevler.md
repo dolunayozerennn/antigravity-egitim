@@ -32,6 +32,19 @@
 - **Kontrol 2:** ⏳ Bekliyor (Perşembe Cron tetiklemesi)
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
+### ✅ 48-Saat İzleme — whatsapp-asistan (Initial Deploy — AI Assistant)
+- **Deploy tarihi:** 2026-04-25
+- **İzleme bitiş:** 2026-04-27
+- **Railway Project:** `fb3c9636-33cf-406f-a0e0-96f4d168ba4e`
+- **Domain:** `whatsapp-asistan-production.up.railway.app`
+- **Değişiklikler:**
+  1. Initial deploy — KVKK onboarding + RAG AI + ManyChat entegrasyonu
+  2. Express server (port 3456) + Supabase (subscribers, conversations, knowledge_chunks)
+  3. OpenAI gpt-4.1-mini + text-embedding-3-small RAG
+- **Kontrol 1:** ✅ Health check OK
+- **Kontrol 2:** ✅ ManyChat webhook aktif, KVKK mesajı gönderildi, RAG 43/43 chunk seeded
+- **Sonuç:** ✅ Tüm adımlar tamamlandı, 27 Nisan'a kadar izlemede
+
 ### 🟡 48-Saat İzleme — eCom_Reklam_Otomasyonu (HTTP 512 Upstream Retry Fix)
 - **Deploy tarihi:** 2026-04-24 ✅ Push tamamlandı (5c48046)
 - **İzleme bitiş:** 2026-04-26
@@ -182,21 +195,31 @@
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
-### 🟡 48-Saat İzleme — whatsapp-onboarding (Idempotency ve System Fallback + Zapier Kurulumu)
-- **Son deploy:** 2026-04-25 (commit `a6cfce94` — Skool ID number→rich_text fix)
+### 🟡 48-Saat İzleme — whatsapp-onboarding v1.3.0 (Enterprise Stabilization)
+- **Son deploy:** 2026-04-25 (commit `683d606` — v1.3.0 Enterprise Stabilization)
 - **İzleme bitiş:** 2026-04-27
 - **Tamamlanan audit:** 7/7 ✅ (Railway, Notion şema, Git sync, E2E test, ManyChat, güvenlik, dedup)
-- **Değişiklikler:**
-  1. Webhook Idempotency: API'ler (Manychat, Resend) Notion güncellenmeden önce tetiklenerek Zapier retry'larına dirençli hale getirildi.
-  2. Manychat servisi custom_field ile numara bulamazsa System Phone üzerinden (lookup_user_by_system_field) arama yapacak şekilde fallback eklendi.
-  3. Resend template'lerinde `firstName` değişkenleri ve yeni YouTube URL (Day 4) aktif edildi.
-  4. Notion şemasına `errorCount`, `lastError`, `error` status eklendi, Dedup kontrolü genişletildi.
-  5. YENİ — Skool ID property number→rich_text'e çevrildi, `notion.js` filtresi güncellendi (hex transaction_id kısaltılmadan saklanıyor).
-  6. YENİ — Zapier Zap 1 (new-paid-member) ve Zap 2 (membership-questions) kuruldu, test edildi ve **publish** edildi.
-- **Durum:** ✅ Deploy SUCCESS (`a6cfce94`), Health check OK, Zapier ve ManyChat canlı testleri başarılı.
-- **Kontrol 1:** ✅ 25 Nisan 2026 — Zapier Zap 1 & 2 canlı webhook testi başarılı. ManyChat webhook (wa-failed ve wa-optin) testleri yapıldı, hibrit fallback email sistemi doğrulandı. Railway logları hatasız. Groq validasyonu, Notion CRUD, dedup kontrolü çalışıyor. Test kayıtları temizlendi.
-- **Kontrol 2:** ⏳ Bekliyor (gerçek kullanıcı kaydı ile doğrulanacak)
-- **Sonuç:** ⏳ Kontrol 2 temizse kapatılır
+- **v1.3.0 Stabilizasyon Değişiklikleri (12+ fix):**
+  1. **Güvenlik:** WEBHOOK_SECRET / ADMIN_SECRET env tabanlı middleware desteği
+  2. **XSS Koruması:** resend.js'de escapeHtml, tüm firstName interpolasyonları sanitize
+  3. **ManyChat Resilience:** 8s timeout'lu fetchWithRetry, cache stampede önleme, phone normalizasyonu
+  4. **Phone Validator:** Groq API'ye 5s AbortSignal timeout, uluslararası numara desteği (regex + LLM)
+  5. **Cron DLQ:** try-catch izolasyonu, startDate NaN koruması, zombie üye önleme
+  6. **Notion:** appendNote helper (2000 char limitli güvenli append)
+  7. **Email Fallback:** ManyChat başarısızlığında otomatik email onboarding (WA CTA butonlu)
+  8. **Uluslararası Destek:** Yurt dışı numaralar regex fallback ile +{digits} formatında normalize
+  9. **Dedup:** onboarding statü kontrolü (whatsapp/email/tamamlandı/error zaten aktifse skip)
+  10. **Admin:** /admin/trigger-flow endpoint'i manuel hata onarımı için
+  11. **Body Limit:** express.json() 10kb limit
+  12. **Error Masking:** Production'da stack trace gizleme
+  13. **BCC Fix:** Email gönderimlerinde gizli alıcı (BCC) ve custom tag'ler kaldırıldı
+- **Önceki Değişiklikler:**
+  1. Webhook Idempotency, Manychat System Phone fallback
+  2. Skool ID number→rich_text fix, Zapier Zap 1 & 2 kurulumu
+- **Durum:** ✅ Push SUCCESS (`683d606`), Railway auto-deploy bekleniyor.
+- **Kontrol 1:** ✅ 25 Nisan 2026 — Zapier, ManyChat, hibrit fallback, Groq validasyonu başarılı
+- **Kontrol 2:** ⏳ Railway deploy doğrulaması + gerçek kullanıcı kaydı
+- **⚠️ NOT:** Railway'de WEBHOOK_SECRET ve ADMIN_SECRET env var'ları set edilmeli
 
 ### 🟡 48-Saat İzleme — Lead_Notifier_Bot
 - **Deploy tarihi:** 2026-04-24
@@ -206,3 +229,24 @@
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
+
+### 🟡 48-Saat İzleme — whatsapp-asistan (KB Management Overhaul v2)
+- **Deploy tarihi:** 2026-04-25 21:28 (mcp_railway_deploy ile tamamlandı)
+- **İzleme bitiş:** 2026-04-27
+- **Lokal commit:** `45eb7d5`
+- **Değişiklikler (3 fazlı KB yönetimi revizyonu):**
+  1. `ai-factory-asistan-bilgi-tabani-v2.md`: Fiyat Güvenlik Notu eklendi — yasak fiyatlar ($97, $197, $297, $497, $997, $1997) listelendi
+  2. `services/ai_engine.js`: `[SABİT FİYATLANDIRMA]` bloğu system prompt'un en üstüne eklendi
+  3. `services/knowledge_base.js`: Keyword-based pinned chunks (PRICING_KEYWORDS), threshold 0.5→0.6
+  4. `scripts/seed_knowledge.js`: Akıllı chunking (min 50 merge, max 2000 split, tablo koruması)
+  5. `scripts/kb_manager.js`: YENİ — CLI aracı (list, search, validate, stats, diff)
+  6. `server.js`: 4 yeni admin endpoint (/admin/kb/list, search, validate, update)
+  7. `package.json`: kb:* npm script'leri eklendi
+- **Seed sonucu:** ✅ 47 chunk (önceki: 43) başarıyla kaydedildi, Fiyat Güvenlik Notu ayrı chunk olarak mevcut
+- **Kontrol 1:** ✅ Deploy logları — seed 47/47 OK, server port 3456'da çalışıyor
+- **Kontrol 2:** ⏳ Bekliyor (WhatsApp'tan fiyat sorusu sorulacak, doğru cevap doğrulanacak)
+- **Sonuç:** ⏳ Fiyat halüsinasyonu tekrarlanmazsa kapatılır
+
+### ✅ whatsapp-onboarding (Zapier Empty Phone Fix)
+- **Kaynak:** Kullanıcı extreme case bildirimi
+- **Yapılanlar:** Telefon numarası (answer_1) boş bırakıldığında webhook'un 400 Bad Request fırlatıp Zapier'ı hata durumuna sokması engellendi. Artık boşluk durumunda 200 OK dönerek doğrudan email fallback senaryosuna geçiyor. Railway'e deploy edildi.

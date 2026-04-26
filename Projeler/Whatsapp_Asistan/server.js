@@ -202,6 +202,131 @@ app.post('/admin/seed-knowledge', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// KB chunk listesi
+app.get('/admin/kb/list', async (req, res) => {
+  if (!process.env.ADMIN_SECRET || req.headers['x-admin-key'] !== process.env.ADMIN_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { supabase } = require('./services/memory');
+    const { data, error } = await supabase
+      .from('knowledge_chunks')
+      .select('id, section, section_title, content, created_at')
+      .order('section');
+      
+    if (error) throw error;
+    
+    const formattedData = data.map(chunk => ({
+      id: chunk.id,
+      section: chunk.section,
+      section_title: chunk.section_title,
+      length: chunk.content ? chunk.content.length : 0,
+      created_at: chunk.created_at
+    }));
+    
+    res.json({ chunks: formattedData });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// KB chunk arama
+app.get('/admin/kb/search', async (req, res) => {
+  if (!process.env.ADMIN_SECRET || req.headers['x-admin-key'] !== process.env.ADMIN_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  const query = req.query.q;
+  if (!query) return res.status(400).json({ error: 'q parametresi gerekli' });
+  
+  try {
+    const { supabase } = require('./services/memory');
+    const { data, error } = await supabase
+      .from('knowledge_chunks')
+      .select('id, section, section_title, content')
+      .ilike('content', `%${query}%`);
+      
+    if (error) throw error;
+    res.json({ results: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// KB fiyat doğrulama
+app.get('/admin/kb/validate', async (req, res) => {
+  if (!process.env.ADMIN_SECRET || req.headers['x-admin-key'] !== process.env.ADMIN_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { supabase } = require('./services/memory');
+    const { data, error } = await supabase
+      .from('knowledge_chunks')
+      .select('content');
+      
+    if (error) throw error;
+    
+    const combinedContent = data.map(d => d.content).join('\n');
+    const bannedPrices = ['$97', '$197', '$297', '$497', '$997', '$1997'];
+    const foundBanned = [];
+    
+    bannedPrices.forEach(price => {
+      const regex = new RegExp(`\\${price}\\b`);
+      if (regex.test(combinedContent)) {
+        foundBanned.push(price);
+      }
+    });
+
+    res.json({ 
+      valid: foundBanned.length === 0,
+      banned_prices_found: foundBanned
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Tek chunk güncelleme
+app.put('/admin/kb/update/:chunkId', async (req, res) => {
+  if (!process.env.ADMIN_SECRET || req.headers['x-admin-key'] !== process.env.ADMIN_SECRET) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  const chunkId = req.params.chunkId;
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ error: 'content gerekli' });
+  
+  try {
+    const OpenAI = require('openai');
+    const openai = new OpenAI({ apiKey: config.openaiApiKey });
+    const { supabase } = require('./services/memory');
+    
+    const { data: chunkData, error: chunkErr } = await supabase
+      .from('knowledge_chunks')
+      .select('section_title')
+      .eq('id', chunkId)
+      .single();
+      
+    if (chunkErr || !chunkData) return res.status(404).json({ error: 'Chunk bulunamadı' });
+
+    const embeddingResponse = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: `[${chunkData.section_title}]\n${content}`,
+      dimensions: 1536
+    });
+
+    const embedding = embeddingResponse.data[0].embedding;
+
+    const { error: updateErr } = await supabase
+      .from('knowledge_chunks')
+      .update({ content, embedding })
+      .eq('id', chunkId);
+
+    if (updateErr) throw updateErr;
+
+    res.json({ status: 'ok', message: 'Chunk başarıyla güncellendi' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.listen(config.port, () => {
   log.info(`[server] Whatsapp_Asistan ${config.port} portunda calisiyor.`);

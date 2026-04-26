@@ -215,6 +215,7 @@ python test_bot.py
 
 | Tarih | Değişiklik |
 |----------|------------|
+| 2026-04-25 | **v3.3 Producer LLM Mimari** — Sabit süre ve kelime sayısı sınırları kaldırılarak senaryo kurgusunun ve sürenin dinamik olarak LLM (Producer) tarafından belirlenmesi sağlandı. `generate_scenario` fonksiyonu Vision yeteneği kazanacak şekilde güncellendi. |
 | 2026-04-24 | **v3.2 UGC Multi-Scene Pipeline** — UGC tarzı 3 sahneli (Unboxing, Product-in-Use, Hero Shot) video üretim desteği eklendi. Paralel Seedance 2.0 görevleri + `lucataco/video-merge` ile sahne birleştirme. `scenario_engine.py`, `production_pipeline.py` ve `replicate_service.py` güncellendi. |
 | 2026-04-21 | **v3.1 Aspect Ratio & Stability Fix** — Kullanıcı/Agent tercih girdisi (Dikey, 16:9 vb.) Kie AI tarafından istenen formatlara zorunlu normalize edildi (422 engellendi). Telegram bot 409 Conflict çökmelerini önlemek için Webhook silme sonrası `asyncio.sleep(2)` timeout eklendi. |
 | 2026-04-18 | **v3.0 Stabilizasyon** — `FIRECRAWL_API_KEY` bağımlılığı Railway'e entegre edildi, eski `web_scraper_service.py` ve `bs4`, `lxml` bağımlılıkları temizlendi. Tümüyle stabil, SIFIR hata üretim ortamı onaylandı. |

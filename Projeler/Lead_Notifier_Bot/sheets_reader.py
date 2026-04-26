@@ -75,15 +75,20 @@ class SheetsReader:
             )
             self.service = build("sheets", "v4", credentials=self._creds)
         else:
-            logger.info("🔑 Merkezi google_auth ile auth (lokal)...")
-            _root = os.path.abspath(
-                os.path.join(os.path.dirname(__file__), "..", "..")
-            )
-            sys.path.insert(0, os.path.join(
-                _root, "_knowledge", "credentials", "oauth"
-            ))
-            from google_auth import get_sheets_service
-            self.service = get_sheets_service("outreach")
+            logger.info("🔑 GOOGLE_OUTREACH_TOKEN_JSON ile auth...")
+            try:
+                outreach_json = os.environ.get("GOOGLE_OUTREACH_TOKEN_JSON")
+                if outreach_json:
+                    import json
+                    from google.oauth2.credentials import Credentials
+                    creds_info = json.loads(outreach_json)
+                    self._creds = Credentials.from_authorized_user_info(creds_info, scopes=SCOPES)
+                    self.service = build("sheets", "v4", credentials=self._creds)
+                else:
+                    raise Exception("GOOGLE_OUTREACH_TOKEN_JSON bulunamadı")
+            except Exception as e:
+                logger.error(f"❌ OAuth fallback auth hatası: {e}")
+                raise
 
         logger.info("✅ Google Sheets API bağlantısı kuruldu")
 

@@ -194,9 +194,46 @@ async function findSubscriberByPhone(phoneNumber) {
     const data = await response.json();
     log.debug(`[manychat:api] findByCustomField yanıtı.`, data);
 
+    let foundId = null;
     if (data.status === 'success' && data.data) {
-      log.info(`[manychat:api] ✅ Subscriber başarıyla bulundu.`, { id: data.data.id });
-      return data.data.id;
+      if (Array.isArray(data.data) && data.data.length > 0) {
+        foundId = data.data[0].id;
+      } else if (!Array.isArray(data.data) && data.data.id) {
+        foundId = data.data.id;
+      }
+    }
+
+    if (foundId) {
+      log.info(`[manychat:api] ✅ Subscriber başarıyla bulundu.`, { id: foundId });
+      return foundId;
+    }
+
+    // Try without '+' sign if not found
+    if (!foundId && phoneNumber.startsWith('+')) {
+      const phoneNoPlus = phoneNumber.substring(1);
+      const urlNoPlus = `${API_URL}/subscriber/findByCustomField?field_id=${fieldId}&field_value=${encodeURIComponent(phoneNoPlus)}`;
+      log.debug(`[manychat:api] findByCustomField (without +) isteği atılıyor.`, { url: urlNoPlus });
+      
+      const responseNoPlus = await fetchWithRetry(urlNoPlus, {
+        method: 'GET',
+        headers
+      });
+
+      const dataNoPlus = await responseNoPlus.json();
+      log.debug(`[manychat:api] findByCustomField (without +) yanıtı.`, dataNoPlus);
+
+      if (dataNoPlus.status === 'success' && dataNoPlus.data) {
+        if (Array.isArray(dataNoPlus.data) && dataNoPlus.data.length > 0) {
+          foundId = dataNoPlus.data[0].id;
+        } else if (!Array.isArray(dataNoPlus.data) && dataNoPlus.data.id) {
+          foundId = dataNoPlus.data.id;
+        }
+      }
+    }
+
+    if (foundId) {
+      log.info(`[manychat:api] ✅ Subscriber başarıyla bulundu (without +).`, { id: foundId });
+      return foundId;
     }
 
     log.info(`[manychat:api] ℹ️ Subscriber bulunamadı.`);
@@ -211,25 +248,46 @@ async function findSubscriberBySystemPhone(phoneNumber) {
   try {
     // ManyChat system field araması GET isteği ile yapılır.
     // Telefon numaralarındaki artı işareti vb. encode edilmeli.
-    const url = `${API_URL}/subscriber/findBySystemField?phone=${encodeURIComponent(phoneNumber)}`;
+    let url = `${API_URL}/subscriber/findBySystemField?phone=${encodeURIComponent(phoneNumber)}`;
     log.debug(`[manychat:api] findBySystemField (phone) isteği atılıyor.`, { url });
 
-    const response = await fetchWithRetry(url, {
+    let response = await fetchWithRetry(url, {
       method: 'GET',
       headers
     });
 
-    const data = await response.json();
+    let data = await response.json();
     log.debug(`[manychat:api] findBySystemField (phone) yanıtı.`, data);
 
-    // data.data can be an array if search results are returned, or an object if it's a direct match.
-    // Also, if it's an empty array `[]`, it shouldn't be treated as a successful find.
     let foundId = null;
     if (data.status === 'success' && data.data) {
       if (Array.isArray(data.data) && data.data.length > 0) {
         foundId = data.data[0].id;
       } else if (!Array.isArray(data.data) && data.data.id) {
         foundId = data.data.id;
+      }
+    }
+
+    // Try without '+' sign if not found
+    if (!foundId && phoneNumber.startsWith('+')) {
+      const phoneNoPlus = phoneNumber.substring(1);
+      url = `${API_URL}/subscriber/findBySystemField?phone=${encodeURIComponent(phoneNoPlus)}`;
+      log.debug(`[manychat:api] findBySystemField (phone without +) isteği atılıyor.`, { url });
+      
+      response = await fetchWithRetry(url, {
+        method: 'GET',
+        headers
+      });
+      
+      data = await response.json();
+      log.debug(`[manychat:api] findBySystemField (phone without +) yanıtı.`, data);
+      
+      if (data.status === 'success' && data.data) {
+        if (Array.isArray(data.data) && data.data.length > 0) {
+          foundId = data.data[0].id;
+        } else if (!Array.isArray(data.data) && data.data.id) {
+          foundId = data.data.id;
+        }
       }
     }
 

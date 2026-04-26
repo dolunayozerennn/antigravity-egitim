@@ -2,7 +2,20 @@ import os
 import requests
 import json
 
-token = "14ac7442-43fc-480a-b7e2-e8b5dacf1bb3" # From master.env RAILWAY_TOKEN
+import os
+def get_railway_token():
+    try:
+        with open("/Users/dolunayozeren/Desktop/Antigravity/_knowledge/credentials/master.env", "r") as f:
+            for line in f:
+                if line.startswith("RAILWAY_TOKEN="):
+                    return line.strip().split("=")[1].strip('\'"')
+    except:
+        pass
+    return os.environ.get("RAILWAY_TOKEN", "")
+
+# token variable
+token_val = get_railway_token()
+token = token_val # From master.env RAILWAY_TOKEN
 headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 # the project id is 8797307d-7b80-41cb-add0-976c09eaeed4

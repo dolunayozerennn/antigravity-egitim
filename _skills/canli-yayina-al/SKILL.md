@@ -51,7 +51,7 @@ Tüm deploy süreci Antigravity tarafından yönetilir:
 
 ## 🔑 Railway Token (OTOMATİK — Kullanıcıya SORMA)
 
-**Token:** `14ac7442-43fc-480a-b7e2-e8b5dacf1bb3`
+**Token:** `<READ FROM master.env>`
 
 **Kaynaklar (sıralı):**
 1. `_skills/canli-yayina-al/scripts/railway-token.txt`
@@ -98,7 +98,7 @@ Her deploy talebi geldiğinde **önce mevcut durumu kontrol et**:
 ```bash
 curl -s -X POST https://backboard.railway.app/graphql/v2 \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer 14ac7442-43fc-480a-b7e2-e8b5dacf1bb3" \
+  -H "Authorization: Bearer <READ FROM master.env>" \
   -d '{"query": "GRAPHQL_QUERY"}'
 ```
 
