@@ -62,7 +62,7 @@ def _gemini_generate_text(prompt: str, json_mode: bool = False) -> str:
         )
         return response.text
     else:
-        model = genai_legacy.GenerativeModel("gemini-2.5-flash")
+        model = genai_legacy.GenerativeModel("gemini-1.5-flash")
         gen_config = {"response_mime_type": "application/json"} if json_mode else {}
         response = model.generate_content(prompt, generation_config=gen_config)
         return response.text
@@ -82,7 +82,7 @@ def _gemini_generate_vision(image_path: str, prompt: str, json_mode: bool = Fals
         )
         return response.text
     else:
-        model = genai_legacy.GenerativeModel("gemini-2.5-flash")
+        model = genai_legacy.GenerativeModel("gemini-1.5-flash")
         encoded = base64.b64encode(image_bytes).decode('utf-8')
         image_data = {"mime_type": "image/jpeg", "data": encoded}
         gen_config = {"response_mime_type": "application/json"} if json_mode else {}
