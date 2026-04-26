@@ -114,6 +114,35 @@ If the request spans two areas (for example, "deploy and then check if it's heal
 4. For destructive actions (delete service, remove deployment, drop database), confirm intent and state impact before executing.
 5. After mutations, verify the result with a read-back command.
 
+## Pre-deploy sanity check (MANDATORY)
+Before EVERY deploy (mcp_railway_deploy or GitHub push), run these checks in order:
+
+1. Dependency audit: For Python projects, extract all import statements from .py files. Verify each import maps to a pip package in requirements.txt. Common traps: PIL->Pillow, telegram->python-telegram-bot, google.genai->google-genai. For Node.js, check package.json.
+2. Legacy file cleanup: Check for Aptfile or apt.txt in project root. If found, DELETE them — Railway Nixpacks ignores these completely. Migrate system packages to nixpacks.toml under [phases.setup] nixPkgs.
+3. System binary check: If code calls ffmpeg, chromium, imagemagick, or similar via subprocess or shutil.which -> verify nixpacks.toml exists with the binary listed in nixPkgs array.
+4. Env var sync: Run mcp_railway_list-variables for the service. Compare against os.environ.get() and os.getenv() calls in code. Flag any env var used in code but missing in Railway.
+5. Root Directory verify: For monorepo deploys, confirm the Railway service has Root Directory set to the correct subdirectory (e.g., "Projeler/Lead_Notifier_Bot"). Cross-reference with deploy-registry.md.
+
+If any check fails, DO NOT deploy. Fix first, then retry.
+
+## Post-deploy verification (MANDATORY)
+After EVERY deploy, verify the service is actually running correctly:
+
+1. Wait 60 seconds for the service to start and generate logs.
+2. Check deployment status via mcp_railway_list-deployments -> latest deployment should show SUCCESS.
+3. Pull deploy logs via mcp_railway_get-logs (logType: deploy) -> scan for fatal patterns: AttributeError, ImportError, ModuleNotFoundError, SyntaxError, TypeError, NameError, KeyError, Traceback, "Process exited with code 1".
+4. If FAILED or fatal pattern found -> diagnose from logs, fix code, redeploy. Do not mark as complete.
+5. If SUCCESS and clean logs -> update deploy-registry.md with new deploy date and status.
+
+Deploy SUCCESS does NOT mean the service is healthy. Log verification is MANDATORY.
+
+## Monorepo context awareness
+This workspace uses a monorepo architecture (dolunayozerennn/antigravity-egitim). Every Railway service maps to a subdirectory under Projeler/.
+
+1. When using mcp_railway_deploy, set workspacePath to the specific project subdirectory (e.g., /Users/dolunayozeren/Desktop/Antigravity/Projeler/Lead_Notifier_Bot). This automatically sets the correct build context.
+2. When GitHub auto-deploy is the trigger, the Railway service MUST have Root Directory configured in its settings. Without this, Railway builds from the repo root and uses the wrong requirements.txt.
+3. deploy-registry.md contains the exact Root Directory path, GitHub Repo, Service ID, and Environment ID for every active project. Always cross-reference before deploying.
+
 ## Composition patterns
 Multi-step workflows follow natural chains:
 
