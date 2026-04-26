@@ -56,7 +56,7 @@ def _gemini_generate_text(prompt: str, json_mode: bool = False) -> str:
     if _USE_NEW_SDK:
         config = {"response_mime_type": "application/json"} if json_mode else {}
         response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-1.5-flash",
             contents=prompt,
             config=config
         )
@@ -76,7 +76,7 @@ def _gemini_generate_vision(image_path: str, prompt: str, json_mode: bool = Fals
         image_part = types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
         config = {"response_mime_type": "application/json"} if json_mode else {}
         response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-1.5-flash",
             contents=[image_part, prompt],
             config=config
         )
