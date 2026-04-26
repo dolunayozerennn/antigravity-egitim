@@ -1,3 +1,7 @@
+---
+description: Sub-Agent Sonuç — Alt chat'lerdeki değişiklikleri okur, çakışmaları kontrol eder ve sistemi senkronize eder
+---
+
 # Sub-Agent Sonuç Workflow
 
 Bu workflow, "Sub-Agent" chat'lerde yapılan işlemlerin sonuçlarını ana mimar chat'e manuel kopyala-yapıştır yapmadan, **otomatik olarak aktarmak** için kullanılır.
@@ -11,8 +15,11 @@ Bu workflow, "Sub-Agent" chat'lerde yapılan işlemlerin sonuçlarını ana mima
 
 1. **Gerçeğin Kaynağını (Codebase) Kontrol Et:** Sub-agent'ların yazdığı kodlar *lokalde* olduğu için log okumak yerine doğrudan koda bakmalısın. `run_command` aracıyla çalışma dizininde `git status` ve (gerekirse kısa formatta) `git diff` çalıştır. Bu sana hangi alt chat'in hangi dosyayı değiştirdiğini kesin olarak gösterecektir.
 2. **Kısa Log Kontrolü (Opsiyonel):** Eğer kodlarda beklenmedik bir değişiklik (çakışma) görürsen veya sub-agent'ın bir hatada takıldığını düşünürsen:
-   - Hafızandaki `<conversation_summaries>` bölümünden sub-agent chat'inin ID'sini (örn: `WA_Onb_1` isminden yola çıkarak) bul.
-   - Dosya okuma aracı (`view_file`) baştan okuduğu için uzun dosyalarda kaybolmamak adına bash üzerinden son satırları çek: `run_command` ile `tail -n 100 ~/.gemini/antigravity/brain/<ID>/.system_generated/logs/overview.txt` komutunu kullan. Bu sana alt chat'in bıraktığı son [SONUÇ_ÖZETİ] bloğunu gösterecektir.
+   - Alt chat'in ID'sini bulmak için `grep_search` aracını kullan. `<conversation_summaries>` listesindeki isimler otomatik oluşturulduğu için yanılabilirsin.
+   - `SearchPath` olarak `~/.gemini/antigravity/brain` kullan.
+   - `Query` olarak aradığın chat'in ismini yaz (Örn: `"Görev: WA_Onb_1"`).
+   - `Includes` filtresine `["*/.system_generated/logs/overview.txt"]` ekleyerek sadece log dosyalarını tara. Bu sana doğrudan ilgili konuşmanın dizinini (ID'sini) verecektir.
+   - Dosyayı bulduğunda, uzun dosyalarda kaybolmamak adına bash üzerinden son satırları çek: `run_command` ile `tail -n 100 ~/.gemini/antigravity/brain/<BULUNAN_ID>/.system_generated/logs/overview.txt` komutunu kullan. Bu sana alt chat'in bıraktığı son [SONUÇ_ÖZETİ] bloğunu gösterecektir.
 3. **Değişiklikleri Sentezle ve Analiz Et:**
    - Hangi alt chat, hangi dosyaları değiştirdi?
    - Chat'ler arasında bir çakışma yaşanmış mı?

@@ -13,6 +13,7 @@ const { isAudioUrl, transcribeAudio } = require('./services/transcription');
 const { detectLanguage } = require('./services/language_detector');
 const { generateResponse } = require('./services/ai_engine');
 const { setCustomField, sendFlow } = require('./services/manychat');
+const { checkKVKKIntent } = require('./services/intent_classifier');
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
@@ -60,8 +61,7 @@ app.post('/webhook/message', async (req, res) => {
 
     // 2. KVKK kontrolu
     if (!subscriber.kvkk_accepted) {
-      const lowerMsg = messageContent.toLowerCase().trim();
-      const isAccepted = lowerMsg === 'onayliyorum' || lowerMsg === 'evet' || lowerMsg === 'kabul ediyorum' || lowerMsg === 'kabul';
+      const isAccepted = await checkKVKKIntent(messageContent);
       
       if (isAccepted) {
         log.info(`[webhook] Kullanici KVKK onayladi.`, { subscriberId });

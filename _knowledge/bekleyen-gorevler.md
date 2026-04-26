@@ -4,7 +4,7 @@
 > Yarım kalan işler, TODO'lar ve takip gereken konular burada tutulur.
 > Görev tamamlandığında bu dosyadan silinir.
 
-**Son güncelleme:** 22 Nisan 2026
+**Son güncelleme:** 26 Nisan 2026
 
 ---
 
@@ -96,6 +96,11 @@
 ## Tamamlanan TODO'lar (Arşiv)
 
 > Aşağıdaki görevler tamamlanmış ve referans amaçlı saklanmaktadır.
+
+### ✅ Lead_Notifier_Bot V3 — Railway Fix (26 Nisan 2026)
+- **Kaynak:** Watchdog Alarm — Railway FAILED
+- **Yapılanlar:** OAuth fallback (GOOGLE_OUTREACH_TOKEN_JSON) eklendi, Google Sheets SA yetkilendirmesi yapıldı, share_sheet.py eklendi. Railway deploy SUCCESS, 12 yeni lead tespit edildi, bot aktif çalışıyor.
+- **İzleme:** ✅ Tamamlandı (deploy logları temiz, 403 hatası çözüldü)
 
 ### ✅ eCom Reklam Otomasyonu — GitHub Push (23 Nisan 2026)
 - **Kaynak:** Deploy Sonrası İzleme ve Manuel Kontrol
@@ -221,13 +226,7 @@
 - **Kontrol 2:** ⏳ Railway deploy doğrulaması + gerçek kullanıcı kaydı
 - **⚠️ NOT:** Railway'de WEBHOOK_SECRET ve ADMIN_SECRET env var'ları set edilmeli
 
-### 🟡 48-Saat İzleme — Lead_Notifier_Bot
-- **Deploy tarihi:** 2026-04-24
-- **İzleme bitiş:** 2026-04-26
-- **Değişiklik:** V3 yükseltmesi yapıldı. Satır sayısı bazlı takip ID bazlı (benzersiz UUID) state'e geçirildi. Filtreleme eklendi (sadece lead_status == "CREATED"). Fail-fast environment validation ve Spam koruması eklendi.
-- **Kontrol 1:** ✅ Local dry-run ve bağlantı testi başarılı. (Railway üzerindeki servis loglarında ilk gerçek lead gelişinin kontrolü bekleniyor)
-- **Kontrol 2:** ⏳ Bekliyor
-- **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+
 
 
 ### 🟡 48-Saat İzleme — whatsapp-asistan (KB Management Overhaul v2)
@@ -244,8 +243,8 @@
   7. `package.json`: kb:* npm script'leri eklendi
 - **Seed sonucu:** ✅ 47 chunk (önceki: 43) başarıyla kaydedildi, Fiyat Güvenlik Notu ayrı chunk olarak mevcut
 - **Kontrol 1:** ✅ Deploy logları — seed 47/47 OK, server port 3456'da çalışıyor
-- **Kontrol 2:** ⏳ Bekliyor (WhatsApp'tan fiyat sorusu sorulacak, doğru cevap doğrulanacak)
-- **Sonuç:** ⏳ Fiyat halüsinasyonu tekrarlanmazsa kapatılır
+- **Kontrol 2:** ✅ WhatsApp testleri yapıldı: Üyelik ücreti doğru ($39, $59, $129) yanıtlandı, YouTube otomasyonunun tam otonom olduğu teyit edildi.
+- **Sonuç:** ✅ Fiyat halüsinasyonları ve otomasyon hataları tamamen giderildi, izleme süreci 27 Nisan'a kadar devam edecek.
 
 ### ✅ whatsapp-onboarding (Zapier Empty Phone Fix)
 - **Kaynak:** Kullanıcı extreme case bildirimi
