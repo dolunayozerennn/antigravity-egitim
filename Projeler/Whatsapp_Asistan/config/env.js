@@ -25,7 +25,9 @@ const config = {
   groqApiKey: process.env.GROQ_API_KEY,
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  port: process.env.PORT || 3456
+  port: process.env.PORT || 3456,
+  resendApiKey: process.env.RESEND_API_KEY || null,
+  escalationEmail: process.env.ESCALATION_EMAIL || 'dolunay@dolunay.ai'
 };
 
 module.exports = { config };
