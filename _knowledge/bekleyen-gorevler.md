@@ -10,6 +10,13 @@
 
 ## Aktif TODO'lar
 
+### 🟡 Git Push Bekliyor — Railway Stabilizasyon Dokümanları (26 Nisan 2026)
+- **Lokal commit:** `96d3d97` (6 commit remote'a push edilmeyi bekliyor)
+- **Push komutu:** `git push origin main`
+- **GitHub'a gönderilen dosyalar (MCP push):** ✅ `railway.md`, ✅ `SKILL.md`
+- **Bekleyen dosyalar:** `hatalar-ve-cozumler.md`, `deploy-registry.md`
+- **Neden:** Sandbox DNS kısıtlaması (`Could not resolve host: github.com`)
+- **Çözüm:** DNS düzelince `git push origin main` çalıştır. MCP push ile gönderilen dosyalar SHA uyumsuzluğu yaratabilir — `git pull --rebase origin main` sonra push.
 
 ### ~~🟡 YouTube Otomasyonu V2~~ → ✅ V3'e yükseltildi (18 Nisan 2026)
 - V3: Telegram kaldırıldı → CronJob (günlük 17:00 TR), Creative Engine, tam otonom
