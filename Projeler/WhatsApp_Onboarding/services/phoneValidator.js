@@ -112,10 +112,10 @@ async function groqValidate(input) {
       setTimeout(() => { global._groqAlertSent = false; }, 3600000);
       try {
         const resend = require('./resend');
-        await resend.sendAdminAlertEmail({
-          subject: '[PHONE] Groq API down — fallback aktif',
-          body: `Groq API'ye ulaşılamıyor. Tüm telefon validasyonları libphonenumber fallback'ine düşüyor.\n\nHata: ${error.message}`
-        });
+        await resend.sendAdminAlertEmail(
+          '[PHONE] Groq API down — fallback aktif',
+          { body: `Groq API'ye ulaşılamıyor. Tüm telefon validasyonları libphonenumber fallback'ine düşüyor.\n\nHata: ${error.message}` }
+        );
       } catch (_) { /* alert gönderilemezse bile devam et */ }
     }
 
