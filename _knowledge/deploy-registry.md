@@ -12,6 +12,29 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 
 ## ✅ Aktif Projeler
 
+### Hizli Referans — Tum Aktif Servisler
+
+| Proje | Tip | Son Deploy | Durum | Hassasiyet Sayisi |
+|-------|-----|------------|-------|-------------------|
+| ceren-izlenme-notifier | CronJob | 2026-04-01 | ✅ Aktif | 3 |
+| lead-pipeline | CronJob | 2026-04-16 | ✅ Aktif | 3 |
+| shorts-demo-bot | Worker | 2026-03-17 | ✅ Aktif | 2 |
+| dolunay-otonom-kapak | CronJob | 2026-04-20 | ✅ Aktif | 4 |
+| isbirligi-tahsilat-takip | CronJob | 2026-04-02 | ✅ Aktif | 2 |
+| marka-is-birligi | CronJob | 2026-04-16 | ✅ Aktif | 2 |
+| akilli-watchdog | CronJob | 2026-04-20 | ✅ Aktif | 3 |
+| linkedin-video-cron | CronJob | 2026-04-16 | ✅ Aktif | 4 |
+| linkedin-text-cron | CronJob | 2026-04-20 | ✅ Aktif | 3 |
+| twitter-video-cron | CronJob | 2026-04-08 | ✅ Aktif | 4 |
+| supplement-telegram-bot | Worker | 2026-03-31 | ✅ Aktif | 2 |
+| ecom-reklam-otomasyonu | Worker | 2026-04-25 | ✅ Aktif | 4 |
+| youtube-otomasyonu-v3 | CronJob | 2026-04-19 | ✅ Aktif | 4 |
+| whatsapp-onboarding | Express | 2026-04-26 | ✅ Aktif | 5 |
+| lead-notifier-bot-v3 | Worker | 2026-04-26 | ✅ Aktif | 3 |
+| ceren-marka-takip-cron | CronJob | 2026-04-24 | ✅ Aktif | 4 |
+
+---
+
 ### ceren-izlenme-notifier (CronJob — Salı/Perşembe) ✅
 - **Platform:** `railway-cron`
 - **Railway Project ID:** `b5117788-3979-45b3-a92c-eae3606e0dc2`
@@ -23,6 +46,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Cron Schedule:** `0 8 * * 2,4` (Salı/Perşembe, UTC 08:00 = TR 11:00)
 - **Son Deploy:** 2026-04-01 (Stabilizasyon: Worker→CronJob dönüşümü, OAuth token refresh, YouTube filtre fix, ölü kod temizliği)
 - **Durum:** ✅ Aktif (Haftada 2 kez sosyal medya performans raporu — Instagram, TikTok, YouTube)
+- **Hassasiyetler:** Apify kota limiti (yedek hesap gerekli), OAuth token yenileme, YouTube filtre API degisiklikleri
 
 ---
 
@@ -38,6 +62,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Birleştirilen servisler:** tele-satis-crm + lead-notifier-bot + tele-satis-notifier
 - **Son Deploy:** 2026-04-16 (fix: Notifier spreadsheet state_spreadsheet_id üzerinden izlenerek sonsuz spam loop hatası çözüldü)
 - **Durum:** ✅ Aktif (Build SUCCESS, cron 10 dakikada bir çalışıyor)
+- **Hassasiyetler:** Google Sheets SA yetkilendirme (manuel share gerekli), state cakismasi (namespace prefix ZORUNLU), SMTP yasak (Gmail API kullan)
 
 ---
 
@@ -51,6 +76,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python bot.py`
 - **Son Deploy:** 2026-03-17
 - **Durum:** ✅ Aktif (README güncellendi, Kie AI referansı kaldırıldı)
+- **Hassasiyetler:** Telegram bot conflict (deploy sirasinda gecici), requests bagimliligi (requirements.txt kontrol)
 
 ---
 
@@ -70,6 +96,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Cron Schedule:** `0 6 * * *` (Günlük, UTC 06:00 = TR 09:00)
 - **Son Deploy:** 2026-04-20 (fix: dotenv absolute path sorunu ve boş video listelerinde OpsLogger early-return hatası düzeltildi)
 - **Durum:** ✅ Aktif (Günde 1 kez Reels kapak üretimi — 3 tema × 2 varyasyon = 6 kapak)
+- **Hassasiyetler:** Kie AI API degisiklikleri, ImgBB API limiti, Notion token (NOTION_SOCIAL_TOKEN), dotenv absolute path sorunu
 
 #### Servis 2: youtube-kapak
 - **Service ID:** `0bfc46ea-887f-4a62-a3da-bc7fb824eb3c`
@@ -77,6 +104,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Cron Schedule:** `0 7 * * *` (Günlük, UTC 07:00 = TR 10:00)
 - **Son Deploy:** 2026-04-20 (fix: dotenv absolute path sorunu ve boş video listelerinde OpsLogger early-return hatası düzeltildi)
 - **Durum:** ✅ Aktif (Günde 1 kez YouTube thumbnail üretimi — 5 tema × 2 varyasyon = 10 kapak)
+- **Hassasiyetler:** Kie AI API degisiklikleri, ImgBB API limiti, Notion token (NOTION_SOCIAL_TOKEN), dotenv absolute path sorunu
 
 - **Env Vars:** COVER_TYPE, ENV, NOTION_SOCIAL_TOKEN, NOTION_DB_REELS_KAPAK, NOTION_DB_YOUTUBE_ISBIRLIKLERI, NOTION_DB_OPS_LOG, KIE_API_KEY, GEMINI_API_KEY, IMGBB_API_KEY, GOOGLE_OUTREACH_TOKEN_JSON
 
@@ -97,6 +125,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Son Deploy:** 2026-04-02 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (Notion-based state, Gmail API OAuth2 e-posta)
+- **Hassasiyetler:** Gmail OAuth2 token yenileme, Notion state yonetimi
 
 ---
 
@@ -110,6 +139,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python railway_scheduler.py`
 - **Son Deploy:** 2026-04-16 (fix: Apify key rotasyonunda limit hatası durumu giderildi ve hata alındığında failover yapısı eklendi)
 - **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — Notion state + ops_logger)
+- **Hassasiyetler:** Apify key rotasyonu (failover yapisi mevcut), Notion ops_logger queue flush
 
 ---
 
@@ -123,6 +153,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Son Deploy:** 2026-04-20 (Fix: TikTok bağımlı sosyal medya paylaşımlarında 'Hiç yeni lead işlenmedi' diyen false-positive Watchdog alarmı expected_daily_activity: False yapılarak düzeltildi)
 - **Durum:** ✅ Aktif (Günde 1 kez çalışır — UTC 00:00. Token expire takibi + Railway health check eklendi.)
+- **Hassasiyetler:** False positive dongusu (kendi loglarini izleme riski), Railway Token gecerliligi, SKIPPED deploy durumu (monorepo — saglikli)
 - **Env Vars:** GROQ_API_KEY, NOTION_API_TOKEN, NOTION_SOCIAL_TOKEN, GOOGLE_OUTREACH_TOKEN_JSON, GOOGLE_SERVICE_ACCOUNT_JSON, RAILWAY_TOKEN
 
 ---
@@ -148,6 +179,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Cron Schedule:** `0 10 * * *` (Günlük, UTC 10:00 = TR 13:00)
 - **Son Deploy:** 2026-04-16 (fix: LinkedIn video yükleme işlemi zaman aşımı 5 dakikadan 15 dakikaya çıkarıldı)
 - **Durum:** ✅ Aktif (TikTok→LinkedIn video pipeline, günde 1 kez)
+- **Hassasiyetler:** ffmpeg (nixpacks.toml ZORUNLU), LinkedIn Video API timeout (15dk polling), TikTok scraping (yt-dlp versiyon uyumu), filtre strictness ayari
 - **Env Vars:** LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, GROQ_API_KEY, LINKEDIN_FILTER_STRICTNESS=relaxed, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID, NOTION_DB_OPS_LOG
 
 ---
@@ -163,6 +195,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Cron Schedule:** `0 8 * * 1,4` (Haftada 2, UTC 08:00 Pazartesi+Perşembe = TR 11:00)
 - **Son Deploy:** 2026-04-20 (style: Görsel boyut ve kalitesini sade, uncluttered, yormayan, açık temalı ultra-minimalist tasarıma geçirecek prompt revizyonu yapıldı.)
 - **Durum:** ✅ Aktif (Haftalık AI Haberleri + AI Tavsiyesi LinkedIn postu)
+- **Hassasiyetler:** Kie AI gorsel uretim kalitesi, LinkedIn API rate limit, Perplexity API degisiklikleri
 - **Env Vars:** PERPLEXITY_API_KEY, OPENAI_API_KEY, KIE_API_KEY, LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID, NOTION_DB_OPS_LOG
 
 ---
@@ -178,6 +211,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Cron Schedule:** `0 8,11,14 * * *` (Günde 3 kez, UTC 08/11/14 = TR 11/14/17)
 - **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
 - **Durum:** ✅ Aktif (TikTok→X/Twitter video pipeline, günde 3 kez)
+- **Hassasiyetler:** ffmpeg (nixpacks.toml ZORUNLU), X/Twitter API rate limit, Notion DB ID cakismasi (LinkedIn ile ayni DB), yt-dlp versiyon
 - **Env Vars:** NOTION_SOCIAL_TOKEN, NOTION_TWITTER_DB_ID, X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
 
 ---
@@ -191,6 +225,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Supplement_Telegram_Bot/`
 - **Son Deploy:** 2026-03-31 (SUCCESS — Railway API doğrulandı)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — takviye takibi)
+- **Hassasiyetler:** Telegram bot conflict (deploy gecici), GitHub monorepo push senkronizasyonu
 - **Not:** Eğitim amaçlı paylaşılan kopyası: `Paylasilan_Projeler/Supplement_Telegram_Bot_Taslak/`
 - **⚠️ DİKKAT:** Lokal klasör `Paylasilan_Projeler/Supplement_Telegram_Bot_Taslak/` dosyalarından oluşturuldu (2026-04-08). GitHub monorepo'ya henüz push edilmedi — bir sonraki push ile senkronize olacak.
 
@@ -209,6 +244,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Son Deploy:** 2026-04-25 (feat: v3.3 Producer LLM Mimari refactoring tamamlandı)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
+- **Hassasiyetler:** Bellek sizintisi (UserSession 10dk idle timeout), asyncio task hata yutma, Seedance API parametre isimleri (model bazli farklilik), Kie AI 512 upstream hatasi (retry mevcut)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID, FIRECRAWL_API_KEY
 
 ---
@@ -226,6 +262,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Son Deploy:** 2026-04-19 (fix: Creative Engine prompt optimizasyonu — videolardaki çizim izlenimini gidermek için strict realism kuralları eklendi)
 - **YouTube Kanalı:** Pets Got Talent (UCvj1A1gds6jZUgsPbhF3Muw) — OAuth2 bağlı
 - **Durum:** ✅ Aktif (Günde 1 kez otonom video — Creative Engine: 2686 kombinasyon)
+- **Hassasiyetler:** YouTube OAuth2 token yenileme, Kie AI API, Replicate API, Creative Engine prompt hassasiyeti (realism kurallari)
 - **Env Vars:** ENV, OPENAI_API_KEY, KIE_API_KEY, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_YOUTUBE_OTOMASYON, YOUTUBE_ENABLED, YOUTUBE_CLIENT_ID, YOUTUBE_CLIENT_SECRET, YOUTUBE_REFRESH_TOKEN, YOUTUBE_CATEGORY_ID, YOUTUBE_PRIVACY
 
 ---
@@ -248,6 +285,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
   - `GET /health` (Monitoring)
 - **Son Deploy:** 2026-04-26 (feat: Race condition lock, global error handling ve admin email alerts ile DLQ yapısı eklendi)
 - **Durum:** ✅ Aktif (Health check OK — 2 aktif onboarding, tüm servisler connected/configured)
+- **Hassasiyetler:** Webhook idempotency, ManyChat API timeout (8s), Notion rate limit (429), race condition (lock mekanizmasi mevcut), Groq API timeout (5s)
 - **Env Vars:** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL, WA_BUSINESS_PHONE
 - **Not:** ✅ Hibrit fallback aktif: WA teslim başarısızsa → Resend email (dolunay.ai) + WhatsApp CTA butonu. v1.2.0
 
@@ -269,10 +307,24 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Start Komutu:** `python main.py`
 - **Son Deploy:** 2026-04-26 (Fix: OAuth fallback (GOOGLE_OUTREACH_TOKEN_JSON) eklendi, manuel yetki için share_sheet.py eklendi)
 - **Durum:** ✅ Aktif (Railway deploy başarılı ve çalışıyor)
+- **Hassasiyetler:** Google Sheets SA yetkilendirme (manuel share ZORUNLU), GOOGLE_OUTREACH_TOKEN_JSON fallback, SMTP yasak
 - **Env Vars:** TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_OUTREACH_TOKEN_JSON, NOTIFY_EMAIL, SENDER_EMAIL, POLL_INTERVAL_SECONDS, MAX_BATCH_SIZE
 
----
+### ceren-marka-takip-cron
+- **Platform:** `railway-cron`
+- **Railway Project ID:** `c563b334-2a3c-49bf-8461-9852ca649112`
+- **Service ID:** `128e496f-9f8a-437e-b401-e89c3b0a1e08`
+- **Environment ID:** `817dd65c-57f2-4cb7-a4df-92422f9fd36a`
+- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `/Projeler/Ceren_Marka_Takip`)
+- **Lokal Klasör:** `Projeler/Ceren_Marka_Takip/`
+- **Start Komutu:** `cd Projeler/Ceren_Marka_Takip && pip install -r requirements.txt && python main.py`
+- **Cron Schedule:** `0 7 * * *` (Günde 1 kez, UTC 07:00 = İstanbul 10:00)
+- **Son Deploy:** 2026-04-24 (Fix: Groq timeout bug, business_hours fix, SMTP cleanup, nixpacks.toml eklendi, cron 2h→günlük)
+- **Durum:** ✅ Aktif (Günde 1 kez, sabah 10:00 İstanbul)
+- **Hassasiyetler:** Groq timeout, nixpacks.toml (ffmpeg yoksa da nixpacks gerekli), SMTP yasak (Gmail API), business_hours hesaplama
+- **Env Vars:** GOOGLE_CEREN_TOKEN_JSON, GOOGLE_DOLUNAY_AI_TOKEN_JSON, GOOGLE_OUTREACH_TOKEN_JSON, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_OPS_LOG
 
+---
 
 ## 🗂 Lokal Servisler (LaunchAgent / Cron)
 
@@ -302,17 +354,4 @@ Aşağıdaki projeler ilerleyen dönemde platformdan silinmek üzere işaretlenm
 - ~~`sweatcoin-email-automation`~~ (`0c1ff084`) — Proje tamamen kapatıldı, Railway'den silindi, lokal arşive taşındı. **SİLİNDİ** (2026-04-08)
 - ~~`Emlak Arazi Drone Çekim`~~ — Local-only proje, hiç deploy edilmemişti. Lokal arşive taşındı. **ARŞİVLENDİ** (2026-04-08)
 - ~~`blog-yazici-cron`~~ (`49e850fc`) — Lokal arşive taşındı. **ARŞİVLENDİ** (2026-04-24)
-
-### ceren-marka-takip-cron
-- **Platform:** `railway-cron`
-- **Railway Project ID:** `c563b334-2a3c-49bf-8461-9852ca649112`
-- **Service ID:** `128e496f-9f8a-437e-b401-e89c3b0a1e08`
-- **Environment ID:** `817dd65c-57f2-4cb7-a4df-92422f9fd36a`
-- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `/Projeler/Ceren_Marka_Takip`)
-- **Lokal Klasör:** `Projeler/Ceren_Marka_Takip/`
-- **Start Komutu:** `cd Projeler/Ceren_Marka_Takip && pip install -r requirements.txt && python main.py`
-- **Cron Schedule:** `0 7 * * *` (Günde 1 kez, UTC 07:00 = İstanbul 10:00)
-- **Son Deploy:** 2026-04-24 (Fix: Groq timeout bug, business_hours fix, SMTP cleanup, nixpacks.toml eklendi, cron 2h→günlük)
-- **Durum:** ✅ Aktif (Günde 1 kez, sabah 10:00 İstanbul)
-- **Env Vars:** GOOGLE_CEREN_TOKEN_JSON, GOOGLE_DOLUNAY_AI_TOKEN_JSON, GOOGLE_OUTREACH_TOKEN_JSON, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_OPS_LOG
 

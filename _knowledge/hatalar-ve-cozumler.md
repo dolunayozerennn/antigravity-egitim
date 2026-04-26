@@ -235,6 +235,25 @@ Railway Nixpacks `Aptfile`/`apt.txt` dosyalarını YOKSAYAR. ffmpeg'i `/root/.ni
 - **Çözüm:** `nixpkgs`'e `python311` explicit ekle + sıfırdan temiz deploy at (`usePreviousImageTag: false`).
 - **Tarih:** Nisan 2026
 
+### Monorepo Root Directory — EN SIK TEKRARLAYAN HATA 🔴
+- **Sorun:** antigravity-egitim monorepo'sundan deploy edilen projeler, Railway'de Root Directory ayarı yapılmadığında repo kökünü build ediyor. Bu durumda yanlış requirements.txt okunur veya main.py bulunamaz.
+- **Belirtiler:**
+  - Build SUCCESS ama runtime'da ModuleNotFoundError
+  - Yanlış requirements.txt install ediliyor (repo kökünden)
+  - "No start command could be found" hatası
+- **Çözüm:**
+  1. Railway Dashboard -> Service -> Settings -> Root Directory -> "Projeler/PROJE_ADI"
+  2. Watch Paths -> "Projeler/PROJE_ADI/**"
+  3. VEYA GraphQL: `serviceInstanceUpdate(input: { builder: { rootDirectory: "Projeler/X" } })`
+- **Kural:** Monorepo'dan yeni servis oluşturulduğunda Root Directory ZORUNLU ayarlanır. deploy-registry.md'de her projenin Root Dir'i açıkça yazılıdır — buradan doğrula.
+- **Tarih:** Nisan 2026 (çoklu tekrar)
+
+### Post-Deploy Smoke Test Atlama — Sessiz Crash
+- **Sorun:** Deploy SUCCESS dönüyor ama servis runtime'da crash ediyor. Smoke test atlandığı için fark edilmiyor.
+- **Çözüm:** Her deploy sonrası 60sn bekle, son 100 log satırını çek, fatal pattern'leri (Traceback, ImportError, SyntaxError, AttributeError, Process exited with code 1) ara.
+- **Kural:** Deploy SUCCESS = servis sağlıklı DEMEK DEĞİLDİR. Log doğrulaması ZORUNLU.
+- **Tarih:** Nisan 2026
+
 ---
 
 ## MCP Bağlantı Sorunları
