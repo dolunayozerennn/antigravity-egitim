@@ -132,7 +132,7 @@ Yıllık üyelik yapan **her üye** (Standard veya Premium fark etmez), JoinSecr
 - **Otel Otomasyonu** — Otellerin WhatsApp ve Instagram mesajlarını yapay zeka ile otomatik yanıtlar (rezervasyon, müsaitlik, fiyat, tesis detayları). Dolunay bu otomasyonu otelcilere aylık ~$1.000 seviyesinde satıyor.
 - **Süpermarket Otomasyonu** — On binlerce ürünlü market zincirlerinde stok takibi, satış analizi, personel raporlaması.
 - **E-Ticaret Otomasyonu** — Tek bir ürün görselinden yüksek kaliteli yapay zeka reklam videoları üretir.
-- **YouTube Otomasyonu** — Tek bir komutla istediğin konseptte YouTube videoları üretir ve YouTube + Instagram + TikTok'ta otomatik paylaşır.
+- **YouTube Otomasyonu** — Tamamen otonom çalışan video üretim sistemi. Günlük CronJob ile insan müdahalesi olmadan istediğin konseptte YouTube Shorts videoları üretir ve YouTube + Instagram + TikTok'ta otomatik paylaşır. Hiç dokunmana gerek kalmadan kanalın büyür.
 - **Influencer Otomasyonu** — Yapay zeka influencer oluşturma, sosyal medyada büyütme ve gelir elde etme. (Bu otomasyonun canlı kanıtı: `meltem.ile.yoga` Instagram hesabı — Dolunay'a aittir, hiç insan müdahalesi olmadan tam otomatik içerik üretir, takipçilerle mesajlaşır ve büyür.)
 - **LinkedIn Otomasyonu** — Senin yerine düzenli LinkedIn postları yazar, onayına sunar, onay verirsen otomatik paylaşır.
 - **Emlakçı Otomasyonu** — Bir emlakçının asistanı gibi çalışır; takvim organizasyonu, müşteri listesi yönetimi, veri ekleme/çıkarma.
@@ -161,7 +161,7 @@ Yapay zeka yeni bir alandır; Dolunay dahil bu işle ilgilenen herkes birkaç se
 
 Asistan, uygun bir bağlamda bunları sosyal kanıt olarak kullanabilir. Üyeyi topluluğa girince "Başarılar" bölümünden detayları görmeye yönlendirir.
 
-- **YouTube Otomasyonu** — Onlarca üye kanalını tam otomatik çalıştırıyor. Ortalama Shorts izlenmeleri 10-20 bin civarı; Murat gibi milyonlarca izlenmeye ulaşan üyeler de var.
+- **YouTube Otomasyonu** — Onlarca üye kanalını tam otonom CronJob ile çalıştırıyor; hiç dokunmadan her gün yeni video yükleniyor. Ortalama Shorts izlenmeleri 10-20 bin civarı; Murat gibi milyonlarca izlenmeye ulaşan üyeler de var.
 - **Otel/Mesajlaşma Otomasyonu** — Üye Rustam bir Kung Fu hocasına bu otomasyonu uyarladı, hocanın tüm Instagram mesajları otomatik yanıtlanıyor. Üye Ziya otelciye uyarladı, otelin WhatsApp ve Instagram mesajları tam otomatik.
 - **E-Ticaret Otomasyonu** — Üye Emil, kendi markası için tam otomatik reklam videoları üretiyor. Üye Savaş bu otomasyonu bir Print on Demand mağazasına sattı; mağazaya yüklenen tüm ürün görselleri otomatik üretiliyor.
 - **Süpermarket Otomasyonu** — Dolunay'ın bir süpermarket müşterisine $4.000'a sattığı otomasyonun benzerini üye Eren başka bir müşteriye sattı (rakam gizlilik nedeniyle paylaşılmıyor).
@@ -273,8 +273,8 @@ A: Otomasyonlar üçüncü parti AI modellerini (OpenAI gibi) ve n8n altyapısı
 **Q: Birden fazla kanal/işletme için kullanabilir miyim?**
 A: Evet, kurduğun otomasyonu istediğin kadar farklı kanal veya müşteri için çoğaltabilirsin. Örneğin bir YouTube otomasyonunu beş ayrı kanalda farklı konseptlerle kullanabilirsin. Her kanal için ayrı API maliyeti oluşur — 3 kanal çalıştırıyorsan yaklaşık 3 kat maliyet bekle.
 
-**Q: YouTube otomasyonu kaç dakikalık video yapabiliyor?**
-A: Süre sınırı yok ama günümüz AI modelleri 10 dakikadan uzun videolarda kalite kaybediyor. Genelde 3-7 dakikalık videolar tavsiye ediliyor.
+**Q: YouTube otomasyonu nasıl videolar üretiyor?**
+A: YouTube otomasyonu Shorts formatında (8-15 saniye arası) kısa, dikkat çekici videolar üretiyor. Her gün otomatik olarak yeni bir video üretip yüklüyor — sen hiçbir şey yapmana gerek kalmadan kanalın büyüyor. Üyelerimizin kanallarında ortalama 10-20 bin izlenme, bazılarında milyonlarca izlenme alınıyor.
 
 **Q: Birebir destek alabiliyor muyum?**
 A: Topluluk üyelerine Skool üzerinden yazılı sınırsız soru-cevap yapılıyor. Premium paketi haftada 1 AnyDesk kurulum seansı + işletmeye özel AI planı içeriyor. VIP haftalık görüşme + kurumsal danışmanlık ekliyor.

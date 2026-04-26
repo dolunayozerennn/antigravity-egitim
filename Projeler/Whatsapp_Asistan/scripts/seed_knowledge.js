@@ -26,7 +26,7 @@ function parseMarkdown(content) {
 
   // Basit bir markdown parser (## ve ### başlıklarına göre ayırır)
   for (const line of lines) {
-    if (line.startsWith('## ') || line.startsWith('### ')) {
+    if (line.startsWith('## ') || line.startsWith('### ') || line.startsWith('#### ')) {
       // Önceki chunk'ı kaydet
       if (currentContent.length > 0 && currentTitle) {
         initialChunks.push({

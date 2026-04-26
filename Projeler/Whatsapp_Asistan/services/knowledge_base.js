@@ -7,6 +7,7 @@ const log = require('../utils/logger');
 const openai = new OpenAI({ apiKey: config.openaiApiKey });
 
 const PRICING_KEYWORDS = ['fiyat', 'ücret', 'price', 'ne kadar', 'kaç dolar', 'paket', 'standard', 'premium', 'vip', 'aylık', 'yıllık', 'indirim', 'kampanya'];
+const AUTOMATION_KEYWORDS = ['otomasyon', 'automation', 'youtube', 'otel', 'süpermarket', 'e-ticaret', 'influencer', 'linkedin', 'emlakçı', 'emlak', 'video üret', 'otomatik paylaş', 'kanalım', 'içerik üret', 'shorts', 'reels', 'tiktok', 'instagram', 'meltem'];
 
 async function queryKnowledge(question) {
   try {
@@ -23,7 +24,7 @@ async function queryKnowledge(question) {
     const { data, error } = await supabase.rpc('match_knowledge_chunks', {
       query_embedding: embedding,
       match_threshold: 0.6,
-      match_count: 5
+      match_count: 7
     });
 
     if (error) throw error;
@@ -49,6 +50,21 @@ async function queryKnowledge(question) {
       if (pricingChunks && pricingChunks.length > 0) {
         const pinnedContext = pricingChunks.map(c => `[${c.section_title}]\n${c.content}`).join('\n\n');
         // RAG sonuçlarının BAŞINA ekle (LLM başa daha fazla ağırlık verir)
+        return pinnedContext + '\n\n' + contextText;
+      }
+    }
+
+    // Otomasyon sorusu tespiti
+    const isAutomationQuestion = AUTOMATION_KEYWORDS.some(kw => lowerQuestion.includes(kw));
+    
+    if (isAutomationQuestion) {
+      const { data: automationChunks } = await supabase
+        .from('knowledge_chunks')
+        .select('section_title, content')
+        .or('section_title.ilike.%Otomasyon Kütüphanesi%,section_title.ilike.%Başarı Hikâyeleri%');
+      
+      if (automationChunks && automationChunks.length > 0) {
+        const pinnedContext = automationChunks.map(c => "[" + c.section_title + "]\n" + c.content).join('\n\n');
         return pinnedContext + '\n\n' + contextText;
       }
     }
