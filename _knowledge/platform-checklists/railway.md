@@ -70,3 +70,28 @@
 ❌ requests.get(url)  →  ✅ requests.get(url, timeout=30)
 ❌ print(e)  →  ✅ logging.error("...", exc_info=True)
 ```
+
+## 📂 Monorepo Root Directory
+
+| Kontrol | Doğru Çözüm |
+|---------|-------------|
+| Root Directory Railway'de doğru ayarlı mı? | Dashboard → Service Settings → Root Directory → "Projeler/PROJE_ADI" |
+| Watch Paths tanımlı mı? | "Projeler/PROJE_ADI/**" |
+| `mcp_railway_deploy` kullanılıyorsa? | Root dir otomatik doğru, ek ayar gereksiz |
+| GitHub auto-deploy tetikleniyorsa? | Root Directory ZORUNLU, yoksa tüm repo build edilir |
+
+## 🚀 Deploy Yöntemi Karar Matrisi
+
+| Durum | Yöntem | Neden |
+|-------|--------|-------|
+| Hızlı fix, lokal test edilmiş | `mcp_railway_deploy` | DNS bypass, hızlı |
+| Kalıcı değişiklik, CI/CD istenen | GitHub push, auto-deploy | Audit trail, rollback |
+| İlk kez deploy | GraphQL API ile proje+servis oluştur | Tam kontrol |
+
+## ✅ Pre-Deploy Zorunlu Checklist (Quick 5)
+
+1. `requirements.txt` / `package.json` güncel mi? (her import için eşleşme)
+2. `nixpacks.toml` var mı? (ffmpeg/chromium kullanılıyorsa ZORUNLU)
+3. `Aptfile`/`apt.txt` varsa SİL
+4. Env var'lar Railway'de set mi? (kod: `os.environ` → Railway: `variable list`)
+5. Root Directory Railway'de doğru mu? (monorepo için `Projeler/XYZ`)
