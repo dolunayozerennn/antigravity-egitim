@@ -246,47 +246,53 @@ async function findSubscriberByPhone(phoneNumber) {
 
 async function findSubscriberBySystemPhone(phoneNumber) {
   try {
-    // ManyChat system field araması GET isteği ile yapılır.
-    // Telefon numaralarındaki artı işareti vb. encode edilmeli.
-    let url = `${API_URL}/subscriber/findBySystemField?phone=${encodeURIComponent(phoneNumber)}`;
-    log.debug(`[manychat:api] findBySystemField (phone) isteği atılıyor.`, { url });
-
-    let response = await fetchWithRetry(url, {
-      method: 'GET',
-      headers
-    });
-
-    let data = await response.json();
-    log.debug(`[manychat:api] findBySystemField (phone) yanıtı.`, data);
-
+    const searchFields = ['phone', 'whatsapp_phone'];
     let foundId = null;
-    if (data.status === 'success' && data.data) {
-      if (Array.isArray(data.data) && data.data.length > 0) {
-        foundId = data.data[0].id;
-      } else if (!Array.isArray(data.data) && data.data.id) {
-        foundId = data.data.id;
-      }
-    }
 
-    // Try without '+' sign if not found
-    if (!foundId && phoneNumber.startsWith('+')) {
-      const phoneNoPlus = phoneNumber.substring(1);
-      url = `${API_URL}/subscriber/findBySystemField?phone=${encodeURIComponent(phoneNoPlus)}`;
-      log.debug(`[manychat:api] findBySystemField (phone without +) isteği atılıyor.`, { url });
-      
-      response = await fetchWithRetry(url, {
+    for (const field of searchFields) {
+      if (foundId) break;
+
+      // ManyChat system field araması GET isteği ile yapılır.
+      // Telefon numaralarındaki artı işareti vb. encode edilmeli.
+      let url = `${API_URL}/subscriber/findBySystemField?${field}=${encodeURIComponent(phoneNumber)}`;
+      log.debug(`[manychat:api] findBySystemField (${field}) isteği atılıyor.`, { url });
+
+      let response = await fetchWithRetry(url, {
         method: 'GET',
         headers
       });
-      
-      data = await response.json();
-      log.debug(`[manychat:api] findBySystemField (phone without +) yanıtı.`, data);
-      
+
+      let data = await response.json();
+      log.debug(`[manychat:api] findBySystemField (${field}) yanıtı.`, data);
+
       if (data.status === 'success' && data.data) {
         if (Array.isArray(data.data) && data.data.length > 0) {
           foundId = data.data[0].id;
         } else if (!Array.isArray(data.data) && data.data.id) {
           foundId = data.data.id;
+        }
+      }
+
+      // Try without '+' sign if not found
+      if (!foundId && phoneNumber.startsWith('+')) {
+        const phoneNoPlus = phoneNumber.substring(1);
+        url = `${API_URL}/subscriber/findBySystemField?${field}=${encodeURIComponent(phoneNoPlus)}`;
+        log.debug(`[manychat:api] findBySystemField (${field} without +) isteği atılıyor.`, { url });
+        
+        response = await fetchWithRetry(url, {
+          method: 'GET',
+          headers
+        });
+        
+        data = await response.json();
+        log.debug(`[manychat:api] findBySystemField (${field} without +) yanıtı.`, data);
+        
+        if (data.status === 'success' && data.data) {
+          if (Array.isArray(data.data) && data.data.length > 0) {
+            foundId = data.data[0].id;
+          } else if (!Array.isArray(data.data) && data.data.id) {
+            foundId = data.data.id;
+          }
         }
       }
     }
@@ -299,7 +305,7 @@ async function findSubscriberBySystemPhone(phoneNumber) {
     log.info(`[manychat:api] ℹ️ Subscriber system field ile bulunamadı.`);
     return null;
   } catch (error) {
-    log.error(`[manychat:api] ❌ findBySystemField (phone) ağ hatası: ${error.message}`, error);
+    log.error(`[manychat:api] ❌ findBySystemField ağ hatası: ${error.message}`, error);
     return null;
   }
 }

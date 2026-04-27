@@ -11,7 +11,7 @@ const REQUIRED_VARS = [
   'NOTION_API_KEY',
   'NOTION_DATABASE_ID',
   'MANYCHAT_API_TOKEN',
-  'GROQ_API_KEY'
+  'OPENAI_API_KEY'
 ];
 
 // Opsiyonel — yoksa uyarı verir ama çökmez
@@ -48,7 +48,7 @@ module.exports = {
     notionApiKey: process.env.NOTION_API_KEY,
     notionDatabaseId: process.env.NOTION_DATABASE_ID,
     manychatApiToken: process.env.MANYCHAT_API_TOKEN,
-    groqApiKey: process.env.GROQ_API_KEY,
+    openaiApiKey: process.env.OPENAI_API_KEY,
     resendApiKey: process.env.RESEND_API_KEY || null,
     resendFromEmail: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
     cronTimezone: process.env.CRON_TIMEZONE || 'Europe/Istanbul',
