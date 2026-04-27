@@ -11,7 +11,8 @@ const log = require('../utils/logger');
 const API_URL = "https://api.manychat.com/fb";
 const headers = {
   'Authorization': `Bearer ${config.manychatApiToken}`,
-  'Content-Type': 'application/json'
+  'Content-Type': 'application/json',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
 
 let customFieldsCache = null;
@@ -61,6 +62,13 @@ async function getCustomFieldId(fieldName) {
       headers
     });
     const response = await customFieldsFetchPromise;
+    const contentType = response.headers.get('content-type') || '';
+    
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      throw new Error(`API JSON dönmedi (${response.status} ${response.statusText}). Content-Type: ${contentType}. Body: ${text.substring(0, 500)}`);
+    }
+
     const data = await response.json();
     if (data.status === 'success' && data.data) {
       customFieldsCache = {};
@@ -108,8 +116,8 @@ async function ensureSubscriberAndSendFlow(phoneNumber, firstName, flowId) {
   }
 
   if (!subscriberId) {
-    const errMsg = `Subscriber ID alınamadı (ne yaratılabildi ne de bulunabildi).`;
-    log.error(`[manychat:engine] FATAL: ${errMsg}`, context);
+    const errMsg = `Subscriber ID alınamadı (ne yaratılabildi ne de bulunabildi). ManyChat API kısıtlaması nedeniyle WhatsApp atlanacak.`;
+    log.warn(`[manychat:engine] WARN: ${errMsg}`, context);
     throw new Error(errMsg);
   }
 

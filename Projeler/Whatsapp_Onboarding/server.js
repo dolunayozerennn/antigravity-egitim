@@ -227,7 +227,7 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
           firstName: first_name,
           lastName: last_name || '',
           transactionId: transaction_id,
-          registrationDate: date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
+          registrationDate: moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
           onboardingStatus: "error"
         });
         await notion.appendNote(member.id, "[HATA] Zap #2 önce geldi, ancak geçerli email adresi yok.");
@@ -244,7 +244,7 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
           lastName: last_name || '',
           email: cleanEmail,
           transactionId: transaction_id,
-          registrationDate: date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
+          registrationDate: moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
           onboardingStatus: "bekliyor"
         });
         log.info(`[membership-questions] Kayıt oluşturuldu (new-paid-member henüz gelmemiş)`);
@@ -692,6 +692,20 @@ app.post('/admin/trigger-flow', adminAuth, async (req, res) => {
   } catch (error) {
     log.error(`[admin/trigger-flow] HATA: ${error.message}`, error.stack);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// GET /admin/debug-manychat — Debug Endpoint
+// ─────────────────────────────────────────────────────────────
+app.get('/admin/debug-manychat', async (req, res) => {
+  try {
+    const manychat = require('./services/manychat');
+    // Force reset cache and promise if there was one
+    const result = await manychat.getCustomFieldId('whatsapp_phone_text');
+    res.status(200).json({ success: true, result });
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
