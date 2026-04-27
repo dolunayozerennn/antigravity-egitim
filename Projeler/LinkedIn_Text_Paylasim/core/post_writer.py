@@ -34,8 +34,10 @@ class PostWriter:
             "gelişmelerini\" paylaşmak. Oluşturduğun LinkedIn postunda orta düzey "
             "bir Türkçe kullanmanı istiyorum. Herkesin anlayabileceği bir bilgi "
             "düzeyinde yazmanı istiyorum. Yazının insansı gözükmesini istiyorum.\n\n"
-            "Yazı başına maksimum 700 karakteri aşmamaya çalış. YZ kısaltması "
-            "yerine AI kısaltmasını kullan.\n\n"
+            "ÇOK ÖNEMLİ: LinkedIn'de metnin yarıda kesilmemesi için gönderinin toplam uzunluğu kısa olmalıdır. "
+            "Her haberi çok kısa ve öz tut (haberin özeti için maksimum 2-3 cümle kullan). "
+            "Toplam metin 1500-2000 karakter civarında olmalıdır. YZ kısaltması yerine AI kısaltmasını kullan. "
+            "Yazıyı ASLA cümlenin veya konunun ortasında yarıda kesme, 5 haberi de tam bir şekilde bitirip kapanış cümlesi yaz.\n\n"
             "Kolay okunabilmesi için paragraflar, başlıklar ve maddeler arasına mutlaka çift enter atarak (boş bir satır bırakarak) boşluk bırakmayı unutma. \n\n"
             "YASAKLI VE KAÇINILMASI GEREKENLER:\n"
             "- 'Hey ağım', 'Hey network', 'Hey bağlantılarım' gibi girişler YAPMA.\n"
@@ -63,7 +65,7 @@ class PostWriter:
         user_message = (
             "Senin görevin, insanların günlük hayatlarında kullanabilecekleri "
             "değerli fakat herkes tarafından bilinmeyen AI tavsiyelerini LinkedIn "
-            "postu aracılığı ile. Amacın, bu tavsiyeyi herhangi bir insanın "
+            "postu aracılığı ile paylaşmak. Amacın, bu tavsiyeyi herhangi bir insanın "
             "kolaylıkla hayatına entegre edebilmesi için önce ona bunun neden "
             "değerli olduğunu (yani hook cümlesini) vermen; ardından nasıl hayatına "
             "çok hızlıca, kolayca ve detaya boğmadan entegre edebileceğini göstermek. "
@@ -73,8 +75,9 @@ class PostWriter:
             "demek her zaman daha sağlıklı olacaktır; çünkü insanlar genellikle "
             "nereden, neyi ve nasıl yapacaklarını bilmiyorlar. Böylece çok bilinmeyen "
             "AI tavsiyelerini paylaşmış olacağız. \n\n"
-            "Yazı başına maksimum 500 karakteri aşmamaya çalış. YZ kısaltması "
-            "yerine AI kısaltmasını kullan.\n\n"
+            "ÇOK ÖNEMLİ: LinkedIn'de metnin yarıda kesilmemesi için gönderi çok uzun OLMAMALIDIR. "
+            "Toplam metni 1500 karakter civarında tutmaya çalış. YZ kısaltması "
+            "yerine AI kısaltmasını kullan. Konuyu ASLA yarıda kesme, tam ve anlaşılır şekilde bitirip bir kapanış yaptığından emin ol.\n\n"
             "Kolay okunabilmesi için paragraflar, başlıklar ve maddeler arasına mutlaka çift enter atarak (boş bir satır bırakarak) boşluk bırakmayı unutma. \n\n"
             "YASAKLI VE KAÇINILMASI GEREKENLER:\n"
             "- 'Hey ağım', 'Hey bağlantılarım', 'Bugün size harika bir ipucu vereceğim' gibi girişler YAPMA.\n"
@@ -95,7 +98,7 @@ class PostWriter:
 
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4.1",
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": user_message}
@@ -106,5 +109,5 @@ class PostWriter:
             ops.info(f"Post yazıldı ({len(content)} karakter)")
             return content
         except Exception as e:
-            ops.error(f"GPT-4.1 post yazma hatası: {e}", exception=e)
+            ops.error(f"GPT-4o post yazma hatası: {e}", exception=e)
             raise
