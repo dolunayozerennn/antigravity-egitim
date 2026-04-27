@@ -148,7 +148,7 @@ app.post('/admin/seed-knowledge', async (req, res) => {
     // Body'den markdown icerigi al, yoksa dosyadan oku
     let mdContent = req.body.markdown_content;
     if (!mdContent) {
-      const mdPath = path.join(__dirname, 'ai-factory-asistan-bilgi-tabani-v4.md');
+      const mdPath = path.join(__dirname, 'ai-factory-asistan-bilgi-tabani-v5.md');
       if (!fs.existsSync(mdPath)) {
         return res.status(404).json({ error: 'Bilgi tabani dosyasi bulunamadi. Body ile markdown_content gonderin.' });
       }
@@ -202,7 +202,7 @@ app.post('/admin/seed-knowledge', async (req, res) => {
         section_title: chunk.section_title,
         content: chunk.content,
         embedding: embedding,
-        metadata: { source: 'ai-factory-asistan-bilgi-tabani-v4' }
+        metadata: { source: 'ai-factory-asistan-bilgi-tabani-v5' }
       });
 
       if (error) {

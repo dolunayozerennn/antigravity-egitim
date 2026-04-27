@@ -14,7 +14,7 @@ for (const env of requiredEnvs) {
 }
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-const mdPath = path.join(__dirname, '../ai-factory-asistan-bilgi-tabani-v4.md');
+const mdPath = path.join(__dirname, '../ai-factory-asistan-bilgi-tabani-v5.md');
 
 // seed_knowledge.js'deki parseMarkdown mantığının aynısı (diff için kullanıyoruz)
 function parseMarkdown(content) {
