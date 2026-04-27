@@ -121,7 +121,6 @@ class LinkedInPublisher:
         if image_urn:
             payload["content"] = {
                 "media": {
-                    "title": text[:100] if text else "Post",
                     "id": image_urn,
                 }
             }
