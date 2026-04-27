@@ -1,7 +1,7 @@
 providers = ["python"]
 
 [phases.setup]
-nixPkgs = ["...", "ffmpeg"]
+aptPkgs = ["ffmpeg"]
 
 [start]
-cmd = "python force_post.py"
+cmd = "python main.py"
