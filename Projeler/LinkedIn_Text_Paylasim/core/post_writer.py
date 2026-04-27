@@ -29,23 +29,15 @@ class PostWriter:
         )
 
         user_message = (
-            "Bu haftanın yapay zeka gelişmelerini baz alarak bir LinkedIn postu "
-            "oluşturmanı istiyorum. Amacın \"Haftanın en önemli 3 yapay zeka "
-            "gelişmesini\" çok kısa bir şekilde paylaşmak. Oluşturduğun LinkedIn postunda orta düzey "
-            "bir Türkçe kullanmanı istiyorum. Herkesin anlayabileceği bir bilgi "
-            "düzeyinde yazmanı istiyorum. Yazının insansı gözükmesini istiyorum.\n\n"
-            "ÇOK ÖNEMLİ: Gönderinin toplam uzunluğu KESİNLİKLE MAKSİMUM 500 karakter (harf) olmalıdır. "
-            "Bu yüzden sadece en çarpıcı 3 haberi seç ve her birini sadece 1 kısa cümle (maksimum 10 kelime) ile özetle. "
-            "Daha uzun olması KESİNLİKLE YASAKTIR. YZ kısaltması yerine AI kısaltmasını kullan. "
-            "Yazıyı ASLA cümlenin veya konunun ortasında yarıda kesme, 3 haberi de çok kısa verip bitir.\n\n"
-            "Kolay okunabilmesi için paragraflar, başlıklar ve maddeler arasına mutlaka çift enter atarak (boş bir satır bırakarak) boşluk bırakmayı unutma. \n\n"
-            "YASAKLI VE KAÇINILMASI GEREKENLER:\n"
-            "- 'Hey ağım', 'Hey network', 'Hey bağlantılarım' gibi girişler YAPMA.\n"
-            "- 'İnanılmaz bir haber', 'Büyük bir heyecanla duyuruyorum' gibi abartılı LinkedIn klişelerinden KAÇIN.\n"
-            "- 'Dijital dünyada', 'Hızla değişen çağda' gibi boş giriş cümleleri YAZMA. Direkt habere gir.\n"
-            "- Çok fazla emoji (🚀, 💡, 🔥) KULLANMA. Maksimum 2-3 emoji.\n\n"
-            "Sadece LinkedIn'de paylaşılacak yazıyı çıktı olarak vermeni istiyorum. "
-            "Başka hiçbir şey yazmanı istemiyorum."
+            "Bu haftanın yapay zeka gelişmelerinden en önemli 3 tanesini seçerek kısa bir LinkedIn postu oluştur.\n\n"
+            "KURALLAR (KESİNLİKLE UYULACAK):\n"
+            "1. Gönderinin toplam uzunluğu KESİNLİKLE MAKSİMUM 400 KARAKTER (harf) olmalıdır. Daha uzun olması YASAKTIR.\n"
+            "2. Sadece 3 haber seç ve her haberi SADECE 1 KISA CÜMLE (maksimum 10 kelime) ile madde işareti (-) kullanarak yaz.\n"
+            "3. Metni ASLA yarıda kesme, bitmiş ve anlamlı bir şekilde sonlandır.\n"
+            "4. YZ yerine AI kısaltmasını kullan.\n"
+            "5. Boş giriş veya çıkış cümleleri kullanma ('Hey ağım', 'İşte haberler' vb. YASAK). Direkt haberlere gir.\n"
+            "6. Emojileri minimumda tut (maksimum 2 adet).\n\n"
+            "Sadece LinkedIn'de paylaşılacak yazıyı çıktı olarak ver. Başka hiçbir açıklama ekleme."
         )
 
         return self._generate(system_message, user_message)
@@ -63,29 +55,15 @@ class PostWriter:
         )
 
         user_message = (
-            "Senin görevin, insanların günlük hayatlarında kullanabilecekleri "
-            "değerli fakat herkes tarafından bilinmeyen AI tavsiyelerini LinkedIn "
-            "postu aracılığı ile paylaşmak. Amacın, bu tavsiyeyi herhangi bir insanın "
-            "kolaylıkla hayatına entegre edebilmesi için önce ona bunun neden "
-            "değerli olduğunu (yani hook cümlesini) vermen; ardından nasıl hayatına "
-            "çok hızlıca, kolayca ve detaya boğmadan entegre edebileceğini göstermek. "
-            "Fakat hızlıca ve detaya boğmadan derken, günlük hayatına entegre "
-            "edebilmesi için gerekli bir miktarda bilgi de paylaşmak zorundayız. "
-            "Yani \"şunu şöyle yap\" demektense, \"şu uygulama üzerinden şöyle yap\" "
-            "demek her zaman daha sağlıklı olacaktır; çünkü insanlar genellikle "
-            "nereden, neyi ve nasıl yapacaklarını bilmiyorlar. Böylece çok bilinmeyen "
-            "AI tavsiyelerini paylaşmış olacağız. \n\n"
-            "ÇOK ÖNEMLİ: LinkedIn'de metnin yarıda kesilmemesi için gönderi çok uzun OLMAMALIDIR. "
-            "Toplam metni KESİNLİKLE MAKSİMUM 500 karakter civarında tutmaya çalış. Daha uzun olması YASAKTIR. YZ kısaltması "
-            "yerine AI kısaltmasını kullan. Konuyu ASLA yarıda kesme, tam ve anlaşılır şekilde bitirip bir kapanış yaptığından emin ol.\n\n"
-            "Kolay okunabilmesi için paragraflar, başlıklar ve maddeler arasına mutlaka çift enter atarak (boş bir satır bırakarak) boşluk bırakmayı unutma. \n\n"
-            "YASAKLI VE KAÇINILMASI GEREKENLER:\n"
-            "- 'Hey ağım', 'Hey bağlantılarım', 'Bugün size harika bir ipucu vereceğim' gibi girişler YAPMA.\n"
-            "- 'İnanılmaz', 'Muazzam', 'Devrim niteliğinde' gibi abartılı sıfatlardan KAÇIN.\n"
-            "- 'Dijital dünyada', 'Hızla değişen çağda' gibi boş giriş cümleleri YAZMA. Direkt soruna ve çözüme gir.\n"
-            "- Çok fazla emoji (🚀, 💡, 🔥) KULLANMA. Maksimum 2-3 emoji.\n\n"
-            "Sadece LinkedIn'de paylaşılacak yazıyı çıktı olarak vermeni istiyorum. "
-            "Başka hiçbir şey yazmanı istemiyorum."
+            "İnsanların günlük hayatlarında kullanabilecekleri değerli fakat az bilinen bir AI tavsiyesini LinkedIn postu olarak yaz.\n\n"
+            "KURALLAR (KESİNLİKLE UYULACAK):\n"
+            "1. Gönderinin toplam uzunluğu KESİNLİKLE MAKSİMUM 400 KARAKTER (harf) olmalıdır. Kesinlikle geçme.\n"
+            "2. Çok kısa bir kanca (hook) cümlesiyle başla, ardından doğrudan uygulamanın adını vererek nasıl kullanılacağını 1-2 çok kısa cümle ile açıkla.\n"
+            "3. Metni ASLA yarıda kesme, anlamlı bir şekilde bitir.\n"
+            "4. YZ yerine AI kısaltmasını kullan.\n"
+            "5. Boş giriş veya çıkış cümleleri kullanma ('Hey ağım', 'İşte harika ipucu' vb. YASAK).\n"
+            "6. Emojileri minimumda tut (maksimum 2 adet).\n\n"
+            "Sadece LinkedIn'de paylaşılacak yazıyı çıktı olarak ver. Başka hiçbir açıklama ekleme."
         )
 
         return self._generate(system_message, user_message)
