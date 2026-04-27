@@ -135,6 +135,7 @@ async function updatePage(pageId, updates) {
 
   if (updates.email !== undefined) properties["Email"] = { email: updates.email };
   if (updates.lastName !== undefined) properties["Soyisim"] = { rich_text: [{ text: { content: updates.lastName } }] };
+  if (updates.registrationDate !== undefined) properties["Kayıt Tarihi"] = { date: { start: updates.registrationDate } };
   if (updates.phone) properties["Telefon"] = { phone_number: updates.phone };
   if (updates.onboardingStatus) properties["Onboarding Durumu"] = { select: { name: updates.onboardingStatus } };
   if (updates.onboardingChannel) properties["Onboarding Kanalı"] = { select: { name: updates.onboardingChannel } };
@@ -200,6 +201,32 @@ async function getActiveEmailMembers() {
   return allMembers;
 }
 
+async function getActiveDualMembers() {
+  const allMembers = [];
+  let hasMore = true;
+  let startCursor = undefined;
+
+  while (hasMore) {
+    const response = await notionRequest(() => notion.databases.query({
+      database_id: DATABASE_ID,
+      filter: {
+        and: [
+          { property: "Onboarding Durumu", select: { equals: "dual" } },
+          { property: "Telefon", phone_number: { is_not_empty: true } },
+          { property: "Email", email: { is_not_empty: true } }
+        ]
+      },
+      start_cursor: startCursor
+    }));
+
+    allMembers.push(...response.results.map(parseMember));
+    hasMore = response.has_more;
+    startCursor = response.next_cursor;
+  }
+
+  return allMembers;
+}
+
 function parseMember(page) {
   return {
     id: page.id,
@@ -207,6 +234,7 @@ function parseMember(page) {
     lastName: page.properties["Soyisim"]?.rich_text?.[0]?.text?.content || '',
     email: page.properties["Email"]?.email || '',
     phone: page.properties["Telefon"]?.phone_number || '',
+    registrationDate: page.properties["Kayıt Tarihi"]?.date?.start || '',
     onboardingStatus: page.properties["Onboarding Durumu"]?.select?.name || '',
     onboardingStep: page.properties["Onboarding Adımı"]?.number || 0,
     onboardingStartDate: page.properties["Onboarding Başlangıcı"]?.date?.start || '',
@@ -244,5 +272,6 @@ module.exports = {
   updatePage,
   getActiveOnboardingMembers,
   getActiveEmailMembers,
+  getActiveDualMembers,
   appendNote
 };

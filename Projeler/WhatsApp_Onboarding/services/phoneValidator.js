@@ -83,7 +83,7 @@ async function groqValidate(input) {
       },
       signal: AbortSignal.timeout(5000), // 5s timeout
       body: JSON.stringify({
-        model: "gpt-oss-120b",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: input }

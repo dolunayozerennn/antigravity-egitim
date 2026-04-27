@@ -7,6 +7,8 @@
 //   POST /webhook/new-paid-member    — Zapier Zap #1
 //   POST /webhook/membership-questions — Zapier Zap #2
 //   POST /webhook/wa-optin           — ManyChat WhatsApp Opt-in (Hibrit Fallback)
+//   POST /webhook/wa-confirmed       — ManyChat "Haydi baslayalim" butonu
+//   POST /webhook/wa-undo            — ManyChat "Geri Al" butonu
 //   POST /webhook/wa-failed          — ManyChat Fallback
 //   GET  /health                     — Monitoring
 // ============================================================
@@ -106,10 +108,15 @@ app.post('/webhook/new-paid-member', webhookAuth, async (req, res) => {
     const existing = await notion.findByTransactionId(transaction_id);
 
     if (existing) {
+      const registrationDateValue = date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD');
       const updates = {
         email: cleanEmail || null,
         lastName: last_name || null
       };
+      // Kayit Tarihi sadece henuz yazilmamissa eklenir (Zap #2 once geldiyse bos olabilir)
+      if (!existing.registrationDate) {
+        updates.registrationDate = registrationDateValue;
+      }
 
       let isRecovered = false;
       if (existing.onboardingStatus === 'error' && cleanEmail) {
@@ -220,6 +227,7 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
           firstName: first_name,
           lastName: last_name || '',
           transactionId: transaction_id,
+          registrationDate: date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
           onboardingStatus: "error"
         });
         await notion.appendNote(member.id, "[HATA] Zap #2 önce geldi, ancak geçerli email adresi yok.");
@@ -236,6 +244,7 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
           lastName: last_name || '',
           email: cleanEmail,
           transactionId: transaction_id,
+          registrationDate: date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
           onboardingStatus: "bekliyor"
         });
         log.info(`[membership-questions] Kayıt oluşturuldu (new-paid-member henüz gelmemiş)`);
@@ -243,7 +252,7 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
     }
 
     // 3. Deduplication kontrolü
-    const skipStatuses = ['whatsapp', 'email', 'tamamlandı', 'error'];
+    const skipStatuses = ['whatsapp', 'email', 'dual', 'tamamlandı', 'error'];
     if (skipStatuses.includes(member.onboardingStatus)) {
       log.info(`[membership-questions] Zaten onboarding'de veya tamamlanmış, atlanıyor: ${transaction_id}`);
       return res.status(200).json({ success: true, skipped: true });
@@ -278,15 +287,30 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
         ? nowWa.clone().subtract(1, 'day').format('YYYY-MM-DD')
         : nowWa.format('YYYY-MM-DD');
       
-      await notion.updatePage(member.id, {
-        phone: phoneResult.normalized,
-        onboardingStatus: "whatsapp",
-        onboardingChannel: "whatsapp",
-        onboardingStep: 0,
-        onboardingStartDate: startDateWa
-      });
+      const memberCleanEmail = (member.email && member.email !== 'No data' && member.email.includes('@')) ? member.email : null;
+      
+      if (memberCleanEmail) {
+        await notion.updatePage(member.id, {
+          phone: phoneResult.normalized,
+          onboardingStatus: "dual",
+          onboardingChannel: "dual",
+          onboardingStep: 0,
+          onboardingStartDate: startDateWa
+        });
+        
+        await resend.sendOnboardingEmail(memberCleanEmail, first_name, 0);
+        log.info(`[membership-questions] Dual onboarding baslatildi: ${first_name} WA + Email`);
+      } else {
+        await notion.updatePage(member.id, {
+          phone: phoneResult.normalized,
+          onboardingStatus: "whatsapp",
+          onboardingChannel: "whatsapp",
+          onboardingStep: 0,
+          onboardingStartDate: startDateWa
+        });
 
-      log.info(`[membership-questions] WhatsApp onboarding başlatıldı: ${first_name} → ${phoneResult.normalized} (Güven: ${phoneResult.confidence})`);
+        log.info(`[membership-questions] Sadece WA onboarding (email yok): ${first_name}`);
+      }
 
     } else {
       // 4b. Geçersiz numara veya Düşük Güven Skoru → Email fallback
@@ -418,6 +442,129 @@ app.post('/webhook/wa-optin', webhookAuth, async (req, res) => {
     log.error(`[wa-optin] HATA: ${error.message}`, error.stack);
     
     await resend.sendAdminAlertEmail(`Webhook Hatası: wa-optin`, {
+      error: error.message,
+      stack: error.stack,
+      phone: phone
+    }).catch(e => log.error('Admin alert failed', e));
+
+    res.status(500).json({ error: error.message });
+  } finally {
+    releaseLock(lockKey);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// POST /webhook/wa-confirmed — ManyChat "Haydi baslayalim" butonu
+// ─────────────────────────────────────────────────────────────
+app.post('/webhook/wa-confirmed', webhookAuth, async (req, res) => {
+  const { phone: rawPhone, first_name } = req.body;
+  const phone = rawPhone ? rawPhone.replace(/^\+/, '') : null;
+  const phoneWithPlus = rawPhone ? (rawPhone.startsWith('+') ? rawPhone : `+${rawPhone}`) : null;
+
+  log.info(`[wa-confirmed] Gelen veri: ${JSON.stringify(req.body)}`);
+
+  if (!phone) {
+    log.warn('[wa-confirmed] phone eksik, atlanıyor');
+    return res.status(400).json({ error: 'phone zorunlu' });
+  }
+
+  const lockKey = `phone_${phone}`;
+  if (!acquireLock(lockKey)) {
+    log.warn(`[wa-confirmed] Race condition engellendi: ${phone}`);
+    return res.status(429).json({ error: 'Şu an işleniyor, lütfen daha sonra tekrar deneyin.' });
+  }
+
+  try {
+    let member = await notion.findByPhone(phoneWithPlus);
+    if (!member) {
+      member = await notion.findByPhone(phone);
+    }
+    if (!member) {
+      log.warn(`[wa-confirmed] Notion'da kullanıcı bulunamadı: ${phone}`);
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+
+    if (member.onboardingStatus === 'dual') {
+      await notion.updatePage(member.id, {
+        onboardingStatus: "whatsapp",
+        onboardingChannel: "whatsapp"
+      });
+      await notion.appendNote(member.id, "[WA-CONFIRMED] Kullanici WhatsApp'i tercih etti, email durduruldu");
+      log.info(`[wa-confirmed] Dual moddan WA'ya geçildi: ${first_name} (${phone})`);
+    } else {
+      log.info(`[wa-confirmed] Zaten ${member.onboardingStatus} durumunda, atlanıyor: ${phone}`);
+      return res.status(200).json({ success: true, skipped: true });
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    log.error(`[wa-confirmed] HATA: ${error.message}`, error.stack);
+    
+    await resend.sendAdminAlertEmail(`Webhook Hatası: wa-confirmed`, {
+      error: error.message,
+      stack: error.stack,
+      phone: phone
+    }).catch(e => log.error('Admin alert failed', e));
+
+    res.status(500).json({ error: error.message });
+  } finally {
+    releaseLock(lockKey);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// POST /webhook/wa-undo — ManyChat "Geri Al" butonu
+// ─────────────────────────────────────────────────────────────
+app.post('/webhook/wa-undo', webhookAuth, async (req, res) => {
+  const { phone: rawPhone, first_name } = req.body;
+  const phone = rawPhone ? rawPhone.replace(/^\+/, '') : null;
+  const phoneWithPlus = rawPhone ? (rawPhone.startsWith('+') ? rawPhone : `+${rawPhone}`) : null;
+
+  log.info(`[wa-undo] Gelen veri: ${JSON.stringify(req.body)}`);
+
+  if (!phone) {
+    log.warn('[wa-undo] phone eksik, atlanıyor');
+    return res.status(400).json({ error: 'phone zorunlu' });
+  }
+
+  const lockKey = `phone_${phone}`;
+  if (!acquireLock(lockKey)) {
+    log.warn(`[wa-undo] Race condition engellendi: ${phone}`);
+    return res.status(429).json({ error: 'Şu an işleniyor, lütfen daha sonra tekrar deneyin.' });
+  }
+
+  try {
+    let member = await notion.findByPhone(phoneWithPlus);
+    if (!member) {
+      member = await notion.findByPhone(phone);
+    }
+    if (!member) {
+      log.warn(`[wa-undo] Notion'da kullanıcı bulunamadı: ${phone}`);
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+
+    if (member.onboardingStatus === 'email') {
+      if (!member.phone) {
+        log.warn(`[wa-undo] Email durumunda ama telefon numarası yok, atlanıyor: ${phone}`);
+        return res.status(200).json({ success: true, skipped: true, reason: 'telefon_yok' });
+      }
+      
+      await notion.updatePage(member.id, {
+        onboardingStatus: "whatsapp",
+        onboardingChannel: "whatsapp"
+      });
+      await notion.appendNote(member.id, "[WA-UNDO] Geri al tiklandi, WhatsApp'a donuldu, email durduruldu");
+      log.info(`[wa-undo] Geri al işlemi yapıldı, WhatsApp'a geçildi: ${first_name} (${phone})`);
+    } else {
+      log.info(`[wa-undo] ${member.onboardingStatus} durumundan geri al yapilamiyor, atlanıyor: ${phone}`);
+      return res.status(200).json({ success: true, skipped: true, reason: `statü: ${member.onboardingStatus}` });
+    }
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    log.error(`[wa-undo] HATA: ${error.message}`, error.stack);
+    
+    await resend.sendAdminAlertEmail(`Webhook Hatası: wa-undo`, {
       error: error.message,
       stack: error.stack,
       phone: phone
@@ -613,6 +760,8 @@ app.listen(PORT, '0.0.0.0', async () => {
   log.info(`  POST /webhook/new-paid-member`);
   log.info(`  POST /webhook/membership-questions`);
   log.info(`  POST /webhook/wa-optin`);
+  log.info(`  POST /webhook/wa-confirmed`);
+  log.info(`  POST /webhook/wa-undo`);
   log.info(`  POST /webhook/wa-failed`);
   log.info(`  POST /admin/trigger-flow`);
   log.info(`  GET  /admin/get-user`);
