@@ -36,7 +36,7 @@ class PostWriter:
             "düzeyinde yazmanı istiyorum. Yazının insansı gözükmesini istiyorum.\n\n"
             "ÇOK ÖNEMLİ: LinkedIn'de metnin yarıda kesilmemesi için gönderinin toplam uzunluğu kısa olmalıdır. "
             "Her haberi çok kısa ve öz tut (haberin özeti için maksimum 2-3 cümle kullan). "
-            "Toplam metin 1500-2000 karakter civarında olmalıdır. YZ kısaltması yerine AI kısaltmasını kullan. "
+            "Toplam metin KESİNLİKLE MAKSİMUM 500 karakter olmalıdır. Daha uzun olması kesinlikle YASAKTIR. YZ kısaltması yerine AI kısaltmasını kullan. "
             "Yazıyı ASLA cümlenin veya konunun ortasında yarıda kesme, 5 haberi de tam bir şekilde bitirip kapanış cümlesi yaz.\n\n"
             "Kolay okunabilmesi için paragraflar, başlıklar ve maddeler arasına mutlaka çift enter atarak (boş bir satır bırakarak) boşluk bırakmayı unutma. \n\n"
             "YASAKLI VE KAÇINILMASI GEREKENLER:\n"
@@ -76,7 +76,7 @@ class PostWriter:
             "nereden, neyi ve nasıl yapacaklarını bilmiyorlar. Böylece çok bilinmeyen "
             "AI tavsiyelerini paylaşmış olacağız. \n\n"
             "ÇOK ÖNEMLİ: LinkedIn'de metnin yarıda kesilmemesi için gönderi çok uzun OLMAMALIDIR. "
-            "Toplam metni 1500 karakter civarında tutmaya çalış. YZ kısaltması "
+            "Toplam metni KESİNLİKLE MAKSİMUM 500 karakter civarında tutmaya çalış. Daha uzun olması YASAKTIR. YZ kısaltması "
             "yerine AI kısaltmasını kullan. Konuyu ASLA yarıda kesme, tam ve anlaşılır şekilde bitirip bir kapanış yaptığından emin ol.\n\n"
             "Kolay okunabilmesi için paragraflar, başlıklar ve maddeler arasına mutlaka çift enter atarak (boş bir satır bırakarak) boşluk bırakmayı unutma. \n\n"
             "YASAKLI VE KAÇINILMASI GEREKENLER:\n"
@@ -98,7 +98,7 @@ class PostWriter:
 
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": user_message}
@@ -109,5 +109,5 @@ class PostWriter:
             ops.info(f"Post yazıldı ({len(content)} karakter)")
             return content
         except Exception as e:
-            ops.error(f"GPT-4o post yazma hatası: {e}", exception=e)
+            ops.error(f"GPT-4o-mini post yazma hatası: {e}", exception=e)
             raise
