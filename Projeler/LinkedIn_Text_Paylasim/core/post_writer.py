@@ -29,13 +29,13 @@ class PostWriter:
         )
 
         user_message = (
-            "Bu haftanın yapay zeka gelişmelerinden en önemli 3 tanesini seçerek kısa bir LinkedIn postu oluştur.\n\n"
+            "Bu haftanın yapay zeka gelişmelerinden en önemli 3 tanesini seçerek KISA ve ÖZ bir LinkedIn postu oluştur.\n\n"
             "KURALLAR (KESİNLİKLE UYULACAK):\n"
-            "1. Gönderinin toplam uzunluğu KESİNLİKLE MAKSİMUM 500 KARAKTER (harf) olmalıdır. Daha uzun olması YASAKTIR.\n"
-            "2. Sadece 3 haber seç ve her haberi SADECE 1 KISA CÜMLE (maksimum 10 kelime) ile madde işareti (-) kullanarak yaz.\n"
+            "1. Gönderinin TOPLAM UZUNLUĞU MAKSİMUM 500 KARAKTER olmalıdır. Cümleleri çok kısa tut!\n"
+            "2. Sadece 3 haber seç ve her haberi SADECE 1 KISA CÜMLE (maks. 8 kelime) ile madde işareti (-) kullanarak yaz.\n"
             "3. Metni ASLA yarıda kesme, bitmiş ve anlamlı bir şekilde sonlandır.\n"
             "4. YZ yerine AI kısaltmasını kullan.\n"
-            "5. Boş giriş veya çıkış cümleleri kullanma ('Hey ağım', 'İşte haberler' vb. YASAK). Direkt haberlere gir.\n"
+            "5. Boş giriş veya çıkış cümleleri kullanma ('Hey ağım', 'İşte haberler' vb. YASAK). Sadece başlık ve maddeler.\n"
             "6. Emojileri minimumda tut (maksimum 2 adet).\n\n"
             "Sadece LinkedIn'de paylaşılacak yazıyı çıktı olarak ver. Başka hiçbir açıklama ekleme."
         )
@@ -55,10 +55,10 @@ class PostWriter:
         )
 
         user_message = (
-            "İnsanların günlük hayatlarında kullanabilecekleri değerli fakat az bilinen bir AI tavsiyesini LinkedIn postu olarak yaz.\n\n"
+            "İnsanların günlük hayatlarında kullanabilecekleri değerli fakat az bilinen bir AI tavsiyesini KISA ve ÖZ bir LinkedIn postu olarak yaz.\n\n"
             "KURALLAR (KESİNLİKLE UYULACAK):\n"
-            "1. Gönderinin toplam uzunluğu KESİNLİKLE MAKSİMUM 500 KARAKTER (harf) olmalıdır. Kesinlikle geçme.\n"
-            "2. Çok kısa bir kanca (hook) cümlesiyle başla, ardından doğrudan uygulamanın adını vererek nasıl kullanılacağını 1-2 çok kısa cümle ile açıkla.\n"
+            "1. Gönderinin TOPLAM UZUNLUĞU MAKSİMUM 500 KARAKTER olmalıdır. Kesinlikle geçme.\n"
+            "2. Çok kısa bir başlık cümlesiyle başla, ardından doğrudan uygulamanın adını vererek nasıl kullanılacağını SADECE 1-2 çok kısa cümle ile açıkla.\n"
             "3. Metni ASLA yarıda kesme, anlamlı bir şekilde bitir.\n"
             "4. YZ yerine AI kısaltmasını kullan.\n"
             "5. Boş giriş veya çıkış cümleleri kullanma ('Hey ağım', 'İşte harika ipucu' vb. YASAK).\n"
@@ -82,7 +82,7 @@ class PostWriter:
                     {"role": "user", "content": user_message}
                 ],
                 temperature=0.7,
-                max_tokens=200
+                max_tokens=800
             )
             content = response.choices[0].message.content.strip()
             
