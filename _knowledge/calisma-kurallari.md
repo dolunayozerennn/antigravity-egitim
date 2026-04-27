@@ -167,7 +167,9 @@ Kullanıcı yeni bir token verdiğinde:
 - Google Service Account JSON dosyasını kod içine gömme
 - **Kod sağlık kontrolü yapmadan GitHub'a push etme** — import testi + testler ZORUNLU
 - **Smoke test yapmadan deploy'u tamamlanmış sayma** — deploy sonrası log kontrolü ZORUNLU
-- **README güncellemeden değişiklik push etme** — dosya ekleme/silme/rename sonrası README ZORUNLU
+- README güncellemeden değişiklik push etme — dosya ekleme/silme/rename sonrası README ZORUNLU
+- **MCP araçları varken `run_command` (sed/echo) ile dosya düzenleme** — her zaman `replace_file_content` kullan
+- **Büyük dosyaları filtrelemeden okuma** — her zaman `StartLine`/`EndLine` veya `grep_search` kullan
 
 ## 🔄 Post-Change Kontrol Kuralı (ZORUNLU — Mart 2026+)
 
@@ -414,3 +416,13 @@ Her pipeline projesi bir `contract_test.py` dosyası içerir. Bu dosya:
 ### 3. Simulasyon / Fuzzing / "Kıyamet" Testi
 - Sistemi kurguladıktan sonra ana çalışmasını gördüğümüz an bırakmıyoruz. Otomasyona bilerek "kötü niyetli/bozuk" mockup veriler (Empty payload, eksik keys, hatalı auth vb.) gönderilip scriptin exception fırlatıp çökmediği ve "graceful" kapandığı **simüle edilmeden** onaylanmaz.
 - Bunu sağlamak için `mock_data` veya `scratch_mock_e2e.py` gibi uçtan uca senaryo simülasyonları tasarlanarak sistemin çökme direnci test edilir.
+
+## 🛠️ MCP ve Araç Kullanım Standartları (ZORUNLU — Nisan 2026+)
+
+> **Detaylı Rehber:** `_knowledge/mcp-ve-tool-optimizasyon-rehberi.md`
+
+Tüm çalışmalarda hız ve maliyet optimizasyonu için şu kurallar uygulanır:
+1. **Cerrahi Müdahale:** Dosyaları baştan yazmak yasaktır. Sadece değişen satırlar `replace_file_content` ile güncellenir.
+2. **Akıllı Okuma:** Sadece ihtiyaç duyulan kod bloğu okunur. `grep_search` birincil arama aracıdır.
+3. **Lokal Simülasyon:** Her kritik logic değişikliği `scratch/` altında test edilmeden deploy edilmez.
+4. **Sessiz Terminal:** `--silent` ve `head/tail` kullanımı log kalabalığını önlemek için zorunludur.

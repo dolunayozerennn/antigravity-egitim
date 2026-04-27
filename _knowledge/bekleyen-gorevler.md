@@ -230,16 +230,16 @@
 
 
 
-### 🟡 48-Saat İzleme — whatsapp-asistan (KB Management Overhaul v4)
-- **Deploy tarihi:** 2026-04-26 (v4 Bilgi Tabanı Güncellemesi)
-- **İzleme bitiş:** 2026-04-28
-- **Lokal commit:** En güncel commit
+### 🟡 48-Saat İzleme — whatsapp-asistan (KB Management Overhaul v5)
+- **Deploy tarihi:** 2026-04-27
+- **İzleme bitiş:** 2026-04-29
+- **Lokal commit:** V5 değişiklikleri yapıldı. DNS hatası nedeniyle doğrudan `mcp_railway_deploy` ile Railway'e deploy edildi.
 - **Değişiklikler:**
-  1. `ai-factory-asistan-bilgi-tabani-v4.md` yüklendi ve sisteme entegre edildi.
-  2. `server.js`, `kb_manager.js` ve `seed_knowledge.js` içindeki `v2` referansları `v4` olarak güncellendi.
-  3. GitHub'a push edildi ve Railway'de yeni build tetiklendi (Seed başarılı: 52 chunk).
-- **Kontrol 1:** ✅ Deploy logları — seed 52/52 OK, server port 3456'da çalışıyor
-- **Kontrol 2:** ⏳ Bekliyor (WhatsApp üzerinden v4 güncellemeleri teyit edilecek)
+  1. `ai-factory-asistan-bilgi-tabani-v5.md` yasaklı fiyat listesi temizlendi ve `$1.499` formatı standartlaştırıldı.
+  2. `kb_manager.js` validasyonundan `$1499` varyasyonu kaldırıldı.
+  3. `seed_knowledge.js` direkt Railway üzerinde tetiklendi (✅ İşlem tamamlandı. 57 adet chunk kaydedildi).
+- **Kontrol 1:** ✅ Doğrudan mcp_railway_deploy ile gönderildi ve Seed logları sorunsuz tamamlandı.
+- **Kontrol 2:** ⏳ Bekliyor (WhatsApp üzerinden v5 güncellemeleri teyit edilecek)
 - **Sonuç:** ⏳ Başarılı yanıtlardan sonra kapatılır.
 
 ### ✅ whatsapp-onboarding (Zapier Empty Phone Fix)
