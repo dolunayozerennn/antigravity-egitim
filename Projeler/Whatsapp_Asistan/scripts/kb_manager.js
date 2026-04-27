@@ -154,15 +154,15 @@ function validatePrices() {
 
   const content = fs.readFileSync(mdPath, 'utf8');
   
-  const correctPrices = ['$39', '$59', '$129', '$156', '$236', '$516'];
-  const bannedPrices = ['$97', '$197', '$297', '$497', '$997', '$1997'];
+  const VALID_PRICES = ["$39", "$129", "$1.499"];
+  const BANNED_PRICES = ["$59", "$97", "$156", "$197", "$236", "$297", "$497", "$516", "$997", "$1499", "$1997"];
 
   let hasError = false;
 
   console.log('--- Fiyat Geçerlilik Kontrolü ---\n');
 
   console.log('✅ Doğru Fiyatlar Kontrol Ediliyor:');
-  correctPrices.forEach(price => {
+  VALID_PRICES.forEach(price => {
     const regex = new RegExp(`\\${price}\\b`);
     if (regex.test(content)) {
       console.log(`  Bulundu: ${price}`);
@@ -173,7 +173,7 @@ function validatePrices() {
   });
 
   console.log('\n❌ Yasak Fiyatlar Kontrol Ediliyor:');
-  bannedPrices.forEach(price => {
+  BANNED_PRICES.forEach(price => {
     const regex = new RegExp(`\\${price}\\b`);
     if (regex.test(content)) {
       console.log(`  BULUNDU (YASAKLI): ${price}`);
