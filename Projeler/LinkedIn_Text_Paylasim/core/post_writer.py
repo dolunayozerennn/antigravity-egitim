@@ -31,7 +31,7 @@ class PostWriter:
         user_message = (
             "Bu haftanın yapay zeka gelişmelerinden en önemli 3 tanesini seçerek KISA ve ÖZ bir LinkedIn postu oluştur.\n\n"
             "KURALLAR (KESİNLİKLE UYULACAK):\n"
-            "1. Gönderinin TOPLAM UZUNLUĞU MAKSİMUM 500 KARAKTER olmalıdır. Cümleleri çok kısa tut!\n"
+            "1. Gönderi UZUNLUĞU KESİNLİKLE MAKSİMUM 450 KARAKTER olmalıdır. Cümleleri çok kısa tut!\n"
             "2. Sadece 3 haber seç ve her haberi SADECE 1 KISA CÜMLE (maks. 8 kelime) ile madde işareti (-) kullanarak yaz.\n"
             "3. Metni ASLA yarıda kesme, bitmiş ve anlamlı bir şekilde sonlandır.\n"
             "4. YZ yerine AI kısaltmasını kullan.\n"
@@ -57,7 +57,7 @@ class PostWriter:
         user_message = (
             "İnsanların günlük hayatlarında kullanabilecekleri değerli fakat az bilinen bir AI tavsiyesini KISA ve ÖZ bir LinkedIn postu olarak yaz.\n\n"
             "KURALLAR (KESİNLİKLE UYULACAK):\n"
-            "1. Gönderinin TOPLAM UZUNLUĞU MAKSİMUM 500 KARAKTER olmalıdır. Kesinlikle geçme.\n"
+            "1. Gönderi UZUNLUĞU KESİNLİKLE MAKSİMUM 450 KARAKTER olmalıdır. Kesinlikle geçme.\n"
             "2. Çok kısa bir başlık cümlesiyle başla, ardından doğrudan uygulamanın adını vererek nasıl kullanılacağını SADECE 1-2 çok kısa cümle ile açıkla.\n"
             "3. Metni ASLA yarıda kesme, anlamlı bir şekilde bitir.\n"
             "4. YZ yerine AI kısaltmasını kullan.\n"
@@ -82,7 +82,7 @@ class PostWriter:
                     {"role": "user", "content": user_message}
                 ],
                 temperature=0.7,
-                max_tokens=800
+                max_tokens=200
             )
             content = response.choices[0].message.content.strip()
             
