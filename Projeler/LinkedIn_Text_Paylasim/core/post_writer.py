@@ -31,7 +31,7 @@ class PostWriter:
         user_message = (
             "Bu haftanın yapay zeka gelişmelerinden en önemli 3 tanesini seçerek kısa bir LinkedIn postu oluştur.\n\n"
             "KURALLAR (KESİNLİKLE UYULACAK):\n"
-            "1. Gönderinin toplam uzunluğu KESİNLİKLE MAKSİMUM 400 KARAKTER (harf) olmalıdır. Daha uzun olması YASAKTIR.\n"
+            "1. Gönderinin toplam uzunluğu KESİNLİKLE MAKSİMUM 500 KARAKTER (harf) olmalıdır. Daha uzun olması YASAKTIR.\n"
             "2. Sadece 3 haber seç ve her haberi SADECE 1 KISA CÜMLE (maksimum 10 kelime) ile madde işareti (-) kullanarak yaz.\n"
             "3. Metni ASLA yarıda kesme, bitmiş ve anlamlı bir şekilde sonlandır.\n"
             "4. YZ yerine AI kısaltmasını kullan.\n"
@@ -57,7 +57,7 @@ class PostWriter:
         user_message = (
             "İnsanların günlük hayatlarında kullanabilecekleri değerli fakat az bilinen bir AI tavsiyesini LinkedIn postu olarak yaz.\n\n"
             "KURALLAR (KESİNLİKLE UYULACAK):\n"
-            "1. Gönderinin toplam uzunluğu KESİNLİKLE MAKSİMUM 400 KARAKTER (harf) olmalıdır. Kesinlikle geçme.\n"
+            "1. Gönderinin toplam uzunluğu KESİNLİKLE MAKSİMUM 500 KARAKTER (harf) olmalıdır. Kesinlikle geçme.\n"
             "2. Çok kısa bir kanca (hook) cümlesiyle başla, ardından doğrudan uygulamanın adını vererek nasıl kullanılacağını 1-2 çok kısa cümle ile açıkla.\n"
             "3. Metni ASLA yarıda kesme, anlamlı bir şekilde bitir.\n"
             "4. YZ yerine AI kısaltmasını kullan.\n"
@@ -86,10 +86,8 @@ class PostWriter:
             )
             content = response.choices[0].message.content.strip()
             
-            # Kesin 400-500 karakter sınırı kontrolü ve kırpma (gerekirse)
-            if len(content) > 450:
-                content = content[:447] + "..."
-                
+            # AI'nin yazdığı postu doğrudan döndür, yarım kesilmemesi için karakter kırpmasını kaldırdık.
+
             ops.info(f"Post yazıldı ({len(content)} karakter)")
             return content
         except Exception as e:
