@@ -26,6 +26,15 @@ async function sendOnboardingEmail(toEmail, firstName, dayNumber) {
   }
 
   const emailContent = getEmailContent(firstName, dayNumber);
+  let html = emailContent.html;
+
+  // Day 0: WhatsApp CTA butonu enjekte et (üye isterse WA'ya geçebilsin)
+  if (dayNumber === 0 && config.waBusinessPhone) {
+    html = html.replace('<!-- WA_CTA_PLACEHOLDER -->', buildWaCta(config.waBusinessPhone));
+    log.info(`[resend] Day 0: WA CTA butonu enjekte edildi`);
+  } else {
+    html = html.replace('<!-- WA_CTA_PLACEHOLDER -->', '');
+  }
 
   try {
     const response = await fetch('https://api.resend.com/emails', {
@@ -38,7 +47,7 @@ async function sendOnboardingEmail(toEmail, firstName, dayNumber) {
         from: `AI Factory <dolunay@dolunay.ai>`,
         to: [toEmail],
         subject: emailContent.subject,
-        html: emailContent.html
+        html: html
       })
     });
 
@@ -271,11 +280,11 @@ function getEmailContent(firstName, dayNumber) {
 // Fix: Dinamik WA CTA — telefon numarası config'den alınır
 function buildWaCta(waBusinessPhone) {
   return `<tr>
-  <td style="padding:0 24px 16px 24px;">
+  <td style="padding:20px 24px 16px 24px;">
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color:#f0fdf4; border-radius:8px; overflow:hidden;">
       <tr>
         <td style="padding:16px 20px 8px 20px; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-size:14px; line-height:1.6; color:#166534;">
-          Bu mesajları WhatsApp'tan almak istersen aşağıdaki butona dokun.
+          Bu mesajları WhatsApp'tan almak istersen (önerilir) aşağıdaki butona dokun.
           <br>
           Bir şey yapmazsan, e-posta'dan almaya devam edeceksin.
         </td>

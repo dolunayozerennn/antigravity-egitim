@@ -72,7 +72,6 @@ def main(dry_run: bool = False):
 
     if not stale_threads:
         logger.info("✅ Stale thread yok. Her şey yolunda!")
-        _maybe_send_weekly_report()
         return
 
     # ── 4. LLM ile analiz et ──
@@ -101,7 +100,6 @@ def main(dry_run: bool = False):
 
     if not actionable_threads:
         logger.info("✅ Aksiyon gerektiren thread yok. Her şey yolunda!")
-        _maybe_send_weekly_report()
         return
 
     # ── 5. Duplicate hatırlatma kontrolü ──
@@ -120,8 +118,6 @@ def main(dry_run: bool = False):
     else:
         logger.info("ℹ️ Tüm thread'ler zaten bildirilmiş (cooldown aktif)")
 
-    # ── 7. Haftalık rapor (Pazartesi) ──
-    _maybe_send_weekly_report(dry_run)
 
     # ── Özet ──
     logger.info("=" * 60)
@@ -146,20 +142,6 @@ def _check_environment(dry_run: bool):
         )
 
 
-def _maybe_send_weekly_report(dry_run: bool = False):
-    """Bugün Pazartesi ise haftalık rapor gönder."""
-    now = datetime.utcnow()
-    if now.weekday() == 0:  # Pazartesi
-        stats = state_manager.get_run_stats()
-        if dry_run:
-            logging.getLogger(__name__).info(f"[DRY-RUN] Haftalık rapor gönderilecekti: {stats}")
-        else:
-            try:
-                notifier.send_weekly_report(stats)
-            except Exception as e:
-                logging.getLogger(__name__).error(f"Haftalık rapor gönderilemedi: {e}")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ceren Marka Takip — Stale Thread Detector")
     parser.add_argument("--dry-run", action="store_true", help="Sadece tara/analiz et, e-posta gönderme")
@@ -170,11 +152,4 @@ if __name__ == "__main__":
     except Exception as e:
         error_msg = traceback.format_exc()
         logging.getLogger(__name__).critical(f"FATAL: {error_msg}")
-        
-        # Ceren'e hata alert'i gönder
-        try:
-            notifier.send_error_alert(error_msg)
-        except Exception:
-            pass
-        
         sys.exit(1)

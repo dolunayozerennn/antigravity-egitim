@@ -135,6 +135,7 @@ async function updatePage(pageId, updates) {
 
   if (updates.email !== undefined) properties["Email"] = { email: updates.email };
   if (updates.lastName !== undefined) properties["Soyisim"] = { rich_text: [{ text: { content: updates.lastName } }] };
+  if (updates.registrationDate !== undefined) properties["Kayıt Tarihi"] = { date: { start: updates.registrationDate } };
   if (updates.phone) properties["Telefon"] = { phone_number: updates.phone };
   if (updates.onboardingStatus) properties["Onboarding Durumu"] = { select: { name: updates.onboardingStatus } };
   if (updates.onboardingChannel) properties["Onboarding Kanalı"] = { select: { name: updates.onboardingChannel } };
@@ -233,6 +234,7 @@ function parseMember(page) {
     lastName: page.properties["Soyisim"]?.rich_text?.[0]?.text?.content || '',
     email: page.properties["Email"]?.email || '',
     phone: page.properties["Telefon"]?.phone_number || '',
+    registrationDate: page.properties["Kayıt Tarihi"]?.date?.start || '',
     onboardingStatus: page.properties["Onboarding Durumu"]?.select?.name || '',
     onboardingStep: page.properties["Onboarding Adımı"]?.number || 0,
     onboardingStartDate: page.properties["Onboarding Başlangıcı"]?.date?.start || '',

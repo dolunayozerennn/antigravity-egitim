@@ -109,7 +109,7 @@ function parseMarkdown(content) {
 
 async function seed() {
   try {
-    const mdPath = path.join(__dirname, '../ai-factory-asistan-bilgi-tabani-v2.md');
+    const mdPath = path.join(__dirname, '../ai-factory-asistan-bilgi-tabani-v4.md');
     if (!fs.existsSync(mdPath)) {
       log.error(`Markdown dosyası bulunamadı: ${mdPath}`);
       return;
@@ -145,7 +145,7 @@ async function seed() {
         section_title: chunk.section_title,
         content: chunk.content,
         embedding: embedding,
-        metadata: { source: 'ai-factory-asistan-bilgi-tabani-v2' }
+        metadata: { source: 'ai-factory-asistan-bilgi-tabani-v4' }
       });
 
       if (error) {

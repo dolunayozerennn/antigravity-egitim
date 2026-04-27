@@ -147,7 +147,7 @@ cron.schedule(config.cronSchedule, async () => {
       }
     }
 
-    // ─── Email kanalı (fallback) ───
+    // ─── Email kanalı (fallback / dual) ───
     let emailSent = 0;
     if (config.resendApiKey) {
       try {
@@ -247,7 +247,163 @@ cron.schedule(config.cronSchedule, async () => {
       }
     }
 
-    log.info(`=== Cron tamamlandı: WA ${sent} gönderildi, ${skipped} atlandı, ${completed} tamamlandı, Email ${emailSent} gönderildi, ${errors} hata ===`);
+    // ─── Dual kanal (WhatsApp + Email aynı anda) ───
+    let dualWaSent = 0;
+    let dualEmailSent = 0;
+
+    try {
+      const dualMembers = await notion.getActiveDualMembers();
+      log.info(`${dualMembers.length} aktif Dual onboarding üyesi bulundu`);
+
+      for (const member of dualMembers) {
+        try {
+          const today = moment.tz('Europe/Istanbul').startOf('day');
+          const startDay = moment.tz(member.onboardingStartDate, 'YYYY-MM-DD', 'Europe/Istanbul').startOf('day');
+
+          if (!startDay.isValid()) {
+            log.error(`[CRON-DUAL] Geçersiz onboardingStartDate — ${member.firstName}, ID: ${member.id}`);
+            await notion.updatePage(member.id, {
+              onboardingStatus: 'error',
+              lastError: 'onboardingStartDate boş veya geçersiz (dual)',
+              errorCount: (member.errorCount || 0) + 1
+            });
+            await resend.sendAdminAlertEmail(`[ONBOARDING] Geçersiz tarih (Dual): ${member.firstName}`, {
+              name: `${member.firstName} ${member.lastName}`,
+              id: member.id,
+              error: 'Üyenin onboardingStartDate alanı boş veya geçersiz. Manuel müdahale gerekli.'
+            });
+            errors++;
+            continue;
+          }
+
+          const daysDiff = today.diff(startDay, 'days');
+          const expectedDay = member.onboardingStep + 1;
+
+          if (daysDiff <= member.onboardingStep) {
+            skipped++;
+            continue;
+          }
+
+          if (expectedDay > 6) {
+            await notion.updatePage(member.id, { onboardingStatus: "tamamlandı" });
+            log.info(`[CRON-DUAL] Tamamlandı: ${member.firstName}`);
+            completed++;
+            continue;
+          }
+
+          // --- WhatsApp gönderimi ---
+          let waSent = false;
+          try {
+            const flowConfig = ONBOARDING_FLOWS[expectedDay];
+            if (flowConfig && flowConfig.flow_id && !flowConfig.flow_id.startsWith('TODO_') && member.phone) {
+              await manychat.ensureSubscriberAndSendFlow(member.phone, member.firstName, flowConfig.flow_id);
+              dualWaSent++;
+              waSent = true;
+            } else {
+              log.warn(`[CRON-DUAL] WA atlandı (flow/phone eksik): Gün ${expectedDay} — ${member.firstName}`);
+            }
+          } catch (waErr) {
+            log.error(`[CRON-DUAL] WA hatası (${member.firstName}): ${waErr.message}`);
+            // WA başarısız olsa bile email denenecek
+          }
+
+          // --- Email gönderimi ---
+          let emailSentOk = false;
+          try {
+            if (member.email && member.email.includes('@')) {
+              await resend.sendOnboardingEmail(member.email, member.firstName, expectedDay);
+              dualEmailSent++;
+              emailSentOk = true;
+            } else {
+              log.warn(`[CRON-DUAL] Email atlandı (geçersiz email): ${member.firstName}`);
+            }
+          } catch (emailErr) {
+            log.error(`[CRON-DUAL] Email hatası (${member.firstName}): ${emailErr.message}`);
+            // Email başarısız olsa bile WA gönderilmiş olabilir
+          }
+
+          // --- Her ikisi de başarısız mı? ---
+          if (!waSent && !emailSentOk) {
+            const newErrorCount = (member.errorCount || 0) + 1;
+            if (newErrorCount >= 3) {
+              await notion.updatePage(member.id, {
+                errorCount: newErrorCount,
+                lastError: 'Dual: Hem WA hem Email başarısız',
+                onboardingStatus: "error"
+              });
+              await resend.sendAdminAlertEmail(`Dual Üye DLQ'ya düştü: ${member.firstName}`, {
+                id: member.id,
+                name: `${member.firstName} ${member.lastName}`,
+                phone: member.phone,
+                email: member.email,
+                channel: 'dual',
+                error: 'Hem WA hem Email 3 kez başarısız'
+              });
+            } else {
+              await notion.updatePage(member.id, {
+                errorCount: newErrorCount,
+                lastError: 'Dual: Hem WA hem Email başarısız'
+              });
+            }
+            errors++;
+            continue;
+          }
+
+          // --- En az biri başarılı → step güncelle ---
+          try {
+            await notion.updatePage(member.id, {
+              onboardingStep: expectedDay,
+              errorCount: 0,
+              lastError: ""
+            });
+          } catch (notionErr) {
+            log.error(`[CRON-DUAL] Notion step update başarısız: ${member.firstName}`, notionErr.message);
+          }
+
+          log.info(`[CRON-DUAL] Gün ${expectedDay}: ${member.firstName} — WA:${waSent ? '✓' : '✗'} Email:${emailSentOk ? '✓' : '✗'}`);
+
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+        } catch (memberError) {
+          log.error(`[CRON-DUAL] Üye hatası (${member.firstName}): ${memberError.message}`, memberError.stack);
+
+          const isRateLimit = memberError?.status === 429 || memberError?.code === 'rate_limited';
+          if (isRateLimit) {
+            log.warn(`[CRON-DUAL] Rate limit, ${member.firstName} atlanıyor`);
+            await new Promise(r => setTimeout(r, 2000));
+            continue;
+          }
+
+          const newErrorCount = (member.errorCount || 0) + 1;
+          if (newErrorCount >= 3) {
+            await notion.updatePage(member.id, {
+              errorCount: newErrorCount,
+              lastError: memberError.message,
+              onboardingStatus: "error"
+            });
+            await resend.sendAdminAlertEmail(`Dual Üye DLQ'ya düştü: ${member.firstName}`, {
+              id: member.id,
+              name: `${member.firstName} ${member.lastName}`,
+              phone: member.phone,
+              email: member.email,
+              channel: 'dual',
+              error: memberError.message,
+              stack: memberError.stack
+            });
+          } else {
+            await notion.updatePage(member.id, {
+              errorCount: newErrorCount,
+              lastError: memberError.message
+            });
+          }
+          errors++;
+        }
+      }
+    } catch (dualBatchErr) {
+      log.error(`[CRON-DUAL] Batch hatası: ${dualBatchErr.message}`, dualBatchErr.stack);
+    }
+
+    log.info(`=== Cron tamamlandı: WA ${sent}, Email ${emailSent}, Dual WA:${dualWaSent} Email:${dualEmailSent}, ${skipped} atlandı, ${completed} tamamlandı, ${errors} hata ===`);
 
   } catch (error) {
     log.error(`Cron genel hata: ${error.message}`, error.stack);

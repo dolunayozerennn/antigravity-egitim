@@ -332,11 +332,11 @@ async def _process_url_and_scenario(message, user_id: int, url: str):
         try:
             await message.reply_text(
                 summary,
-                parse_mode="Markdown",
+                parse_mode="HTML",
                 reply_markup=keyboard,
             )
         except Exception as e:
-            log.warning(f"Markdown parse hatası (Senaryo Özeti): {e} — parse_mode=None ile deneniyor")
+            log.warning(f"HTML parse hatası (Senaryo Özeti): {e} — parse_mode=None ile deneniyor")
             await message.reply_text(
                 summary,
                 reply_markup=keyboard,

@@ -36,10 +36,10 @@ def run_weekly_news():
     notion_logger = NotionLogger()
 
     try:
-        # Duplicate kontrol
-        if notion_logger.is_already_posted_this_week(post_type):
-            ops.info("Duplicate Atlandı", "Bu hafta zaten AI haberleri postu atılmış")
-            return
+        # Duplicate kontrol (Geçici olarak devre dışı)
+        # if notion_logger.is_already_posted_this_week(post_type):
+        #     ops.info("Duplicate Atlandı", "Bu hafta zaten AI haberleri postu atılmış")
+        #     return
 
         # Step 1: Perplexity ile araştırma
         researcher = Researcher()

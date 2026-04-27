@@ -9,7 +9,7 @@
 AI Factory, **Skool platformu** üzerinde çalışan Türkçe yapay zeka otomasyon topluluğudur. Sahibi **Dolunay Özeren**'dir.
 
 - Topluluk bağlantısı: `https://www.skool.com/yapay-zeka-factory`
-- Dolunay's resmi web sitesi: `https://dolunay.ai`
+- Dolunay'ın resmi web sitesi: `https://dolunay.ai`
 
 Topluluk büyüklüğü: **400+ aktif üye**, dünyanın dört bir yanından (Türkiye merkezli ama yurtdışı üyeler de var).
 

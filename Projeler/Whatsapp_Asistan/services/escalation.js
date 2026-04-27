@@ -115,7 +115,7 @@ async function sendEscalationEmail({ type, subscriberId, phoneNumber, reason, re
 
   } catch (error) {
     log.error(`[escalation] Beklenmeyen hata: ${error.message}`, error);
-    return false;
+    return false; // Ana akışı bozmamak için false dönüyoruz
   }
 }
 

@@ -15,6 +15,7 @@ Deterministik kurallar:
 """
 
 import json
+import html
 
 from logger import get_logger
 
@@ -300,60 +301,59 @@ class ScenarioEngine:
     def format_scenario_summary(scenario: dict) -> str:
         """
         Senaryoyu kullanıcıya gösterilecek özet formata çevirir.
-        Telegram'da güzel görünsün diye markdown.
+        Telegram'da güzel görünsün diye HTML formatına çevrilmiştir.
 
         Returns:
-            str: Telegram markdown mesajı
+            str: Telegram HTML mesajı
         """
-        def safe_md(text):
+        def safe_html(text):
             if not text:
                 return ""
-            # Markdown parse hatalarını önlemek için _, *, [, ] gibi karakterleri güvenli hale getir
-            return str(text).replace("_", "-").replace("*", "").replace("[", "(").replace("]", ")")
+            return html.escape(str(text))
 
         cost = scenario.get("cost", {})
 
-        title = safe_md(scenario.get('title', 'Reklam Videosu'))
-        summary_text = safe_md(scenario.get('summary', ''))
+        title = safe_html(scenario.get('title', 'Reklam Videosu'))
+        summary_text = safe_html(scenario.get('summary', ''))
         
         duration = scenario.get("duration", 10)
         scene_count = scenario.get("scene_count", 1)
 
         summary = (
-            f"🎬 **Senaryo Hazır!**\n\n"
-            f"**{title}**\n"
-            f"_{summary_text}_\n\n"
-            f"📐 **Format:** {scenario.get('aspect_ratio', FIXED_ASPECT_RATIO)} | 720p\n"
-            f"⏱ **Süre:** {duration} saniye (Dinamik)\n"
-            f"🌍 **Dil:** {scenario.get('language', FIXED_LANGUAGE)}\n"
-            f"🖼 **Referans Görsel:** {'Var (Vision Analizli)' if scenario.get('has_reference_images') else 'Yok'}\n"
+            f"🎬 <b>Senaryo Hazır!</b>\n\n"
+            f"<b>{title}</b>\n"
+            f"<i>{summary_text}</i>\n\n"
+            f"📐 <b>Format:</b> {scenario.get('aspect_ratio', FIXED_ASPECT_RATIO)} | 720p\n"
+            f"⏱ <b>Süre:</b> {duration} saniye (Dinamik)\n"
+            f"🌍 <b>Dil:</b> {scenario.get('language', FIXED_LANGUAGE)}\n"
+            f"🖼 <b>Referans Görsel:</b> {'Var (Vision Analizli)' if scenario.get('has_reference_images') else 'Yok'}\n"
         )
 
         # Multi-scene bilgisi
         if scenario.get("scenes"):
             scenes = scenario["scenes"]
-            summary += f"🎬 **Kurgu:** {len(scenes)} Sahne\n"
+            summary += f"🎬 <b>Kurgu:</b> {len(scenes)} Sahne\n"
             for i, scene in enumerate(scenes, 1):
-                scene_name = safe_md(scene.get("scene_name", f"Sahne {i}"))
+                scene_name = safe_html(scene.get("scene_name", f"Sahne {i}"))
                 summary += f"   {i}. {scene_name}\n"
             summary += "\n"
 
         # Dış ses (her zaman var)
-        voiceover = safe_md(scenario.get("voiceover_text", ""))
+        voiceover = safe_html(scenario.get("voiceover_text", ""))
         if voiceover:
             word_count = len(voiceover.split())
             wps = word_count / max(1, duration)
-            summary += f"🎙 **Dış Ses ({word_count} kelime, {wps:.1f} kelime/sn):** _{voiceover}_\n"
+            summary += f"🎙 <b>Dış Ses ({word_count} kelime, {wps:.1f} kelime/sn):</b> <i>{voiceover}</i>\n"
 
         # Maliyet
         summary += (
-            f"\n💰 **Tahmini Maliyet:** ${cost.get('total_usd', 0):.2f}\n"
-            f"📊 {cost.get('breakdown', '')}\n"
+            f"\n💰 <b>Tahmini Maliyet:</b> ${cost.get('total_usd', 0):.2f}\n"
+            f"📊 {safe_html(cost.get('breakdown', ''))}\n"
         )
 
         summary += (
-            f"\n✅ **Onayla** → Üretim başlar\n"
-            f"❌ **İptal** → Vazgeç"
+            f"\n✅ <b>Onayla</b> → Üretim başlar\n"
+            f"❌ <b>İptal</b> → Vazgeç"
         )
 
         return summary

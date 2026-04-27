@@ -27,6 +27,19 @@ KVKK Ayd\u0131nlatma Metni: https://dolunay.ai/sozlesmeler/kvkk
 
 Devam etmek i\u00e7in l\u00fctfen "Onayl\u0131yorum" yaz.`;
 
+// Onboarding Butonları - Bu butonlara tıklandığında Asistan araya girmemeli (Exact Match)
+const IGNORED_ONBOARDING_BUTTONS = new Set([
+  "Bana mesaj gönderme",
+  "Haydi başlayalım",
+  "Skool App İndir",
+  "AI Factory'ye Git",
+  "8 Ay Ücretsiz Katıl",
+  "$6.000.000 İndirim",
+  "Talebi Geri Al",
+  "Android kullanıyorum",
+  "iPhone kullanıyorum"
+]);
+
 // Hosgeldin Mesaji
 const WELCOME_MESSAGE = `Te\u015fekk\u00fcrler! \ud83d\ude4f Art\u0131k sana AI Factory hakk\u0131nda her konuda yard\u0131mc\u0131 olabilirim. Sormak istedi\u011fin bir \u015fey var m\u0131?`;
 
@@ -42,6 +55,11 @@ app.post('/webhook/message', async (req, res) => {
 
     if (!subscriberId || !messageContent) {
       log.warn(`[webhook] Eksik payload verisi.`, { subscriberId, messageContent: !!messageContent });
+      return;
+    }
+
+    if (IGNORED_ONBOARDING_BUTTONS.has(messageContent.trim())) {
+      log.info(`[webhook] Onboarding butonu atlandi (Asistan islem yapmiyor).`, { subscriberId, messageContent });
       return;
     }
 
@@ -97,7 +115,8 @@ app.post('/webhook/message', async (req, res) => {
     const detectedLanguage = await detectLanguage(messageContent);
 
     // 5. AI cevabi uret (RAG ve hafiza islemleri ai_engine icinde)
-    const aiResponse = await generateResponse(subscriberId, messageContent, detectedLanguage);
+    const subscriberInfo = { subscriberId, phoneNumber };
+    const aiResponse = await generateResponse(subscriberId, messageContent, detectedLanguage, subscriberInfo);
 
     // AI cevabini kaydet
     await saveMessage(subscriberId, 'assistant', aiResponse);
@@ -129,7 +148,7 @@ app.post('/admin/seed-knowledge', async (req, res) => {
     // Body'den markdown icerigi al, yoksa dosyadan oku
     let mdContent = req.body.markdown_content;
     if (!mdContent) {
-      const mdPath = path.join(__dirname, 'ai-factory-asistan-bilgi-tabani-v2.md');
+      const mdPath = path.join(__dirname, 'ai-factory-asistan-bilgi-tabani-v4.md');
       if (!fs.existsSync(mdPath)) {
         return res.status(404).json({ error: 'Bilgi tabani dosyasi bulunamadi. Body ile markdown_content gonderin.' });
       }
@@ -183,7 +202,7 @@ app.post('/admin/seed-knowledge', async (req, res) => {
         section_title: chunk.section_title,
         content: chunk.content,
         embedding: embedding,
-        metadata: { source: 'ai-factory-asistan-bilgi-tabani-v2' }
+        metadata: { source: 'ai-factory-asistan-bilgi-tabani-v4' }
       });
 
       if (error) {

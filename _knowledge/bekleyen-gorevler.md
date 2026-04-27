@@ -10,14 +10,6 @@
 
 ## Aktif TODO'lar
 
-### 🟡 Git Push Bekliyor — Railway Stabilizasyon Dokümanları (26 Nisan 2026)
-- **Lokal commit:** `96d3d97` (6 commit remote'a push edilmeyi bekliyor)
-- **Push komutu:** `git push origin main`
-- **GitHub'a gönderilen dosyalar (MCP push):** ✅ `railway.md`, ✅ `SKILL.md`
-- **Bekleyen dosyalar:** `hatalar-ve-cozumler.md`, `deploy-registry.md`
-- **Neden:** Sandbox DNS kısıtlaması (`Could not resolve host: github.com`)
-- **Çözüm:** DNS düzelince `git push origin main` çalıştır. MCP push ile gönderilen dosyalar SHA uyumsuzluğu yaratabilir — `git pull --rebase origin main` sonra push.
-
 ### ~~🟡 YouTube Otomasyonu V2~~ → ✅ V3'e yükseltildi (18 Nisan 2026)
 - V3: Telegram kaldırıldı → CronJob (günlük 17:00 TR), Creative Engine, tam otonom
 - İlk otonom video başarıyla yüklendi: https://youtube.com/shorts/zXFbB789f3Q
@@ -201,11 +193,31 @@
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
 
 ### 🟡 48-Saat İzleme — Ceren_Marka_Takip
-- **Deploy tarihi:** 2026-04-21
-- **İzleme bitiş:** 2026-04-23
-- **Kontrol 1:** ⏳ Bekliyor (ilk konuşmada Railway logları kontrol edilecek)
+- **Deploy tarihi:** 2026-04-26 (Prompt optimizasyonu & 4 senaryo eklendi)
+- **İzleme bitiş:** 2026-04-28
+- **Kontrol 1:** ⏳ Bekliyor (Bir sonraki gün saat 10:00'daki cron çalışmasında loglar incelenecek)
 - **Kontrol 2:** ⏳ Bekliyor
 - **Sonuç:** ⏳ 2 kontrol temizse kapatılır
+
+### 🔴 GitHub Sync Bekliyor — whatsapp-onboarding (Dual Channel)
+- **Kaynak:** Konuşma `ffe745ac` (26 Nisan 2026)
+- **Açıklama:** `server.js` (763 satır), `cron.js`, `services/notion.js` dosyaları Dual Channel (WA+Email) mimarisine güncellendi. Railway'de canlı çalışıyor ancak GitHub'a push edilemedi (MCP token limit). Bir sonraki chat'te `mcp_github-mcp-server_push_files` ile push edilmeli.
+- **Değişen dosyalar:** `server.js` (wa-confirmed, wa-undo endpoint'leri + dual status), `cron.js` (dual loop), `services/notion.js` (getActiveDualMembers)
+- **Öncelik:** Yüksek
+- **Durum:** Bloke (token limit)
+
+### 🟡 48-Saat İzleme — whatsapp-onboarding v1.4.0 (Dual Channel Onboarding)
+- **Deploy tarihi:** 2026-04-26
+- **İzleme bitiş:** 2026-04-28
+- **Değişiklikler:**
+  1. `server.js`: `/webhook/wa-confirmed` (dual→whatsapp), `/webhook/wa-undo` (email→whatsapp) endpoint'leri eklendi
+  2. `server.js`: membership-questions'da dual statü desteği + email gün 0 tetiklemesi
+  3. `cron.js`: Dedicated dual loop — WA+Email atomik gönderimi, step progression tek transaction
+  4. `services/notion.js`: `getActiveDualMembers()` fonksiyonu eklendi
+  5. Race condition koruması: In-memory `processingLocks` mekanizması tüm webhook'lara uygulandı
+- **Kontrol 1:** ⏳ İlk dual üye kaydında WA + Email gönderimi doğrulanacak
+- **Kontrol 2:** ⏳ wa-confirmed/wa-undo buton testleri yapılacak
+- **Sonuç:** ⏳ Dual loop + webhook geçişleri sorunsuz çalışırsa kapatılır
 
 ### 🟡 48-Saat İzleme — whatsapp-onboarding v1.3.0 (Enterprise Stabilization)
 - **Son deploy:** 2026-04-25 (commit `683d606` — v1.3.0 Enterprise Stabilization)
@@ -236,22 +248,17 @@
 
 
 
-### 🟡 48-Saat İzleme — whatsapp-asistan (KB Management Overhaul v2)
-- **Deploy tarihi:** 2026-04-25 21:28 (mcp_railway_deploy ile tamamlandı)
-- **İzleme bitiş:** 2026-04-27
-- **Lokal commit:** `45eb7d5`
-- **Değişiklikler (3 fazlı KB yönetimi revizyonu):**
-  1. `ai-factory-asistan-bilgi-tabani-v2.md`: Fiyat Güvenlik Notu eklendi — yasak fiyatlar ($97, $197, $297, $497, $997, $1997) listelendi
-  2. `services/ai_engine.js`: `[SABİT FİYATLANDIRMA]` bloğu system prompt'un en üstüne eklendi
-  3. `services/knowledge_base.js`: Keyword-based pinned chunks (PRICING_KEYWORDS), threshold 0.5→0.6
-  4. `scripts/seed_knowledge.js`: Akıllı chunking (min 50 merge, max 2000 split, tablo koruması)
-  5. `scripts/kb_manager.js`: YENİ — CLI aracı (list, search, validate, stats, diff)
-  6. `server.js`: 4 yeni admin endpoint (/admin/kb/list, search, validate, update)
-  7. `package.json`: kb:* npm script'leri eklendi
-- **Seed sonucu:** ✅ 47 chunk (önceki: 43) başarıyla kaydedildi, Fiyat Güvenlik Notu ayrı chunk olarak mevcut
-- **Kontrol 1:** ✅ Deploy logları — seed 47/47 OK, server port 3456'da çalışıyor
-- **Kontrol 2:** ✅ WhatsApp testleri yapıldı: Üyelik ücreti doğru ($39, $59, $129) yanıtlandı, YouTube otomasyonunun tam otonom olduğu teyit edildi.
-- **Sonuç:** ✅ Fiyat halüsinasyonları ve otomasyon hataları tamamen giderildi, izleme süreci 27 Nisan'a kadar devam edecek.
+### 🟡 48-Saat İzleme — whatsapp-asistan (KB Management Overhaul v4)
+- **Deploy tarihi:** 2026-04-26 (v4 Bilgi Tabanı Güncellemesi)
+- **İzleme bitiş:** 2026-04-28
+- **Lokal commit:** En güncel commit
+- **Değişiklikler:**
+  1. `ai-factory-asistan-bilgi-tabani-v4.md` yüklendi ve sisteme entegre edildi.
+  2. `server.js`, `kb_manager.js` ve `seed_knowledge.js` içindeki `v2` referansları `v4` olarak güncellendi.
+  3. GitHub'a push edildi ve Railway'de yeni build tetiklendi (Seed başarılı: 52 chunk).
+- **Kontrol 1:** ✅ Deploy logları — seed 52/52 OK, server port 3456'da çalışıyor
+- **Kontrol 2:** ⏳ Bekliyor (WhatsApp üzerinden v4 güncellemeleri teyit edilecek)
+- **Sonuç:** ⏳ Başarılı yanıtlardan sonra kapatılır.
 
 ### ✅ whatsapp-onboarding (Zapier Empty Phone Fix)
 - **Kaynak:** Kullanıcı extreme case bildirimi

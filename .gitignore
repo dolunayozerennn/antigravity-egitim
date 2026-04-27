@@ -80,8 +80,12 @@ yarn-error.log*
 # PROJE-SPESİFİK
 # ==========================================
 
-# Gemini brain (kişisel konuşma geçmişi)
+# Gemini brain (kişisel konuşma geçmişi ve geçici dosyalar)
 .gemini/
+.gemini_scratch/
+
+# Local binaries (Railway CLI vb.)
+/bin/
 
 # Output dosyaları (büyük medya dosyaları)
 *.mp4

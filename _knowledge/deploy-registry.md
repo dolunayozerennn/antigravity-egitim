@@ -29,7 +29,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 | supplement-telegram-bot | Worker | 2026-03-31 | ✅ Aktif | 2 |
 | ecom-reklam-otomasyonu | Worker | 2026-04-25 | ✅ Aktif | 4 |
 | youtube-otomasyonu-v3 | CronJob | 2026-04-19 | ✅ Aktif | 4 |
-| whatsapp-onboarding | Express | 2026-04-26 | ✅ Aktif | 5 |
+| whatsapp-onboarding | Express | 2026-04-27 | ✅ Aktif | 5 |
 | lead-notifier-bot-v3 | Worker | 2026-04-26 | ✅ Aktif | 3 |
 | ceren-marka-takip-cron | CronJob | 2026-04-24 | ✅ Aktif | 4 |
 
@@ -283,7 +283,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
   - `POST /webhook/wa-optin` (ManyChat — Email→WhatsApp kanal geçişi)
   - `POST /webhook/wa-failed` (ManyChat — Hibrit fallback email tetikleyici)
   - `GET /health` (Monitoring)
-- **Son Deploy:** 2026-04-26 (feat: Race condition lock, global error handling ve admin email alerts ile DLQ yapısı eklendi)
+- **Son Deploy:** 2026-04-27 (feat: Groq model llama-3.3-70b-versatile'e geçirildi ve Zap #1 / Zap #2 için Kayıt Tarihi senkronizasyonu eklendi)
 - **Durum:** ✅ Aktif (Health check OK — 2 aktif onboarding, tüm servisler connected/configured)
 - **Hassasiyetler:** Webhook idempotency, ManyChat API timeout (8s), Notion rate limit (429), race condition (lock mekanizmasi mevcut), Groq API timeout (5s)
 - **Env Vars:** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL, WA_BUSINESS_PHONE
