@@ -557,6 +557,12 @@ class KieAIService:
 
         if data.get("code") != 200:
             error_msg = data.get("msg", "Bilinmeyen hata")
+            # Body code 422 — detaylı payload loglama (HTTP 200 olsa bile)
+            log.error(
+                f"Kie AI createTask BAŞARISIZ — code={data.get('code')}, msg={error_msg}, "
+                f"payload_input={json.dumps(input_block, ensure_ascii=False)[:800]}, "
+                f"full_response={response.text[:500]}"
+            )
             raise ValueError(f"Kie AI createTask hatası: {error_msg} (code={data.get('code')})")
 
         task_id = data["data"]["taskId"]
