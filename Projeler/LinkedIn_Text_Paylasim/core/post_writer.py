@@ -81,9 +81,15 @@ class PostWriter:
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": user_message}
                 ],
-                temperature=0.7
+                temperature=0.7,
+                max_tokens=200
             )
             content = response.choices[0].message.content.strip()
+            
+            # Kesin 400-500 karakter sınırı kontrolü ve kırpma (gerekirse)
+            if len(content) > 450:
+                content = content[:447] + "..."
+                
             ops.info(f"Post yazıldı ({len(content)} karakter)")
             return content
         except Exception as e:
