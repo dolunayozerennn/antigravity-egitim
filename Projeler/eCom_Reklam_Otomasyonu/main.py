@@ -574,7 +574,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if "Conflict" in err_str or "getUpdates" in err_str:
             global _CRASHED_WITH_CONFLICT
             _CRASHED_WITH_CONFLICT = True
-            log.warning("🔄 Conflict algılandı! Custom runner bunu fark edip kapatacak.")
+            log.warning("🔄 Conflict algılandı! Uygulama durdurulacak ve retry mekanizması devreye girecek.")
             
     except Exception as check_exc:
         log.error(f"Conflict kontrolü sırasında hata: {check_exc}")
@@ -649,30 +649,16 @@ def main():
 
     log.info("🤖 Telegram polling başlatılıyor...")
     
-    async def custom_runner():
-        await app.initialize()
-        await app.start()
-        await app.updater.start_polling(
+    try:
+        app.run_polling(
             allowed_updates=Update.ALL_TYPES,
             drop_pending_updates=True,
             poll_interval=1.0,
             timeout=30,
         )
-        log.info("ℹ️ Custom polling döngüsü başladı. Updater durumu izleniyor...")
-        
-        while app.updater and app.updater.running:
-            await asyncio.sleep(2)
-            
-        log.warning("🔄 Updater durdu (Büyük ihtimalle 409 Conflict sebebiyle). Custom runner döngüden çıkıyor...")
-        
-        # Cleanup
-        if app.updater:
-            await app.updater.stop()
-        await app.stop()
-        await app.shutdown()
+    except Exception as e:
+        log.error(f"Polling sırasında hata: {e}")
 
-    asyncio.run(custom_runner())
-    
     if _CRASHED_WITH_CONFLICT:
         raise RuntimeError("Bot durduruldu çünkü Conflict (409) hatası alındı!")
 

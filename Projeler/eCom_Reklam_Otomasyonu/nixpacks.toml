@@ -4,5 +4,5 @@
 # System packages MUST be declared here using nixPkgs.
 
 # Uncomment and add system-level packages your project needs:
-# [phases.setup]
-# nixPkgs = ["ffmpeg", "chromium"]
+[phases.setup]
+nixPkgs = ["ffmpeg"]

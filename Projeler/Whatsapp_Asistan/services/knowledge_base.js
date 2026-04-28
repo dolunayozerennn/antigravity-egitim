@@ -8,6 +8,7 @@ const openai = new OpenAI({ apiKey: config.openaiApiKey });
 
 const PRICING_KEYWORDS = ['fiyat', 'ücret', 'price', 'ne kadar', 'kaç dolar', 'paket', 'standard', 'premium', 'vip', 'aylık', 'yıllık', 'indirim', 'kampanya'];
 const AUTOMATION_KEYWORDS = ['otomasyon', 'automation', 'youtube', 'otel', 'süpermarket', 'e-ticaret', 'influencer', 'linkedin', 'emlakçı', 'emlak', 'video üret', 'otomatik paylaş', 'kanalım', 'içerik üret', 'shorts', 'reels', 'tiktok', 'instagram', 'meltem'];
+const LINK_KEYWORDS = ['link', 'odeme', 'uyelik', 'nasil ulasacagim', 'nasil erisecegim', 'classroom', 'nereden basla', 'egitim video', 'kayit', 'uye ol', 'nereden uye', 'giris', 'nasil yapacam', 'nasil yapacagim', 'nereden baslayacagim', 'ulasamiyorum', 'erisim'];
 
 async function queryKnowledge(question) {
   try {
@@ -65,6 +66,21 @@ async function queryKnowledge(question) {
       
       if (automationChunks && automationChunks.length > 0) {
         const pinnedContext = automationChunks.map(c => "[" + c.section_title + "]\n" + c.content).join('\n\n');
+        return pinnedContext + '\n\n' + contextText;
+      }
+    }
+
+    // Link sorusu tespiti
+    const isLinkQuestion = LINK_KEYWORDS.some(kw => lowerQuestion.includes(kw));
+
+    if (isLinkQuestion) {
+      const { data: linkChunks } = await supabase
+        .from('knowledge_chunks')
+        .select('section_title, content')
+        .or('section_title.ilike.%Onemli Linkler%,section_title.ilike.%Önemli Linkler%,section_title.ilike.%Sikca Sorulan%,section_title.ilike.%Sıkça Sorulan%,section_title.ilike.%Uyelik Yasam%,section_title.ilike.%Üyelik Yaşam%,section_title.ilike.%Odeme%,section_title.ilike.%Ödeme%');
+
+      if (linkChunks && linkChunks.length > 0) {
+        const pinnedContext = linkChunks.map(c => "[" + c.section_title + "]\n" + c.content).join('\n\n');
         return pinnedContext + '\n\n' + contextText;
       }
     }

@@ -81,6 +81,19 @@ def normalize_aspect_ratio(raw: str) -> str:
     return DEFAULT_ASPECT_RATIO
 
 
+def _is_kie_native_url(url: str) -> bool:
+    """URL'nin Kie AI sunucularinda olup olmadigini kontrol eder (domain-level)."""
+    if not url:
+        return False
+    try:
+        from urllib.parse import urlparse
+        hostname = urlparse(url).hostname or ""
+        native_domains = ("kieai.redpandaai.co", "templateb.aiquickdraw.com", "kie.ai")
+        return any(hostname == domain or hostname.endswith(f".{domain}") for domain in native_domains)
+    except Exception:
+        return False
+
+
 class KieAIService:
     """Kie AI API ile video ve görsel üretimi."""
 
@@ -158,16 +171,84 @@ class KieAIService:
         # Opsiyonel parametreler — sadece değer varsa ekle
         if resolution:
             input_data["resolution"] = resolution
+            
         if reference_images:
-            input_data["reference_image_urls"] = reference_images
+            processed_images = []
+            for img_url in reference_images:
+                if _is_kie_native_url(img_url):
+                    log.info(f"Referans gorsel zaten Kie-native: {img_url}")
+                    processed_images.append(img_url)
+                else:
+                    try:
+                        new_url = self.upload_file_from_url(img_url)
+                        processed_images.append(new_url)
+                    except Exception as e:
+                        log.warning(f"Referans gorsel yukleme basarisiz (atlanarak devam ediliyor): {img_url} - {e}")
+            
+            if processed_images:
+                log.info(f"Referans gorseller Kie AI sunucusuna yuklendi: {len(processed_images)}/{len(reference_images)} basarili")
+                input_data["reference_image_urls"] = processed_images
+            else:
+                log.warning("Hicbir referans gorsel yuklenemedi, isleme referanssiz devam ediliyor.")
+
         if first_frame_url:
-            input_data["first_frame_url"] = first_frame_url
+            if _is_kie_native_url(first_frame_url):
+                log.info(f"Ilk kare gorseli zaten Kie-native: {first_frame_url}")
+                input_data["first_frame_url"] = first_frame_url
+            else:
+                try:
+                    new_url = self.upload_file_from_url(first_frame_url)
+                    log.info("Ilk kare gorseli Kie AI sunucusuna yuklendi.")
+                    input_data["first_frame_url"] = new_url
+                except Exception as e:
+                    log.warning(f"Ilk kare gorsel yukleme basarisiz (atlanarak devam ediliyor): {first_frame_url} - {e}")
+
         if last_frame_url:
-            input_data["last_frame_url"] = last_frame_url
+            if _is_kie_native_url(last_frame_url):
+                log.info(f"Son kare gorseli zaten Kie-native: {last_frame_url}")
+                input_data["last_frame_url"] = last_frame_url
+            else:
+                try:
+                    new_url = self.upload_file_from_url(last_frame_url)
+                    log.info("Son kare gorseli Kie AI sunucusuna yuklendi.")
+                    input_data["last_frame_url"] = new_url
+                except Exception as e:
+                    log.warning(f"Son kare gorsel yukleme basarisiz (atlanarak devam ediliyor): {last_frame_url} - {e}")
+
         if reference_videos:
-            input_data["reference_video_urls"] = reference_videos
+            processed_videos = []
+            for vid_url in reference_videos:
+                if _is_kie_native_url(vid_url):
+                    log.info(f"Referans video zaten Kie-native: {vid_url}")
+                    processed_videos.append(vid_url)
+                else:
+                    try:
+                        new_url = self.upload_file_from_url(vid_url)
+                        processed_videos.append(new_url)
+                    except Exception as e:
+                        log.warning(f"Referans video yukleme basarisiz (atlanarak devam ediliyor): {vid_url} - {e}")
+            
+            if processed_videos:
+                log.info(f"Referans videolar Kie AI sunucusuna yuklendi: {len(processed_videos)}/{len(reference_videos)} basarili")
+                input_data["reference_video_urls"] = processed_videos
+
         if reference_audios:
-            input_data["reference_audio_urls"] = reference_audios
+            processed_audios = []
+            for aud_url in reference_audios:
+                if _is_kie_native_url(aud_url):
+                    log.info(f"Referans ses zaten Kie-native: {aud_url}")
+                    processed_audios.append(aud_url)
+                else:
+                    try:
+                        new_url = self.upload_file_from_url(aud_url)
+                        processed_audios.append(new_url)
+                    except Exception as e:
+                        log.warning(f"Referans ses yukleme basarisiz (atlanarak devam ediliyor): {aud_url} - {e}")
+            
+            if processed_audios:
+                log.info(f"Referans sesler Kie AI sunucusuna yuklendi: {len(processed_audios)}/{len(reference_audios)} basarili")
+                input_data["reference_audio_urls"] = processed_audios
+
         if return_last_frame:
             input_data["return_last_frame"] = True
 
@@ -300,6 +381,11 @@ class KieAIService:
                 response.raise_for_status()
                 data = response.json()
 
+                # Wrapper error kontrolü (Kie AI API)
+                code = data.get("code")
+                if code is not None and str(code) not in ("200", "0"):
+                    raise ValueError(f"Polling API Wrapper Hatası (code={code}): {data.get('msg', 'Bilinmeyen hata')}")
+
                 state = data.get("data", {}).get("state", "unknown")
 
                 if callback:
@@ -364,6 +450,11 @@ class KieAIService:
                 response.raise_for_status()
                 data = response.json()
 
+                # Wrapper error kontrolü (Kie AI API)
+                code = data.get("code")
+                if code is not None and str(code) not in ("200", "0"):
+                    raise ValueError(f"Polling API Wrapper Hatası (code={code}): {data.get('msg', 'Bilinmeyen hata')}")
+
                 state = data.get("data", {}).get("state", "unknown")
 
                 if callback:
@@ -420,6 +511,7 @@ class KieAIService:
     # 📤 DOSYA YÜKLEME — File Upload API
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+    @retry_api_call(max_retries=2, base_delay=2.0, operation_name="Kie AI file upload")
     def upload_file_from_url(self, file_url: str, file_name: str | None = None) -> str:
         """
         Harici URL'deki dosyayı Kie AI'ın dosya sunucusuna yükler.
@@ -451,26 +543,30 @@ class KieAIService:
             "fileName": file_name,
         }
 
-        try:
-            response = requests.post(
-                url,
-                headers=self.headers,
-                json=payload,
-                timeout=60,  # Dosya yükleme daha uzun sürebilir
-            )
-            response.raise_for_status()
-            data = response.json()
+        response = requests.post(
+            url,
+            headers=self.headers,
+            json=payload,
+            timeout=60,  # Dosya yükleme daha uzun sürebilir
+        )
+        response.raise_for_status()
+        data = response.json()
 
-            download_url = data.get("downloadUrl") or data.get("data", {}).get("downloadUrl")
-            if not download_url:
-                raise ValueError(f"File upload yanıtında downloadUrl bulunamadı: {data}")
+        # 200 OK dönüp JSON içinde hata kodu dönme durumu (API Wrapper hatası)
+        code = data.get("code")
+        if code is not None and str(code) not in ("200", "0"):
+            code_int = int(code) if str(code).isdigit() else 400
+            if code_int in {401, 408, 429} or (500 <= code_int <= 599):
+                response.status_code = code_int
+                raise requests.exceptions.HTTPError(f"Upload API hatası: {data.get('msg', 'Bilinmeyen hata')} (code={code})", response=response)
+            raise ValueError(f"Kie AI file upload hatası: {data.get('msg', 'Bilinmeyen hata')} (code={code})")
 
-            log.info(f"Dosya yüklendi: {file_name} → {download_url[:80]}...")
-            return download_url
+        download_url = data.get("downloadUrl") or data.get("data", {}).get("downloadUrl")
+        if not download_url:
+            raise ValueError(f"File upload yanıtında downloadUrl bulunamadı: {data}")
 
-        except requests.exceptions.RequestException as e:
-            log.error(f"Dosya yükleme hatası: {file_url} — {e}", exc_info=True)
-            raise ValueError(f"Kie AI file upload başarısız: {e}") from e
+        log.info(f"Dosya yüklendi: {file_name} → {download_url[:80]}...")
+        return download_url
 
     def upload_files_from_urls(self, file_urls: list[str]) -> list[str]:
         """
@@ -555,9 +651,18 @@ class KieAIService:
         response.raise_for_status()
         data = response.json()
 
-        if data.get("code") != 200:
+        # 200 OK dönüp JSON içinde hata kodu dönme durumu (API Wrapper hatası)
+        code = data.get("code")
+        if code is not None and str(code) not in ("200", "0"):
             error_msg = data.get("msg", "Bilinmeyen hata")
-            raise ValueError(f"Kie AI createTask hatası: {error_msg} (code={data.get('code')})")
+            code_int = int(code) if str(code).isdigit() else 400
+            if code_int in {401, 408, 429} or (500 <= code_int <= 599):
+                response.status_code = code_int
+                raise requests.exceptions.HTTPError(f"Kie AI createTask API hatası: {error_msg} (code={code})", response=response)
+            raise ValueError(f"Kie AI createTask hatası: {error_msg} (code={code})")
 
-        task_id = data["data"]["taskId"]
+        task_id = data.get("data", {}).get("taskId")
+        if not task_id:
+            raise ValueError(f"Kie AI createTask yanıtında taskId bulunamadı: {data}")
+            
         return task_id

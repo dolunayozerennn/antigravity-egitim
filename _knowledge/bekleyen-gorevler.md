@@ -180,9 +180,9 @@
   2. `notion_logger.py`: Fail-safe `return True` → `return False` (API hatasında sessiz atlamayı önler)
   3. `nixpacks.toml`: `nixPkgs` → `aptPkgs` (ffmpeg PATH çözümleme güvenilirliği)
   4. `requirements.txt`: `yt-dlp` 2026.3.17 → 2026.4.24 (TikTok scraping uyumluluğu)
-- **Kontrol 1:** ⏳ Push sonrası Railway deploy doğrulanacak
-- **Kontrol 2:** ⏳ Bekliyor
-- **Sonuç:** ⏳ Push + ilk başarılı tweet doğrulanınca kapatılır
+- **Kontrol 1:** ✅ Push yapılamadığı için doğrudan `mcp_railway_deploy` ile deploy edildi (`yt-dlp==2026.4.24` pinlendi)
+- **Kontrol 2:** ⏳ Bekliyor (Railway üzerinden başarılı tweet atılması beklenecek)
+- **Sonuç:** ⏳ İlk başarılı tweet doğrulanınca kapatılır
 - **⚠️ NOT:** `NOTION_TWITTER_DB_ID` = `NOTION_LINKEDIN_DB_ID` (aynı ID). Kod seviyesinde platform filtresiyle düzeltildi ama ileride ayrı DB oluşturulması tavsiye edilir.
 
 ### ✅ 48-Saat İzleme — ecom-reklam-otomasyonu
@@ -241,6 +241,21 @@
 - **Kontrol 1:** ✅ Doğrudan mcp_railway_deploy ile gönderildi ve Seed logları sorunsuz tamamlandı.
 - **Kontrol 2:** ⏳ Bekliyor (WhatsApp üzerinden v5 güncellemeleri teyit edilecek)
 - **Sonuç:** ⏳ Başarılı yanıtlardan sonra kapatılır.
+
+### 🟡 48-Saat İzleme — whatsapp-asistan (RAG ve Fiyat Optimizasyonu)
+- **Deploy tarihi:** 2026-04-28
+- **İzleme bitiş:** 2026-04-30
+- **Lokal commit:** RAG link araması için pinned_chunks eklendi, fiyatlar hardcoded olarak ai_engine.js'te güncellendi ve MCP üzerinden Railway'e gönderildi.
+- **Değişiklikler:**
+  1. `ai_engine.js`: Eski hatalı fiyat bilgileri silindi, yerine güncel fiyatlar ($39, $129, $1.499) ve paket isimleri/linkleri zorunlu olarak eklendi.
+  2. `knowledge_base.js`: `LINK_KEYWORDS` (ödeme, link, classroom vb.) ile link içeren sorgularda ilgili chunk'ların her zaman "pinned" olarak context'e eklenmesi sağlandı.
+- **Kontrol 1:** ✅ Deploy tamamlandı ve Container sağlıklı olarak başlatıldı (Railway). Sandbox DNS engeli nedeniyle lokal test atlandı.
+- **Kontrol 2:** ⏳ Bekliyor (Canlı WhatsApp hattından "Ödemeyi nasıl yapacağım?" ve "Eğitim videolarına nasıl ulaşırım?" testleri yapılacak)
+- **Sonuç:** ⏳ İlgili sorularda doğru link ve fiyat döndüğü doğrulanınca kapatılır.
+
+### ✅ whatsapp-onboarding (Zapier ReferenceError & ManyChat API Fix)
+- **Kaynak:** Kullanıcı uyarısı & Zapier hata logları (28 Nisan 2026)
+- **Yapılanlar:** `/webhook/membership-questions`'daki `date` tanımsız değişken hatası çözüldü (`moment().tz()` kullanıldı). ManyChat numara bulunamadığında dönen "FATAL" hata logu "WARN" yapıldı (Email fallback mekanizmasının doğal akışı). Deploy edildi ve Zapier replay başarılı oldu. Lokal değişiklikler commitlendi (DNS sorunu geçince push edilecek).
 
 ### ✅ whatsapp-onboarding (Zapier Empty Phone Fix)
 - **Kaynak:** Kullanıcı extreme case bildirimi
