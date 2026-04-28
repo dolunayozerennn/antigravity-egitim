@@ -81,6 +81,19 @@ def normalize_aspect_ratio(raw: str) -> str:
     return DEFAULT_ASPECT_RATIO
 
 
+def _is_kie_native_url(url: str) -> bool:
+    """URL'nin Kie AI sunucularinda olup olmadigini kontrol eder (domain-level)."""
+    if not url:
+        return False
+    try:
+        from urllib.parse import urlparse
+        hostname = urlparse(url).hostname or ""
+        native_domains = ("kieai.redpandaai.co", "templateb.aiquickdraw.com", "kie.ai")
+        return any(hostname == domain or hostname.endswith(f".{domain}") for domain in native_domains)
+    except Exception:
+        return False
+
+
 class KieAIService:
     """Kie AI API ile video ve görsel üretimi."""
 
@@ -158,16 +171,84 @@ class KieAIService:
         # Opsiyonel parametreler — sadece değer varsa ekle
         if resolution:
             input_data["resolution"] = resolution
+            
         if reference_images:
-            input_data["reference_image_urls"] = reference_images
+            processed_images = []
+            for img_url in reference_images:
+                if _is_kie_native_url(img_url):
+                    log.info(f"Referans gorsel zaten Kie-native: {img_url}")
+                    processed_images.append(img_url)
+                else:
+                    try:
+                        new_url = self.upload_file_from_url(img_url)
+                        processed_images.append(new_url)
+                    except Exception as e:
+                        log.warning(f"Referans gorsel yukleme basarisiz (atlanarak devam ediliyor): {img_url} - {e}")
+            
+            if processed_images:
+                log.info(f"Referans gorseller Kie AI sunucusuna yuklendi: {len(processed_images)}/{len(reference_images)} basarili")
+                input_data["reference_image_urls"] = processed_images
+            else:
+                log.warning("Hicbir referans gorsel yuklenemedi, isleme referanssiz devam ediliyor.")
+
         if first_frame_url:
-            input_data["first_frame_url"] = first_frame_url
+            if _is_kie_native_url(first_frame_url):
+                log.info(f"Ilk kare gorseli zaten Kie-native: {first_frame_url}")
+                input_data["first_frame_url"] = first_frame_url
+            else:
+                try:
+                    new_url = self.upload_file_from_url(first_frame_url)
+                    log.info("Ilk kare gorseli Kie AI sunucusuna yuklendi.")
+                    input_data["first_frame_url"] = new_url
+                except Exception as e:
+                    log.warning(f"Ilk kare gorsel yukleme basarisiz (atlanarak devam ediliyor): {first_frame_url} - {e}")
+
         if last_frame_url:
-            input_data["last_frame_url"] = last_frame_url
+            if _is_kie_native_url(last_frame_url):
+                log.info(f"Son kare gorseli zaten Kie-native: {last_frame_url}")
+                input_data["last_frame_url"] = last_frame_url
+            else:
+                try:
+                    new_url = self.upload_file_from_url(last_frame_url)
+                    log.info("Son kare gorseli Kie AI sunucusuna yuklendi.")
+                    input_data["last_frame_url"] = new_url
+                except Exception as e:
+                    log.warning(f"Son kare gorsel yukleme basarisiz (atlanarak devam ediliyor): {last_frame_url} - {e}")
+
         if reference_videos:
-            input_data["reference_video_urls"] = reference_videos
+            processed_videos = []
+            for vid_url in reference_videos:
+                if _is_kie_native_url(vid_url):
+                    log.info(f"Referans video zaten Kie-native: {vid_url}")
+                    processed_videos.append(vid_url)
+                else:
+                    try:
+                        new_url = self.upload_file_from_url(vid_url)
+                        processed_videos.append(new_url)
+                    except Exception as e:
+                        log.warning(f"Referans video yukleme basarisiz (atlanarak devam ediliyor): {vid_url} - {e}")
+            
+            if processed_videos:
+                log.info(f"Referans videolar Kie AI sunucusuna yuklendi: {len(processed_videos)}/{len(reference_videos)} basarili")
+                input_data["reference_video_urls"] = processed_videos
+
         if reference_audios:
-            input_data["reference_audio_urls"] = reference_audios
+            processed_audios = []
+            for aud_url in reference_audios:
+                if _is_kie_native_url(aud_url):
+                    log.info(f"Referans ses zaten Kie-native: {aud_url}")
+                    processed_audios.append(aud_url)
+                else:
+                    try:
+                        new_url = self.upload_file_from_url(aud_url)
+                        processed_audios.append(new_url)
+                    except Exception as e:
+                        log.warning(f"Referans ses yukleme basarisiz (atlanarak devam ediliyor): {aud_url} - {e}")
+            
+            if processed_audios:
+                log.info(f"Referans sesler Kie AI sunucusuna yuklendi: {len(processed_audios)}/{len(reference_audios)} basarili")
+                input_data["reference_audio_urls"] = processed_audios
+
         if return_last_frame:
             input_data["return_last_frame"] = True
 
@@ -557,12 +638,6 @@ class KieAIService:
 
         if data.get("code") != 200:
             error_msg = data.get("msg", "Bilinmeyen hata")
-            # Body code 422 — detaylı payload loglama (HTTP 200 olsa bile)
-            log.error(
-                f"Kie AI createTask BAŞARISIZ — code={data.get('code')}, msg={error_msg}, "
-                f"payload_input={json.dumps(input_block, ensure_ascii=False)[:800]}, "
-                f"full_response={response.text[:500]}"
-            )
             raise ValueError(f"Kie AI createTask hatası: {error_msg} (code={data.get('code')})")
 
         task_id = data["data"]["taskId"]
