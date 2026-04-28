@@ -1,6 +1,6 @@
 requests==2.32.3
 tweepy==4.14.0
-yt-dlp
+yt-dlp==2026.4.24
 schedule==1.2.2
 python-dotenv==1.0.1
 imageio-ffmpeg==0.5.1
