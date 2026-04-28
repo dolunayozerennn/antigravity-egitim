@@ -242,7 +242,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-25 (feat: v3.3 Producer LLM Mimari refactoring tamamlandı)
+- **Son Deploy:** 2026-04-28 (feat: Aspect Ratio normalization ve exception handling iyileştirmesi tamamlandı)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
 - **Hassasiyetler:** Bellek sizintisi (UserSession 10dk idle timeout), asyncio task hata yutma, Seedance API parametre isimleri (model bazli farklilik), Kie AI 512 upstream hatasi (retry mevcut)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID, FIRECRAWL_API_KEY
@@ -283,8 +283,8 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
   - `POST /webhook/wa-optin` (ManyChat — Email→WhatsApp kanal geçişi)
   - `POST /webhook/wa-failed` (ManyChat — Hibrit fallback email tetikleyici)
   - `GET /health` (Monitoring)
-- **Son Deploy:** 2026-04-27 (feat: Groq model llama-3.3-70b-versatile'e geçirildi ve Zap #1 / Zap #2 için Kayıt Tarihi senkronizasyonu eklendi)
-- **Durum:** ✅ Aktif (Health check OK — 2 aktif onboarding, tüm servisler connected/configured)
+- **Son Deploy:** 2026-04-28 (fix: Zapier membership-questions webhook ReferenceError çözüldü, ManyChat API subscriber lookup hatası fatal error'dan fallback warning seviyesine çekildi)
+- **Durum:** ✅ Aktif (Health check OK — Zapier webhook replay SUCCESS)
 - **Hassasiyetler:** Webhook idempotency, ManyChat API timeout (8s), Notion rate limit (429), race condition (lock mekanizmasi mevcut), Groq API timeout (5s)
 - **Env Vars:** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL, WA_BUSINESS_PHONE
 - **Not:** ✅ Hibrit fallback aktif: WA teslim başarısızsa → Resend email (dolunay.ai) + WhatsApp CTA butonu. v1.2.0
