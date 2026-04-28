@@ -1,8 +1,8 @@
 # Nixpacks Build Configuration for Railway
 # Railway uses Nixpacks builder — NOT Heroku buildpacks.
 # ⚠️ IMPORTANT: Aptfile and apt.txt are IGNORED by Nixpacks.
-# System packages MUST be declared here using nixPkgs.
+# System packages MUST be declared here using aptPkgs.
 
 # Uncomment and add system-level packages your project needs:
 [phases.setup]
-nixPkgs = ["ffmpeg"]
+aptPkgs = ["ffmpeg"]
