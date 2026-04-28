@@ -6,8 +6,7 @@ import shutil
 
 from config import settings
 
-_FFMPEG_BIN = shutil.which("ffmpeg") or "ffmpeg"
-
+_FFMPEG_BIN = settings.FFMPEG_PATH
 class VideoProcessor:
     def strip_metadata(self, input_path: str) -> str:
         """
@@ -17,6 +16,10 @@ class VideoProcessor:
         if not input_path or not os.path.exists(input_path):
             ops.error(f"Cannot strip metadata from missing file: {input_path}")
             return None
+
+        if not _FFMPEG_BIN:
+            ops.warning("FFmpeg bulunamadı. Metadata temizleme atlanıyor, orijinal dosya kullanılıyor.")
+            return input_path
 
         # Determine output path
         dir_name = os.path.dirname(input_path)

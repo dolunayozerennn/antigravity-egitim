@@ -18,9 +18,18 @@ class Config:
         # On Railway/Nixpacks, ffmpeg may not be on PATH but exists under /nix/store
         ffmpeg_found = shutil.which("ffmpeg")
         if not ffmpeg_found:
-            raise EnvironmentError("CRITICAL STARTUP FAILURE: ffmpeg binary bulunamadı! nixpacks.toml'da aptPkgs içinde olduğundan emin olun.")
-        print(f"✅ ffmpeg found at: {ffmpeg_found}")
-        
+            try:
+                import imageio_ffmpeg
+                ffmpeg_found = imageio_ffmpeg.get_ffmpeg_exe()
+            except (ImportError, RuntimeError):
+                pass
+                
+        if not ffmpeg_found:
+            print("⚠️ UYARI: ffmpeg binary bulunamadı! Video metadata temizleme adımı atlanacak.")
+            self.FFMPEG_PATH = None
+        else:
+            self.FFMPEG_PATH = ffmpeg_found
+            print(f"✅ ffmpeg found at: {ffmpeg_found}")
         # Notion
         self.NOTION_TOKEN = self._require_env("NOTION_SOCIAL_TOKEN")
         self.NOTION_TWITTER_DB_ID = self._require_env("NOTION_TWITTER_DB_ID")
