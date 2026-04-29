@@ -92,29 +92,53 @@ def _gemini_generate_vision(image_path: str, prompt: str, json_mode: bool = Fals
 # ─── SHARED UTILITIES ────────────────────────────────────────────────────────
 
 def upload_to_imgbb(image_path: str) -> str:
-    """Upload an image to Catbox.moe and return the public URL (Replaced ImgBB for resiliency)."""
+    """Upload an image to Catbox.moe first, then fallback to ImgBB."""
     print(f"Uploading {image_path} to Catbox.moe public CDN...")
-    url = "https://catbox.moe/user/api.php"
+    url_catbox = "https://catbox.moe/user/api.php"
     
     try:
         with open(image_path, "rb") as file:
             payload = {"reqtype": "fileupload"}
             files = {"fileToUpload": file}
             try:
-                response = requests.post(url, data=payload, files=files, timeout=REQUEST_TIMEOUT)
+                response = requests.post(url_catbox, data=payload, files=files, timeout=REQUEST_TIMEOUT)
                 
                 if response.status_code == 200:
                     img_url = response.text.strip()
-                    print(f"Uploaded successfully to Catbox: {img_url}")
-                    return img_url
+                    if "catbox.moe" in img_url:
+                        print(f"Uploaded successfully to Catbox: {img_url}")
+                        return img_url
+                    else:
+                        print(f"Catbox invalid response: {img_url}")
                 else:
                     print(f"Catbox upload failed: {response.text}")
-                    return None
             except requests.exceptions.RequestException as e:
                 print(f"Catbox network error: {e}")
-                return None
     except Exception as e:
-        print(f"Error uploading to Catbox: {e}")
+        print(f"Error reading file for Catbox: {e}")
+        
+    print(f"Falling back to ImgBB for {image_path}...")
+    try:
+        with open(image_path, "rb") as file:
+            encoded_image = base64.b64encode(file.read()).decode("utf-8")
+        url_imgbb = "https://api.imgbb.com/1/upload"
+        payload = {
+            "key": IMGBB_API_KEY,
+            "image": encoded_image
+        }
+        response = requests.post(url_imgbb, data=payload, timeout=REQUEST_TIMEOUT)
+        if response.status_code == 200:
+            img_url = response.json()["data"]["url"]
+            print(f"Uploaded successfully to ImgBB: {img_url}")
+            return img_url
+        else:
+            print(f"ImgBB upload failed: {response.text}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"ImgBB network error: {e}")
+        return None
+    except Exception as e:
+        print(f"Error uploading to ImgBB: {e}")
         return None
 
 def capture_screenshot(url: str) -> str:
