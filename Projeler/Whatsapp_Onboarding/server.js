@@ -227,7 +227,7 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
           firstName: first_name,
           lastName: last_name || '',
           transactionId: transaction_id,
-          registrationDate: moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
+          registrationDate: date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
           onboardingStatus: "error"
         });
         await notion.appendNote(member.id, "[HATA] Zap #2 önce geldi, ancak geçerli email adresi yok.");
@@ -244,7 +244,7 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
           lastName: last_name || '',
           email: cleanEmail,
           transactionId: transaction_id,
-          registrationDate: moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
+          registrationDate: date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
           onboardingStatus: "bekliyor"
         });
         log.info(`[membership-questions] Kayıt oluşturuldu (new-paid-member henüz gelmemiş)`);
@@ -275,17 +275,11 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
       }
 
       // 5. ManyChat'te subscriber oluştur + Gün 0 flow'unu tetikle
-      let manychatSuccess = false;
-      try {
-        await manychat.ensureSubscriberAndSendFlow(
-          phoneResult.normalized,
-          first_name,
-          ONBOARDING_FLOWS[0].flow_id
-        );
-        manychatSuccess = true;
-      } catch (err) {
-        log.error(`[membership-questions] ManyChat entegrasyonu başarsız oldu, WhatsApp atlanıyor: ${err.message}`);
-      }
+      await manychat.ensureSubscriberAndSendFlow(
+        phoneResult.normalized,
+        first_name,
+        ONBOARDING_FLOWS[0].flow_id
+      );
 
       // 6. Notion'ı güncelle
       const nowWa = moment().tz('Europe/Istanbul');
@@ -298,24 +292,24 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
       if (memberCleanEmail) {
         await notion.updatePage(member.id, {
           phone: phoneResult.normalized,
-          onboardingStatus: manychatSuccess ? "dual" : "email",
-          onboardingChannel: manychatSuccess ? "dual" : "email",
+          onboardingStatus: "dual",
+          onboardingChannel: "dual",
           onboardingStep: 0,
           onboardingStartDate: startDateWa
         });
         
         await resend.sendOnboardingEmail(memberCleanEmail, first_name, 0);
-        log.info(`[membership-questions] ${manychatSuccess ? "Dual" : "Email"} onboarding baslatildi: ${first_name}`);
+        log.info(`[membership-questions] Dual onboarding baslatildi: ${first_name} WA + Email`);
       } else {
         await notion.updatePage(member.id, {
           phone: phoneResult.normalized,
-          onboardingStatus: manychatSuccess ? "whatsapp" : "error",
-          onboardingChannel: manychatSuccess ? "whatsapp" : "none",
+          onboardingStatus: "whatsapp",
+          onboardingChannel: "whatsapp",
           onboardingStep: 0,
           onboardingStartDate: startDateWa
         });
 
-        log.info(`[membership-questions] ${manychatSuccess ? "Sadece WA" : "HATA (ManyChat coktu, email yok)"} onboarding: ${first_name}`);
+        log.info(`[membership-questions] Sadece WA onboarding (email yok): ${first_name}`);
       }
 
     } else {
@@ -692,20 +686,6 @@ app.post('/admin/trigger-flow', adminAuth, async (req, res) => {
   } catch (error) {
     log.error(`[admin/trigger-flow] HATA: ${error.message}`, error.stack);
     res.status(500).json({ error: error.message });
-  }
-});
-
-// ─────────────────────────────────────────────────────────────
-// GET /admin/debug-manychat — Debug Endpoint
-// ─────────────────────────────────────────────────────────────
-app.get('/admin/debug-manychat', async (req, res) => {
-  try {
-    const manychat = require('./services/manychat');
-    // Force reset cache and promise if there was one
-    const result = await manychat.getCustomFieldId('whatsapp_phone_text');
-    res.status(200).json({ success: true, result });
-  } catch (error) {
-    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
