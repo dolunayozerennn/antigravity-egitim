@@ -171,10 +171,18 @@ async function createSubscriber(phoneNumber, firstName) {
     if (!existingId) {
       existingId = await findSubscriberBySystemPhone(phoneNumber);
     }
+    if (!existingId) {
+      existingId = await findSubscriberByName(firstName, phoneNumber);
+    }
     if (existingId) {
       log.info(`[manychat:api] Conflict sonrası mevcut subscriber bulundu.`, { existingId });
+      return existingId;
     }
-    return existingId;
+    
+    // Eğer yaratılamadıysa ve bulunamadıysa (gerçek bir API hatası olabilir, örn geçersiz telefon formatı)
+    const errReason = data.message || JSON.stringify(data);
+    log.error(`[manychat:api] Subscriber yaratılamadı ve aramalarda da bulunamadı. Sebep: ${errReason}`);
+    throw new Error(`ManyChat API Hatası: ${errReason}`);
 
   } catch (error) {
     log.error(`[manychat:api] ❌ createSubscriber ağ hatası: ${error.message}`, error);
@@ -318,6 +326,54 @@ async function findSubscriberBySystemPhone(phoneNumber) {
   }
 }
 
+async function findSubscriberByName(name, phoneNumber) {
+  if (!name) return null;
+  try {
+    const url = `${API_URL}/subscriber/findByName?name=${encodeURIComponent(name)}`;
+    log.debug(`[manychat:api] findByName isteği atılıyor.`, { url });
+    
+    const response = await fetchWithRetry(url, {
+      method: 'GET',
+      headers
+    });
+
+    const data = await response.json();
+    log.debug(`[manychat:api] findByName yanıtı.`, { status: data.status, count: data.data?.length });
+
+    if (data.status === 'success' && data.data && Array.isArray(data.data)) {
+      if (data.data.length === 0) {
+        log.info(`[manychat:api] ℹ️ Subscriber isimden bulunamadı.`);
+        return null;
+      }
+      
+      const cleanTargetPhone = normalizePhone(phoneNumber);
+      const cleanTargetPhoneNoPlus = cleanTargetPhone.startsWith('+') ? cleanTargetPhone.substring(1) : cleanTargetPhone;
+      
+      for (const sub of data.data) {
+        const wp = sub.whatsapp_phone ? normalizePhone(sub.whatsapp_phone) : null;
+        const ph = sub.phone ? normalizePhone(sub.phone) : null;
+        
+        if (wp === cleanTargetPhone || wp === cleanTargetPhoneNoPlus || ph === cleanTargetPhone || ph === cleanTargetPhoneNoPlus) {
+           log.info(`[manychat:api] ✅ Subscriber isim ve telefon eşleşmesiyle bulundu.`, { id: sub.id });
+           return sub.id;
+        }
+      }
+      
+      if (data.data.length === 1) {
+         log.info(`[manychat:api] ✅ Subscriber sadece isim eşleşmesiyle bulundu (tek eşleşme).`, { id: data.data[0].id });
+         return data.data[0].id;
+      }
+      
+      log.warn(`[manychat:api] ⚠️ İsim eşleşmesi bulundu ama telefon tutmadı ve birden fazla kayıt var. Güvenlik için atlanıyor.`);
+    }
+    
+    return null;
+  } catch (error) {
+    log.error(`[manychat:api] ❌ findByName ağ hatası: ${error.message}`, error);
+    return null;
+  }
+}
+
 async function setCustomFields(subscriberId, fields) {
   const fieldArray = [];
   for (const [name, value] of Object.entries(fields)) {
@@ -389,6 +445,7 @@ module.exports = {
   createSubscriber,
   findSubscriberByPhone,
   findSubscriberBySystemPhone,
+  findSubscriberByName,
   setCustomFields,
   sendFlow
 };

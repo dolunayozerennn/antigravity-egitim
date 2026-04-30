@@ -230,8 +230,8 @@ async function getActiveDualMembers() {
 function parseMember(page) {
   return {
     id: page.id,
-    firstName: page.properties["İsim"]?.title?.[0]?.text?.content || '',
-    lastName: page.properties["Soyisim"]?.rich_text?.[0]?.text?.content || '',
+    firstName: (page.properties["İsim"]?.title?.[0]?.text?.content || '').trim(),
+    lastName: (page.properties["Soyisim"]?.rich_text?.[0]?.text?.content || '').trim(),
     email: page.properties["Email"]?.email || '',
     phone: page.properties["Telefon"]?.phone_number || '',
     registrationDate: page.properties["Kayıt Tarihi"]?.date?.start || '',
