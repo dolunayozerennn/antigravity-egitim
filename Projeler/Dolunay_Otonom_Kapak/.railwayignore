@@ -1,0 +1,16 @@
+.git/
+node_modules/
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+outputs/
+assets/screenshot_*.png
+run.log
+*.log
+scratch_*.py
+trigger_*.py
+find_*.py
