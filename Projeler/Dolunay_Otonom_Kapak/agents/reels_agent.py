@@ -140,7 +140,7 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
             print(f"Generation failed. Msg: {data.get('failMsg')}")
             return None
         
-        elif state in ["processing", "wait"]:
+        elif state in ["processing", "wait", "waiting"]:
              time.sleep(10)
         else:
              print(f"Unknown state: {state}")
