@@ -672,17 +672,19 @@ if __name__ == "__main__":
     while restart_count < MAX_RESTARTS:
         try:
             main()
-            break  # Normal çıkış — restart gerekmez
+            # app.run_polling() genelde sadece hata durumunda veya manuel durdurulduğunda döner.
+            # KeyboardInterrupt veya SystemExit dışında buraya ulaşıldıysa beklenmedik bir duruştur.
+            raise RuntimeError("Telegram polling döngüsü beklenmedik şekilde sonlandı (Muhtemel Conflict 409).")
         except SystemExit:
+            log.info("Bot sistem çağrısıyla durduruldu.")
             break  # Bilerek kapatıldı
         except KeyboardInterrupt:
-            log.info("Bot kullanıcı tarafından durduruldu")
+            log.info("Bot kullanıcı tarafından durduruldu (Ctrl+C).")
             break
         except Exception as e:
             restart_count += 1
             log.error(
-                f"💥 Bot çöktü (restart {restart_count}/{MAX_RESTARTS}): {e}",
-                exc_info=True,
+                f"💥 Bot çöktü veya durdu (restart {restart_count}/{MAX_RESTARTS}): {e}"
             )
             if restart_count < MAX_RESTARTS:
                 wait = min(5 * restart_count, 30)
