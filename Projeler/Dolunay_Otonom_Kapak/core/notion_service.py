@@ -14,7 +14,7 @@ def get_config(cover_type: str) -> dict:
             "db_id": os.getenv("NOTION_DB_REELS_KAPAK", os.getenv("NOTION_DATABASE_ID")),
             "title_prop": "Name",
             "status_prop": "Status",
-            "ready_statuses": ["Çekime Hazır", "Çekildi - Edit YOK", "Çekildi - Edit TAMAM"],
+            "ready_statuses": ["Çekildi - Edit YOK", "Çekime Hazır", "Draft Onayı Bekliyor", "Çekildi - Edit TAMAM"],
             "drive_prop": "Drive",
             "panel_title": "📸 REELS KAPAK REVİZYON PANELİ"
         }
