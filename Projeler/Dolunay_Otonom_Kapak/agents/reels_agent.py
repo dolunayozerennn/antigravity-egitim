@@ -207,7 +207,7 @@ def generate_cover_text_and_scene(video_name: str, script_text: str) -> dict:
     """
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             contents=prompt,
             config={"response_mime_type": "application/json"}
         )
@@ -226,7 +226,7 @@ def generate_cover_text_and_scene(video_name: str, script_text: str) -> dict:
             Script: \"{script_text[:500]}\"
             Return JSON: {{"cover_text": "...", "scene_description": "..."}}"""
             retry_response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-2.5-flash",
                 contents=retry_prompt,
                 config={"response_mime_type": "application/json"}
             )
@@ -320,7 +320,7 @@ def generate_three_themes(video_name: str, script_text: str) -> list:
     """
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             contents=prompt,
             config={"response_mime_type": "application/json"}
         )
@@ -425,7 +425,7 @@ def evaluate_image_with_vision(image_url: str, style_guide: str, expected_text: 
     try:
          image_part = genai_types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg")
          response = client.models.generate_content(
-             model="gemini-1.5-flash",
+             model="gemini-2.5-flash",
              contents=[
                  image_part,
                  system_prompt + "\n\n" + user_prompt
