@@ -32,15 +32,6 @@ FILE_UPLOAD_BASE_URL = "https://kieai.redpandaai.co"
 VALID_ASPECT_RATIOS = {"9:16", "16:9", "1:1", "4:3", "3:4", "21:9"}
 DEFAULT_ASPECT_RATIO = "9:16"
 
-# Seedance 2.0'ın kabul ettiği geçerli süre değerleri (saniye)
-VALID_DURATIONS = (5, 10)
-
-
-def normalize_duration(raw: int | float) -> int:
-    """Ham duration değerini Seedance 2.0'ın kabul ettiği en yakın değere yuvarlar."""
-    raw = int(raw)
-    return min(VALID_DURATIONS, key=lambda d: abs(d - raw))
-
 
 def normalize_aspect_ratio(raw: str) -> str:
     """
@@ -123,6 +114,7 @@ class KieAIService:
         prompt: str,
         duration: int = 10,
         aspect_ratio: str = "9:16",
+        generate_audio: bool = True,
         resolution: str | None = None,
         reference_images: list[str] | None = None,
         first_frame_url: str | None = None,
@@ -136,8 +128,10 @@ class KieAIService:
 
         Args:
             prompt: Video açıklaması (İngilizce önerilir)
-            duration: Video süresi — 5 veya 10 saniye (diğer değerler otomatik yuvarlanır)
-            aspect_ratio: "9:16", "16:9", "1:1" vb.
+            duration: Video süresi (4-15 saniye)
+            aspect_ratio: "9:16", "16:9", "1:1" vb. Referans görsel kullanıldığında
+                          otomatik olarak "adaptive" kullanılır (API kısıtı).
+            generate_audio: Native ses üretimi (ambient sesler için True)
             resolution: Video çözünürlüğü ("720p" vb.)
             reference_images: Referans görseller URL listesi (1-3 adet).
                               Modele "bu görselleri referans al, özgürce üret" der.
@@ -162,20 +156,23 @@ class KieAIService:
                 "aynı anda kullanılamaz. Birini seçin."
             )
 
-        # Aspect ratio'yu Kie AI'ın kabul ettiği değere normalize et
-        safe_aspect = normalize_aspect_ratio(aspect_ratio)
-        if safe_aspect != aspect_ratio:
-            log.info(f"Aspect ratio normalize edildi: '{aspect_ratio}' → '{safe_aspect}'")
-
-        # Duration'ı Seedance 2.0'ın kabul ettiği değere snap et (5 veya 10)
-        safe_duration = normalize_duration(duration)
-        if safe_duration != int(duration):
-            log.info(f"Duration normalize edildi: {duration}s → {safe_duration}s")
+        # Referans görsel kullanıldığında aspect_ratio "adaptive" olmalı
+        # (Kie AI Seedance 2.0: sabit oran + referans görsel kombinasyonu 422 verir)
+        has_reference = bool(reference_images or first_frame_url)
+        if has_reference:
+            safe_aspect = "adaptive"
+            log.info(f"Referans görsel modu: aspect_ratio '{aspect_ratio}' → 'adaptive'")
+        else:
+            safe_aspect = normalize_aspect_ratio(aspect_ratio)
+            if safe_aspect != aspect_ratio:
+                log.info(f"Aspect ratio normalize edildi: '{aspect_ratio}' → '{safe_aspect}'")
 
         input_data = {
             "prompt": prompt,
-            "duration": safe_duration,
+            "duration": int(duration),
             "aspect_ratio": safe_aspect,
+            "generate_audio": generate_audio,
+            "web_search": False,
         }
 
         # Opsiyonel parametreler — sadece değer varsa ekle

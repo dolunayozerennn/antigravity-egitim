@@ -49,7 +49,7 @@ PRODUCER_SYSTEM_PROMPT = """Sen yaratıcı bir e-ticaret reklam yapımcısı ve 
   "title": "Senaryo başlığı (Türkçe)",
   "summary": "1-2 cümlelik Türkçe özet",
   "scene_count": 1, // veya 2, veya 3 (Kurguya göre dinamik karar ver)
-  "duration": 10, // Toplam saniye: SADECE 5 veya 10 olabilir (API kısıtı). Kısa/dinamik için 5, kapsamlı/multi-scene için 10.
+  "duration": 10, // Toplam saniye: 5 ile 15 arasında (Kurguya göre dinamik karar ver)
   "scenes": [
     {
       "scene_name": "Sahne adı (İngilizce, kısa)",
