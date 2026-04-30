@@ -206,7 +206,6 @@ class ProductionPipeline:
                     prompt=video_prompt,
                     duration=duration,
                     aspect_ratio=aspect_ratio,
-                    generate_audio=True,  # Ambient sesler AÇIK
                     reference_images=reference_images if reference_images else None,
                 )
 
@@ -233,7 +232,6 @@ class ProductionPipeline:
                                     prompt=rewritten_prompt,
                                     duration=duration,
                                     aspect_ratio=aspect_ratio,
-                                    generate_audio=True,
                                     reference_images=reference_images if reference_images else None,
                                 )
                                 video_result2 = await self.kie.async_poll_task(video_task2)
@@ -534,7 +532,6 @@ class ProductionPipeline:
                 prompt=prompt,
                 duration=per_scene_duration,
                 aspect_ratio=aspect_ratio,
-                generate_audio=True,
                 reference_images=reference_images if reference_images else None,
             )
 
