@@ -143,8 +143,9 @@ async function ensureSubscriberAndSendFlow(phoneNumber, firstName, flowId) {
 
 async function createSubscriber(phoneNumber, firstName) {
   try {
+    const cleanFirstName = firstName ? firstName.trim() : '';
     const payload = {
-      first_name: firstName,
+      first_name: cleanFirstName,
       whatsapp_phone: phoneNumber,
       consent_phrase: "onboarding"
     };
@@ -328,8 +329,9 @@ async function findSubscriberBySystemPhone(phoneNumber) {
 
 async function findSubscriberByName(name, phoneNumber) {
   if (!name) return null;
+  const cleanName = name.trim();
   try {
-    const url = `${API_URL}/subscriber/findByName?name=${encodeURIComponent(name)}`;
+    const url = `${API_URL}/subscriber/findByName?name=${encodeURIComponent(cleanName)}`;
     log.debug(`[manychat:api] findByName isteği atılıyor.`, { url });
     
     const response = await fetchWithRetry(url, {
