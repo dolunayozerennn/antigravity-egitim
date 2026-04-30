@@ -1,9 +1,9 @@
 """
 Ceren_Marka_Takip — E-posta Bildirim Sistemi
 ===============================================
-- Ceren'e hatırlatma e-postası
-- Ceren'e hata alert e-postası
-- Ceren'e haftalık özet rapor
+- Hatırlatma e-postası (alıcı: ALERT_EMAIL env ile konfigüre edilir)
+- Hata alert e-postası
+- Haftalık özet rapor
 """
 
 import os
@@ -21,9 +21,8 @@ logger = logging.getLogger(__name__)
 # E-posta Config — Gmail OAuth ile gönderim (Ceren hesabı üzerinden)
 FROM_EMAIL = "ceren@dolunay.ai"
 
-# Alıcılar — tüm bildirimler Ceren'e gider
-CEREN_EMAIL = "ceren@dolunay.ai"
-ALERT_EMAIL = os.environ.get("ALERT_EMAIL", "ceren@dolunay.ai")
+# Alıcılar — raporlar ALERT_EMAIL'e gider (geçici: Dolunay izleme modunda)
+REPORT_EMAIL = os.environ.get("ALERT_EMAIL", "ozerendolunay@gmail.com")
 
 
 def _send_email(to: str, subject: str, body_html: str):
@@ -47,9 +46,9 @@ def _send_email(to: str, subject: str, body_html: str):
 
 
 def send_reminder_to_ceren(threads: List[Dict[str, Any]]):
-    """Ceren'e stale thread hatırlatması gönder."""
+    """Stale thread hatırlatması gönder (alıcı: REPORT_EMAIL)."""
     if not threads:
-        logger.info("Bildirilecek thread yok, Ceren'e mail gönderilmiyor")
+        logger.info("Bildirilecek thread yok, mail gönderilmiyor")
         return
 
     count = len(threads)
@@ -85,7 +84,7 @@ def send_reminder_to_ceren(threads: List[Dict[str, Any]]):
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #333;">🔔 Marka İşbirliği Hatırlatması</h2>
         <p style="color: #555; font-size: 15px;">
-            Merhaba Ceren,<br><br>
+            Merhaba,<br><br>
             Aşağıdaki <strong>{count}</strong> marka thread'inde 48 saatten fazladır cevap bekleniyor:
         </p>
 
@@ -112,7 +111,7 @@ def send_reminder_to_ceren(threads: List[Dict[str, Any]]):
     </div>
     """
 
-    _send_email(CEREN_EMAIL, subject, body_html)
-    logger.info(f"✅ Ceren'e {count} thread için hatırlatma gönderildi")
+    _send_email(REPORT_EMAIL, subject, body_html)
+    logger.info(f"✅ {REPORT_EMAIL} adresine {count} thread için hatırlatma gönderildi")
 
 

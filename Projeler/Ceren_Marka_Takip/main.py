@@ -8,8 +8,8 @@ Akış:
 2. Stale thread'leri filtrele (48+ iş saati)
 3. LLM ile marka işbirliği analizi
 4. Duplicate hatırlatma kontrolü (2 gün cooldown)
-5. Ceren'e hatırlatma e-postası gönder
-6. Hata durumunda Ceren'e alert
+5. Hatırlatma e-postası gönder
+6. Hata durumunda alert
 7. Her Pazartesi haftalık rapor
 
 Kullanım:
@@ -106,9 +106,9 @@ def main(dry_run: bool = False):
     to_notify = state_manager.filter_already_notified(actionable_threads, cooldown_days=2)
     logger.info(f"Bildirilecek (cooldown sonrası): {len(to_notify)}")
 
-    # ── 6. Ceren'e hatırlatma gönder ──
+    # ── 6. Hatırlatma gönder ──
     if to_notify and not dry_run:
-        logger.info(f"📧 Ceren'e {len(to_notify)} hatırlatma gönderiliyor...")
+        logger.info(f"📧 {len(to_notify)} hatırlatma gönderiliyor...")
         notifier.send_reminder_to_ceren(to_notify)
         state_manager.update_state(to_notify)
     elif to_notify and dry_run:
