@@ -98,13 +98,15 @@ async function ensureSubscriberAndSendFlow(phoneNumber, firstName, flowId) {
 
   // 1. Subscriber'ı bulmaya çalış (custom field üzerinden)
   subscriberId = await findSubscriberByPhone(phoneNumber);
-  log.debug(`[manychat:engine] Arama sonucu (Custom Field):`, { subscriberId });
 
+  // 2. Eğer custom field ile bulunamadıysa, system fields üzerinden ara (fallback)
   if (!subscriberId) {
-    // 2. Eğer Custom Field'da yoksa, System Field (phone) üzerinden ara 
-    // Önceden WhatsApp'tan yazmış kişiler otomatik olarak bu alana kaydedilmiş olabilir.
     subscriberId = await findSubscriberBySystemPhone(phoneNumber);
-    log.debug(`[manychat:engine] Arama sonucu (System Field):`, { subscriberId });
+  }
+  
+  // 2.5 Eğer system fields de bulamazsa name ile ara
+  if (!subscriberId) {
+    subscriberId = await findSubscriberByName(firstName, phoneNumber);
   }
 
   if (!subscriberId) {
@@ -112,7 +114,7 @@ async function ensureSubscriberAndSendFlow(phoneNumber, firstName, flowId) {
     log.info(`[manychat:engine] Subscriber bulunamadı, oluşturuluyor...`);
     subscriberId = await createSubscriber(phoneNumber, firstName);
   } else {
-    log.info(`[manychat:engine] Mevcut subscriber bulundu, oluşturma adımı atlanıyor.`);
+    log.info(`[manychat:engine] Mevcut subscriber bulundu: ${subscriberId}`);
   }
 
   if (!subscriberId) {
@@ -121,23 +123,17 @@ async function ensureSubscriberAndSendFlow(phoneNumber, firstName, flowId) {
     throw new Error(errMsg);
   }
 
-  // 4. Custom field'ları güncelle (template değişkenleri için)
-  log.debug(`[manychat:engine] Custom fields güncelleniyor...`, { subscriberId });
+  // 4. Custom field'ları güncelle (İsim ve Telefon her halükarda güncellenir)
   await setCustomFields(subscriberId, {
-    onboarding_name: firstName,
-    whatsapp_phone_text: phoneNumber
+    whatsapp_phone_text: phoneNumber,
+    phone_text: phoneNumber,
+    last_name: "."
   });
 
-  // 4. Flow'u tetikle (template mesajı bu flow'un içinde)
-  log.info(`[manychat:engine] Flow gönderimi çağrılıyor...`, { subscriberId, flowId });
-  const flowResult = await sendFlow(subscriberId, flowId);
+  // 5. Flow'u tetikle
+  await sendFlow(subscriberId, flowId);
 
-  log.info(`[manychat:engine] ✅ Flow gönderimi başarıyla tamamlandı.`, { 
-    subscriberId, 
-    flowId, 
-    manychatStatus: flowResult.status 
-  });
-  
+  log.info(`[manychat:engine] Flow başarıyla tetiklendi.`, { subscriberId, flowId });
   return subscriberId;
 }
 
