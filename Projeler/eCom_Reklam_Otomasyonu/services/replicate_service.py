@@ -246,7 +246,7 @@ class ReplicateService:
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # Model: lucataco/video-merge
     # UGC pipeline oturumundan (23 Nisan 2026) öğrenilen model ve format.
-    # Input: pipe-separated video URL'leri (video1|video2|video3)
+    # Input: video URL'leri array olarak (["url1", "url2", ...]) — pipe string değil
 
     VIDEO_MERGE_VERSION = "14273448a57117b5d424410e2e79700ecde6cc7d60bf522a769b9c7cf989eba7"
 
