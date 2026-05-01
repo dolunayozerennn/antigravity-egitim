@@ -18,10 +18,10 @@ import time
 import requests
 
 # ── Credentials ──
-KIE_API_KEY = "0bf01128b0840e22108b95e484b09f76"
+KIE_API_KEY = os.environ.get("KIE_API_KEY", "REDACTED")
 KIE_BASE_URL = "https://api.kie.ai/api/v1"
-ELEVENLABS_API_KEY = "sk_e01cf2f30e32582b063fe849e55ad7da262de33014cf9f4b"
-IMGBB_API_KEY = "b7f0689f94db6510ed2ab3785a670ba1"
+ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "REDACTED")
+IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY", "REDACTED")
 
 # ── Çıktı Dizini ──
 OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
