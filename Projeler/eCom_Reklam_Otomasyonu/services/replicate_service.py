@@ -6,6 +6,7 @@ Model: lucataco/video-audio-merge
 Cloud-based — Railway'de FFmpeg kurulumu gereksiz.
 """
 
+import io
 import time
 
 import replicate
@@ -24,6 +25,25 @@ class ReplicateService:
 
     def __init__(self, api_token: str):
         self.client = replicate.Client(api_token=api_token)
+
+    def upload_audio(self, audio_bytes: bytes, filename: str = "audio.mp3") -> str:
+        """
+        Ses dosyasını Replicate file storage'a yükler ve URL döner.
+        Data URI yerine gerçek URL kullanmak için zorunlu.
+
+        Returns:
+            str: Replicate'in erişebileceği ses dosyası URL'i
+        """
+        file_obj = io.BytesIO(audio_bytes)
+        uploaded = self.client.files.create(file_obj, filename=filename)
+        url = uploaded.urls.get("get") if hasattr(uploaded, "urls") else str(uploaded)
+        log.info(f"Ses Replicate storage'a yüklendi: {str(url)[:80]}")
+        return str(url)
+
+    async def async_upload_audio(self, audio_bytes: bytes, filename: str = "audio.mp3") -> str:
+        """Async wrapper — event loop'u bloke etmez."""
+        import asyncio as _asyncio
+        return await _asyncio.to_thread(self.upload_audio, audio_bytes, filename)
 
     def merge_video_audio(
         self,

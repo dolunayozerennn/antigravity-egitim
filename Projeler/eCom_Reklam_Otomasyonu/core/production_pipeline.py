@@ -297,14 +297,10 @@ class ProductionPipeline:
                         style=0.4,
                     )
 
-                    # Ses dosyasını hosting'e yükle
-                    audio_url = await asyncio.to_thread(
-                        self.elevenlabs.upload_audio_to_hosting,
-                        audio_bytes,
-                        imgbb_api_key=self.imgbb.api_key,
-                    )
+                    # Ses dosyasını Replicate storage'a yükle (Data URI yerine gerçek URL)
+                    audio_url = await self.replicate.async_upload_audio(audio_bytes)
                     result["audio_url"] = audio_url
-                    log.info(f"Dış ses hazır: {audio_url[:60]}...")
+                    log.info(f"Dış ses Replicate storage'a yüklendi: {audio_url[:80]}...")
 
                     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                     # ADIM 3: Video + Ses Birleştirme (Replicate)
