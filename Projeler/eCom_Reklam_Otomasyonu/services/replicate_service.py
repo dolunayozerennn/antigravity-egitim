@@ -267,13 +267,12 @@ class ReplicateService:
         if len(video_urls) < 2:
             raise ValueError(f"Concat için en az 2 video gerekli, {len(video_urls)} verildi")
 
-        pipe_input = "|".join(video_urls)
         log.info(f"Video concat başlatılıyor: {len(video_urls)} video")
 
         try:
             prediction = self.client.predictions.create(
                 version=self.VIDEO_MERGE_VERSION,
-                input={"video_files": pipe_input},
+                input={"video_files": video_urls},
             )
             log.info(f"Concat prediction oluşturuldu: {prediction.id}")
 
@@ -321,14 +320,13 @@ class ReplicateService:
         if len(video_urls) < 2:
             raise ValueError(f"Concat için en az 2 video gerekli, {len(video_urls)} verildi")
 
-        pipe_input = "|".join(video_urls)
         log.info(f"Async video concat başlatılıyor: {len(video_urls)} video")
 
         try:
             prediction = await _asyncio.to_thread(
                 self.client.predictions.create,
                 version=self.VIDEO_MERGE_VERSION,
-                input={"video_files": pipe_input},
+                input={"video_files": video_urls},
             )
             log.info(f"Concat prediction oluşturuldu: {prediction.id}")
 
