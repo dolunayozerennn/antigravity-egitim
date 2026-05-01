@@ -4,6 +4,7 @@ import requests
 import os
 import math
 import time
+import urllib.parse
 
 from config import settings
 
@@ -174,8 +175,8 @@ class LinkedInPublisher:
             ops.error(f"Error finalizing upload: {e}", exception=e)
             return False
 
-        # 2. Poll for status
-        url = f"{self.API_BASE}/rest/videos/{video_urn}"
+        # 2. Poll for status — URN must be URL-encoded; LinkedIn rejects raw colons with 400 ILLEGAL_ARGUMENT
+        url = f"{self.API_BASE}/rest/videos/{urllib.parse.quote(video_urn, safe='')}"
 
         max_retries = 90  # Wait up to 15 minutes
         for attempt in range(max_retries):
