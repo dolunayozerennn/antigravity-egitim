@@ -496,7 +496,10 @@ async def _run_production(message, user_id: int):
 
             delivery_msg += "\n🔄 Yeni video için ürün linki gönderebilir veya /start yazabilirsin!"
 
-            await message.reply_text(delivery_msg, parse_mode="Markdown")
+            try:
+                await message.reply_text(delivery_msg, parse_mode="Markdown")
+            except Exception:
+                await message.reply_text(delivery_msg, parse_mode=None)
             await chat_tracker.log_interaction(str(user_id), "[Sistem - Üretim Tamamlandı]", delivery_msg)
 
             # Native Telegram Video Upload (Fallbacks to URL)
