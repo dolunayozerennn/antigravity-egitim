@@ -146,7 +146,6 @@ async function createSubscriber(phoneNumber, firstName) {
     const cleanFirstName = firstName ? firstName.trim() : '';
     const payload = {
       first_name: cleanFirstName,
-      phone: phoneNumber,
       whatsapp_phone: phoneNumber,
       consent_phrase: "onboarding"
     };

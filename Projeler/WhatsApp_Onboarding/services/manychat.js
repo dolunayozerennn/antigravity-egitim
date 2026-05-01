@@ -12,11 +12,22 @@ const API_URL = "https://api.manychat.com/fb";
 const headers = {
   'Authorization': `Bearer ${config.manychatApiToken}`,
   'Content-Type': 'application/json',
+  'Accept': 'application/json',
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 };
 
 let customFieldsCache = null;
 let customFieldsFetchPromise = null; // Fix: Cache stampede önleme
+
+// Fix: JSON Parsing Helper
+async function parseJsonResponse(response, context = '') {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const text = await response.text();
+    throw new Error(`ManyChat API JSON dönmedi (${response.status} ${response.statusText}) [${context}]. Content-Type: ${contentType}. Body: ${text.substring(0, 500)}`);
+  }
+  return await response.json();
+}
 
 // Fix: fetchWithRetry — 8s timeout + 1 retry
 async function fetchWithRetry(url, options, retries = 1) {
@@ -62,14 +73,7 @@ async function getCustomFieldId(fieldName) {
       headers
     });
     const response = await customFieldsFetchPromise;
-    const contentType = response.headers.get('content-type') || '';
-    
-    if (!contentType.includes('application/json')) {
-      const text = await response.text();
-      throw new Error(`API JSON dönmedi (${response.status} ${response.statusText}). Content-Type: ${contentType}. Body: ${text.substring(0, 500)}`);
-    }
-
-    const data = await response.json();
+    const data = await parseJsonResponse(response, 'getCustomFields');
     if (data.status === 'success' && data.data) {
       customFieldsCache = {};
       for (const field of data.data) {
@@ -154,7 +158,7 @@ async function createSubscriber(phoneNumber, firstName) {
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response, 'createSubscriber');
     log.debug(`[manychat:api] createSubscriber yanıtı.`, data);
 
     if (data.status === 'success') {
@@ -204,7 +208,7 @@ async function findSubscriberByPhone(phoneNumber) {
       headers
     });
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response, 'findByCustomField');
     log.debug(`[manychat:api] findByCustomField yanıtı.`, data);
 
     let foundId = null;
@@ -232,7 +236,7 @@ async function findSubscriberByPhone(phoneNumber) {
         headers
       });
 
-      const dataNoPlus = await responseNoPlus.json();
+      const dataNoPlus = await parseJsonResponse(responseNoPlus, 'findByCustomField_NoPlus');
       log.debug(`[manychat:api] findByCustomField (without +) yanıtı.`, dataNoPlus);
 
       if (dataNoPlus.status === 'success' && dataNoPlus.data) {
@@ -275,7 +279,7 @@ async function findSubscriberBySystemPhone(phoneNumber) {
         headers
       });
 
-      let data = await response.json();
+      let data = await parseJsonResponse(response, `findBySystemField_${field}`);
       log.debug(`[manychat:api] findBySystemField (${field}) yanıtı.`, data);
 
       if (data.status === 'success' && data.data) {
@@ -297,7 +301,7 @@ async function findSubscriberBySystemPhone(phoneNumber) {
           headers
         });
         
-        data = await response.json();
+        data = await parseJsonResponse(response, `findBySystemField_${field}_NoPlus`);
         log.debug(`[manychat:api] findBySystemField (${field} without +) yanıtı.`, data);
         
         if (data.status === 'success' && data.data) {
@@ -335,7 +339,7 @@ async function findSubscriberByName(name, phoneNumber) {
       headers
     });
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response, 'findByName');
     log.debug(`[manychat:api] findByName yanıtı.`, { status: data.status, count: data.data?.length });
 
     if (data.status === 'success' && data.data && Array.isArray(data.data)) {
@@ -403,7 +407,7 @@ async function setCustomFields(subscriberId, fields) {
     body: JSON.stringify(payload)
   });
 
-  const data = await response.json();
+  const data = await parseJsonResponse(response, 'setCustomFields');
   log.debug(`[manychat:api] setCustomFields yanıtı.`, data);
 
   if (data.status !== 'success') {
@@ -427,7 +431,7 @@ async function sendFlow(subscriberId, flowId) {
     body: JSON.stringify(payload)
   });
 
-  const data = await response.json();
+  const data = await parseJsonResponse(response, 'sendFlow');
   log.debug(`[manychat:api] sendFlow yanıtı.`, data);
 
   if (data.status !== 'success') {
