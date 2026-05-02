@@ -1,6 +1,35 @@
 const { config } = require('../config/env');
 const log = require('../utils/logger');
 
+// Resend ile admin'e alarm bildirimi — sadece ana mail fail olduğunda
+async function notifyAdminOfFailure(subscriberId, originalError) {
+  if (!config.adminNotifyEmail || !config.resendApiKey) return;
+  try {
+    const fromAddress = `WhatsApp Asistan <${config.escalationEmail}>`;
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.resendApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: fromAddress,
+        to: [config.adminNotifyEmail],
+        subject: '[ALARM] Escalation email gönderilemedi',
+        text: `Subscriber: ${subscriberId}\n\nOriginal error:\n${originalError}`
+      })
+    });
+    if (!response.ok) {
+      const txt = await response.text();
+      log.error(`[escalation] Admin alarm fallback de başarısız: HTTP ${response.status} - ${txt}`);
+    } else {
+      log.info(`[escalation] Admin alarm bildirimi gönderildi: ${config.adminNotifyEmail}`);
+    }
+  } catch (err) {
+    log.error(`[escalation] Admin alarm fallback exception: ${err.message}`);
+  }
+}
+
 // XSS korumasi icin HTML escape fonksiyonu
 function escapeHtml(str) {
   if (!str) return '';
@@ -106,6 +135,7 @@ async function sendEscalationEmail({ type, subscriberId, phoneNumber, reason, re
     if (!response.ok) {
       const errorText = await response.text();
       log.error(`[escalation] Resend API hatası: HTTP ${response.status} - ${errorText}`);
+      await notifyAdminOfFailure(subscriberId, `HTTP ${response.status} - ${errorText}`);
       return false;
     }
 
@@ -115,6 +145,7 @@ async function sendEscalationEmail({ type, subscriberId, phoneNumber, reason, re
 
   } catch (error) {
     log.error(`[escalation] Beklenmeyen hata: ${error.message}`, error);
+    await notifyAdminOfFailure(subscriberId, error.message);
     return false; // Ana akışı bozmamak için false dönüyoruz
   }
 }

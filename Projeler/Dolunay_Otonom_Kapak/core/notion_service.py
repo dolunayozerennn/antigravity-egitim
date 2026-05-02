@@ -7,29 +7,34 @@ from dotenv import load_dotenv
 load_dotenv()
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "_knowledge", "credentials", "master.env"))
 
+# Unified DB: Reels ve YouTube videoları aynı database'de duruyor ("Dolunay Reels & YouTube").
+# Tip ayrımı page-level icon ile yapılır: custom_emoji.name == "youtube_logo" → YouTube; aksi → Reels.
+YOUTUBE_ICON_NAME = "youtube_logo"
+READY_STATUSES = ["Çekildi - Edit YOK", "Draft Onayı Bekliyor", "Çekildi - Edit TAMAM", "Yayına Hazır"]
+
+
 def get_config(cover_type: str) -> dict:
-    if cover_type == "reels":
-        return {
-            "token": os.getenv("NOTION_SOCIAL_TOKEN") or os.getenv("NOTION_API_TOKEN") or os.getenv("NOTION_TOKEN"),
-            "db_id": os.getenv("NOTION_DB_REELS_KAPAK", os.getenv("NOTION_DATABASE_ID")),
-            "title_prop": "Name",
-            "status_prop": "Status",
-            "ready_statuses": ["Çekildi - Edit YOK", "Çekime Hazır", "Draft Onayı Bekliyor", "Çekildi - Edit TAMAM"],
-            "drive_prop": "Drive",
-            "panel_title": "📸 REELS KAPAK REVİZYON PANELİ"
-        }
-    elif cover_type == "youtube":
-        return {
-            "token": os.getenv("NOTION_SOCIAL_TOKEN") or os.getenv("NOTION_API_TOKEN") or os.getenv("NOTION_TOKEN"),
-            "db_id": os.getenv("NOTION_DB_YOUTUBE_ISBIRLIKLERI", os.getenv("NOTION_DATABASE_ID")),
-            "title_prop": "Video Adı",
-            "status_prop": "Durum",
-            "ready_statuses": ["Çekildi"],
-            "drive_prop": "Drive",
-            "panel_title": "🎬 YOUTUBE KAPAK REVİZYON PANELİ"
-        }
-    else:
+    if cover_type not in ("reels", "youtube"):
         raise ValueError("Invalid cover type. Use 'reels' or 'youtube'.")
+    panel_title = "🎬 YOUTUBE KAPAK REVİZYON PANELİ" if cover_type == "youtube" else "📸 REELS KAPAK REVİZYON PANELİ"
+    return {
+        "token": os.getenv("NOTION_SOCIAL_TOKEN") or os.getenv("NOTION_API_TOKEN") or os.getenv("NOTION_TOKEN"),
+        "db_id": os.getenv("NOTION_DB_REELS_KAPAK", os.getenv("NOTION_DATABASE_ID")),
+        "title_prop": "Name",
+        "status_prop": "Status",
+        "ready_statuses": READY_STATUSES,
+        "drive_prop": "Drive",
+        "panel_title": panel_title,
+        "cover_type": cover_type,
+    }
+
+
+def _is_youtube_page(item: dict) -> bool:
+    """Sayfa icon'u 'youtube_logo' custom_emoji'si ise YouTube videosudur."""
+    icon = item.get("icon") or {}
+    if icon.get("type") != "custom_emoji":
+        return False
+    return (icon.get("custom_emoji") or {}).get("name") == YOUTUBE_ICON_NAME
 
 def get_page_content(page_id: str, token: str) -> str:
     url = f"https://api.notion.com/v1/blocks/{page_id}/children"
@@ -90,8 +95,14 @@ def get_ready_videos(cover_type: str) -> list:
         data = response.json()
         results = data.get("results", [])
         videos = []
-        
+        want_youtube = cover_type == "youtube"
+
         for item in results:
+            # Unified DB'de tip ayrımı icon ile: youtube_logo → YouTube, aksi → Reels
+            is_yt = _is_youtube_page(item)
+            if want_youtube != is_yt:
+                continue
+
             props = item.get("properties", {})
             name_prop = props.get(cfg["title_prop"], {}).get("title", [])
             name = name_prop[0].get("plain_text", "Unknown Video") if name_prop else "Unknown Video"
@@ -104,8 +115,8 @@ def get_ready_videos(cover_type: str) -> list:
                 "drive_url": drive_url,
                 "script_text": script_text
             })
-            
-        print(f"Found {len(videos)} ready videos.")
+
+        print(f"Found {len(videos)} ready {cover_type} videos (icon-filtered).")
         return videos
 
     except Exception as e:

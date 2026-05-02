@@ -77,6 +77,26 @@ async function createSubscriber(subscriberId, phoneNumber) {
   }
 }
 
+async function wasRecentlyProcessed(subscriberId, content, windowSeconds = 60) {
+  try {
+    const sinceIso = new Date(Date.now() - windowSeconds * 1000).toISOString();
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('subscriber_id', subscriberId)
+      .eq('role', 'user')
+      .eq('content', content)
+      .gte('created_at', sinceIso)
+      .limit(1);
+
+    if (error) throw error;
+    return Array.isArray(data) && data.length > 0;
+  } catch (error) {
+    log.error(`[memory] wasRecentlyProcessed hatası: ${error.message}`, error);
+    return false; // fail-open: meşru mesajları bloklama
+  }
+}
+
 async function acceptKVKK(subscriberId) {
   try {
     const { error } = await supabase
@@ -100,5 +120,6 @@ module.exports = {
   getSubscriber,
   createSubscriber,
   acceptKVKK,
+  wasRecentlyProcessed,
   supabase
 };

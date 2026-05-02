@@ -27,7 +27,9 @@ const config = {
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   port: process.env.PORT || 3456,
   resendApiKey: process.env.RESEND_API_KEY || null,
-  escalationEmail: process.env.ESCALATION_EMAIL || 'dolunay@dolunay.ai'
+  escalationEmail: process.env.ESCALATION_EMAIL || 'dolunay@dolunay.ai',
+  webhookSecret: process.env.WHATSAPP_WEBHOOK_SECRET || null,
+  adminNotifyEmail: process.env.ADMIN_NOTIFY_EMAIL || null
 };
 
 module.exports = { config };

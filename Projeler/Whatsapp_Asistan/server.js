@@ -1,14 +1,37 @@
 // server.js
 const express = require('express');
+const crypto = require('crypto');
 const { config } = require('./config/env');
 const log = require('./utils/logger');
+
+// Webhook secret — bir kez warn at, runtime'da spam etme
+let _webhookSecretWarned = false;
+function verifyWebhookSecret(req) {
+  if (!config.webhookSecret) {
+    if (!_webhookSecretWarned) {
+      log.warn('[webhook] WHATSAPP_WEBHOOK_SECRET tanımlı değil — istekler kimlik doğrulamasız kabul ediliyor.');
+      _webhookSecretWarned = true;
+    }
+    return true;
+  }
+  const provided = req.headers['x-webhook-secret'];
+  if (typeof provided !== 'string' || provided.length === 0) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(config.webhookSecret);
+  if (a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(a, b);
+  } catch (_) {
+    return false;
+  }
+}
 
 // ManyChat field ve flow ID'leri
 const FIELD_ID = config.manychatFieldId;
 const FLOW_ID = config.manychatFlowId;
 
 // Servisler
-const { getSubscriber, createSubscriber, acceptKVKK, saveMessage } = require('./services/memory');
+const { getSubscriber, createSubscriber, acceptKVKK, saveMessage, wasRecentlyProcessed } = require('./services/memory');
 const { isAudioUrl, transcribeAudio } = require('./services/transcription');
 const { detectLanguage } = require('./services/language_detector');
 const { generateResponse } = require('./services/ai_engine');
@@ -44,9 +67,15 @@ const IGNORED_ONBOARDING_BUTTONS = new Set([
 const WELCOME_MESSAGE = `Te\u015fekk\u00fcrler! \ud83d\ude4f Art\u0131k sana AI Factory hakk\u0131nda her konuda yard\u0131mc\u0131 olabilirim. Sormak istedi\u011fin bir \u015fey var m\u0131?`;
 
 app.post('/webhook/message', async (req, res) => {
+  // Shared-secret guard — yapılandırılmışsa zorunlu
+  if (!verifyWebhookSecret(req)) {
+    log.warn('[webhook] Geçersiz veya eksik x-webhook-secret — istek reddedildi.');
+    return res.status(401).send({ error: 'unauthorized' });
+  }
+
   // ManyChat webhook timeoutlari icin hemen 200 donulur
   res.status(200).send({ status: 'received' });
-  
+
   try {
     const payload = req.body;
     const subscriberId = payload.kullanici_id;
@@ -60,6 +89,12 @@ app.post('/webhook/message', async (req, res) => {
 
     if (IGNORED_ONBOARDING_BUTTONS.has(messageContent.trim())) {
       log.info(`[webhook] Onboarding butonu atlandi (Asistan islem yapmiyor).`, { subscriberId, messageContent });
+      return;
+    }
+
+    // Idempotency: aynı subscriber+content kombosu son 60sn'de işlendiyse atla
+    if (await wasRecentlyProcessed(subscriberId, messageContent, 60)) {
+      log.info(`[webhook] duplicate_webhook_ignored`, { event: 'duplicate_webhook_ignored', subscriberId });
       return;
     }
 
