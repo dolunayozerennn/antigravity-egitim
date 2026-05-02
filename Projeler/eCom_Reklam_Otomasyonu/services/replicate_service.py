@@ -50,6 +50,7 @@ class ReplicateService:
         video_url: str,
         audio_url: str,
         replace_audio: bool = False,
+        duration_mode: str = "audio",
     ) -> str:
         """
         Video ve ses dosyalarını birleştirir.
@@ -80,11 +81,11 @@ class ReplicateService:
                     "video_file": video_url,
                     "audio_file": audio_url,
                     "replace_audio": replace_audio,
-                    "duration_mode": "video",
+                    "duration_mode": duration_mode,
                 },
             )
 
-            log.info(f"Replicate prediction oluşturuldu: {prediction.id}")
+            log.info(f"Replicate prediction oluşturuldu: {prediction.id} (duration_mode={duration_mode})")
 
             # Polling
             for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
@@ -149,6 +150,7 @@ class ReplicateService:
         video_url: str,
         audio_url: str,
         replace_audio: bool = False,
+        duration_mode: str = "audio",
     ) -> str:
         """
         Video ve ses dosyalarını async olarak birleştirir.
@@ -174,11 +176,11 @@ class ReplicateService:
                     "video_file": video_url,
                     "audio_file": audio_url,
                     "replace_audio": replace_audio,
-                    "duration_mode": "video",
+                    "duration_mode": duration_mode,
                 },
             )
 
-            log.info(f"Replicate prediction oluşturuldu: {prediction.id}")
+            log.info(f"Replicate prediction oluşturuldu: {prediction.id} (duration_mode={duration_mode})")
 
             # Async polling — reload geçici hata toleransı + adaptif interval
             reload_failures = 0

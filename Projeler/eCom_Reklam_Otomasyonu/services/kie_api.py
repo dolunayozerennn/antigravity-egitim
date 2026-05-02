@@ -190,13 +190,16 @@ class KieAIService:
                         new_url = self.upload_file_from_url(img_url)
                         processed_images.append(new_url)
                     except Exception as e:
-                        log.warning(f"Referans gorsel yukleme basarisiz (atlanarak devam ediliyor): {img_url} - {e}")
-            
+                        # Upload fail → orijinal URL'yi direkt referans olarak dene.
+                        # Seedance 2.0 https URL'leri kabul ediyor; upload sadece güvenli prefetch.
+                        log.warning(f"Referans gorsel upload basarisiz, orijinal URL fallback: {img_url[:80]} - {e}")
+                        processed_images.append(img_url)
+
             if processed_images:
-                log.info(f"Referans gorseller Kie AI sunucusuna yuklendi: {len(processed_images)}/{len(reference_images)} basarili")
+                log.info(f"Referans gorseller hazir: {len(processed_images)}/{len(reference_images)}")
                 input_data["reference_image_urls"] = processed_images
             else:
-                log.warning("Hicbir referans gorsel yuklenemedi, isleme referanssiz devam ediliyor.")
+                log.warning("Hicbir referans gorsel kullanilamadi, isleme referanssiz devam ediliyor.")
 
         if first_frame_url:
             if _is_kie_native_url(first_frame_url):
@@ -208,7 +211,8 @@ class KieAIService:
                     log.info("Ilk kare gorseli Kie AI sunucusuna yuklendi.")
                     input_data["first_frame_url"] = new_url
                 except Exception as e:
-                    log.warning(f"Ilk kare gorsel yukleme basarisiz (atlanarak devam ediliyor): {first_frame_url} - {e}")
+                    log.warning(f"Ilk kare upload basarisiz, orijinal URL fallback: {first_frame_url[:80]} - {e}")
+                    input_data["first_frame_url"] = first_frame_url
 
         if last_frame_url:
             if _is_kie_native_url(last_frame_url):
@@ -220,7 +224,8 @@ class KieAIService:
                     log.info("Son kare gorseli Kie AI sunucusuna yuklendi.")
                     input_data["last_frame_url"] = new_url
                 except Exception as e:
-                    log.warning(f"Son kare gorsel yukleme basarisiz (atlanarak devam ediliyor): {last_frame_url} - {e}")
+                    log.warning(f"Son kare upload basarisiz, orijinal URL fallback: {last_frame_url[:80]} - {e}")
+                    input_data["last_frame_url"] = last_frame_url
 
         if reference_videos:
             processed_videos = []
@@ -605,9 +610,11 @@ class KieAIService:
             file_name = os.path.basename(parsed.path) or "uploaded_file"
 
         url = f"{FILE_UPLOAD_BASE_URL}/api/file-url-upload"
+        # NOT: Kie API yeni sürümde uploadPath zorunlu — eksikse 400 dönüyor.
         payload = {
             "fileUrl": file_url,
             "fileName": file_name,
+            "uploadPath": "images/user-uploads",
         }
 
         response = requests.post(

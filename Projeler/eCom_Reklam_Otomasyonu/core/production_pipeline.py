@@ -274,11 +274,13 @@ class ProductionPipeline:
                             "🎙️ Türkçe dış ses üretiliyor (ElevenLabs)..."
                         )
 
-                    # Dış ses süre kontrolü — video süresini aşarsa metni kırp
+                    # Dış ses süre kontrolü — video süresini aşarsa metni kırp.
+                    # NOT: Türkçe eleven_multilingual_v2 gerçek konuşma hızı ~1.7 wps
+                    # (eski 2.0 değeri iyimserdi → 12s sananı 14s konuşuyordu).
                     from services.elevenlabs_service import ElevenLabsService
                     est_duration = ElevenLabsService.estimate_duration_seconds(voiceover_text)
                     if est_duration > duration + 1:  # 1 saniye tolerans
-                        target_words = int(duration * 2.0)  # ~2.0 kelime/saniye
+                        target_words = int(duration * 1.7)
                         words = voiceover_text.split()
                         if len(words) > target_words:
                             voiceover_text = " ".join(words[:target_words])
