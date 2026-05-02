@@ -9,6 +9,7 @@ import sys
 import time
 import random
 import argparse
+from core.config import settings  # Fail-fast env validation on boot
 from core.logger import get_logger
 from core.notion_service import get_ready_videos, add_revision_panel
 from core.drive_service import upload_cover_to_drive, count_existing_covers, check_covers_exist

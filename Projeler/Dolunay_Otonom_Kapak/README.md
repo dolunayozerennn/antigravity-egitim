@@ -85,6 +85,22 @@ Yüz tutarlılığı (face identity consistency) için 3 katmanlı koruma:
 2. **Secondary Anchors** → 2 ek referans açısı. Model 3 farklı açıdan yüzü tanır.
 3. **PIXEL PRIORITY Prompting** → Prompt başına `IDENTITY LOCK: ABSOLUTE` + `PIXEL PRIORITY MODE` talimatları enjekte edilir. Model kendi içsel bilgisini bastırır, sadece referans pixellerine sadık kalır.
 
+## 🛡️ Stabilizasyon Notları (1 Mayıs 2026)
+
+`/stabilize` workflow'u ile tespit edilen ve düzeltilen sorunlar:
+
+- **YouTube Vision review fix:** `review_thumbnail_with_gemini` artık client/dosya yoksa sadece İLK denemede otomatik PASS verir; sonraki denemelerde reddeder. Önceden her zaman `passed=True` döndürerek retry mekanizmasını ölü bırakıyordu.
+- **YouTube prompt template fix:** `generate_concepts` f-string'indeki JSON şablonundaki `{` `}` karakterleri `{{` `}}` ile escape edildi — prompt artık temiz JSON örneği içeriyor.
+- **Hardcoded SCREENSHOT_API_KEY kaldırıldı:** repo'ya commit edilen default token silindi; env yoksa screenshot adımı atlanıyor.
+- **Deprecated `google-generativeai` legacy fallback temizlendi:** sadece `google-genai` (yeni SDK) kullanılıyor.
+- **Hardcoded macOS path kaldırıldı:** `reels_agent.py`'deki `/Users/dolunayozeren/...` yolu relative path'e çevrildi.
+- **Fail-fast wired:** `main.py` artık `core.config.settings` import ediyor — Railway boot'ta zorunlu env eksikse derhal çöker.
+- **Final image download retry:** `reels_agent.py` final cover indirme adımı 2 retry + raise_for_status ile korundu.
+
+### ⚠️ Manuel Müdahale Gerekiyor
+
+- **Reels servisi (`dolunay-otonom-kapak-reels`)** Railway'de 11 gündür "nixpacks: Failed to read app source directory" hatasıyla build alamıyor (15 ardışık FAILED). YouTube servisi aynı root dir ile çalışıyor — Railway dashboard'da Service Source / Root Directory ayarı doğrulanmalı.
+
 ## 📋 Versiyon Geçmişi
 
 - **V2.1 (24 Nisan 2026):** Identity Lock mimarisi — Master Anchor sistemi, PIXEL PRIORITY prompting, deterministik cutout seçimi. Yüz tutarlılığı %33'ten %100'e çıktı.

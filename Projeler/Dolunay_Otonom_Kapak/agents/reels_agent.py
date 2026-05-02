@@ -8,8 +8,11 @@ from google import genai
 from google.genai import types as genai_types
 
 load_dotenv()
-# master.env sadece lokal ortamda mevcut, Railway'de env variables direkt set edilir
-_master_env = "/Users/dolunayozeren/Desktop/Antigravity/_knowledge/credentials/master.env"
+# master.env sadece lokal ortamda mevcut (relative path), Railway'de env variables direkt set edilir
+_master_env = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))),
+    "_knowledge", "credentials", "master.env",
+)
 if os.path.exists(_master_env):
     load_dotenv(_master_env)
 
@@ -612,11 +615,19 @@ def run_autonomous_generation(local_person_image_path: str, video_topic: str, ma
                   
     if best_image_url:
          print(f"\nDownloading final best cover (Score: {best_score})")
-         img_data = requests.get(best_image_url, timeout=30).content
-         with open(output_path, 'wb') as handler:
-              handler.write(img_data)
-         print(f"Final cover saved to {output_path}")
-         return True
+         for dl_attempt in range(2):
+              try:
+                   resp = requests.get(best_image_url, timeout=30)
+                   resp.raise_for_status()
+                   with open(output_path, 'wb') as handler:
+                        handler.write(resp.content)
+                   print(f"Final cover saved to {output_path}")
+                   return True
+              except Exception as e:
+                   print(f"⚠️ Final image download attempt {dl_attempt+1} failed: {e}")
+                   time.sleep(2)
+         print("❌ Final image download failed after 2 attempts.")
+         return False
     else:
          print("\nFailed to generate any valid images.")
          return False

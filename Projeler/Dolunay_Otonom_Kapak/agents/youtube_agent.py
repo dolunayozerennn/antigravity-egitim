@@ -7,7 +7,6 @@ YouTube formatına adapte edilmiştir.
 
 import os
 import time
-import base64
 import requests
 import json
 import glob
@@ -15,16 +14,8 @@ import random
 import urllib.parse
 from dotenv import load_dotenv
 
-# SDK Compatibility Layer: prefer google-genai (new), fallback to google-generativeai (deprecated)
-_USE_NEW_SDK = False
-try:
-    from google import genai
-    _USE_NEW_SDK = True
-except ImportError:
-    try:
-        import google.generativeai as genai_legacy
-    except ImportError:
-        genai_legacy = None
+from google import genai
+from google.genai import types
 
 # Load project .env first, then master credentials as fallback
 load_dotenv()
@@ -33,61 +24,39 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path
 KIE_API_KEY = os.getenv("KIE_API_KEY")
 IMGBB_API_KEY = os.getenv("IMGBB_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-SCREENSHOT_API_KEY = os.getenv("SCREENSHOT_API_KEY", "128GKV1-WP4MPY5-PSMHEFD-5HTARAE")
+SCREENSHOT_API_KEY = os.getenv("SCREENSHOT_API_KEY")
 
 REQUEST_TIMEOUT = 60  # seconds for HTTP requests
 
 gemini_client = None
 try:
-    if _USE_NEW_SDK:
-        gemini_client = genai.Client(api_key=GEMINI_API_KEY)
-        print("✅ Gemini SDK: google-genai (new)")
-    elif genai_legacy:
-        genai_legacy.configure(api_key=GEMINI_API_KEY)
-        gemini_client = True  # sentinel — functions check this
-        print("⚠️ Gemini SDK: google-generativeai (deprecated, migrate to google-genai)")
+    gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+    print("✅ Gemini SDK: google-genai")
 except Exception as e:
     print(f"Warning: Failed to initialize Gemini Client: {e}")
     gemini_client = None
 
 
 def _gemini_generate_text(prompt: str, json_mode: bool = False) -> str:
-    """SDK-agnostic text generation."""
-    if _USE_NEW_SDK:
-        config = {"response_mime_type": "application/json"} if json_mode else {}
-        response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=config
-        )
-        return response.text
-    else:
-        model = genai_legacy.GenerativeModel("gemini-2.5-flash")
-        gen_config = {"response_mime_type": "application/json"} if json_mode else {}
-        response = model.generate_content(prompt, generation_config=gen_config)
-        return response.text
+    config = {"response_mime_type": "application/json"} if json_mode else {}
+    response = gemini_client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+        config=config,
+    )
+    return response.text
 
 def _gemini_generate_vision(image_path: str, prompt: str, json_mode: bool = False) -> str:
-    """SDK-agnostic vision generation with image."""
     with open(image_path, "rb") as f:
         image_bytes = f.read()
-    if _USE_NEW_SDK:
-        from google.genai import types
-        image_part = types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
-        config = {"response_mime_type": "application/json"} if json_mode else {}
-        response = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[image_part, prompt],
-            config=config
-        )
-        return response.text
-    else:
-        model = genai_legacy.GenerativeModel("gemini-2.5-flash")
-        encoded = base64.b64encode(image_bytes).decode('utf-8')
-        image_data = {"mime_type": "image/jpeg", "data": encoded}
-        gen_config = {"response_mime_type": "application/json"} if json_mode else {}
-        response = model.generate_content([image_data, prompt], generation_config=gen_config)
-        return response.text
+    image_part = types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")
+    config = {"response_mime_type": "application/json"} if json_mode else {}
+    response = gemini_client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[image_part, prompt],
+        config=config,
+    )
+    return response.text
 
 # ─── SHARED UTILITIES ────────────────────────────────────────────────────────
 
@@ -143,6 +112,9 @@ def upload_to_imgbb(image_path: str) -> str:
 
 def capture_screenshot(url: str) -> str:
     """Takes a screenshot of an URL using ScreenshotAPI and saves it locally. Returns the local path."""
+    if not SCREENSHOT_API_KEY:
+        print("⚠️ SCREENSHOT_API_KEY env var yok — screenshot adımı atlanıyor.")
+        return None
     encoded_url = urllib.parse.quote(url)
     api_url = f"https://shot.screenshotapi.net/screenshot?token={SCREENSHOT_API_KEY}&url={encoded_url}&width=1920&height=1080&full_page=false&output=image&file_type=png"
     
@@ -354,14 +326,14 @@ def generate_concepts(video_name: str, script_text: str, count: int = 5) -> list
     === OUTPUT FORMAT ===
     Return EXACTLY this JSON array with {count} objects:
     [
-        {
+        {{
             "theme_name": "short_label",
             "cover_text": "2-3 WORD PERFECTLY IDIOMATIC TURKISH TEXT",
             "scene_description": "Detailed English scene description for 16:9 widescreen. KEEP IT MINIMALIST. No holograms, no small cluttered details.",
             "mood": "one of: confident, curious, surprised, pointing, happy, serious, mysterious",
             "screenshot_url": "extracted url or null",
             "screenshot_context": "Short explanation or empty string"
-        }
+        }}
     ]
     """
     try:
@@ -384,11 +356,16 @@ def generate_concepts(video_name: str, script_text: str, count: int = 5) -> list
             for i in range(count)
         ]
 
-def review_thumbnail_with_gemini(image_path: str, expected_text: str) -> dict:
-    """Uses Gemini Vision to evaluate the output against strict rules."""
+def review_thumbnail_with_gemini(image_path: str, expected_text: str, attempt: int = 1) -> dict:
+    """Uses Gemini Vision to evaluate the output against strict rules.
+    Önemli: Vision client veya dosya yoksa yalnızca İLK denemeyi otomatik geçer.
+    Sonraki denemelerde fail et — sessizce her şeyi pass etmesini engelle."""
     print(f"🔍 Analyzing generated thumbnail {image_path} with Gemini Vision...")
     if not gemini_client or not os.path.exists(image_path):
-        return {"passed": True, "feedback": ""}
+        if attempt <= 1:
+            print("⚠️ Gemini client/dosya yok — ilk denemede otomatik PASS.")
+            return {"passed": True, "feedback": ""}
+        return {"passed": False, "feedback": "Vision review skipped (client/file missing); rejecting retry."}
         
     try:
         review_prompt = f"""
@@ -519,7 +496,7 @@ def run_autonomous_generation(
             return False
 
         # Self-Review Phase
-        review = review_thumbnail_with_gemini(output_path, main_text)
+        review = review_thumbnail_with_gemini(output_path, main_text, attempt=attempt)
         if review.get("passed"):
             print("✅ Self-review PASSED! Breaking loop.")
             return True
