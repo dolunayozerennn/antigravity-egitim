@@ -1,5 +1,5 @@
 ---
-name: İçerik Üretim Agenti
+name: icerik-uretim
 description: |
   Dubai gayrimenkul içerik üretim sürecini (araştırma → script yazma → video üretimi) uçtan uca
   orkestre eden agent. Çağrı Bozay markası için sosyal medya video içerikleri üretir.

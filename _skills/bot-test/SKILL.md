@@ -1,3 +1,8 @@
+---
+name: bot-test
+description: Tüm Telegram botların sağlığını kontrol etmek, conversation flow testlerini çalıştırmak, API bağlantılarını doğrulamak ve sonuçları raporlamak için kullanılır. `/bot-test` çağrıldığında veya deploy sonrası otomatik tetiklenir.
+---
+
 # 🧪 Bot Test — Telegram Bot Otomatik Test Skill'i
 
 > **Tetikleyici:** `/bot-test` slash komutu veya deploy sonrası otomatik

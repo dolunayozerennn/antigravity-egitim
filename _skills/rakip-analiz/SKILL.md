@@ -1,5 +1,5 @@
 ---
-name: Competitor Radar
+name: rakip-analiz
 description: Rakiplerin içeriklerini (Instagram, TikTok) ve reklam stratejilerini (Meta Ads vb.) analiz ederek içerik boşluklarını (content gap) bulmaya yarayan araştırma motoru.
 ---
 

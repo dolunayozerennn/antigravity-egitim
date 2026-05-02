@@ -1,5 +1,5 @@
 ---
-name: Social Media Publisher
+name: sosyal-medya-paylasim
 description: Üretilen metin, görsel veya videoları Make.com (veya n8n) aracı ile Instagram, TikTok, YouTube Shorts ve LinkedIn gibi sosyal medya platformlarında otomatik olarak yayınlamak için kullanılır.
 ---
 

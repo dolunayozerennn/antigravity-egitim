@@ -1,5 +1,5 @@
 ---
-name: website-builder
+name: website-olusturucu
 description: >
   Cinematic, conversion-optimized landing page builder for SMEs.
   Use this skill whenever the user wants to build a website, landing page, hero section,

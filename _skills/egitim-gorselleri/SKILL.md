@@ -1,5 +1,5 @@
 ---
-name: Web Visuals
+name: egitim-gorselleri
 description: Antigravity eğitimi için interaktif, görsel web sayfaları oluşturma ve yönetme becerisi. Teknik konseptleri anlaşılır metaforlarla görselleştirir.
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: Öğrenciler İçin Proje Paylaşımı
+name: proje-paylasimi
 description: Projeler klasörü altındaki bir projeyi, Antigravity kullanan öğrencilerin sorunsuz ve güvenli bir şekilde kendi bilgisayarlarında çalıştırabilmesi için temizler, paketler ve paylaşıma hazır hale getirir.
 ---
 

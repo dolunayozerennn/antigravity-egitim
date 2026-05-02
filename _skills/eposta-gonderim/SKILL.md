@@ -1,5 +1,5 @@
 ---
-name: outreach
+name: eposta-gonderim
 description: |
   Herhangi bir outreach senaryosu için e-posta gönderim motoru. Lead generation'dan gelen 
   listeleri alır, LLM ile doğal Türkçe kişiselleştirme yapar, Gmail API üzerinden gönderir 

@@ -1,5 +1,5 @@
 ---
-name: Deploy & Paylaşım Agenti
+name: yayinla-paylas
 description: |
   Projeleri production ortamına (Railway) taşıma ve dış dünyayla
   güvenli bir şekilde paylaşıma hazır hale getirme sürecini

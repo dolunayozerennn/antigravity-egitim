@@ -1,3 +1,8 @@
+---
+name: Chat_Hafizasi
+description: Telegram veya chat tabanlı botların kullanıcı etkileşimlerini merkezi Notion Inline Database'e kaydetmesi için kullanılır. Bot memory, geriye dönük debug ve "dün ne demiştin" tarzı taleplerin analizinde tetiklenir.
+---
+
 # 🧠 SKILL: Chat Hafızası (Bot Memory)
 
 ## 🎯 Amaç

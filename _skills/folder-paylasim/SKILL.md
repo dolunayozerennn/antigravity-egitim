@@ -1,5 +1,5 @@
 ---
-name: Paylaşım (Skill, Proje & Starter Kit)
+name: folder-paylasim
 description: |
   Antigravity içindeki skill'leri, projeleri veya tüm Antigravity yapısını 
   başkalarının güvenle kullanabileceği formata dönüştürür. 

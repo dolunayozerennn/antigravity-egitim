@@ -1,5 +1,5 @@
 ---
-name: Fatura Oluşturucu
+name: fatura-olusturucu
 description: Sosyal medya işbirlikleri için otomatik PDF invoice üreten skill — elle bilgi veya e-posta thread'inden otomatik çıkarım ile
 ---
 

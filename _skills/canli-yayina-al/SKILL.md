@@ -1,5 +1,5 @@
 ---
-name: Production Deploy (GitHub + Railway)
+name: canli-yayina-al
 description: |
   Bir projeyi Antigravity ortamından production'a taşımak için kullan.
   GitHub MCP üzerinden kod push eder, Railway GraphQL API ile 7/24 deploy eder.
