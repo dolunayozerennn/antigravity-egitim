@@ -58,12 +58,41 @@ python main.py
 
 ## Gerekli Env Variables
 
-| Değişken | Açıklama |
-|----------|----------|
-| `APIFY_API_KEY_1` ... `APIFY_API_KEY_N` | Apify API anahtarları (en az 1 zorunlu, rotasyonlu) |
-| `GROQ_API_KEY` | Groq API anahtarı (AI özet için, opsiyonel) |
-| `GMAIL_OAUTH_JSON` | Gmail OAuth token JSON (Railway'de env olarak) |
-| `ENV` | `production` veya `development` (DRY_RUN kontrolü) |
+| Değişken | Default | Açıklama |
+|----------|---------|----------|
+| `APIFY_API_KEY_1..N` | — | Apify API anahtarları (en az 1 zorunlu, quota'da rotasyonlu) |
+| `GROQ_API_KEY` | — | Groq API (AI özet, opsiyonel) |
+| `GMAIL_OAUTH_JSON` | — | Gmail OAuth token JSON (Railway production zorunlu) |
+| `ENV` | `development` | `production` veya `development` |
+| `NOTION_SOCIAL_TOKEN` / `NOTION_API_TOKEN` | — | Notion entegrasyon token'ı |
+| `NOTION_DB_NOTIFIED_VIDEOS` | — | Bildirilen videolar DB ID'si |
+| `NOTION_DB_OPS_LOG` | — | Ops log DB ID'si |
+| `IG_VIEW_THRESHOLD` | `200000` | Instagram baraj |
+| `TIKTOK_VIEW_THRESHOLD` | `100000` | TikTok baraj |
+| `YT_SHORTS_THRESHOLD` | `100000` | YouTube Shorts baraj |
+| `YT_LONG_THRESHOLD` | `10000` | YouTube long-form baraj |
+| `LOOKBACK_DAYS` | `7` | Kaç günlük geriye bakış |
+| `IG_USERNAME` | `dolunay_ozeren` | Instagram profil |
+| `TIKTOK_USERNAME` | `dolunayozeren` | TikTok profil |
+| `YOUTUBE_SEARCH_QUERY` | `dolunayozeren` | YouTube search keyword |
+| `YOUTUBE_CHANNEL_KEYWORDS` | `dolunayozeren,dolunay özeren,dolunay ozeren` | Kanal eşleştirme (CSV) |
+| `REPORT_TO` | `ceren@dolunay.ai` | Rapor alıcısı |
+| `REPORT_FROM` | `Dolunay Özeren <dolunay@dolunay.ai>` | Gönderici |
+| `TECH_ERROR_TO` | `ozerendolunay@gmail.com` | Teknik hata alıcısı |
+
+## 🩺 Diagnose
+
+Production'da bir şey kırıkmış gibi görünüyorsa **önce diagnose çalıştır**:
+
+```bash
+# Lokal
+ENV=development python -m scripts.diagnose
+
+# Railway'de
+railway run python -m scripts.diagnose
+```
+
+3 Apify actor + Notion DB schema + Gmail OAuth durumunu kontrol eder.
 
 ## Deploy Bilgileri
 

@@ -2,130 +2,177 @@ import os
 import json
 import logging
 from datetime import datetime, timezone
-from config import settings
+
 import requests
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from config import settings
 
 logger = logging.getLogger(__name__)
 
-# Fallback for local dev/dry run
 LOCAL_STATE_FILE = "notified_state.json"
+NOTION_API = "https://api.notion.com/v1"
+
+
+class NotionStateError(Exception):
+    """Notion state'e yazma/okuma başarısız."""
+
 
 class NotifiedVideosManager:
     def __init__(self):
-        self.use_local = settings.IS_DRY_RUN
         self.notion_token = os.environ.get("NOTION_SOCIAL_TOKEN") or os.environ.get("NOTION_API_TOKEN")
         self.db_id = os.environ.get("NOTION_DB_NOTIFIED_VIDEOS")
         self.local_cache = set()
-        
-        if self.use_local or not self.db_id:
-            logger.info("Lokal state yönetimi kullanılıyor (DRY_RUN veya DB_ID eksik).")
+        self.url_property_name = "URL"
+        self.url_property_type = "url"  # default; init'te schema'dan override
+
+        # Notion state'e gerçek erişim varsa onu, yoksa lokal JSON'a düş
+        self.use_local = settings.IS_DRY_RUN or not (self.notion_token and self.db_id)
+
+        if self.use_local:
+            reason = "DRY_RUN" if settings.IS_DRY_RUN else "NOTION env eksik"
+            logger.info(f"State: lokal JSON kullanılıyor ({reason})")
             self._load_local_state()
         else:
-            logger.info("Notion state yönetimi kullanılıyor.")
-            self._load_notion_state()
+            logger.info("State: Notion DB kullanılıyor")
+            try:
+                self._detect_schema()
+                self._load_notion_state()
+            except Exception as e:
+                logger.error(f"Notion state init başarısız, lokal fallback'e geçiliyor: {e}")
+                self.use_local = True
+                self._load_local_state()
 
+    # ── Local fallback ────────────────────────────────────────────────
     def _load_local_state(self):
         if os.path.exists(LOCAL_STATE_FILE):
             try:
-                with open(LOCAL_STATE_FILE, "r") as f:
-                    data = json.load(f)
-                    self.local_cache = set(data.get("notified_urls", []))
+                with open(LOCAL_STATE_FILE) as f:
+                    self.local_cache = set(json.load(f).get("notified_urls", []))
             except Exception as e:
                 logger.error(f"Lokal state okunamadı: {e}")
 
     def _save_local_state(self):
         try:
             with open(LOCAL_STATE_FILE, "w") as f:
-                json.dump({"notified_urls": list(self.local_cache)}, f)
+                json.dump({"notified_urls": sorted(self.local_cache)}, f)
         except Exception as e:
             logger.error(f"Lokal state kaydedilemedi: {e}")
 
-    def _load_notion_state(self):
-        if not self.notion_token or not self.db_id:
-            return
-            
-        headers = {
+    # ── Notion ────────────────────────────────────────────────────────
+    def _headers(self):
+        return {
             "Authorization": f"Bearer {self.notion_token}",
             "Notion-Version": "2022-06-28",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-        
-        # We query the DB and fetch all Video URLs
-        try:
-            url = f"https://api.notion.com/v1/databases/{self.db_id}/query"
-            has_more = True
-            next_cursor = None
-            
-            while has_more:
-                payload = {}
-                if next_cursor:
-                    payload["start_cursor"] = next_cursor
-                    
-                resp = requests.post(url, headers=headers, json=payload, timeout=15)
-                resp.raise_for_status()
-                data = resp.json()
-                
-                for item in data.get("results", []):
-                    props = item.get("properties", {})
-                    # Assume there's a property named 'URL' of type 'url' or 'title'
-                    url_prop = props.get("URL", {})
-                    val = None
-                    if url_prop.get("type") == "url":
-                        val = url_prop.get("url")
-                    elif url_prop.get("type") == "rich_text":
-                        rt = url_prop.get("rich_text", [])
-                        if rt: val = rt[0].get("plain_text")
-                    elif url_prop.get("type") == "title":
-                        rt = url_prop.get("title", [])
-                        if rt: val = rt[0].get("plain_text")
-                        
-                    if val:
-                        self.local_cache.add(val.strip())
-                        
-                has_more = data.get("has_more", False)
-                next_cursor = data.get("next_cursor")
-                
-            logger.info(f"Notion'dan {len(self.local_cache)} bildirilmiş URL yüklendi.")
-        except Exception as e:
-            logger.error(f"Notion state yüklenemedi: {e}")
 
-    def is_notified(self, url: str) -> bool:
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=8))
+    def _detect_schema(self):
+        """DB schema'sını çek; URL property tipini ('url' / 'title' / 'rich_text') tespit et."""
+        r = requests.get(f"{NOTION_API}/databases/{self.db_id}", headers=self._headers(), timeout=15)
+        r.raise_for_status()
+        props = r.json().get("properties", {})
+
+        # Önce 'URL' adlı property'yi ara, yoksa title olan property'yi al
+        if "URL" in props:
+            self.url_property_name = "URL"
+            self.url_property_type = props["URL"].get("type", "url")
+        else:
+            for name, meta in props.items():
+                if meta.get("type") == "title":
+                    self.url_property_name = name
+                    self.url_property_type = "title"
+                    break
+            else:
+                raise NotionStateError("DB'de 'URL' veya title property'si bulunamadı")
+
+        logger.info(
+            f"Notion schema detected: prop={self.url_property_name!r} type={self.url_property_type}"
+        )
+
+    def _extract_url(self, props):
+        prop = props.get(self.url_property_name, {})
+        ptype = prop.get("type")
+        if ptype == "url":
+            return prop.get("url")
+        if ptype in ("rich_text", "title"):
+            arr = prop.get(ptype, [])
+            if arr:
+                return arr[0].get("plain_text")
+        return None
+
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=8))
+    def _query_page(self, payload):
+        r = requests.post(
+            f"{NOTION_API}/databases/{self.db_id}/query",
+            headers=self._headers(), json=payload, timeout=20,
+        )
+        r.raise_for_status()
+        return r.json()
+
+    def _load_notion_state(self):
+        next_cursor = None
+        while True:
+            payload = {"page_size": 100}
+            if next_cursor:
+                payload["start_cursor"] = next_cursor
+            data = self._query_page(payload)
+            for item in data.get("results", []):
+                val = self._extract_url(item.get("properties", {}))
+                if val:
+                    self.local_cache.add(val.strip())
+            if not data.get("has_more"):
+                break
+            next_cursor = data.get("next_cursor")
+        logger.info(f"Notion'dan {len(self.local_cache)} bildirilmiş URL yüklendi")
+
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=8))
+    def _save_to_notion(self, url, platform, views):
+        url_value = (
+            {"url": url} if self.url_property_type == "url"
+            else {self.url_property_type: [{"text": {"content": url}}]}
+        )
+        properties = {
+            self.url_property_name: url_value,
+            "Platform": {"select": {"name": platform}},
+            "Views": {"number": views},
+            "Notified At": {"date": {"start": datetime.now(timezone.utc).isoformat()}},
+        }
+        # Eğer URL property "url" tipindeyse title da ayrıca dolmak ister; title prop'u ayrıca yoksa skip
+        if self.url_property_type == "url":
+            # Bazı şablonlar 'Name' veya 'Title' başlığı zorunlu kılar; sessizce dene
+            properties.setdefault("Name", {"title": [{"text": {"content": url}}]})
+
+        r = requests.post(
+            f"{NOTION_API}/pages",
+            headers=self._headers(),
+            json={"parent": {"database_id": self.db_id}, "properties": properties},
+            timeout=15,
+        )
+        if r.status_code >= 400:
+            raise NotionStateError(f"Notion {r.status_code}: {r.text[:400]}")
+
+    # ── Public API ────────────────────────────────────────────────────
+    def is_notified(self, url):
+        if not url:
+            return False
         return url.strip() in self.local_cache
 
-    def mark_as_notified(self, url: str, platform: str, views: int):
-        url = url.strip()
-        if not url: return
-        
-        self.local_cache.add(url)
-        
-        if self.use_local or not self.db_id:
-            self._save_local_state()
-        else:
-            self._save_to_notion(url, platform, views)
-
-    def _save_to_notion(self, url: str, platform: str, views: int):
-        if not self.notion_token or not self.db_id:
+    def mark_as_notified(self, url, platform, views):
+        """Başarılı: cache + Notion. Notion fail: cache'den de geri al ve raise."""
+        url = (url or "").strip()
+        if not url:
             return
-            
-        headers = {
-            "Authorization": f"Bearer {self.notion_token}",
-            "Notion-Version": "2022-06-28",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "parent": {"database_id": self.db_id},
-            "properties": {
-                "URL": {"title": [{"text": {"content": url}}]},
-                "Platform": {"select": {"name": platform}},
-                "Views": {"number": views},
-                "Notified At": {"date": {"start": datetime.now(timezone.utc).isoformat()}}
-            }
-        }
-        
+
+        self.local_cache.add(url)
+
+        if self.use_local:
+            self._save_local_state()
+            return
+
         try:
-            resp = requests.post("https://api.notion.com/v1/pages", headers=headers, json=payload, timeout=15)
-            resp.raise_for_status()
-            logger.debug(f"URL Notion'a eklendi: {url}")
+            self._save_to_notion(url, platform, views)
         except Exception as e:
-            logger.error(f"Notion'a URL kaydedilemedi ({url}): {e}")
+            self.local_cache.discard(url)  # Notion'da yoksa cache'de de tutma — duplicate önle
+            raise NotionStateError(f"URL Notion'a yazılamadı ({url}): {e}") from e
