@@ -369,7 +369,7 @@
 
     <header>
         <h1>Otonom Marka İş Birliği Asistanı</h1>
-        <div class="subtitle">Yapay zeka destekli, Notion tabanlı otomatik portföy bulma ve uçtan uca e-posta iletişim sekansı. (Amnesia-Free Edition)</div>
+        <div class="subtitle">Rakip Reels analizinden 3 adımlı e-posta sekansına kadar, Notion tabanlı, GPT destekli ve Railway'de 7/24 çalışan uçtan uca outreach pipeline'ı.</div>
         <div class="controls">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="11" width="18" height="10" rx="2"></rect>
@@ -387,42 +387,62 @@
         const nodesData = [
             {
                 title: 'Marka Keşfi',
-                desc: 'Instagram Reels ve diğer veriler üzerinden potansiyel müşteri listesi oluşturulur.',
+                desc: 'Rakip influencer Reels\'leri Apify ile çekilir, AI markaları tespit edilir, Notion\'da daha önce iletişim kurulanlar elenir.',
                 icon: '🔍',
                 subSteps: [
-                    'Reels içerikleri taranıyor',
-                    'Potansiyel işletmeler bulunuyor',
-                    'Notion veri tabanından benzersizlik kontrolü yapılıyor'
+                    'Apify token rotasyonu ile Reels içerikleri çekiliyor',
+                    'Caption mention\'larından AI markaları ayıklanıyor (config/brand_filters.json)',
+                    'Notion Brand Reachout DB\'de zaten var olanlar eleniyor'
+                ]
+            },
+            {
+                title: 'İletişim Bulma & Doğrulama',
+                desc: 'Yeni markalara 4 kademeli waterfall ile e-posta bulunur ve Hunter.io ile doğrulanır — risky/unknown sonuçlar default reddedilir.',
+                icon: '📡',
+                subSteps: [
+                    'Web scrape → Hunter domain → Instagram bio waterfall',
+                    'Hunter email verifier (risky/unknown reddedilir)',
+                    'Placeholder/sentry/bozuk TLD gürültüsü filtreleniyor'
                 ]
             },
             {
                 title: 'İlk İletişim (Outreach)',
-                desc: 'Yapay zeka asistanı profil özelinde e-posta hazırlayıp gönderir.',
+                desc: 'GPT-4.1-nano kişiselleştirilmiş HTML+text e-posta üretir, Gmail API üzerinden gönderilir; günlük 20 e-posta limiti uygulanır.',
                 icon: '✉️',
                 subSteps: [
-                    'Müşteri işletmesinin analizleri elde ediliyor',
-                    'Kişiselleştirilmiş ilk e-posta metni yazılıyor',
-                    'Adaya otomatik şekilde teslimat sağlanıyor'
+                    'GPT structured JSON output ile e-posta üretiliyor',
+                    'Profil verisi config/dolunay_profile.json\'dan yükleniyor',
+                    'Gmail token bucket rate limit + anti-spam aralığı ile gönderiliyor'
                 ]
             },
             {
                 title: 'Posta Kutusu İzleme',
-                desc: 'Gelen e-postalar asistan tarafından incelenip olumlu/olumsuz olarak etiketlenir.',
+                desc: 'Her job öncesi Gmail thread\'leri taranır, yanıt ve bounce\'lar Notion durumuna işlenir.',
                 icon: '👀',
                 subSteps: [
-                    'Gönderilen maillerdeki konuşmalar takip ediliyor',
-                    'Hatalı iletilen (bounce) mailler ayıklanıyor',
-                    'Gelen yanıt varsa sisteme anında not düşülüyor'
+                    'Gönderilmiş thread\'lerin From/Subject başlıkları kontrol ediliyor',
+                    'Bounce (mailer-daemon, undeliverable) pattern\'leri ayıklanıyor',
+                    'Notion Brand Reachout durumu Replied/Bounced olarak güncelleniyor'
                 ]
             },
             {
-                title: 'Otomatik Takip (Follow-Up)',
-                desc: 'Yanıt vermeyen işletmelere Notion üzerinden gün sayılarak kibar hatırlatma e-postaları çıkarılır.',
+                title: '3 Adımlı Follow-Up',
+                desc: '5+ gün cevapsız markalara reply-in-thread olarak hatırlatma; markanın son IG paylaşımları analiz edilerek kişiselleştirme yapılır. 10. günde nazik kapanış.',
                 icon: '⏱️',
                 subSteps: [
-                    '5 günü geçmiş cevapsız mailler tespit ediliyor',
-                    'Kişiselleştirilmiş yeni bir hatırlatma yollanıyor',
-                    'Yanıt alınamadıysa dosya otomatik kapatılıyor'
+                    'FU1: 5+ gün cevapsız markaya kişiselleştirilmiş hatırlatma',
+                    'Brand research: markanın son 3-5 IG paylaşımı GPT ile özetleniyor',
+                    'FU2: 10. gün nazik kapanış e-postası, Notion\'da Not_Interested'
+                ]
+            },
+            {
+                title: 'Sağlık & Raporlama',
+                desc: 'Her run sonu metrikleri Notion Ops Log\'a yazılır, fallback oranı %10\'u aşarsa Telegram uyarısı; Cuma günleri haftalık özet rapor.',
+                icon: '📊',
+                subSteps: [
+                    'Run sonu metrikler: scraped, verified, sent, fallback %',
+                    '/health/deps endpoint Notion + Apify token sayısını döner',
+                    'Cuma 10:00 TR — haftalık Telegram özeti gönderiliyor'
                 ]
             }
         ];

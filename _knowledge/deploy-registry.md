@@ -137,9 +137,9 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Marka_Is_Birligi`)
 - **Lokal Klasör:** `Projeler/Marka_Is_Birligi/`
 - **Start Komutu:** `python railway_scheduler.py`
-- **Son Deploy:** 2026-04-16 (fix: Apify key rotasyonunda limit hatası durumu giderildi ve hata alındığında failover yapısı eklendi)
-- **Durum:** ✅ Aktif (Outreach + Follow-Up + Rapor — Notion state + ops_logger)
-- **Hassasiyetler:** Apify key rotasyonu (failover yapisi mevcut), Notion ops_logger queue flush
+- **Son Deploy:** 2026-05-02 (refactor P0–P3: FU2 + Apify-tabanlı brand research, Hunter risky/unknown reddi, retry/backoff util, token bucket rate limit, ops_logger SIGTERM flush, /health/deps, run-end metrics + fallback alert, env_loader, brand_filters/dolunay_profile config, GPT structured output, dry_run propagate, pytest 44 test) — commit `d417fa9`
+- **Durum:** ✅ Aktif (Outreach + 3 adımlı Follow-Up + Rapor — Notion state + ops_logger)
+- **Hassasiyetler:** Apify key rotasyonu (failover yapısı mevcut), Notion ops_logger queue flush (SIGTERM 5sn timeout), Hunter `risky`/`unknown` default reddedilir (`ALLOW_RISKY_EMAILS=true` ile opt-in)
 
 ---
 
