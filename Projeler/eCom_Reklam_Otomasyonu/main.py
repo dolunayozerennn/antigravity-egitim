@@ -7,6 +7,7 @@ Sadece ürün linki verilir, pipeline otomatik işler.
 
 v3.0 — Deterministik, URL-tabanlı tam otomasyon
 """
+from __future__ import annotations
 
 import asyncio
 import io
@@ -27,6 +28,7 @@ from telegram.ext import (
     filters,
     ContextTypes,
 )
+from telegram.error import Conflict
 
 # ── Config (Fail-fast boot) ──
 from config import settings
@@ -94,11 +96,49 @@ def _handle_task_exception(task: asyncio.Task):
         pass
 
 
-async def _cleanup_idle_sessions():
-    """Bellek sızıntısını önle — inaktif session'ları periyodik temizle."""
+def _spawn_bg_task(app, coro, name: str | None = None) -> asyncio.Task:
+    """Arka plan task'ı oluştur ve `app.bot_data['bg_tasks']` setine bağla.
+
+    asyncio.create_task referansı set'te tutulduğu için event loop zayıf-referans
+    GC'sine kurban gitmez. done_callback ile hem hata loglanır hem set'ten çıkarılır.
+    """
+    task = asyncio.create_task(coro, name=name) if name else asyncio.create_task(coro)
+    bg_tasks: set = app.bot_data.setdefault("bg_tasks", set())
+    bg_tasks.add(task)
+    task.add_done_callback(bg_tasks.discard)
+    task.add_done_callback(_handle_task_exception)
+    return task
+
+
+async def _cleanup_idle_sessions(app=None):
+    """Bellek sızıntısını önle — inaktif session'ları periyodik temizle.
+
+    Ayrıca: 5dk+ COLLECTING_PREFERENCES watchdog → soft reset + kullanıcıya bildirim.
+    """
     while True:
         await asyncio.sleep(300)  # 5 dakikada bir kontrol et
         try:
+            # ── COLLECTING_PREFERENCES watchdog (5dk+) ──
+            try:
+                stuck_uids = conversation_mgr.find_stuck_collecting_preferences(max_idle_seconds=300)
+                for uid in stuck_uids:
+                    conversation_mgr.soft_reset_to_idle(uid)
+                    if app is not None:
+                        try:
+                            await app.bot.send_message(
+                                chat_id=uid,
+                                text=(
+                                    "⏱️ Tercih seçimi zaman aşımına uğradı.\n\n"
+                                    "Yeni link bekliyorum — ürün URL'sini gönderebilirsin. 🚀"
+                                ),
+                            )
+                        except Exception as send_exc:
+                            log.warning(f"Watchdog bildirim gönderilemedi user={uid}: {send_exc}")
+                if stuck_uids:
+                    log.info(f"COLLECTING_PREFERENCES watchdog: {len(stuck_uids)} session soft-reset edildi")
+            except Exception:
+                log.error("COLLECTING_PREFERENCES watchdog hatası", exc_info=True)
+
             import time as _time
             now = _time.time()
             to_delete = []
@@ -163,18 +203,40 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await chat_tracker.log_interaction(str(user.id), "/start", reply)
 
 
+async def _cancel_user_production(user_id: int) -> bool:
+    """Kullanıcının çalışan üretim task'ını gerçekten cancel eder.
+
+    Returns:
+        bool: Aktif bir task iptal edildiyse True, yoksa False.
+    """
+    session = conversation_mgr.get_session(user_id)
+    cancelled = False
+    task = session.production_task
+    if task is not None and not task.done():
+        task.cancel()
+        cancelled = True
+        log.info(f"Üretim task'ı iptal edildi: user={user_id}")
+    session.production_task = None
+    session.production_progress_msg_id = None
+    session.production_chat_id = None
+    session.reset()
+    return cancelled
+
+
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """/cancel komutu — mevcut işlemi iptal eder."""
+    """/cancel komutu — mevcut işlemi iptal eder (arka plan task dahil)."""
     user = update.effective_user
     if not is_authorized(user.id):
         return await unauthorized_reply(update)
 
-    session = conversation_mgr.get_session(user.id)
-    session.reset()
-    await update.message.reply_text(
-        "❌ İptal edildi.\n/start yazarak yeni bir video üretimine başlayabilirsin.",
-        parse_mode="Markdown",
+    cancelled = await _cancel_user_production(user.id)
+    msg = (
+        "❌ İptal edildi — arka plandaki üretim durduruldu.\n"
+        if cancelled
+        else "❌ İptal edildi.\n"
     )
+    msg += "/start yazarak yeni bir video üretimine başlayabilirsin."
+    await update.message.reply_text(msg, parse_mode="Markdown")
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -224,12 +286,20 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # SCENARIO_APPROVAL: Metin tabanlı onay/iptal
     if result.get("action") == "approve":
         reply_msg = "🚀 **Üretim başlıyor!**\nHer adımda bildirim alacaksın."
-        await update.message.reply_text(reply_msg, parse_mode="Markdown")
+        cancel_kb = InlineKeyboardMarkup([[InlineKeyboardButton("❌ İptal", callback_data="prod:cancel")]])
+        progress_msg = await update.message.reply_text(reply_msg, parse_mode="Markdown", reply_markup=cancel_kb)
         await chat_tracker.log_interaction(str(user.id), text, reply_msg)
-        task = asyncio.create_task(
-            _run_production(update.effective_message, user.id)
+
+        session = conversation_mgr.get_session(user.id)
+        session.production_progress_msg_id = progress_msg.message_id
+        session.production_chat_id = progress_msg.chat_id
+
+        task = _spawn_bg_task(
+            context.application,
+            _run_production(update.effective_message, user.id),
+            name=f"production-{user.id}",
         )
-        task.add_done_callback(_handle_task_exception)
+        session.production_task = task
         return
     elif result.get("action") == "cancel":
         await update.message.reply_text(result["reply"], parse_mode="Markdown")
@@ -283,10 +353,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Eğer URL bulunduysa Pipeline'ı başlat
     if result.get("has_url") and result.get("url"):
-        task = asyncio.create_task(
-            _process_url_and_scenario(update.effective_message, user.id, result["url"])
+        _spawn_bg_task(
+            context.application,
+            _process_url_and_scenario(update.effective_message, user.id, result["url"]),
+            name=f"url-scenario-{user.id}",
         )
-        task.add_done_callback(_handle_task_exception)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -374,15 +445,38 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "scenario_approve":
         result = conversation_mgr.handle_scenario_response(user.id, "approve")
         await query.edit_message_reply_markup(reply_markup=None)
-        await query.message.reply_text(
+        cancel_kb = InlineKeyboardMarkup([[InlineKeyboardButton("❌ İptal", callback_data="prod:cancel")]])
+        progress_msg = await query.message.reply_text(
             "🚀 **Üretim başlıyor!**\n"
             "Her adımda bildirim alacaksın.",
             parse_mode="Markdown",
+            reply_markup=cancel_kb,
         )
-        task = asyncio.create_task(
-            _run_production(query.message, user.id)
+
+        session = conversation_mgr.get_session(user.id)
+        session.production_progress_msg_id = progress_msg.message_id
+        session.production_chat_id = progress_msg.chat_id
+
+        task = _spawn_bg_task(
+            context.application,
+            _run_production(query.message, user.id),
+            name=f"production-{user.id}",
         )
-        task.add_done_callback(_handle_task_exception)
+        session.production_task = task
+
+    elif data == "prod:cancel":
+        # Üretim sırasında "❌ İptal" butonu — gerçek task cancel
+        cancelled = await _cancel_user_production(user.id)
+        try:
+            await query.edit_message_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        msg = (
+            "❌ Üretim iptal edildi — arka plandaki task durduruldu."
+            if cancelled
+            else "❌ İptal edildi (aktif üretim bulunamadı)."
+        )
+        await query.message.reply_text(msg, parse_mode="Markdown")
 
     elif data == "scenario_cancel":
         result = conversation_mgr.handle_scenario_response(user.id, "cancel")
@@ -437,10 +531,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await query.message.reply_text(btn_data["question"], reply_markup=markup)
             # Eğer URL algılandıysa (Agent text handle sonrası pipeline başlatmak isterse)
             if result.get("has_url") and result.get("url"):
-                task = asyncio.create_task(
-                    _process_url_and_scenario(query.message, user.id, result["url"])
+                _spawn_bg_task(
+                    context.application,
+                    _process_url_and_scenario(query.message, user.id, result["url"]),
+                    name=f"url-scenario-{user.id}",
                 )
-                task.add_done_callback(_handle_task_exception)
 
     else:
         log.warning(f"Bilinmeyen callback data: {data}")
@@ -460,13 +555,16 @@ async def _run_production(message, user_id: int):
         await message.reply_text("⚠️ Senaryo bulunamadı. /start ile tekrar başla.")
         return
 
+    # Progress mesajlarına da iptal butonu eklemek için yardımcı keyboard
+    cancel_kb = InlineKeyboardMarkup([[InlineKeyboardButton("❌ İptal", callback_data="prod:cancel")]])
+
     async def progress_callback(step: str, msg: str):
         try:
-            await message.reply_text(msg, parse_mode="Markdown")
+            await message.reply_text(msg, parse_mode="Markdown", reply_markup=cancel_kb)
         except Exception:
             # Markdown parse hatası — düz metin ile tekrar dene
             try:
-                await message.reply_text(msg, parse_mode=None)
+                await message.reply_text(msg, parse_mode=None, reply_markup=cancel_kb)
             except Exception:
                 log.error(f"Progress bildirim hatası: {step}", exc_info=True)
 
@@ -550,6 +648,19 @@ async def _run_production(message, user_id: int):
             await chat_tracker.log_interaction(str(user_id), "[Sistem - Hata]", error_msg)
             session.reset()
 
+    except asyncio.CancelledError:
+        # /cancel veya "❌ İptal" butonu → graceful kapanma
+        log.info(f"Production pipeline iptal edildi (CancelledError): user={user_id}")
+        try:
+            await message.reply_text(
+                "🛑 Üretim iptal edildi — arka plandaki API çağrıları durduruluyor.",
+                parse_mode=None,
+            )
+        except Exception:
+            pass
+        # Session zaten _cancel_user_production içinde reset edildi; emniyet için tekrar
+        session.production_task = None
+        raise  # Task'ın CANCELLED state'ine düşmesi için propagate et
     except Exception:
         log.error("Production pipeline çöktü", exc_info=True)
         await message.reply_text(
@@ -558,6 +669,10 @@ async def _run_production(message, user_id: int):
             parse_mode=None,
         )
         session.reset()
+    finally:
+        # Üretim task referansını temizle (zaten cancel edildiyse no-op)
+        if session.production_task is not None and session.production_task.done():
+            session.production_task = None
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -569,16 +684,17 @@ _CRASHED_WITH_CONFLICT = False
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Global hata yakalayıcı — Telegram bot'un çökmesini önler."""
     
-    # Sadece exc_info'yu eğer The context.error is set, to prevent NoneType logging 
+    # Sadece exc_info'yu eğer The context.error is set, to prevent NoneType logging
     err_str = str(context.error)
     log.error(f"Telegram handler hatası: {err_str}")
 
     try:
-        if "Conflict" in err_str or "getUpdates" in err_str:
+        # isinstance ile tip kontrolü — string match kırılgan
+        if isinstance(context.error, Conflict) or "getUpdates" in err_str:
             global _CRASHED_WITH_CONFLICT
             _CRASHED_WITH_CONFLICT = True
             log.warning("🔄 Conflict algılandı! Uygulama durdurulacak ve retry mekanizması devreye girecek.")
-            
+
     except Exception as check_exc:
         log.error(f"Conflict kontrolü sırasında hata: {check_exc}")
 
@@ -640,13 +756,16 @@ def main():
         # Conflict hatasını önle: eski webhook/polling session'ını temizle
         try:
             await app_instance.bot.delete_webhook(drop_pending_updates=True)
-            log.info("✅ Webhook temizlendi, Telegram bağlantısının kesilmesi için 2 saniye bekleniyor...")
-            await asyncio.sleep(2) # Ghost instance ve 409 riskine karşı bekleme
+            log.info("✅ Webhook temizlendi, Telegram bağlantısının kesilmesi için 5 saniye bekleniyor...")
+            await asyncio.sleep(5)  # Ghost instance ve 409 riskine karşı uzatılmış bekleme
         except Exception as e:
             log.warning(f"Webhook silme uyarısı (devam ediliyor): {e}")
 
-        # Session bellek temizleme task'ı
-        asyncio.create_task(_cleanup_idle_sessions())
+        # Session bellek temizleme task'ı (referansı bot_data'da tut — GC'ye karşı)
+        cleanup_task = asyncio.create_task(_cleanup_idle_sessions(app_instance), name="session-cleanup")
+        cleanup_task.add_done_callback(_handle_task_exception)
+        app_instance.bot_data.setdefault("bg_tasks", set()).add(cleanup_task)
+        cleanup_task.add_done_callback(app_instance.bot_data["bg_tasks"].discard)
 
     app.post_init = _post_init
 

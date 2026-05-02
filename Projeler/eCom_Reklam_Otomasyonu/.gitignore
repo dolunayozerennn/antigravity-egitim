@@ -36,3 +36,11 @@ Thumbs.db
 # Storyboard / demo dosyaları
 storyboard*.json
 demo*.json
+
+# Scratch / scratch test / log dump dosyaları
+*_tmp.py
+latest_logs.txt
+recent_logs.txt
+notion_logs.json
+deployment_logs.json
+scratch_test_*.py

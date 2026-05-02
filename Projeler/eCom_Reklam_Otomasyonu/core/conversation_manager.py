@@ -15,8 +15,10 @@ IDLE → URL_PROCESSING → RESEARCHING → SCENARIO_APPROVAL → PRODUCING → 
 v3.1 — Akıllı agent katmanı: state-aware yanıtlar, bağlam koruması
 """
 
+import asyncio
 import threading
 from enum import Enum, auto
+from typing import Optional
 
 from logger import get_logger
 
@@ -84,6 +86,16 @@ class UserSession:
         # Kullanıcının gönderdiği ancak henüz işlenmemiş URL (tercihler sorulurken tutulur)
         self.pending_url: str | None = None
 
+        # Per-session asyncio.Lock — aynı kullanıcının paralel mesajlarında race önler.
+        # Lazy: ilk erişimde oluşur (event loop'a bağlı olmamak için).
+        self._lock: Optional[asyncio.Lock] = None
+
+        # Üretim pipeline task referansı (iptal için)
+        self.production_task: Optional[asyncio.Task] = None
+        # Üretim progress mesajının ID'si (UI buton güncelleme için)
+        self.production_progress_msg_id: Optional[int] = None
+        self.production_chat_id: Optional[int] = None
+
         # Bellek yönetimi
         import time as _time
         self._last_activity: float = _time.time()
@@ -102,7 +114,10 @@ class UserSession:
         self.pending_url = None
         self.preferences = {}
         self.pending_choice_key = None
-        
+        self.production_task = None
+        self.production_progress_msg_id = None
+        self.production_chat_id = None
+
         import time as _time
         self._last_activity = _time.time()
 
@@ -124,6 +139,13 @@ class UserSession:
         self.collected_data = data
         import time as _time
         self._last_activity = _time.time()
+
+    @property
+    def lock(self) -> asyncio.Lock:
+        """Lazy per-session asyncio.Lock."""
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
 
     @property
     def active_brand(self) -> str:
@@ -157,17 +179,23 @@ class ConversationManager:
         """
         self.openai = openai_service
         self.sessions: dict[int, UserSession] = {}
+        # Sessions dict (üyelik / cleanup) için hafif sync lock — sadece
+        # `_cleanup_idle_sessions` gibi sync iterasyon noktalarında kullanılır.
+        # Asıl session field mutation'ları per-session asyncio.Lock altında yapılır.
         self._lock = threading.Lock()
 
     def get_session(self, user_id: int, user_name: str = "") -> UserSession:
-        """Kullanıcı session'ını getir veya oluştur. Thread-safe."""
-        with self._lock:
-            if user_id not in self.sessions:
-                self.sessions[user_id] = UserSession(user_id, user_name)
-            session = self.sessions[user_id]
-            if user_name:
-                session.user_name = user_name
-            return session
+        """Kullanıcı session'ını getir veya oluştur.
+
+        Tek event loop modelinde dict get/set GIL ile atomiktir; çoklu adımlı
+        mutasyonlar için ayrıca `async with self._lock` kullanılır.
+        """
+        if user_id not in self.sessions:
+            self.sessions[user_id] = UserSession(user_id, user_name)
+        session = self.sessions[user_id]
+        if user_name:
+            session.user_name = user_name
+        return session
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 🎬 /start KOMUTU
@@ -220,6 +248,13 @@ class ConversationManager:
         """
         session = self.get_session(user_id, user_name)
 
+        # Per-session lock — aynı kullanıcının paralel mesajlarını serileştirir,
+        # farklı kullanıcılar etkilenmez. Tüm session mutation'ları bu blok altında.
+        async with session.lock:
+            return await self._handle_text_message_locked(session, text, user_name)
+
+    async def _handle_text_message_locked(self, session: 'UserSession', text: str, user_name: str) -> dict:
+        """handle_text_message'ın gövdesi — caller per-session lock altında çağırır."""
         # Eğer mesajda yeni bir URL varsa, tercihler sorulduğunda kaybolmaması için hafızaya al
         from core.url_data_extractor import URLDataExtractor
         extracted_url = URLDataExtractor.extract_url_from_text(text)
@@ -465,40 +500,6 @@ class ConversationManager:
     # 🧠 STATE HANDLER'LAR (Agent Zekası)
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    def _handle_idle_state(self, session: UserSession, text: str,
-                           url: str | None, user_id: int, user_name: str) -> dict:
-        """IDLE state — yeni iş kabul et veya doğal sohbet."""
-        if url:
-            # İlk kez geliyorsa karşılama göster
-            if not session.welcomed:
-                session.welcomed = True
-                prefix = (
-                    "🎬 **Hoş geldin!** Reklam videonu hazırlıyorum.\n\n"
-                )
-            else:
-                prefix = ""
-
-            session.current_url = url
-            session.state = ConversationState.URL_PROCESSING
-            return self._reply(session, (
-                f"{prefix}"
-                f"🔗 URL algılandı! Ürün bilgileri çıkarılıyor...\n"
-                f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
-            ), has_url=True, url=url)
-
-        # URL yok — ilk mesaj mı yoksa devam eden sohbet mi?
-        if not session.welcomed:
-            session.welcomed = True
-            return self._reply(session, (
-                "🎬 **Merhaba!** Ben senin reklam video asistanınım.\n\n"
-                "Bana bir **ürün linki** gönder, "
-                "ben de o ürün için profesyonel bir reklam videosu hazırlayayım! 🚀\n\n"
-                "📎 _Örnek: https://www.marka.com/urun-adi_"
-            ))
-
-        # Zaten karşılama gösterildi — doğal bir yönlendirme yap
-        return self._reply(session, self._idle_guidance())
-
     def _handle_busy_state(self, session: UserSession, text: str,
                            url: str | None) -> dict:
         """İşlem devam ederken — bağlam-farkında durum bilgisi."""
@@ -535,87 +536,9 @@ class ConversationManager:
 
         return self._reply(session, status_msg)
 
-    def _handle_delivered_state(self, session: UserSession, text: str,
-                                url: str | None) -> dict:
-        """DELIVERED sonrası — yeni iş veya sohbet."""
-        if url:
-            # Yeni URL → soft reset (context koru) + yeni pipeline
-            old_brand = session.active_brand
-            session.soft_reset_for_new_url()
-            session.current_url = url
-            session.state = ConversationState.URL_PROCESSING
-
-            prefix = ""
-            if old_brand:
-                prefix = f"👍 {old_brand} videosu tamamlandı.\n\n"
-
-            return self._reply(session, (
-                f"{prefix}"
-                f"🔗 Yeni ürün linki algılandı! Bilgiler çıkarılıyor...\n"
-                f"_{url[:60]}{'...' if len(url) > 60 else ''}_"
-            ), has_url=True, url=url)
-
-        # URL yok — sohbet/teşekkür/soru
-        last_label = ""
-        if session.last_brand:
-            last_label = f" ({session.last_brand}"
-            if session.last_product:
-                last_label += f" — {session.last_product}"
-            last_label += ")"
-
-        return self._reply(session, (
-            f"✅ Son video{last_label} teslim edildi!\n\n"
-            "Yeni bir video için **ürün linkini** gönder 🚀"
-        ))
-
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # STATE: SCENARIO_APPROVAL
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    def _handle_scenario_text_response(self, session: UserSession, text: str) -> dict:
-        """
-        SCENARIO_APPROVAL state'inde metin mesajlarını işle.
-        "Onaylıyorum" / "İptal" yazabilir.
-        """
-        lower = text.lower().strip()
-
-        if any(w in lower for w in APPROVAL_KEYWORDS):
-            log.info(f"Metin tabanlı senaryo onayı: user={session.user_id}")
-            return {
-                "reply": None,  # main.py kendi mesajını gönderecek
-                "state": ConversationState.PRODUCING,
-                "has_url": False,
-                "url": None,
-                "action": "approve",
-            }
-        elif any(w in lower for w in CANCEL_KEYWORDS):
-            session.reset()
-            log.info(f"Metin tabanlı senaryo iptali: user={session.user_id}")
-            return {
-                "reply": (
-                    "❌ İptal edildi.\n\n"
-                    "Yeni bir video için **ürün linkini** gönder veya /start yaz."
-                ),
-                "state": session.state,
-                "has_url": False,
-                "url": None,
-                "action": "cancel",
-            }
-        else:
-            brand = session.active_brand
-            product_info = f" ({brand})" if brand else ""
-            return {
-                "reply": (
-                    f"📋 Senaryo onayı{product_info} bekliyor. Lütfen:\n"
-                    "• **Onayla** / **Tamam** → Üretim başlar\n"
-                    "• **İptal** / **Vazgeç** → İptal edilir\n\n"
-                    "Ya da yukarıdaki butonları kullanabilirsin."
-                ),
-                "state": session.state,
-                "has_url": False,
-                "url": None,
-                "action": None,
-            }
 
     def handle_scenario_response(self, user_id: int, action: str) -> dict:
         """
@@ -649,31 +572,32 @@ class ConversationManager:
     async def handle_preference_set(self, user_id: int, choice_key: str, choice_value: str) -> dict:
         """Kullanıcının tercih seçimini kaydeder ve LLM'ye bildirir."""
         session = self.get_session(user_id)
-        session.preferences[choice_key] = choice_value
-        session.pending_choice_key = None
+        async with session.lock:
+            session.preferences[choice_key] = choice_value
+            session.pending_choice_key = None
 
-        # ── Deterministik Tercih Tamamlama Kontrolü ──
-        # Gerekli tercihler tamam VE bekleyen URL var → LLM'e sormadan pipeline başlat
-        REQUIRED_PREFS = {"video_format", "video_style"}
-        collected = set(session.preferences.keys()) & REQUIRED_PREFS
+            # ── Deterministik Tercih Tamamlama Kontrolü ──
+            # Gerekli tercihler tamam VE bekleyen URL var → LLM'e sormadan pipeline başlat
+            REQUIRED_PREFS = {"video_format", "video_style"}
+            collected = set(session.preferences.keys()) & REQUIRED_PREFS
 
-        if collected >= REQUIRED_PREFS and session.pending_url:
-            url = session.pending_url
-            session.pending_url = None
-            session.current_url = url
-            session.state = ConversationState.URL_PROCESSING
-            log.info(
-                f"Deterministik tercih tamamlama: tüm tercihler tamam, "
-                f"pipeline başlatılıyor — user={user_id}, url={url[:60]}"
-            )
-            return self._reply(
-                session,
-                "✅ Tercihler kaydedildi! Şimdi ürün analizi ve senaryo oluşturma başlıyor...",
-                has_url=True,
-                url=url,
-            )
+            if collected >= REQUIRED_PREFS and session.pending_url:
+                url = session.pending_url
+                session.pending_url = None
+                session.current_url = url
+                session.state = ConversationState.URL_PROCESSING
+                log.info(
+                    f"Deterministik tercih tamamlama: tüm tercihler tamam, "
+                    f"pipeline başlatılıyor — user={user_id}, url={url[:60]}"
+                )
+                return self._reply(
+                    session,
+                    "✅ Tercihler kaydedildi! Şimdi ürün analizi ve senaryo oluşturma başlıyor...",
+                    has_url=True,
+                    url=url,
+                )
 
-        # Tercihler eksik → LLM'e danış (mevcut davranış)
+        # Tercihler eksik → LLM'e danış (mevcut davranış) — handle_text_message kendi lock'unu alır
         prompt = f"Şu seçim yapıldı: {choice_key} = {choice_value}. Bu bilgiye dayanarak süreci devam ettir."
         return await self.handle_text_message(user_id, prompt)
 
@@ -733,3 +657,35 @@ class ConversationManager:
         """Video teslim edildi — state'i güncelle."""
         session = self.get_session(user_id)
         session.state = ConversationState.DELIVERED
+
+    def find_stuck_collecting_preferences(self, max_idle_seconds: int = 300) -> list[int]:
+        """5 dakikadan uzun süre COLLECTING_PREFERENCES'da kalmış kullanıcı id'lerini döndürür.
+
+        Çağıran taraf (main.py cleanup loop) her bir id için kullanıcıya
+        nazik bir bildirim gönderip session'ı IDLE'a alır.
+        """
+        import time as _time
+        now = _time.time()
+        stuck: list[int] = []
+        with self._lock:
+            for uid, session in self.sessions.items():
+                if session.state != ConversationState.COLLECTING_PREFERENCES:
+                    continue
+                if not hasattr(session, "_last_activity"):
+                    continue
+                if (now - session._last_activity) > max_idle_seconds:
+                    stuck.append(uid)
+        return stuck
+
+    def soft_reset_to_idle(self, user_id: int):
+        """COLLECTING_PREFERENCES watchdog için — state IDLE'a alınır, pending_url temizlenir.
+
+        Context (last_brand, last_product, welcomed) korunur.
+        """
+        session = self.get_session(user_id)
+        session.state = ConversationState.IDLE
+        session.pending_url = None
+        session.pending_choice_key = None
+        session.preferences = {}
+        import time as _time
+        session._last_activity = _time.time()

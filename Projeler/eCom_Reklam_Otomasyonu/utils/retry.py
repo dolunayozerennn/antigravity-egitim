@@ -8,6 +8,7 @@ Kalıcı hatalar (401, 403, 404) anında fırlatılır.
 
 import time
 import functools
+from typing import Optional
 
 import requests
 
@@ -21,6 +22,22 @@ log = get_logger("retry")
 # NOT: 512 eklendi — Kie AI reverse proxy (CloudFlare/nginx) upstream aşırı yüklenme kodu
 RETRYABLE_STATUS_CODES = {401, 408, 429, 500, 502, 503, 504, 512}
 
+class RateLimitError(Exception):
+    """
+    Rate limit (HTTP 429) hatası için özel exception.
+
+    HTTPError fırlatamayan servisler (örn: Firecrawl) bu exception'ı fırlatarak
+    retry decorator'ünün rate-limit aware backoff (Retry-After) mantığından
+    yararlanabilir.
+
+    Attributes:
+        retry_after: Sunucudan gelen Retry-After header değeri (saniye, opsiyonel)
+    """
+    def __init__(self, message: str = "Rate limit exceeded", retry_after: Optional[float] = None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
 # Yeniden denenecek exception türleri
 RETRYABLE_EXCEPTIONS = (
     requests.exceptions.Timeout,
@@ -28,6 +45,7 @@ RETRYABLE_EXCEPTIONS = (
     ConnectionResetError,
     TimeoutError,
     OSError,  # Network unreachable vb.
+    RateLimitError,
 )
 
 
@@ -91,6 +109,13 @@ def retry_api_call(
                     last_exception = e
                     if attempt <= max_retries:
                         delay = min(base_delay * (backoff_factor ** (attempt - 1)), max_delay)
+                        # RateLimitError → retry_after attribute varsa onu kullan
+                        retry_after = getattr(e, "retry_after", None)
+                        if retry_after is not None:
+                            try:
+                                delay = min(float(retry_after), max_delay)
+                            except (ValueError, TypeError):
+                                log.warning("Failed to parse retry_after attribute as float", exc_info=True)
                         log.warning(
                             f"{op}: {type(e).__name__}, retry {attempt}/{max_retries} "
                             f"({delay:.1f}s sonra)"

@@ -70,12 +70,19 @@ class ElevenLabsService:
         """
         voice_id = DEFAULT_VOICES.get(voice_name)
         if not voice_id:
-            # Fallback: isim içinde geçiyor mu diye kontrol et
-            voice_name_lower = voice_name.lower()
+            voice_name_lower = (voice_name or "").lower()
+            # 1) Exact match (case-insensitive)
             for name, vid in DEFAULT_VOICES.items():
-                if name.lower() == voice_name_lower or voice_name_lower in name.lower():
+                if name.lower() == voice_name_lower:
                     voice_id = vid
                     break
+            # 2) Substring fallback — sadece yeterince uzun stringler için
+            #    ("ar" gibi kısa stringler "Sarah"/"Charlie" ile yanlış eşleşmesin)
+            if not voice_id and len(voice_name_lower) >= 4:
+                for name, vid in DEFAULT_VOICES.items():
+                    if voice_name_lower in name.lower():
+                        voice_id = vid
+                        break
             if not voice_id:
                 available = ", ".join(DEFAULT_VOICES.keys())
                 raise ValueError(
@@ -133,30 +140,6 @@ class ElevenLabsService:
             f"{len(audio_bytes)} bytes"
         )
         return audio_bytes
-
-    def upload_audio_to_hosting(self, audio_bytes: bytes, imgbb_api_key: str = "") -> str:
-        """
-        Ses dosyasını Replicate'in erişebileceği bir Data URI formatına çevirir.
-        Geçmişteki kararsız 3. parti file host'lar (ImgBB, tmpfiles, file.io) yerine,
-        Replicate API doğrudan Data URI (base64) kabul edebildiği için direkt stringe dönüştürülür.
-
-        Args:
-            audio_bytes: MP3 ses verisi
-            imgbb_api_key: Geriye dönük uyumluluk için var, artık kullanılmıyor.
-
-        Returns:
-            str: Base64 kodlanmış mp3 Data URI
-        """
-        import base64
-
-        try:
-            b64_audio = base64.b64encode(audio_bytes).decode("utf-8")
-            data_uri = f"data:audio/mp3;base64,{b64_audio}"
-            log.info(f"Ses dosyası Data URI olarak encode edildi (Uzunluk: {len(data_uri)})")
-            return data_uri
-        except Exception as e:
-            log.error("Ses dosyası encode edilemedi", exc_info=True)
-            raise ValueError(f"Data URI encode hatası: {e}")
 
     def list_voices(self) -> list[dict]:
         """

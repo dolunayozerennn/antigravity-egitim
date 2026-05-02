@@ -7,7 +7,6 @@ Eksik varsa uygulama anında çöker (Railway loglarında görünür).
 
 import os
 import sys
-import shutil
 
 
 class Config:
@@ -53,24 +52,15 @@ class Config:
 
     # ── Yardımcılar ──
 
-    def _require_env(self, key, default=None):
+    def _require_env(self, key):
         """Fetches an environment variable, raises error if missing."""
-        val = os.environ.get(key, default)
+        val = os.environ.get(key)
         if not val:
             raise EnvironmentError(
                 f"CRITICAL STARTUP FAILURE: Gerekli ortam değişkeni '{key}' bulunamadı! "
                 f"Railway dashboard → Variables bölümünden ekleyin."
             )
         return val
-
-    def _check_system_deps(self, binaries: list):
-        """Verifies that required system binaries exist in PATH."""
-        for binary in binaries:
-            if not shutil.which(binary):
-                raise EnvironmentError(
-                    f"CRITICAL STARTUP FAILURE: Sistem bağımlılığı '{binary}' bulunamadı! "
-                    f"nixpacks.toml dosyasına nixPkgs = [\"{binary}\"] eklenmeli."
-                )
 
 
 # ── Global instance — import anında fail-fast ──

@@ -16,7 +16,7 @@ Kredi yönetimi:
 import requests
 
 from logger import get_logger
-from utils.retry import retry_api_call
+from utils.retry import RateLimitError, retry_api_call
 
 log = get_logger("firecrawl_service")
 
@@ -72,8 +72,22 @@ class FirecrawlService:
 
         # Rate limit veya beklenmedik hata
         if response.status_code == 429:
-            log.warning("Firecrawl rate limit — retry edilecek")
-            raise RuntimeError("Firecrawl rate limit aşıldı")
+            # Retry-After header parse — saniye veya HTTP-date olabilir, sayı dene
+            retry_after_raw = response.headers.get("Retry-After")
+            retry_after_seconds: float | None = None
+            if retry_after_raw:
+                try:
+                    retry_after_seconds = float(retry_after_raw)
+                except ValueError:
+                    log.warning(f"Firecrawl Retry-After parse edilemedi: {retry_after_raw}")
+            log.warning(
+                f"Firecrawl rate limit — retry edilecek "
+                f"(retry_after={retry_after_seconds}s)"
+            )
+            raise RateLimitError(
+                "Firecrawl rate limit aşıldı",
+                retry_after=retry_after_seconds,
+            )
 
         if response.status_code == 402:
             log.error("Firecrawl kredi limiti dolmuş (402 Payment Required)")

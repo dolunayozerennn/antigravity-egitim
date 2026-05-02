@@ -66,6 +66,8 @@ class ReplicateService:
         Raises:
             Exception: Birleştirme başarısız olursa
         """
+        prediction = None
+        completed = False
         try:
             log.info(
                 f"Video+ses birleştirme başlatılıyor: "
@@ -105,14 +107,17 @@ class ReplicateService:
                         f"Video+ses birleştirme tamamlandı: {prediction.id} "
                         f"({attempt} deneme)"
                     )
+                    completed = True
                     return output_url
 
                 if prediction.status == "failed":
+                    completed = True
                     error = prediction.error or "Bilinmeyen hata"
                     log.error(f"Replicate başarısız: {prediction.id} — {error}")
                     raise RuntimeError(f"Replicate merge başarısız: {error}")
 
                 if prediction.status == "canceled":
+                    completed = True
                     raise RuntimeError("Replicate görev iptal edildi")
 
                 log.info(
@@ -131,6 +136,13 @@ class ReplicateService:
         except Exception:
             log.error("Replicate birleştirme genel hatası", exc_info=True)
             raise
+        finally:
+            if prediction is not None and not completed:
+                try:
+                    prediction.cancel()
+                    log.warning(f"Replicate prediction iptal edildi (cleanup): {prediction.id}")
+                except Exception:
+                    log.warning(f"Replicate prediction cancel başarısız: {getattr(prediction, 'id', '?')}", exc_info=True)
 
     async def async_merge_video_audio(
         self,
@@ -140,25 +152,21 @@ class ReplicateService:
     ) -> str:
         """
         Video ve ses dosyalarını async olarak birleştirir.
-        
-        time.sleep() yerine asyncio.sleep() kullanır →
-        event loop'u BLOKE ETMEZ, thread pool tüketmez.
-        
-        Production pipeline bu metodu doğrudan (await ile) çağırmalı.
-        asyncio.to_thread() ile sarmalamanıza GEREK YOKTUR.
+        time.sleep() yerine asyncio.sleep() — event loop bloklanmaz.
 
         Returns:
             str: Birleştirilmiş video URL'i
         """
         import asyncio as _asyncio
 
+        prediction = None
+        completed = False
         try:
             log.info(
                 f"Async video+ses birleştirme başlatılıyor: "
                 f"replace_audio={replace_audio}"
             )
 
-            # prediction oluşturma kısa süreli — thread'de çalıştır
             prediction = await _asyncio.to_thread(
                 self.client.predictions.create,
                 version="8c3d57c9c9a1aaa05feabafbcd2dff9f68a5cb394e54ec020c1c2dcc42bde109",
@@ -172,10 +180,31 @@ class ReplicateService:
 
             log.info(f"Replicate prediction oluşturuldu: {prediction.id}")
 
-            # Async Polling
+            # Async polling — reload geçici hata toleransı + adaptif interval
+            reload_failures = 0
+            MAX_RELOAD_FAILURES = 3
+            prev_status: str | None = None
+
             for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
-                # reload() kısa süreli HTTP isteği — thread'de çalıştır
-                await _asyncio.to_thread(prediction.reload)
+                # Geçici reload hatalarını birkaç kez tolere et (1-2 hata sorun değil)
+                try:
+                    await _asyncio.to_thread(prediction.reload)
+                    reload_failures = 0
+                except Exception as reload_err:
+                    reload_failures += 1
+                    log.warning(
+                        f"Replicate reload geçici hata "
+                        f"({reload_failures}/{MAX_RELOAD_FAILURES}): {reload_err}"
+                    )
+                    if reload_failures >= MAX_RELOAD_FAILURES:
+                        log.error(
+                            f"Replicate reload {MAX_RELOAD_FAILURES} kez ardışık başarısız"
+                        )
+                        raise RuntimeError(
+                            f"Replicate reload tekrar tekrar başarısız: {reload_err}"
+                        )
+                    await _asyncio.sleep(2)
+                    continue
 
                 if prediction.status == "succeeded":
                     output_url = prediction.output
@@ -192,22 +221,33 @@ class ReplicateService:
                         f"Video+ses birleştirme tamamlandı: {prediction.id} "
                         f"({attempt} deneme)"
                     )
+                    completed = True
                     return output_url
 
                 if prediction.status == "failed":
+                    completed = True
                     error = prediction.error or "Bilinmeyen hata"
                     log.error(f"Replicate başarısız: {prediction.id} — {error}")
                     raise RuntimeError(f"Replicate merge başarısız: {error}")
 
                 if prediction.status == "canceled":
+                    completed = True
                     raise RuntimeError("Replicate görev iptal edildi")
 
-                log.info(
-                    f"Replicate polling [{attempt}/{MAX_POLL_ATTEMPTS}]: "
-                    f"status={prediction.status}"
-                )
-                # ✅ asyncio.sleep — event loop'u bloke etmez
-                await _asyncio.sleep(POLL_INTERVAL_SECONDS)
+                if prediction.status != prev_status:
+                    log.info(
+                        f"Replicate polling [{attempt}/{MAX_POLL_ATTEMPTS}]: "
+                        f"status {prev_status}→{prediction.status}"
+                    )
+                    prev_status = prediction.status
+                else:
+                    log.debug(
+                        f"Replicate polling [{attempt}/{MAX_POLL_ATTEMPTS}]: "
+                        f"status={prediction.status}"
+                    )
+                # Adaptif: ilk reload hızlı (2s), sonrası POLL_INTERVAL_SECONDS (5s)
+                interval = 2 if attempt == 1 else POLL_INTERVAL_SECONDS
+                await _asyncio.sleep(interval)
 
             raise TimeoutError(
                 f"Replicate timeout: {prediction.id} — "
@@ -219,6 +259,14 @@ class ReplicateService:
         except Exception:
             log.error("Replicate async birleştirme genel hatası", exc_info=True)
             raise
+        finally:
+            # WHY: Pipeline cancel/timeout olursa Replicate üzerindeki açık prediction'ı iptal et
+            if prediction is not None and not completed:
+                try:
+                    await _asyncio.to_thread(prediction.cancel)
+                    log.warning(f"Replicate prediction iptal edildi (cleanup): {prediction.id}")
+                except Exception:
+                    log.warning(f"Replicate prediction cancel başarısız: {getattr(prediction, 'id', '?')}", exc_info=True)
 
     def get_prediction_status(self, prediction_id: str) -> dict:
         """
@@ -269,6 +317,8 @@ class ReplicateService:
 
         log.info(f"Video concat başlatılıyor: {len(video_urls)} video")
 
+        prediction = None
+        completed = False
         try:
             prediction = self.client.predictions.create(
                 version=self.VIDEO_MERGE_VERSION,
@@ -287,9 +337,11 @@ class ReplicateService:
                     if not output_url or not output_url.startswith("http"):
                         raise RuntimeError(f"Concat geçersiz output: {output_url}")
                     log.info(f"Video concat tamamlandı: {prediction.id} ({attempt} deneme)")
+                    completed = True
                     return output_url
 
                 if prediction.status in ("failed", "canceled"):
+                    completed = True
                     error = prediction.error or "Bilinmeyen hata"
                     raise RuntimeError(f"Video concat başarısız: {error}")
 
@@ -303,6 +355,13 @@ class ReplicateService:
         except Exception:
             log.error("Video concat genel hatası", exc_info=True)
             raise
+        finally:
+            if prediction is not None and not completed:
+                try:
+                    prediction.cancel()
+                    log.warning(f"Concat prediction iptal edildi (cleanup): {prediction.id}")
+                except Exception:
+                    log.warning(f"Concat prediction cancel başarısız: {getattr(prediction, 'id', '?')}", exc_info=True)
 
     async def async_concat_videos(self, video_urls: list[str]) -> str:
         """
@@ -322,6 +381,8 @@ class ReplicateService:
 
         log.info(f"Async video concat başlatılıyor: {len(video_urls)} video")
 
+        prediction = None
+        completed = False
         try:
             prediction = await _asyncio.to_thread(
                 self.client.predictions.create,
@@ -341,9 +402,11 @@ class ReplicateService:
                     if not output_url or not output_url.startswith("http"):
                         raise RuntimeError(f"Concat geçersiz output: {output_url}")
                     log.info(f"Async concat tamamlandı: {prediction.id} ({attempt} deneme)")
+                    completed = True
                     return output_url
 
                 if prediction.status in ("failed", "canceled"):
+                    completed = True
                     error = prediction.error or "Bilinmeyen hata"
                     raise RuntimeError(f"Video concat başarısız: {error}")
 
@@ -357,3 +420,11 @@ class ReplicateService:
         except Exception:
             log.error("Async video concat genel hatası", exc_info=True)
             raise
+        finally:
+            # WHY: Pipeline cancel/timeout olursa Replicate üzerindeki açık prediction'ı iptal et
+            if prediction is not None and not completed:
+                try:
+                    await _asyncio.to_thread(prediction.cancel)
+                    log.warning(f"Concat prediction iptal edildi (cleanup): {prediction.id}")
+                except Exception:
+                    log.warning(f"Concat prediction cancel başarısız: {getattr(prediction, 'id', '?')}", exc_info=True)

@@ -26,9 +26,26 @@ log = get_logger("scenario_engine")
 # 💰 SEEDANCE 2.0 FİYATLANDIRMA
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-# credit/saniye — Kie AI / Seedance 2.0 (reference image modu)
-SEEDANCE_CREDITS_PER_SECOND = 25  # 720p + with_image
+# credit/saniye — Kie AI / Seedance 2.0
+# Tablo: (resolution, has_reference_image) -> credits/sec
+SEEDANCE_PRICING = {
+    ("480p", True): 11.5,   # 480p image-to-video
+    ("480p", False): 19,    # 480p text-to-video
+    ("720p", True): 25,     # 720p image-to-video
+    ("720p", False): 41,    # 720p text-to-video
+}
+
+# Geriye dönük uyumluluk için varsayılan (720p image-to-video)
+SEEDANCE_CREDITS_PER_SECOND = 25
 CREDIT_TO_USD = 0.005  # 1 credit = $0.005
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 💸 EK SERVİS MALİYETLERİ (ortalama, USD)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ELEVENLABS_COST_PER_CHAR = 0.0001    # ~$0.0001 / karakter
+REPLICATE_MERGE_COST_USD = 0.005     # video+ses merge sabit
+OPENAI_SCENARIO_COST_USD = 0.02      # senaryo + vision sabit
+PERPLEXITY_RESEARCH_COST_USD = 0.005 # marka araştırması sabit
 
 # Sabit parametreler (varsayılanlar)
 FIXED_ASPECT_RATIO = "9:16"
@@ -234,8 +251,15 @@ class ScenarioEngine:
         if not scenario.get("scenes"):
             scenario["scenes"] = [{"scene_name": "Main Scene", "video_prompt": "Cinematic shot of the product."}]
 
-        # Maliyet hesapla
-        cost = self.calculate_cost(duration, has_images, scene_count=scene_count)
+        # Maliyet hesapla — voiceover length de dahil
+        voiceover_text = scenario.get("voiceover_text", "") or ""
+        cost = self.calculate_cost(
+            duration,
+            has_images,
+            scene_count=scene_count,
+            voiceover_text=voiceover_text,
+            resolution="720p",
+        )
 
         # Senaryo sonucunu sistem parametreleriyle zenginleştir
         scenario["duration"] = duration
@@ -260,37 +284,79 @@ class ScenarioEngine:
     @staticmethod
     def calculate_cost(duration: int,
                        has_reference_image: bool = True,
-                       scene_count: int = 1) -> dict:
+                       scene_count: int = 1,
+                       voiceover_text: str = "",
+                       resolution: str = "720p") -> dict:
         """
-        Seedance 2.0 maliyet hesaplama.
+        Seedance 2.0 + ek servis maliyet hesaplama.
 
         Args:
-            duration: Video süresi (saniye) — TOPLAM SÜRE
-            has_reference_image: Reference image var mı
+            duration: Toplam video süresi (saniye) — kullanıcıya gösterilen
+            has_reference_image: Reference image var mı (img2vid vs text2vid)
             scene_count: Sahne sayısı (multi-scene için 2+)
+            voiceover_text: ElevenLabs char-bazlı maliyet için
+            resolution: "480p" veya "720p"
 
         Returns:
-            dict: Maliyet bilgileri
+            dict: Maliyet bilgileri (breakdown + total_usd)
         """
-        credits_per_sec = SEEDANCE_CREDITS_PER_SECOND
-        
-        # Toplam maliyet credit/s * duration
-        total_credits = credits_per_sec * duration
-        total_usd = total_credits * CREDIT_TO_USD
+        # WHY: Multi-scene'de production_pipeline `max(5, duration//scene_count)` ile
+        # her sahneyi üretiyor → gerçek toplam süre `per_scene * scene_count`
+        per_scene_duration = max(5, duration // scene_count) if scene_count > 1 else duration
+        actual_duration = per_scene_duration * scene_count if scene_count > 1 else duration
+
+        # Resolution + mode -> credit/s seçimi
+        credits_per_sec = SEEDANCE_PRICING.get(
+            (resolution, has_reference_image),
+            SEEDANCE_CREDITS_PER_SECOND,
+        )
+
+        seedance_credits = credits_per_sec * actual_duration
+        seedance_usd = seedance_credits * CREDIT_TO_USD
+
+        # Ek servisler
+        elevenlabs_usd = len(voiceover_text or "") * ELEVENLABS_COST_PER_CHAR
+        replicate_usd = REPLICATE_MERGE_COST_USD
+        # Multi-scene: bir de concat merge yapılıyor → 2x merge
+        if scene_count > 1:
+            replicate_usd += REPLICATE_MERGE_COST_USD
+        openai_usd = OPENAI_SCENARIO_COST_USD
+        perplexity_usd = PERPLEXITY_RESEARCH_COST_USD
+
+        total_usd = (
+            seedance_usd + elevenlabs_usd + replicate_usd + openai_usd + perplexity_usd
+        )
 
         mode_label = "reference-image" if has_reference_image else "text-to-video"
-        scene_label = f"{scene_count} sahne" if scene_count > 1 else "tek sahne"
+        scene_label = f"{scene_count} sahne × {per_scene_duration}s" if scene_count > 1 else "tek sahne"
+
+        breakdown_dict = {
+            "seedance_usd": round(seedance_usd, 4),
+            "elevenlabs_usd": round(elevenlabs_usd, 4),
+            "replicate_usd": round(replicate_usd, 4),
+            "openai_usd": round(openai_usd, 4),
+            "perplexity_usd": round(perplexity_usd, 4),
+        }
+
+        breakdown_text = (
+            f"Seedance {actual_duration}s × {credits_per_sec} c/s = "
+            f"{seedance_credits:.0f} credits (${seedance_usd:.3f}) "
+            f"[{resolution}, {mode_label}, {scene_label}] | "
+            f"ElevenLabs ${elevenlabs_usd:.4f} | "
+            f"Replicate ${replicate_usd:.3f} | "
+            f"OpenAI ${openai_usd:.3f} | Perplexity ${perplexity_usd:.3f}"
+        )
 
         return {
             "credits_per_second": credits_per_sec,
-            "total_credits": total_credits,
+            "total_credits": seedance_credits,
+            "seedance_usd": round(seedance_usd, 3),
             "total_usd": round(total_usd, 3),
             "scene_count": scene_count,
-            "breakdown": (
-                f"{duration}s toplam × {credits_per_sec} credit/s = "
-                f"{total_credits} credits (${total_usd:.3f}) "
-                f"[720p, {mode_label}, {scene_label}]"
-            ),
+            "actual_duration": actual_duration,
+            "resolution": resolution,
+            "breakdown_dict": breakdown_dict,
+            "breakdown": breakdown_text,
         }
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

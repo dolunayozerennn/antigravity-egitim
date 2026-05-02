@@ -376,6 +376,8 @@ class KieAIService:
                   {"status": "failed", "error": "..."}
         """
         url = f"{self.base_url}/jobs/recordInfo"
+        start_time = time.monotonic()
+        prev_state: str | None = None
 
         for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
             try:
@@ -385,12 +387,26 @@ class KieAIService:
                     headers=self.headers,
                     timeout=REQUEST_TIMEOUT,
                 )
+
+                # Permanent auth/not-found hataları → loop kır (boşa polling önle)
+                if response.status_code in (401, 403, 404):
+                    raise RuntimeError(
+                        f"permanent: HTTP {response.status_code} polling — "
+                        f"task={task_id}, body={response.text[:200]}"
+                    )
+
                 response.raise_for_status()
                 data = response.json()
 
                 # Wrapper error kontrolü (Kie AI API)
                 code = data.get("code")
                 if code is not None and str(code) not in ("200", "0"):
+                    code_int = int(code) if str(code).isdigit() else 0
+                    if code_int in (401, 403, 404):
+                        raise RuntimeError(
+                            f"permanent: wrapper code={code} — "
+                            f"{data.get('msg', 'Bilinmeyen hata')}"
+                        )
                     raise ValueError(f"Polling API Wrapper Hatası (code={code}): {data.get('msg', 'Bilinmeyen hata')}")
 
                 state = data.get("data", {}).get("state", "unknown")
@@ -411,13 +427,27 @@ class KieAIService:
                     log.error(f"Görev başarısız: {task_id} — {fail_msg}")
                     return {"status": "failed", "error": fail_msg}
 
-                # processing / waiting — devam et
-                log.info(f"Polling {task_id}: [{attempt}/{MAX_POLL_ATTEMPTS}] state={state}")
+                # processing / waiting — sadece state değişiminde INFO logla
+                if state != prev_state:
+                    log.info(f"Polling {task_id}: state {prev_state}→{state} "
+                             f"(attempt {attempt}/{MAX_POLL_ATTEMPTS})")
+                    prev_state = state
+                else:
+                    log.debug(f"Polling {task_id}: [{attempt}/{MAX_POLL_ATTEMPTS}] state={state}")
 
+            except RuntimeError as e:
+                # Permanent error → boşa polling yapma, hemen kır
+                if str(e).startswith("permanent:"):
+                    log.error(f"Polling kalıcı hata, loop kırılıyor: {task_id} — {e}")
+                    raise
+                log.error(f"Polling hatası ({attempt}): {task_id}", exc_info=True)
             except Exception:
                 log.error(f"Polling hatası ({attempt}): {task_id}", exc_info=True)
 
-            time.sleep(POLL_INTERVAL_SECONDS)
+            # Adaptif interval: ilk 30s yoğun başlangıç (20s), sonra hızlı (8s)
+            elapsed = time.monotonic() - start_time
+            interval = 20 if elapsed < 30 else 8
+            time.sleep(interval)
 
         log.error(f"Polling timeout: {task_id} — {MAX_POLL_ATTEMPTS} deneme aşıldı")
         return {"status": "failed", "error": "Polling timeout — görev süre aşımına uğradı"}
@@ -443,6 +473,8 @@ class KieAIService:
         """
         import asyncio as _asyncio
         url = f"{self.base_url}/jobs/recordInfo"
+        start_time = time.monotonic()
+        prev_state: str | None = None
 
         for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
             try:
@@ -454,12 +486,26 @@ class KieAIService:
                     headers=self.headers,
                     timeout=REQUEST_TIMEOUT,
                 )
+
+                # Permanent auth/not-found hataları → loop kır (boşa polling önle)
+                if response.status_code in (401, 403, 404):
+                    raise RuntimeError(
+                        f"permanent: HTTP {response.status_code} polling — "
+                        f"task={task_id}, body={response.text[:200]}"
+                    )
+
                 response.raise_for_status()
                 data = response.json()
 
                 # Wrapper error kontrolü (Kie AI API)
                 code = data.get("code")
                 if code is not None and str(code) not in ("200", "0"):
+                    code_int = int(code) if str(code).isdigit() else 0
+                    if code_int in (401, 403, 404):
+                        raise RuntimeError(
+                            f"permanent: wrapper code={code} — "
+                            f"{data.get('msg', 'Bilinmeyen hata')}"
+                        )
                     raise ValueError(f"Polling API Wrapper Hatası (code={code}): {data.get('msg', 'Bilinmeyen hata')}")
 
                 state = data.get("data", {}).get("state", "unknown")
@@ -480,14 +526,28 @@ class KieAIService:
                     log.error(f"Görev başarısız: {task_id} — {fail_msg}")
                     return {"status": "failed", "error": fail_msg}
 
-                # processing / waiting — devam et
-                log.info(f"Polling {task_id}: [{attempt}/{MAX_POLL_ATTEMPTS}] state={state}")
+                # processing / waiting — sadece state değişiminde INFO logla
+                if state != prev_state:
+                    log.info(f"Polling {task_id}: state {prev_state}→{state} "
+                             f"(attempt {attempt}/{MAX_POLL_ATTEMPTS})")
+                    prev_state = state
+                else:
+                    log.debug(f"Polling {task_id}: [{attempt}/{MAX_POLL_ATTEMPTS}] state={state}")
 
+            except RuntimeError as e:
+                # Permanent error → boşa polling yapma, hemen kır
+                if str(e).startswith("permanent:"):
+                    log.error(f"Async polling kalıcı hata, loop kırılıyor: {task_id} — {e}")
+                    raise
+                log.error(f"Polling hatası ({attempt}): {task_id}", exc_info=True)
             except Exception:
                 log.error(f"Polling hatası ({attempt}): {task_id}", exc_info=True)
 
+            # Adaptif interval: ilk 30s yoğun başlangıç (20s), sonra hızlı (8s)
+            elapsed = time.monotonic() - start_time
+            interval = 20 if elapsed < 30 else 8
             # ✅ asyncio.sleep — event loop'u bloke etmez
-            await _asyncio.sleep(POLL_INTERVAL_SECONDS)
+            await _asyncio.sleep(interval)
 
         log.error(f"Async polling timeout: {task_id} — {MAX_POLL_ATTEMPTS} deneme aşıldı")
         return {"status": "failed", "error": "Polling timeout — görev süre aşımına uğradı"}

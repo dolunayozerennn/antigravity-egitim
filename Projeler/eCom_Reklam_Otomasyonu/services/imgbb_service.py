@@ -6,6 +6,9 @@ Kie AI ve diğer servislerin erişebileceği public URL döndürür.
 """
 
 import base64
+import ipaddress
+import socket
+from urllib.parse import urlparse
 
 import requests
 
@@ -15,6 +18,32 @@ log = get_logger("imgbb_service")
 
 IMGBB_UPLOAD_URL = "https://api.imgbb.com/1/upload"
 REQUEST_TIMEOUT = 30
+
+
+def _is_safe_url(url: str) -> bool:
+    """SSRF koruması — yalnızca public http(s) URL'lere izin ver.
+
+    Private/loopback/link-local/multicast/reserved IP'leri reddeder.
+    """
+    try:
+        p = urlparse(url)
+        if p.scheme not in ("http", "https"):
+            return False
+        host = p.hostname
+        if not host:
+            return False
+        ip = ipaddress.ip_address(socket.gethostbyname(host))
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_reserved
+        ):
+            return False
+        return True
+    except Exception:
+        return False
 
 
 class ImgBBService:
@@ -137,6 +166,10 @@ class ImgBBService:
             Exception: İndirme veya yükleme başarısız olursa
         """
         try:
+            # SSRF koruması — internal/private IP'lere fetch yapılmasın
+            if not _is_safe_url(image_url):
+                raise ValueError("unsafe url")
+
             # Görseli indir
             response = requests.get(image_url, timeout=REQUEST_TIMEOUT, stream=True)
             response.raise_for_status()

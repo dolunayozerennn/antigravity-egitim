@@ -262,6 +262,7 @@ class ProductionPipeline:
             # ADIM 2: Türkçe Dış Ses (ElevenLabs)
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             voiceover_text = scenario.get("voiceover_text", "")
+            voiceover_succeeded = True  # voiceover yoksa veya başarılıysa True kalır
 
             if voiceover_text:
                 # ── Graceful Degradation: Dış ses başarısız olursa video yine teslim edilir ──
@@ -346,13 +347,25 @@ class ProductionPipeline:
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             if notion_page_url:
                 page_id = result.get("_notion_page_id") or self._extract_page_id(notion_page_url)
-                if page_id:
+                if not page_id:
+                    log.warning(
+                        f"Notion page_id çıkarılamadı, 'Tamamlandı' güncellemesi atlandı: {notion_page_url}"
+                    )
+                else:
                     try:
+                        # WHY: voiceover fail → "Tamamlandı (sessiz)" + error_message Notion'a yazılır
+                        if voiceover_succeeded:
+                            final_status = "Tamamlandı"
+                            err_msg = ""
+                        else:
+                            final_status = "Tamamlandı (sessiz)"
+                            err_msg = result.get("voiceover_error", "Dış ses üretimi/birleştirme başarısız")
                         await asyncio.to_thread(
                             self.notion.update_production_status,
                             page_id=page_id,
-                            status="Tamamlandı",
+                            status=final_status,
                             video_url=final_video_url,
+                            error_message=err_msg,
                         )
                     except Exception:
                         log.error("Notion 'Tamamlandı' güncellemesi başarısız", exc_info=True)
@@ -393,7 +406,11 @@ class ProductionPipeline:
 
             if notion_page_url:
                 page_id = result.get("_notion_page_id") or self._extract_page_id(notion_page_url)
-                if page_id:
+                if not page_id:
+                    log.warning(
+                        f"Notion page_id çıkarılamadı, 'Hata' güncellemesi atlandı: {notion_page_url}"
+                    )
+                else:
                     try:
                         await asyncio.to_thread(
                             self.notion.update_production_status,
@@ -413,7 +430,7 @@ class ProductionPipeline:
 
     @staticmethod
     def _extract_page_id(notion_url: str) -> str | None:
-        """Notion page URL'inden page ID çıkar."""
+        """Notion page URL'inden page ID çıkar. WHY: 32-char olmazsa None — yanlış ID dönerek farklı page'i güncellemeyi önler."""
         if not notion_url:
             return None
         try:
@@ -424,7 +441,7 @@ class ProductionPipeline:
                     f"{last_part[:8]}-{last_part[8:12]}-{last_part[12:16]}-"
                     f"{last_part[16:20]}-{last_part[20:]}"
                 )
-            return last_part
+            return None
         except Exception:
             return None
 
@@ -500,6 +517,13 @@ class ProductionPipeline:
 
         scene_count = len(scenes)
         per_scene_duration = max(5, duration // scene_count)  # Minimum 5 saniye/sahne
+        # WHY: gerçek üretilen toplam süre — cost calculation için scenario_engine ile aynı formül
+        actual_total_duration = per_scene_duration * scene_count
+        if actual_total_duration != duration:
+            log.info(
+                f"Multi-scene gerçek süre: {actual_total_duration}s "
+                f"(senaryo {duration}s, {scene_count} × {per_scene_duration}s)"
+            )
 
         if progress_callback:
             await progress_callback(
@@ -544,14 +568,36 @@ class ProductionPipeline:
             log.info(f"Sahne {idx+1}/{scene_count} tamamlandı: {scene_name} → {url[:50]}...")
             return url
 
-        # Paralel çalıştır
+        # Paralel çalıştır — return_exceptions ile resource leak önle
         scene_tasks = [
             _produce_single_scene(scene, idx)
             for idx, scene in enumerate(scenes)
         ]
-        scene_video_urls = await asyncio.gather(*scene_tasks)
+        results = await asyncio.gather(*scene_tasks, return_exceptions=True)
 
-        log.info(f"Tüm {scene_count} sahne üretildi, concat başlıyor")
+        # WHY: bir sahne fail etse bile diğerleri zaten üretildi — kullanılabilir olanı topla
+        scene_video_urls: list[str] = []
+        failed_count = 0
+        for idx, res in enumerate(results):
+            if isinstance(res, Exception):
+                failed_count += 1
+                log.error(f"Sahne {idx+1}/{scene_count} başarısız: {res}")
+            elif isinstance(res, str) and res:
+                scene_video_urls.append(res)
+
+        if len(scene_video_urls) < 2:
+            raise RuntimeError(
+                f"{scene_count} sahneden {failed_count} başarısız oldu — "
+                f"concat için yeterli sahne yok ({len(scene_video_urls)} başarılı)"
+            )
+
+        if failed_count > 0:
+            log.warning(
+                f"Multi-scene degraded mode: {len(scene_video_urls)}/{scene_count} sahne başarılı, "
+                f"{failed_count} fail"
+            )
+
+        log.info(f"{len(scene_video_urls)} sahne hazır, concat başlıyor")
 
         # ── VIDEO CONCAT ──
         if progress_callback:
