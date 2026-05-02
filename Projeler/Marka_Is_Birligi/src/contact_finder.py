@@ -2,14 +2,12 @@
 """
 Contact Finder modülü — Yeni bulunan markalar için iletişim bilgisi toplar.
 
-Pipeline (v2 — Waterfall):
+Pipeline (Waterfall):
 1. Web Scrape → Contact/about sayfalarından email çıkarma (ücretsiz, sınırsız)
 2. Hunter.io Domain Search → Domain genelinde email arama (50 kredi/ay)
 3. Instagram Bio Email → IG bio'dan email regex (Apify gerekebilir)
 4. Hunter.io Email Verification → Bulunan emaili doğrula
 5. Doğrulanamayan/bulunamayan → email boş bırakılır, email_status: "not_found"
-
-Apollo.io kaldırıldı (403 hatası, artık çalışmıyor).
 """
 
 import json
@@ -79,21 +77,19 @@ WEB_SCRAPER_HEADERS = {
 
 
 def _get_env(key, fallback_lines=None):
-    """Env var veya bilgi dosyasından değer al."""
+    """Env var veya master.env fallback üzerinden değer al.
+
+    `fallback_lines` parametresi eski markdown parser'la uyum için tutulmuştur;
+    artık kullanılmaz.
+    """
     val = os.environ.get(key)
     if val:
         return val
-    knowledge_path = os.path.join(BASE_DIR, "..", "..", "_knowledge", "api-anahtarlari.md")
-    if os.path.exists(knowledge_path) and fallback_lines:
-        with open(knowledge_path, "r") as f:
-            content = f.read()
-        for search_term in fallback_lines:
-            for line in content.split("\n"):
-                if search_term in line:
-                    match = re.search(r"`([^`]+)`", line)
-                    if match:
-                        return match.group(1)
-    return None
+    try:
+        from env_loader import get_env as _ge
+        return _ge(key) or None
+    except ImportError:
+        return None
 
 
 def get_domain_from_url(url):
@@ -181,8 +177,26 @@ def _is_noise_email(email):
     if prefix in NOISE_PREFIXES:
         return True
 
+    # Placeholder pattern'ler — markaların boş template'lerinde sık görülür
+    if prefix in {"example", "test", "demo", "name", "yourname", "user", "admin"}:
+        return True
+    if "example" in domain or domain.startswith("test."):
+        return True
+    if prefix.startswith("user@") or prefix in {"john.doe", "jane.doe"}:
+        return True
+
+    # Sentry / monitoring tracking ID'leri (uzun hex string'ler)
+    if re.fullmatch(r"[a-f0-9]{16,}", prefix):
+        return True
+
     # Dosya uzantısı gibi görünen sahte email'ler
-    if domain.endswith((".png", ".jpg", ".gif", ".svg", ".css", ".js")):
+    if domain.endswith((".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp",
+                        ".css", ".js", ".woff", ".woff2", ".ttf")):
+        return True
+
+    # TLD makul mu? (örn. ".0", ".html" gibi yanlış parse'ları yakala)
+    tld = domain.rsplit(".", 1)[-1] if "." in domain else ""
+    if not tld.isalpha() or len(tld) < 2 or len(tld) > 24:
         return True
 
     # Çok kısa veya çok uzun
@@ -583,18 +597,38 @@ def find_contacts_for_brand(brand_info):
             print(f"  ✅ Doğrulanmış email: {best_email}")
         else:
             print(f"  ⛔ Email doğrulanamadı: {best_email} → {verification['status']}")
-            # Web scrape'den gelen email'ler genellikle doğrudur.
-            # Sadece "undeliverable" ise reddet, diğer durumlarda (risky, unknown) kabul et.
-            if verification["status"] == "undeliverable":
-                print(f"     → Bu markaya email GÖNDERİLMEYECEK")
-                email_status = f"failed_verification:{verification['status']}"
-                best_email = ""
-                contact_name = ""
-                contact_title = ""
+            # Default: deliverability uğruna sadece web_scrape kaynaklı emaillerde
+            # 'unknown' kabul edilir (verifier domain hatası olabilir). 'risky' ve
+            # 'undeliverable' her durumda reddedilir. ALLOW_RISKY_EMAILS=true ile
+            # eski (laxer) davranışa geri dönülebilir.
+            allow_risky = os.environ.get("ALLOW_RISKY_EMAILS", "false").lower() == "true"
+            status = verification["status"]
+
+            if status == "undeliverable" or status == "risky":
+                if allow_risky and status == "risky":
+                    email_status = f"partially_verified:{status}"
+                    print(f"     → ALLOW_RISKY_EMAILS=true, {status} yine de denenecek")
+                else:
+                    print(f"     → Bu markaya email GÖNDERİLMEYECEK ({status})")
+                    email_status = f"failed_verification:{status}"
+                    best_email = ""
+                    contact_name = ""
+                    contact_title = ""
+            elif status == "unknown" and email_source == "web_scrape":
+                # Web scrape'de mailto/regex'le bulunan email genellikle gerçektir
+                email_status = f"partially_verified:{status}"
+                print(f"     → Kaynak web_scrape, {status} kabul edilir")
             else:
-                # risky / unknown / accept_all → yine de dene
-                email_status = f"partially_verified:{verification['status']}"
-                print(f"     → Kısmi doğrulama ({verification['status']}), yine de denenecek")
+                # accept_all dahil diğer belirsiz durumlar — varsayılan: reddet
+                if allow_risky:
+                    email_status = f"partially_verified:{status}"
+                    print(f"     → ALLOW_RISKY_EMAILS=true, {status} yine de denenecek")
+                else:
+                    print(f"     → Belirsiz statü '{status}', reddedildi (ALLOW_RISKY_EMAILS=true ile aç)")
+                    email_status = f"failed_verification:{status}"
+                    best_email = ""
+                    contact_name = ""
+                    contact_title = ""
     elif best_email:
         # Hunter key yoksa ama email bulduk — doğrulama olmadan kullan
         email_status = "unverified"

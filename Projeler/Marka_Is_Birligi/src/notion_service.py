@@ -198,22 +198,24 @@ def get_followup_candidates():
 def add_brand(brand_info):
     """
     Yeni markayı Notion database'e ekler.
-    
+
     Args:
         brand_info: dict with marka_adi, email, website, etc.
-    
+
     Returns:
         str: Notion page ID (sonraki update'lerde kullanılır)
     """
     import requests
+    from src.utils.rate_limit import notion_bucket
     _check_config()
-    
+
     props = _brand_to_properties(brand_info)
     body = {
         "parent": {"database_id": NOTION_DB_ID},
         "properties": props,
     }
-    
+
+    notion_bucket.acquire()
     resp = requests.post(
         f"{NOTION_API_BASE}/pages", headers=_headers(), json=body, timeout=30
     )
@@ -255,7 +257,7 @@ def add_brands_batch(enriched_brands):
             page_id = add_brand(brand_data)
             brand["notion_page_id"] = page_id
             added += 1
-            
+
             # Eğer email bulunamadıysa, bunu da loglara yazalım.
             if brand_data["outreach_status"] == "No_Email":
                 try:
@@ -269,7 +271,7 @@ def add_brands_batch(enriched_brands):
                 except Exception as e:
                     logger.error(f"[NOTION LOG] No_Email loglanamadı: {e}")
 
-            time.sleep(0.35)  # Notion rate limit: ~3 req/sec
+            # Rate limit artık notion_bucket tarafından add_brand içinde uygulanıyor.
         except Exception as e:
             logger.error(f"[NOTION] ❌ Marka eklenemedi: {brand.get('marka_adi', '?')}: {e}", exc_info=True)
     
@@ -339,8 +341,11 @@ def update_brand(page_id, updates):
     if not props:
         logger.warning(f"[NOTION] Güncellenecek alan yok: {updates}")
         return
-    
+
+    from src.utils.rate_limit import notion_bucket
+
     body = {"properties": props}
+    notion_bucket.acquire()
     resp = requests.patch(
         f"{NOTION_API_BASE}/pages/{page_id}", headers=_headers(), json=body, timeout=30
     )
@@ -533,8 +538,11 @@ def log_ai_process(log_data):
         "parent": {"database_id": NOTION_DB_LOGS_ID},
         "properties": props,
     }
-    
+
+    from src.utils.rate_limit import notion_bucket
+
     try:
+        notion_bucket.acquire()
         resp = requests.post(f"{NOTION_API_BASE}/pages", headers=_headers(), json=body, timeout=30)
         resp.raise_for_status()
         logger.info(f"[NOTION LOG] ✅ AI işlemi loglandı: {log_data.get('icerik_kimligi')}")

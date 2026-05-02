@@ -1,0 +1,28 @@
+{
+  "_comment": "AI marka tespiti için filtre listeleri. Hardcode listelerden taşındı; runtime'da analyzer.py tarafından okunur. AI/marka kataloğu büyüdükçe burada güncelle.",
+  "known_ai_brands": [
+    "chatgpt", "openai", "claude", "anthropic", "gemini", "googlegemini",
+    "midjourney", "dalle", "dall_e", "stability", "stablediffusion",
+    "copilot", "microsoftcopilot", "perplexity", "perplexity_ai",
+    "runway", "runwayml", "heygen", "heygenofficial", "synthesia",
+    "sora", "luma_ai", "lumalabs", "kling", "klingai", "klingcreator",
+    "pika", "topview_ai", "topviewai", "creatify.ai", "creatifyai",
+    "canva", "adobe", "adobefirefly", "figma", "pixelcut", "pixelcutapp",
+    "napkin_ai", "napkinai", "suno", "sunomusic", "udio",
+    "jasper_ai", "copy.ai", "writesonic", "aithor", "aithorai",
+    "repl.it", "replit", "cursor_ai", "cursorapp", "v0", "v0dev",
+    "bolt", "boltai", "elevenlabs", "descript", "gamma", "gammaapp",
+    "ideogram", "ideogramai", "fluxai", "flux", "recraft", "recraftai",
+    "magnific", "magnific_ai", "krea", "krea_ai", "invideo", "invideoai",
+    "captions", "captionsapp", "pictory", "pictoryai"
+  ],
+  "false_positives": [
+    "ibrahimselim", "birceakalay", "duygubaloglut",
+    "sedaincekilagoz", "gaminggentr", "nvidiageforcetr",
+    "hepsiburada", "iamozdesign", "raw.dijital",
+    "aysevain", "burakcakir.ai", "archivinciai"
+  ],
+  "skip_big_companies": [
+    "googleturkiye", "googlegemini", "meta.ai", "samsungturkiye"
+  ]
+}

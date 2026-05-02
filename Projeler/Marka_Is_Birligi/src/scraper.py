@@ -41,25 +41,63 @@ def get_all_apify_tokens():
         keys.append(val)
             
     if not keys:
-        # Lokal geliştirme için fallback
-        knowledge_path = os.path.join(BASE_DIR, "..", "..", "_knowledge", "api-anahtarlari.md")
-        if os.path.exists(knowledge_path):
-            with open(knowledge_path, "r") as f:
-                content = f.read()
-            # Basit parse — apify key'leri bul
-            for line in content.split("\n"):
-                if "apify_api_" in line and "API Anahtarı" in line:
-                    start = line.find("`apify_api_")
-                    if start >= 0:
-                        end = line.find("`", start + 1)
-                        token = line[start+1:end]
-                        if token and token not in keys:
-                            keys.append(token)
-                            
+        # Lokal fallback: master.env üzerinden APIFY_API_KEY_*
+        try:
+            from env_loader import get_env as _ge
+        except ImportError:
+            _ge = None
+        if _ge:
+            for i in range(1, 10):
+                v = _ge(f"APIFY_API_KEY_{i}")
+                if v and v not in keys:
+                    keys.append(v)
+            v = _ge("APIFY_API_KEY")
+            if v and v not in keys:
+                keys.append(v)
+
     if keys:
         # Rastgeleliyi koruyarak load balancing yapalım
         random.shuffle(keys)
     return keys
+
+
+def _apify_token_health(token, timeout=4):
+    """Apify /users/me ile token'ın aylık quota kullanım oranını döndürür.
+
+    Returns:
+        float | None: 0.0–1.0 arası kullanım oranı, hata/erişim yoksa None.
+    """
+    try:
+        r = requests.get(
+            "https://api.apify.com/v2/users/me",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=timeout,
+        )
+        if r.status_code != 200:
+            return None
+        data = r.json().get("data", {}).get("plan", {}) or {}
+        # Hesap planına göre alan adı değişebilir; en yaygınlarını dener.
+        usage = data.get("monthlyUsageUsd") or data.get("monthlyUsage") or 0
+        limit = data.get("monthlyLimitUsd") or data.get("monthlyLimit") or 0
+        if not limit:
+            return None
+        return float(usage) / float(limit)
+    except requests.exceptions.RequestException:
+        return None
+
+
+def prefer_healthy_tokens(keys, threshold=0.95):
+    """Quota'sı dolmaya yakın token'ları listenin sonuna iter.
+
+    Çağrı başına token başına ~1 ek HTTP isteği maliyetlidir; sadece
+    pipeline başlangıcında bir kez çağrılması beklenir. Quota öğrenilemezse
+    sıralama korunur.
+    """
+    healthy, exhausted = [], []
+    for k in keys:
+        ratio = _apify_token_health(k)
+        (exhausted if ratio is not None and ratio >= threshold else healthy).append(k)
+    return healthy + exhausted
 
 
 def read_profiles(csv_path=None):
@@ -200,6 +238,84 @@ def scrape_reels(dry_run=False):
             continue
 
     raise Exception(f"Tüm Apify API anahtarları denendi ancak işlem başarısız oldu. Son hata: {last_err}")
+
+
+def scrape_profile_posts(handle, limit=5, max_wait_seconds=120):
+    """Tek bir Instagram profilinin son N paylaşımını çeker.
+
+    Token rotasyonunu (get_all_apify_tokens) reuse eder; quota/rate limit
+    durumunda diğer anahtara geçer. Follow-up brand research için kullanılır.
+
+    Returns:
+        list[dict]: [{caption, likes_count, url, timestamp}, ...]
+    """
+    if not handle:
+        return []
+
+    handle = handle.lstrip("@").strip()
+    keys = get_all_apify_tokens()
+    if not keys:
+        print(f"[SCRAPER] ⚠️ @{handle} için Apify token yok, atlanıyor.")
+        return []
+
+    payload = {
+        "directUrls": [f"https://www.instagram.com/{handle}/"],
+        "resultsType": "posts",
+        "resultsLimit": limit,
+    }
+    poll_iters = max(1, max_wait_seconds // POLL_INTERVAL)
+
+    for token in keys:
+        try:
+            resp = requests.post(
+                f"https://api.apify.com/v2/acts/{ACTOR_ID}/runs",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json=payload,
+                timeout=30,
+            )
+            if resp.status_code in (402, 429):
+                print(f"  ⚠️ @{handle} Apify limit (HTTP {resp.status_code}), token değişiyor...")
+                continue
+            if resp.status_code != 201:
+                print(f"  ⚠️ @{handle} Apify başlatılamadı (HTTP {resp.status_code})")
+                continue
+
+            run_id = resp.json()["data"]["id"]
+            for _ in range(poll_iters):
+                time.sleep(POLL_INTERVAL)
+                status_resp = requests.get(
+                    f"https://api.apify.com/v2/actor-runs/{run_id}",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=15,
+                )
+                status = status_resp.json()["data"]["status"]
+                if status == "SUCCEEDED":
+                    dataset_id = status_resp.json()["data"]["defaultDatasetId"]
+                    items = requests.get(
+                        f"https://api.apify.com/v2/datasets/{dataset_id}/items",
+                        headers={"Authorization": f"Bearer {token}"},
+                        timeout=60,
+                    ).json()
+                    return [
+                        {
+                            "caption": (item.get("caption") or "")[:280],
+                            "likes_count": item.get("likesCount", 0),
+                            "url": item.get("url", ""),
+                            "timestamp": item.get("timestamp", ""),
+                        }
+                        for item in (items or [])[:limit]
+                    ]
+                if status in ("FAILED", "ABORTED", "TIMED-OUT"):
+                    print(f"  ⚠️ @{handle} Apify run {status}")
+                    break
+        except requests.exceptions.RequestException as e:
+            status_code = getattr(getattr(e, "response", None), "status_code", None)
+            if status_code in (402, 429):
+                continue
+            print(f"  ⚠️ @{handle} scrape hatası: {e}")
+            continue
+
+    return []
 
 
 if __name__ == "__main__":

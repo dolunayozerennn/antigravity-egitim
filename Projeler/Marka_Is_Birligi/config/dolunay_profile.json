@@ -1,0 +1,18 @@
+{
+  "_comment": "Dolunay'ın profil verisi + email signature. Outreach prompt'larında ve fallback template'lerinde kullanılır. Yeni başarı/iş birliği geldikçe `recent_collabs` ve `top_results` güncellenmeli.",
+  "name": "Dolunay Özeren",
+  "email": "dolunay@dolunay.ai",
+  "website": "dolunay.ai",
+  "country": "Turkey",
+  "instagram": "https://www.instagram.com/dolunay_ozeren/",
+  "tiktok": "https://www.tiktok.com/@dolunayozeren",
+  "youtube": "https://www.youtube.com/@dolunayozeren/",
+  "total_views": "100M+",
+  "tagline": "AI Content Creator | 100M+ Organic Views",
+  "recent_collabs": "Pixelcut, Nim AI, Aithor, TopView, Creatify, Lexi AI, ArtFlow, Temu, Printify, Syntx",
+  "top_results": [
+    {"brand": "Pixelcut", "views": "19.7M", "url": "https://www.instagram.com/reel/DAdt0tUN-j9/"},
+    {"brand": "Nim AI", "views": "4M", "url": "https://www.instagram.com/reel/DKtuJ3cK-Yr/"},
+    {"brand": "Aithor", "views": "2M", "url": "https://www.instagram.com/reel/DKHLswaK4Tj/"}
+  ]
+}

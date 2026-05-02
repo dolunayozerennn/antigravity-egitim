@@ -14,6 +14,7 @@ projeleri için ortak operational log modülü.
 
 import os
 import sys
+import time
 import logging
 import requests
 import traceback
@@ -179,10 +180,43 @@ class OpsLogger:
         self._std.error(f"❌ {title}: {message}\n{details}" if details else f"❌ {title}: {message}")
         self._enqueue("ERROR", title, message, details=details)
 
-    def wait_for_logs(self):
-        """Kuyruktaki tüm logların Notion'a yazılmasını bekle."""
-        if self._worker:
-            self._queue.join()
+    def wait_for_logs(self, timeout: float = 5.0):
+        """Kuyruktaki logların Notion'a yazılmasını bekle (max `timeout` sn).
+
+        Railway SIGTERM'de blocking join sonsuza kadar bekleyebilir; timeout
+        ile eski log mesajları kaybolur ama process zamanında kapanır.
+        """
+        if not self._worker:
+            return
+        deadline = time.monotonic() + timeout
+        # queue.join'in timeout'u yok; poll edip tasks bitene kadar veya
+        # deadline geçene kadar bekle.
+        while time.monotonic() < deadline and self._queue.unfinished_tasks > 0:
+            time.sleep(0.1)
+        remaining = self._queue.unfinished_tasks
+        if remaining > 0:
+            print(f"[OpsLogger] ⚠️ {remaining} log flush edilemedi (timeout={timeout}s)", file=sys.stderr)
+
+
+def _install_sigterm_flush():
+    """Railway/Unix SIGTERM aldığında tüm OpsLogger instance'larını flush et."""
+    import signal
+
+    def _handler(signum, frame):
+        for inst in list(_instances.values()):
+            try:
+                inst.wait_for_logs(timeout=4.0)
+            except Exception:
+                pass
+        # default davranışa devam — process exit
+        signal.signal(signum, signal.SIG_DFL)
+        os.kill(os.getpid(), signum)
+
+    try:
+        signal.signal(signal.SIGTERM, _handler)
+    except (ValueError, OSError):
+        # Non-main thread veya desteklenmeyen platformda sessizce geç
+        pass
 
 
 # ── Factory Fonksiyonu ────────────────────────────────────────────────────
@@ -196,3 +230,7 @@ def get_ops_logger(project_name: str, component: str = "Pipeline") -> OpsLogger:
     if key not in _instances:
         _instances[key] = OpsLogger(project_name, component)
     return _instances[key]
+
+
+# Modül import edildiğinde SIGTERM handler'ı kur — main thread'de ise.
+_install_sigterm_flush()

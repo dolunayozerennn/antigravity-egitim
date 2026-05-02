@@ -155,14 +155,16 @@ def create_reply(to, subject, body_html, thread_id, message_id, body_text=None):
 def send_email(service, to, subject, body_html, body_text=None, plain_text_only=False):
     """
     Email gönderir.
-    
+
     Args:
         plain_text_only: True ise sadece plain-text gönderir (ilk outreach için)
-    
+
     Returns:
         dict: {message_id, thread_id} veya None (hata)
     """
     try:
+        from src.utils.rate_limit import gmail_bucket
+        gmail_bucket.acquire()
         msg = create_email(to, subject, body_html, body_text, plain_text_only=plain_text_only)
         result = service.users().messages().send(userId="me", body=msg).execute()
         
@@ -196,6 +198,8 @@ def send_reply(service, to, subject, body_html, thread_id, message_id, body_text
         dict: {message_id, thread_id} veya None (hata)
     """
     try:
+        from src.utils.rate_limit import gmail_bucket
+        gmail_bucket.acquire()
         msg = create_reply(to, subject, body_html, thread_id, message_id, body_text)
         result = service.users().messages().send(userId="me", body=msg).execute()
         return {

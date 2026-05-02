@@ -16,7 +16,6 @@ import time
 from datetime import datetime, timezone, timedelta
 from src.notion_service import get_followup_candidates, update_brand
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TR_TZ = timezone(timedelta(hours=3))
 
 
@@ -180,7 +179,7 @@ Output format (JSON):
 This is email #3 — they haven't replied to the previous 2 emails.
 Keep it very short and close the loop professionally."""
 
-    result = _call_openai(prompt, system_prompt)
+    result = _call_openai(prompt, system_prompt, json_mode=True)
     if result:
         parsed = _safe_parse_json(result)
         if parsed and "body_text" in parsed:

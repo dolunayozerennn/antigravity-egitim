@@ -62,6 +62,44 @@ _service_status = {
 }
 
 
+def _check_dependencies():
+    """Notion / Gmail / Apify hızlıca ping et — /health/deps için."""
+    import requests as _r
+
+    deps = {}
+
+    # Notion
+    try:
+        token = os.environ.get("NOTION_SOCIAL_TOKEN", "")
+        if not token:
+            deps["notion"] = "missing_token"
+        else:
+            r = _r.get(
+                "https://api.notion.com/v1/users/me",
+                headers={"Authorization": f"Bearer {token}", "Notion-Version": "2022-06-28"},
+                timeout=5,
+            )
+            deps["notion"] = "ok" if r.status_code == 200 else f"http_{r.status_code}"
+    except Exception as e:
+        deps["notion"] = f"err:{type(e).__name__}"
+
+    # Gmail token (sadece varlık + format kontrolü; canlı API çağırmıyoruz)
+    gmail_b64 = os.environ.get("GOOGLE_DOLUNAY_AI_TOKEN_JSON", "")
+    deps["gmail_token"] = "ok" if gmail_b64 else "missing"
+
+    # Apify token sayısı
+    apify_keys = sum(1 for i in range(1, 10) if os.environ.get(f"APIFY_API_KEY_{i}"))
+    if os.environ.get("APIFY_API_KEY"):
+        apify_keys += 1
+    deps["apify_tokens"] = apify_keys
+
+    # OpenAI / Hunter sadece varlık
+    deps["openai"] = "ok" if os.environ.get("OPENAI_API_KEY") else "missing"
+    deps["hunter"] = "ok" if os.environ.get("HUNTER_API_KEY") else "missing"
+
+    return deps
+
+
 class HealthHandler(BaseHTTPRequestHandler):
     """Basit health check HTTP handler."""
 
@@ -72,10 +110,16 @@ class HealthHandler(BaseHTTPRequestHandler):
             (datetime.now() - datetime.fromisoformat(_service_status["scheduler_started_at"])).total_seconds()
         ) if _service_status["scheduler_started_at"] else 0
 
+        if self.path.rstrip("/") == "/health/deps":
+            payload = dict(_service_status)
+            payload["dependencies"] = _check_dependencies()
+        else:
+            payload = _service_status
+
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(_service_status, indent=2).encode())
+        self.wfile.write(json.dumps(payload, indent=2).encode())
 
     def log_message(self, format, *args):
         pass
@@ -93,7 +137,7 @@ def start_health_server():
 # 🚀 İş Fonksiyonları
 # ═══════════════════════════════════════════════════════════════════════
 
-def run_weekly_pipeline(force=False):
+def run_weekly_pipeline(force=False, dry_run=False):
     """Haftalik marka kesif + outreach pipeline'ini calistir."""
     now = tr_now()
     weekday = now.weekday()
@@ -102,15 +146,16 @@ def run_weekly_pipeline(force=False):
         print(f"📅 {now.strftime('%Y-%m-%d %H:%M')} — Hafta sonu, atlanıyor.")
         return
 
-    # Önce yanit/bounce kontrolü yap
-    print(f"\n{'='*60}")
-    print(f"🔍 RESPONSE CHECK (pipeline öncesi): {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
-    print(f"{'='*60}\n")
-    try:
-        from src.response_checker import check_responses
-        check_responses(dry_run=False)
-    except Exception as e:
-        print(f"⚠️ Response check hatası: {e}")
+    # Önce yanit/bounce kontrolü yap (dry-run'da skip)
+    if not dry_run:
+        print(f"\n{'='*60}")
+        print(f"🔍 RESPONSE CHECK (pipeline öncesi): {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
+        print(f"{'='*60}\n")
+        try:
+            from src.response_checker import check_responses
+            check_responses(dry_run=False)
+        except Exception as e:
+            print(f"⚠️ Response check hatası: {e}")
 
     print(f"\n{'='*60}")
     print(f"🚀 HAFTALIK PİPELİNE başladı: {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
@@ -120,12 +165,21 @@ def run_weekly_pipeline(force=False):
 
     try:
         from src.outreach import run_full_pipeline
-        run_full_pipeline(dry_run=False)
+        metrics = run_full_pipeline(dry_run=dry_run) or {}
+        _service_status["pipeline_stats"] = metrics
         print(f"\n✅ Pipeline tamamlandı: {tr_now().strftime('%H:%M:%S')} (TR)")
         _service_status["last_job_run"] = tr_now().isoformat()
         _service_status["last_job_result"] = "pipeline_success"
         ops_pipe = get_ops_logger("Marka_Is_Birligi", "Outreach")
-        ops_pipe.success("Haftalık Pipeline tamamlandı")
+        ops_pipe.success("Haftalık Pipeline tamamlandı", json.dumps(metrics, ensure_ascii=False))
+
+        # Fallback oranı yüksekse uyarı (>%10) — GPT/prompt regression sinyali
+        if metrics.get("fallback_rate_pct", 0) > 10:
+            ops_pipe.warning(
+                "Yüksek GPT fallback oranı",
+                f"%{metrics['fallback_rate_pct']} ({metrics.get('fallbacks',0)} fallback). "
+                "Personalizer prompt veya OpenAI API durumu kontrol edilmeli.",
+            )
     except Exception as e:
         print(f"❌ Pipeline hatası: {e}")
         import traceback
@@ -137,7 +191,7 @@ def run_weekly_pipeline(force=False):
         ops_pipe.error("Haftalık Pipeline çöktü", exception=e)
 
 
-def run_followup_check(force=False):
+def run_followup_check(force=False, dry_run=False):
     """Follow-up kontrolü — cevapsız markalara reply at."""
     now = tr_now()
     weekday = now.weekday()
@@ -146,15 +200,15 @@ def run_followup_check(force=False):
         print(f"📅 {now.strftime('%Y-%m-%d %H:%M')} — Hafta sonu, atlanıyor.")
         return
 
-    # Önce yanıt/bounce kontrolü yap
-    print(f"\n{'='*60}")
-    print(f"🔍 RESPONSE CHECK (follow-up öncesi): {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
-    print(f"{'='*60}\n")
-    try:
-        from src.response_checker import check_responses
-        check_responses(dry_run=False)
-    except Exception as e:
-        print(f"⚠️ Response check hatası: {e}")
+    if not dry_run:
+        print(f"\n{'='*60}")
+        print(f"🔍 RESPONSE CHECK (follow-up öncesi): {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
+        print(f"{'='*60}\n")
+        try:
+            from src.response_checker import check_responses
+            check_responses(dry_run=False)
+        except Exception as e:
+            print(f"⚠️ Response check hatası: {e}")
 
     print(f"\n{'='*60}")
     print(f"📬 FOLLOW-UP KONTROLÜ başladı: {now.strftime('%Y-%m-%d %H:%M:%S')} (TR)")
@@ -164,7 +218,7 @@ def run_followup_check(force=False):
 
     try:
         from src.followup import send_followup_emails
-        stats = send_followup_emails(dry_run=False)
+        stats = send_followup_emails(dry_run=dry_run)
         _service_status["followup_stats"] = stats
         print(f"\n✅ Follow-up tamamlandı: {tr_now().strftime('%H:%M:%S')} (TR)")
         _service_status["last_job_run"] = tr_now().isoformat()
@@ -224,10 +278,12 @@ def main():
     force_followup = "--followup" in sys.argv
     force_report = "--report" in sys.argv
     force_all = "--all" in sys.argv
-    dry_run = "--dry-run" in sys.argv # Henüz içe aktarılmadı ama gelecekte eklenebilir.
-    
+    dry_run = "--dry-run" in sys.argv
+
     is_manual = force_pipeline or force_followup or force_report or force_all
     mode = "Manuel Mod" if is_manual else "Cron Modu"
+    if dry_run:
+        mode += " · DRY-RUN"
 
     print("=" * 60)
     print(f"🤝 Marka İş Birliği — Otomatik Outreach Sistemi ({mode})")
@@ -238,10 +294,10 @@ def main():
     if is_manual:
         if force_all or force_pipeline:
             print("➡️ Manuel tetikleme: run_weekly_pipeline çalışıyor...")
-            run_weekly_pipeline(force=True)
+            run_weekly_pipeline(force=True, dry_run=dry_run)
         if force_all or force_followup:
             print("➡️ Manuel tetikleme: run_followup_check çalışıyor...")
-            run_followup_check(force=True)
+            run_followup_check(force=True, dry_run=dry_run)
         if force_all or force_report:
             print("➡️ Manuel tetikleme: run_weekly_report_job çalışıyor...")
             run_weekly_report_job()
@@ -249,10 +305,10 @@ def main():
         # Cron mantığı
         if weekday == 0:
             print("➡️ Pazartesi: run_weekly_pipeline tetikleniyor...")
-            run_weekly_pipeline(force=False)
+            run_weekly_pipeline(force=False, dry_run=dry_run)
         elif weekday == 3:
             print("➡️ Perşembe: run_followup_check tetikleniyor...")
-            run_followup_check(force=False)
+            run_followup_check(force=False, dry_run=dry_run)
         elif weekday == 4:
             print("➡️ Cuma: run_weekly_report_job tetikleniyor...")
             run_weekly_report_job()

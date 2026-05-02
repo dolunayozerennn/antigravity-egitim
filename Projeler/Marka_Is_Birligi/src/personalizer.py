@@ -13,42 +13,60 @@ import requests
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# ── Dolunay profil bilgileri (template'lerde kullanılır) ────────────────────
-DOLUNAY_PROFILE = {
-    "name": "Dolunay Özeren",
-    "instagram": "https://www.instagram.com/dolunay_ozeren/",
-    "tiktok": "https://www.tiktok.com/@dolunayozeren",
-    "youtube": "https://www.youtube.com/@dolunayozeren/",
-    "total_views": "100M+",
-    "country": "Turkey",
-    "recent_collabs": "Pixelcut, Nim AI, Aithor, TopView, Creatify, Lexi AI, ArtFlow, Temu, Printify, Syntx",
-    "top_results": [
-        {"brand": "Pixelcut", "views": "19.7M", "url": "https://www.instagram.com/reel/DAdt0tUN-j9/"},
-        {"brand": "Nim AI", "views": "4M", "url": "https://www.instagram.com/reel/DKtuJ3cK-Yr/"},
-        {"brand": "Aithor", "views": "2M", "url": "https://www.instagram.com/reel/DKHLswaK4Tj/"},
-    ],
-}
 
-# ── Profesyonel Email Signature ────────────────────────────────────────────
-EMAIL_SIGNATURE_TEXT = """
-—
-Dolunay Özeren
-AI Content Creator | 100M+ Organic Views
-📧 dolunay@dolunay.ai
-🌐 dolunay.ai
-📸 instagram.com/dolunay_ozeren
-▶️ youtube.com/@dolunayozeren
-🎵 tiktok.com/@dolunayozeren
-"""
+# ── Dolunay profili — config/dolunay_profile.json'dan yüklenir ─────────────
+def _load_dolunay_profile():
+    path = os.path.join(BASE_DIR, "config", "dolunay_profile.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"[PERSONALIZER] ⚠️ dolunay_profile.json okunamadı ({e}); minimal default kullanılıyor.")
+        return {
+            "name": "Dolunay Özeren",
+            "tagline": "AI Content Creator",
+            "email": "dolunay@dolunay.ai",
+            "website": "dolunay.ai",
+            "instagram": "https://www.instagram.com/dolunay_ozeren/",
+            "tiktok": "https://www.tiktok.com/@dolunayozeren",
+            "youtube": "https://www.youtube.com/@dolunayozeren/",
+            "total_views": "100M+",
+            "country": "Turkey",
+            "recent_collabs": "",
+            "top_results": [],
+        }
 
-EMAIL_SIGNATURE_HTML = """
-<br><br>
-<p style="font-size: 13px; color: #555; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 16px;">
-  <strong>Dolunay Özeren</strong><br>
-  AI Content Creator | 100M+ Organic Views<br>
-  <a href="https://dolunay.ai" style="color: #555; text-decoration: none;">dolunay.ai</a>
-</p>
-"""
+
+DOLUNAY_PROFILE = _load_dolunay_profile()
+
+
+def _build_signature_text(p):
+    return (
+        f"\n—\n{p['name']}\n{p.get('tagline','')}\n"
+        f"📧 {p.get('email','')}\n"
+        f"🌐 {p.get('website','')}\n"
+        f"📸 instagram.com/dolunay_ozeren\n"
+        f"▶️ youtube.com/@dolunayozeren\n"
+        f"🎵 tiktok.com/@dolunayozeren\n"
+    )
+
+
+def _build_signature_html(p):
+    return (
+        '\n<br><br>\n'
+        '<p style="font-size: 13px; color: #555; border-top: 1px solid #ddd; '
+        'padding-top: 10px; margin-top: 16px;">\n'
+        f'  <strong>{p["name"]}</strong><br>\n'
+        f'  {p.get("tagline","")}<br>\n'
+        f'  <a href="https://{p.get("website","dolunay.ai")}" '
+        'style="color: #555; text-decoration: none;">'
+        f'{p.get("website","dolunay.ai")}</a>\n'
+        '</p>\n'
+    )
+
+
+EMAIL_SIGNATURE_TEXT = _build_signature_text(DOLUNAY_PROFILE)
+EMAIL_SIGNATURE_HTML = _build_signature_html(DOLUNAY_PROFILE)
 
 # Fallback kullanım istatistikleri
 _fallback_count = 0
@@ -56,26 +74,23 @@ _total_generated = 0
 
 
 def _get_openai_key():
-    """OpenAI API key'ini al."""
+    """OpenAI API key'ini al (Railway env veya master.env)."""
     key = os.environ.get("OPENAI_API_KEY")
     if key:
         return key
-    # Lokal fallback
-    import re
-    knowledge_path = os.path.join(BASE_DIR, "..", "..", "_knowledge", "api-anahtarlari.md")
-    if os.path.exists(knowledge_path):
-        with open(knowledge_path, "r") as f:
-            content = f.read()
-        for line in content.split("\n"):
-            if "sk-proj-" in line:
-                match = re.search(r"`(sk-proj-[^`]+)`", line)
-                if match:
-                    return match.group(1)
-    return None
+    try:
+        from env_loader import get_env as _ge
+        return _ge("OPENAI_API_KEY") or None
+    except ImportError:
+        return None
 
 
-def _call_openai(prompt, system_prompt=None, model="gpt-4.1-nano"):
-    """OpenAI API çağrısı yapar."""
+def _call_openai(prompt, system_prompt=None, model="gpt-4.1-nano", json_mode=False):
+    """OpenAI API çağrısı yapar.
+
+    `json_mode=True` ise `response_format={"type":"json_object"}` set edilir —
+    model garanti JSON döner, parse fallback'e ihtiyaç azalır.
+    """
     api_key = _get_openai_key()
     if not api_key:
         print("[PERSONALIZER] ⚠️ OpenAI API key bulunamadı, template kullanılacak.")
@@ -86,6 +101,15 @@ def _call_openai(prompt, system_prompt=None, model="gpt-4.1-nano"):
         messages.append({"role": "system", "content": system_prompt})
     messages.append({"role": "user", "content": prompt})
 
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 800,
+    }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
+
     try:
         resp = requests.post(
             "https://api.openai.com/v1/chat/completions",
@@ -93,12 +117,7 @@ def _call_openai(prompt, system_prompt=None, model="gpt-4.1-nano"):
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
             },
-            json={
-                "model": model,
-                "messages": messages,
-                "temperature": 0.7,
-                "max_tokens": 800,
-            },
+            json=payload,
             timeout=30,
         )
         resp.raise_for_status()
@@ -174,8 +193,8 @@ Write a personalized email that references what {brand_name} does specifically."
     global _total_generated, _fallback_count
     _total_generated += 1
 
-    result = _call_openai(prompt, OUTREACH_SYSTEM_PROMPT)
-    
+    result = _call_openai(prompt, OUTREACH_SYSTEM_PROMPT, json_mode=True)
+
     if result:
         parsed = _safe_parse_json(result)
         if parsed and "subject" in parsed:
@@ -346,7 +365,7 @@ Dolunay's latest views: Pixelcut reel now at 19.7M views.
 
 Write a short, specific follow-up that gives them a reason to reply NOW."""
 
-    result = _call_openai(prompt, FOLLOWUP_SYSTEM_PROMPT)
+    result = _call_openai(prompt, FOLLOWUP_SYSTEM_PROMPT, json_mode=True)
 
     if result:
         parsed = _safe_parse_json(result)
@@ -377,70 +396,37 @@ I'd love to create something similar for {brand_name}. Would you be open to a qu
     return {"body_text": body_text, "body_html": body_html}
 
 
-def research_brand_for_followup(brand_info, apify_token=None):
-    """
-    Follow-up kişiselleştirmesi için markanın son aktivitelerini araştırır.
-    (Seçenek A — Web + Instagram analizi)
-    
-    Args:
-        brand_info: dict with instagram_handle, website
-        apify_token: Apify API token
-    
+def research_brand_for_followup(brand_info):
+    """Follow-up kişiselleştirmesi için markanın son aktivitelerini araştırır.
+
+    Instagram son paylaşımları için src/scraper.scrape_profile_posts'u
+    reuse eder (token rotasyonu + tek noktada Apify config). Web özeti
+    için OpenAI'a kısa prompt atar.
+
     Returns:
         dict: {recent_posts, website_summary}
     """
+    from src.scraper import scrape_profile_posts
+
     handle = brand_info.get("instagram_handle", "")
     website = brand_info.get("website", "")
     context = {"recent_posts": [], "website_summary": ""}
 
-    if not apify_token:
-        apify_token = os.environ.get("APIFY_API_KEY")
+    if handle:
+        print(f"  📱 @{handle} son paylaşımları çekiliyor...")
+        posts = scrape_profile_posts(handle, limit=5)
+        context["recent_posts"] = [
+            {"caption": (p.get("caption") or "")[:150], "likes": p.get("likes_count", 0)}
+            for p in posts
+        ]
+        if posts:
+            print(f"  ✅ {len(posts)} paylaşım bulundu.")
 
-    # 1. Son Instagram paylaşımlarını çek
-    if handle and apify_token:
-        try:
-            print(f"  📱 @{handle} son paylaşımları çekiliyor...")
-            resp = requests.post(
-                "https://api.apify.com/v2/acts/apify~instagram-scraper/runs",
-                headers={"Authorization": f"Bearer {apify_token}", "Content-Type": "application/json"},
-                json={
-                    "directUrls": [f"https://www.instagram.com/{handle}/"],
-                    "resultsType": "posts",
-                    "resultsLimit": 5,
-                },
-                timeout=30,
-            )
-            if resp.status_code == 201:
-                import time
-                run_id = resp.json()["data"]["id"]
-                # Polling (max 2 dakika)
-                for _ in range(12):
-                    time.sleep(10)
-                    status_resp = requests.get(
-                        f"https://api.apify.com/v2/actor-runs/{run_id}",
-                        headers={"Authorization": f"Bearer {apify_token}"},
-                    )
-                    status = status_resp.json()["data"]["status"]
-                    if status == "SUCCEEDED":
-                        dataset_id = status_resp.json()["data"]["defaultDatasetId"]
-                        items = requests.get(
-                            f"https://api.apify.com/v2/datasets/{dataset_id}/items",
-                            headers={"Authorization": f"Bearer {apify_token}"},
-                        ).json()
-                        context["recent_posts"] = [
-                            {"caption": (item.get("caption") or "")[:150], "likes": item.get("likesCount", 0)}
-                            for item in items[:5]
-                        ]
-                        print(f"  ✅ {len(context['recent_posts'])} paylaşım bulundu.")
-                        break
-                    elif status in ("FAILED", "ABORTED"):
-                        break
-        except Exception as e:
-            print(f"  ⚠️ Instagram araştırma hatası: {e}")
-
-    # 2. Web sitesinden kısa özet çıkar (OpenAI ile)
     if website:
-        summary_prompt = f"Visit {website} mentally and describe in 1 sentence what this company does. Be specific about their product."
+        summary_prompt = (
+            f"Visit {website} mentally and describe in 1 sentence what this company does. "
+            "Be specific about their product."
+        )
         summary = _call_openai(summary_prompt)
         if summary:
             context["website_summary"] = summary

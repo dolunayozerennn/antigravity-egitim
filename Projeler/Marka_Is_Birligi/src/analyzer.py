@@ -27,41 +27,31 @@ COLLAB_MARKERS_EN = [
     "collab", "collaboration", "paid partnership",
 ]
 
-# ── Bilinen AI markaları ────────────────────────────────────────────────────
-KNOWN_AI_BRANDS = {
-    "chatgpt", "openai", "claude", "anthropic", "gemini", "googlegemini",
-    "midjourney", "dalle", "dall_e", "stability", "stablediffusion",
-    "copilot", "microsoftcopilot", "perplexity", "perplexity_ai",
-    "runway", "runwayml", "heygen", "heygenofficial", "synthesia",
-    "sora", "luma_ai", "lumalabs", "kling", "klingai", "klingcreator",
-    "pika", "topview_ai", "topviewai", "creatify.ai", "creatifyai",
-    "canva", "adobe", "adobefirefly", "figma", "pixelcut", "pixelcutapp",
-    "napkin_ai", "napkinai", "suno", "sunomusic", "udio",
-    "jasper_ai", "copy.ai", "writesonic", "aithor", "aithorai",
-    "repl.it", "replit", "cursor_ai", "cursorapp", "v0", "v0dev",
-    "bolt", "boltai", "elevenlabs", "descript", "gamma", "gammaapp",
-    "ideogram", "ideogramai", "fluxai", "flux", "recraft", "recraftai",
-    "magnific", "magnific_ai", "krea", "krea_ai", "invideo", "invideoai",
-    "captions", "captionsapp", "pictory", "pictoryai",
-}
+# ── Filtre listeleri (config/brand_filters.json'dan yüklenir) ──────────────
+_BRAND_FILTERS_PATH = os.path.join(BASE_DIR, "config", "brand_filters.json")
+
+
+def _load_brand_filters():
+    try:
+        with open(_BRAND_FILTERS_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return (
+            {b.lower() for b in data.get("known_ai_brands", [])},
+            {b.lower() for b in data.get("false_positives", [])},
+            {b.lower() for b in data.get("skip_big_companies", [])},
+        )
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"[ANALYZER] ⚠️ brand_filters.json okunamadı ({e}); boş listelerle devam.")
+        return set(), set(), set()
+
+
+KNOWN_AI_BRANDS, FALSE_POSITIVES, SKIP_BIG_COMPANIES = _load_brand_filters()
 
 AI_KEYWORDS = [
     "ai", "yapay zeka", "artificial intelligence", "machine learning",
     "deep learning", "gpt", "llm", "generative", "neural",
     "automation", "chatbot", "copilot",
 ]
-
-# ── False positive filtresi ─────────────────────────────────────────────────
-FALSE_POSITIVES = {
-    "ibrahimselim", "birceakalay", "duygubaloglut",
-    "sedaincekilagoz", "gaminggentr", "nvidiageforcetr",
-    "hepsiburada", "iamozdesign", "raw.dijital",
-    "aysevain", "burakcakir.ai", "archivinciai",
-}
-
-SKIP_BIG_COMPANIES = {
-    "googleturkiye", "googlegemini", "meta.ai", "samsungturkiye",
-}
 
 
 def extract_mentions_from_caption(caption):
