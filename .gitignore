@@ -157,6 +157,12 @@ test_railway.py
 **/scratch_*.py
 **/scratch_*.js
 
+# Ad-hoc debug script'leri (lokal kalmalı, repo'ya girmesin)
+Projeler/Whatsapp_Onboarding/scratch.js
+Projeler/Whatsapp_Onboarding/test-volkan.js
+Projeler/Dolunay_Otonom_Kapak/test_notion.py
+Projeler/Dolunay_Otonom_Kapak/test_img.png
+
 # Netlify local state
 **/.netlify/
 
