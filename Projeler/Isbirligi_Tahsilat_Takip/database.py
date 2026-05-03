@@ -1,10 +1,16 @@
 """
 database.py — Tahsilat Bildirim Filtresi (state-less)
 
-Atlama kuralları (uyarı gönderilmez):
-  - Ceren Ödeme = "Ödeme Yok"  → işbirliği değil, kayıt göz ardı
-  - Ceren Ödeme = "Ödendi"     → tahsilat tamam
-  - Check = True                → tahsilat manuel işaretlenmiş
+Doğruluk kaynağı:
+  - Marka tahsilat etti mi? → Tahsilat Takip > "Tahsil Tarihi" alanı dolu mu
+  - "Ceren Ödeme" video DB'sindeki Ceren komisyonu için, marka tahsilatı DEĞİL.
+
+Atlama kuralları (uyarı GÖNDERİLMEZ):
+  1. Ceren Ödeme = "Ödeme Yok"  → işbirliği değil, baştan elenir
+  2. Tahsilat Takip kaydı VAR ve Tahsil Tarihi DOLU → markadan alınmış
+  3. Check = True → manuel "tahsil edildi" işareti
+
+Tahsilat Takip kaydı YOK ise: kayıp olabileceği için atlamayız, uyarıya dahil ederiz.
 """
 
 from datetime import datetime
@@ -20,21 +26,24 @@ def _bracket(days_passed):
     return None
 
 
-def get_pending_notifications(videos, amounts=None):
-    amounts = amounts or {}
+def get_pending_notifications(videos, payment_status=None):
+    payment_status = payment_status or {}
     pending = []
     now = datetime.now()
 
     for video in videos:
-        ceren_odeme = video.get("ceren_odeme", "")
-
-        # İşbirliği değil → kayıt baştan elenir, Check'e bakılmaz
-        if ceren_odeme == "Ödeme Yok":
+        # 1. İşbirliği değil
+        if video.get("ceren_odeme", "") == "Ödeme Yok":
             continue
 
-        # Tahsilat tamam (Ceren Ödeme = Ödendi veya Check işaretli)
-        if ceren_odeme == "Ödendi":
+        page_id = video["id"]
+        ps = payment_status.get(page_id) or {}
+
+        # 2. Markadan tahsilat alınmış
+        if ps.get("paid"):
             continue
+
+        # 3. Manuel check işareti
         if video.get("check", False):
             continue
 
@@ -54,14 +63,13 @@ def get_pending_notifications(videos, amounts=None):
         if bracket is None:
             continue
 
-        page_id = video["id"]
         pending.append({
             "id": page_id,
             "title": video["title"],
             "published_date": pub_date.strftime("%Y-%m-%d"),
             "days_passed": days_passed,
             "bracket": bracket,
-            "amount": amounts.get(page_id),
+            "amount": ps.get("amount"),
             "notion_url": video.get("notion_url", "https://www.notion.so")
         })
 

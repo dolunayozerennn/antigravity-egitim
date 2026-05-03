@@ -82,14 +82,19 @@ def fetch_published_videos():
     return videos
 
 
-def fetch_payment_amounts():
+def fetch_payment_status():
     """
-    Tahsilat Takip DB'sini SADECE OKUR ve {video_page_id: tutar} döner.
-    Bir video birden fazla tahsilat satırına bağlıysa toplanır.
+    Tahsilat Takip DB'sini SADECE OKUR ve {video_page_id: {"amount": x, "paid": bool}} döner.
+
+    paid = True   → markadan tahsilat alınmış (Tahsil Tarihi dolu en az bir satır var)
+    paid = False  → tahsilat satırı var ama Tahsil Tarihi boş (markadan henüz alınmadı)
+    Hiç eşleşme yoksa → dict'te yer almaz (kayıp tahsilat satırı = atlanmaz, uyarı verilir).
+
+    Bir video birden fazla satıra bağlıysa: amount toplanır, paid = (en az biri ödenmiş).
     Bu DB üzerinde hiçbir yazma çağrısı yoktur.
     """
     url = f"https://api.notion.com/v1/databases/{TAHSILAT_TAKIP_DB_ID}/query"
-    amounts = {}
+    status = {}
     has_more = True
     next_cursor = None
     payload = {}
@@ -106,16 +111,27 @@ def fetch_payment_amounts():
         data = resp.json()
         for row in data.get("results", []):
             props = row.get("properties", {})
+
             tutar = props.get("Tutar", {}).get("number")
-            if tutar is None:
-                continue
+            tahsil_tarihi = (props.get("Tahsil Tarihi", {}).get("date") or {}).get("start")
+            row_paid = bool(tahsil_tarihi)
+
             relation = props.get("Dolunay Reels", {}).get("relation", []) or []
             for ref in relation:
                 video_id = ref.get("id")
-                if video_id:
-                    amounts[video_id] = amounts.get(video_id, 0) + tutar
+                if not video_id:
+                    continue
+                cur = status.setdefault(video_id, {"amount": 0, "paid": False})
+                if tutar is not None:
+                    cur["amount"] = (cur["amount"] or 0) + tutar
+                if row_paid:
+                    cur["paid"] = True
 
         has_more = data.get("has_more", False)
         next_cursor = data.get("next_cursor", None)
 
-    return amounts
+    # amount'u 0'dan None'a çevir (gösterimde "—" olur)
+    for v in status.values():
+        if v["amount"] == 0:
+            v["amount"] = None
+    return status

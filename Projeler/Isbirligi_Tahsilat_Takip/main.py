@@ -1,5 +1,5 @@
 from datetime import datetime
-from notion_client import fetch_published_videos, fetch_payment_amounts
+from notion_client import fetch_published_videos, fetch_payment_status
 from database import get_pending_notifications
 from email_client import send_email_notification
 from ops_logger import get_ops_logger
@@ -107,14 +107,15 @@ def check_for_alerts():
         return
 
     try:
-        amounts = fetch_payment_amounts()
+        payment_status = fetch_payment_status()
     except Exception as e:
         print(f"Tahsilat Takip okuma hatası (devam ediliyor, tutarlar boş): {e}")
-        amounts = {}
+        payment_status = {}
 
-    print(f"Toplam {len(videos)} yayınlanmış video, {len(amounts)} tahsilat eşlemesi bulundu.")
+    paid_count = sum(1 for v in payment_status.values() if v.get("paid"))
+    print(f"Toplam {len(videos)} yayınlanmış video, {len(payment_status)} tahsilat eşlemesi ({paid_count} ödenmiş).")
 
-    pending = get_pending_notifications(videos, amounts=amounts)
+    pending = get_pending_notifications(videos, payment_status=payment_status)
 
     if not pending:
         print("Uyarı gerektiren tahsilat yok — mail atılmayacak.")
