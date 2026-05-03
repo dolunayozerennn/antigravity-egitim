@@ -1,9 +1,9 @@
 """
 Ceren_Marka_Takip — E-posta Bildirim Sistemi
 ===============================================
-- Hatırlatma e-postası (alıcı: ALERT_EMAIL env ile konfigüre edilir)
-- Hata alert e-postası
-- Haftalık özet rapor
+Tek bir digest mail gönderir: iki bölüm halinde.
+- Yeni: bu run'da ilk kez hatırlatılan açık collab'lar
+- Hala bekleyen: önceki digest'lerde de geçmiş, hala kapanmamış collab'lar
 """
 
 import os
@@ -11,22 +11,20 @@ import base64
 import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
 from typing import List, Dict, Any
 
 from services.gmail_service import get_gmail_service
 
 logger = logging.getLogger(__name__)
 
-# E-posta Config — Gmail OAuth ile gönderim (Ceren hesabı üzerinden)
+# Gmail OAuth ile gönderim — Ceren hesabı üzerinden
 FROM_EMAIL = "ceren@dolunay.ai"
 
-# Alıcılar — raporlar ALERT_EMAIL'e gider (geçici: Dolunay izleme modunda)
+# Alıcı (izleme modu: Dolunay)
 REPORT_EMAIL = os.environ.get("ALERT_EMAIL", "ozerendolunay@gmail.com")
 
 
 def _send_email(to: str, subject: str, body_html: str):
-    """Gmail API (OAuth) ile e-posta gönder."""
     msg = MIMEMultipart("alternative")
     msg["From"] = FROM_EMAIL
     msg["To"] = to
@@ -45,73 +43,99 @@ def _send_email(to: str, subject: str, body_html: str):
         raise
 
 
-def send_reminder_to_ceren(threads: List[Dict[str, Any]]):
-    """Stale thread hatırlatması gönder (alıcı: REPORT_EMAIL)."""
-    if not threads:
-        logger.info("Bildirilecek thread yok, mail gönderilmiyor")
+def _row_html(idx: int, item: Dict[str, Any]) -> str:
+    """Tek satır HTML üretir. item = digest entry dict."""
+    brand = item.get("brand") or "Bilinmeyen Marka"
+    subj = item.get("subject") or "(Konu yok)"
+    reason = item.get("reason") or "Cevap bekleniyor"
+    days = item.get("business_days_open", "?")
+    link = item.get("gmail_link") or "#"
+    reminder_count = int(item.get("reminder_count") or 0)
+    counter_label = (
+        f"{reminder_count + 1}. kez hatırlatılıyor" if reminder_count > 0 else "İlk hatırlatma"
+    )
+
+    return f"""
+    <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 10px 8px; vertical-align: top; color:#999;">{idx}</td>
+        <td style="padding: 10px 8px; vertical-align: top;">
+            <strong>{brand}</strong>
+            <div style="color:#666; font-size:13px; margin-top:2px;">{subj[:80]}</div>
+            <div style="color:#999; font-size:11px; margin-top:2px;">{counter_label}</div>
+        </td>
+        <td style="padding: 10px 8px; vertical-align: top; color:#444; font-size:13px;">{reason}</td>
+        <td style="padding: 10px 8px; vertical-align: top; white-space:nowrap;">{days} iş günü</td>
+        <td style="padding: 10px 8px; vertical-align: top;">
+            <a href="{link}" style="color:#1a73e8; text-decoration:none;">Aç →</a>
+        </td>
+    </tr>
+    """
+
+
+def _section_html(title: str, color: str, items: List[Dict[str, Any]]) -> str:
+    if not items:
+        return ""
+    rows = "".join(_row_html(i + 1, item) for i, item in enumerate(items))
+    return f"""
+    <h3 style="color: {color}; margin-top: 28px; margin-bottom: 8px;">{title} ({len(items)})</h3>
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <thead>
+            <tr style="background: #f7f7f7; text-align:left;">
+                <th style="padding: 8px;">#</th>
+                <th style="padding: 8px;">Marka / Konu</th>
+                <th style="padding: 8px;">Durum</th>
+                <th style="padding: 8px;">Sessizlik</th>
+                <th style="padding: 8px;">Link</th>
+            </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+    </table>
+    """
+
+
+def send_digest(new_items: List[Dict[str, Any]], ongoing_items: List[Dict[str, Any]]):
+    """
+    İki bölümlü digest gönder.
+    new_items: Reminder Count == 0 olanlar (ilk kez hatırlatılıyor).
+    ongoing_items: Reminder Count > 0 olanlar (carry-forward — hala açık).
+    """
+    total = len(new_items) + len(ongoing_items)
+    if total == 0:
+        logger.info("Digest gönderilmiyor: ne yeni ne devam eden açık collab var.")
         return
 
-    count = len(threads)
-    subject = f"🔔 Hatırlatma: {count} marka thread'i cevap bekliyor"
+    parts = []
+    if new_items:
+        parts.append(f"{len(new_items)} yeni")
+    if ongoing_items:
+        parts.append(f"{len(ongoing_items)} devam eden")
+    subject = f"🔔 Marka Takip: {' + '.join(parts)} açık collab"
 
-    thread_rows = ""
-    for i, t in enumerate(threads, 1):
-        brand = t.get("brand_name", "Bilinmeyen Marka")
-        subj = t.get("subject", "(Konu yok)")
-        reason = t.get("reason", "Cevap bekleniyor")
-        days = t.get("stale_business_days", "?")
-        link = t.get("gmail_link", "#")
-        urgency = t.get("urgency", "medium")
-        
-        urgency_badge = {
-            "high": "🔴 Acil",
-            "medium": "🟡 Normal", 
-            "low": "🟢 Düşük"
-        }.get(urgency, "🟡 Normal")
-
-        thread_rows += f"""
-        <tr style="border-bottom: 1px solid #eee;">
-            <td style="padding: 12px;">{i}</td>
-            <td style="padding: 12px;"><strong>{brand}</strong><br><span style="color:#666;font-size:13px;">{subj[:60]}</span></td>
-            <td style="padding: 12px;">{reason}</td>
-            <td style="padding: 12px;">{days} iş günü</td>
-            <td style="padding: 12px;">{urgency_badge}</td>
-            <td style="padding: 12px;"><a href="{link}" style="color:#1a73e8;text-decoration:none;">Aç →</a></td>
-        </tr>
-        """
+    new_section = _section_html("🆕 Yeni gelenler", "#1a73e8", new_items)
+    ongoing_section = _section_html("⏳ Hala bekleyenler", "#d97706", ongoing_items)
 
     body_html = f"""
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #333;">🔔 Marka İşbirliği Hatırlatması</h2>
-        <p style="color: #555; font-size: 15px;">
-            Merhaba,<br><br>
-            Aşağıdaki <strong>{count}</strong> marka thread'inde 48 saatten fazladır cevap bekleniyor:
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333; margin-bottom: 6px;">🔔 Marka İşbirliği Digest'i</h2>
+        <p style="color: #666; font-size: 14px; margin-top: 0;">
+            48+ iş saati cevapsız kalmış açık collab'lar. Bir thread "Ceren cevap yazdı" durumuna geçince
+            otomatik olarak listeden çıkar; "false_positive / closed_won / closed_lost" olarak işaretlenirse
+            de bir daha listeye girmez.
         </p>
 
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px;">
-            <thead>
-                <tr style="background: #f5f5f5;">
-                    <th style="padding: 10px; text-align: left;">#</th>
-                    <th style="padding: 10px; text-align: left;">Marka / Konu</th>
-                    <th style="padding: 10px; text-align: left;">Durum</th>
-                    <th style="padding: 10px; text-align: left;">Sessizlik</th>
-                    <th style="padding: 10px; text-align: left;">Öncelik</th>
-                    <th style="padding: 10px; text-align: left;">Link</th>
-                </tr>
-            </thead>
-            <tbody>
-                {thread_rows}
-            </tbody>
-        </table>
+        {new_section}
+        {ongoing_section}
 
-        <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
-            Bu otomatik bir hatırlatmadır. Zaten yanıtladıysan bu mesajı görmezden gelebilirsin.<br>
-            Ceren Marka Takip Sistemi — Antigravity
+        <p style="color: #999; font-size: 12px; margin-top: 32px; border-top: 1px solid #eee; padding-top: 14px;">
+            Yanlış sınıflandırma gördüğünde ilgili kaydı Notion'da
+            <strong>Ceren — Marka Collab Thread Tracker</strong> DB'sinde
+            <code>Status = false_positive</code> yap; bir daha gelmez.<br>
+            Ceren Marka Takip — Antigravity
         </p>
     </div>
     """
 
     _send_email(REPORT_EMAIL, subject, body_html)
-    logger.info(f"✅ {REPORT_EMAIL} adresine {count} thread için hatırlatma gönderildi")
-
-
+    logger.info(
+        f"✅ Digest gönderildi: {len(new_items)} yeni + {len(ongoing_items)} devam eden → {REPORT_EMAIL}"
+    )

@@ -42,9 +42,10 @@ SUBJECT_BLOCKLIST = [
     "shipping confirmation", "kargo takip",
     "order confirmation", "sipariş onay",
     # Abonelik & digest
-    "unsubscribe", "newsletter", "haber bülteni",
+    "unsubscribe", "newsletter", "haber bülteni", "e-bülten",
     "your subscription", "aboneliğiniz",
     "weekly digest", "daily digest", "haftalık özet",
+    "bültenimize hoş geldin", "aboneliğinizi onayla",
     # Otomatik yanıtlar
     "out of office", "otomatik yanıt",
     "calendar invitation", "takvim daveti",
@@ -61,12 +62,21 @@ SUBJECT_BLOCKLIST = [
     "camscanner",
     # Mozi/kupon/tanıtım bülteni
     "mozi minute", "play your hand",
+    # Kampanya/indirim — toplu marketing göstergeleri
+    "kampanya", "indirim", "flaş satış", "mega indirim",
+    "%50 indirim", "fırsat", "son saatler", "stoklarla sınırlı",
 ]
 
 # Bu sender domain'lerden gelen e-postalar → otomatik atla
+# Genişletilmiş: toplu mail prefix'leri eklendi (marketing@, bulletin@, vs.)
+# Not: "info", "team", "hello", "support", "contact" kasıtlı olarak DAHIL EDILMEDİ —
+# küçük/orta marka outreach'leri bu prefix'lerden gelebiliyor; onları List-Unsubscribe
+# header sinyaliyle ayırt ediyoruz.
 SENDER_BLOCKLIST_DOMAINS = [
     "noreply", "no-reply", "notifications", "mailer-daemon",
     "postmaster", "donotreply", "auto-reply", "automated",
+    "marketing", "bulletin", "campaigns", "newsletter", "news",
+    "promo", "promotions", "deals",
 ]
 
 # Bu tam sender adreslerini atla
@@ -84,29 +94,42 @@ SENDER_BLOCKLIST_EMAILS = [
 ]
 
 
-def _should_skip_thread(subject: str, last_sender_email: str) -> bool:
+def _should_skip_thread(
+    subject: str,
+    last_sender_email: str,
+    list_unsubscribe: str = "",
+    precedence: str = "",
+) -> bool:
     """
     Pre-LLM filtre: Kesinlikle marka işbirliği olamayacak thread'leri atla.
-    Bu filtre LLM API çağrısı yapmadan çalışır → maliyet ve süre tasarrufu.
+    LLM çağrısından önce çalışır — token tasarrufu + false positive azaltma.
     """
     subject_lower = subject.lower()
     sender_lower = last_sender_email.lower()
-    
+
     # Subject blocklist kontrolü
     for blocked in SUBJECT_BLOCKLIST:
         if blocked in subject_lower:
             return True
-    
+
     # Sender email blocklist
     if sender_lower in SENDER_BLOCKLIST_EMAILS:
         return True
-    
-    # Sender domain blocklist (noreply@, notifications@, vs.)
+
+    # Sender domain blocklist (noreply@, marketing@, bulletin@, vs.)
     sender_local = sender_lower.split("@")[0] if "@" in sender_lower else ""
     for blocked_prefix in SENDER_BLOCKLIST_DOMAINS:
         if blocked_prefix in sender_local:
             return True
-    
+
+    # Bulk-mail göstergeleri — gerçek collab outreach'lerinde olmaz
+    # List-Unsubscribe header'ı bulk mailing list standardıdır (RFC 2369)
+    if list_unsubscribe:
+        return True
+    # Precedence: bulk / list / junk → toplu mail
+    if precedence and precedence.lower().strip() in ("bulk", "list", "junk"):
+        return True
+
     return False
 
 
@@ -151,8 +174,12 @@ def _scan_inbox(account: str, days: int) -> List[Dict[str, Any]]:
     service = get_gmail_service(account)
     
     # Son N gündeki mesajları çek
+    # Gmail kategorilerini negate et: Promotions/Social/Updates/Forums sekmelerinde olanlar zaten collab değil.
     after_date = (datetime.utcnow() - timedelta(days=days)).strftime("%Y/%m/%d")
-    query = f"after:{after_date}"
+    query = (
+        f"after:{after_date} "
+        f"-category:promotions -category:social -category:updates -category:forums"
+    )
 
     threads = []
     skipped = 0
@@ -174,7 +201,12 @@ def _scan_inbox(account: str, days: int) -> List[Dict[str, Any]]:
             thread_data = _get_thread_detail(service, thread_meta['id'])
             if thread_data:
                 # Pre-LLM filtre: Bildirim/spam thread'lerini LLM'e göndermeden atla
-                if _should_skip_thread(thread_data["subject"], thread_data["last_sender_email"]):
+                if _should_skip_thread(
+                    thread_data["subject"],
+                    thread_data["last_sender_email"],
+                    list_unsubscribe=thread_data.get("list_unsubscribe", ""),
+                    precedence=thread_data.get("precedence", ""),
+                ):
                     logger.debug(f"PRE-FILTER ATLA: '{thread_data['subject'][:50]}'")
                     skipped += 1
                     continue
@@ -197,7 +229,10 @@ def _get_thread_detail(service, thread_id: str) -> Optional[Dict[str, Any]]:
             userId='me',
             id=thread_id,
             format='metadata',
-            metadataHeaders=['From', 'To', 'Cc', 'Subject', 'Date'],
+            metadataHeaders=[
+                'From', 'To', 'Cc', 'Subject', 'Date',
+                'List-Unsubscribe', 'Precedence',
+            ],
         ).execute()
 
         messages = thread.get('messages', [])
@@ -236,6 +271,10 @@ def _get_thread_detail(service, thread_id: str) -> Optional[Dict[str, Any]]:
             date = _get_header(msg, 'Date') or ""
             message_snippets.append(f"From: {from_addr}\nDate: {date}\n{snippet}")
 
+        # Bulk-mail göstergeleri (son mesajdan)
+        list_unsubscribe = _get_header(last_msg, 'List-Unsubscribe') or ""
+        precedence = _get_header(last_msg, 'Precedence') or ""
+
         return {
             "thread_id": thread_id,
             "subject": subject,
@@ -246,6 +285,8 @@ def _get_thread_detail(service, thread_id: str) -> Optional[Dict[str, Any]]:
             "participants": list(participants),
             "message_snippets": message_snippets,
             "gmail_link": f"https://mail.google.com/mail/u/0/#inbox/{thread_id}",
+            "list_unsubscribe": list_unsubscribe,
+            "precedence": precedence,
             "found_in_accounts": [],
         }
 

@@ -67,7 +67,7 @@ def _extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
 
 def _validate_result(result: Dict[str, Any]) -> bool:
     """Sonuçta zorunlu alanların olup olmadığını kontrol et."""
-    required = ["is_brand_collaboration"]
+    required = ["category", "confidence"]
     return all(k in result for k in required)
 
 
