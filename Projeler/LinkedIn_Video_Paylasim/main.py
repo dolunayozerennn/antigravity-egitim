@@ -1,12 +1,14 @@
 import logging
+import os
 import time
+
 import schedule
 
-import config  # Load environment variables first
-
-from core.tiktok_scraper import TikTokScraper
+import config  # boot-time validation
+from core.notion_video_selector import NotionVideoSelector
+from core.drive_downloader import DriveDownloader
 from core.video_processor import VideoProcessor
-from core.content_filter import ContentFilter
+from core.content_filter import CaptionGenerator
 from core.linkedin_publisher import LinkedInPublisher
 from core.notion_logger import NotionLogger
 from ops_logger import get_ops_logger, wait_all_loggers
@@ -14,174 +16,127 @@ from ops_logger import get_ops_logger, wait_all_loggers
 ops = get_ops_logger("LinkedIn_Video_Paylasim", "Pipeline")
 
 
-def _process_and_post_video(video, reason, scraper, processor, content_filter, publisher, logger_db):
-    """Tek bir videoyu indir → FFmpeg → upload → post et. Başarılıysa True döner."""
-    video_id = video["id"]
-    video_url = video["url"]
-    video_title = video.get("title", "")
+def _process_one(page, selector, drive, processor, captioner, publisher, logger_db) -> bool:
+    page_id = page["page_id"]
+    short_id = page_id.replace("-", "")[:8]
+    name = page["name"]
+    drive_url = page["drive_url"]
 
-    # Step 3: Download Video (1080p)
-    downloaded_path = scraper.download_video(video_url, output_id=f"linkedin_{video_id}")
-    if not downloaded_path:
-        ops.error("Video İndirme Başarısız", message=f"Video {video_id} indirilemedi")
-        logger_db.log_video(
-            video_id=video_id, status="Failed", tiktok_url=video_url,
-            filter_decision="Approved", filter_reason=f"Download failed. Filter reason: {reason}"
-        )
+    ops.info("Video İşleniyor", f"[{short_id}] {name[:60]}")
+
+    folder_id = DriveDownloader.extract_folder_id(drive_url)
+    if not folder_id:
+        msg = "Drive URL'sinde klasör ID yok"
+        ops.warning("Drive Hatası", msg)
+        logger_db.log_video(page_id=page_id, status="Failed", source_url=page.get("notion_url", ""), note=msg)
         return False
 
+    videos = drive.list_videos(folder_id)
+    if not videos:
+        msg = f"Drive klasörü ({folder_id[:12]}…) erişilemez veya boş"
+        ops.warning("Drive Hatası", msg)
+        logger_db.log_video(page_id=page_id, status="Failed", source_url=page.get("notion_url", ""), note=msg)
+        return False
+
+    chosen = drive.select_video(videos)
+    if not chosen:
+        msg = f"Klasörde {config.settings.VIDEO_PATTERN_PRIORITY} pattern'ine uyan dosya yok"
+        ops.warning("Dosya Seçim Hatası", msg)
+        logger_db.log_video(page_id=page_id, status="Failed", source_url=page.get("notion_url", ""), note=msg)
+        return False
+
+    file_size = int(chosen.get("size", 0) or 0)
+    if file_size > config.settings.MAX_VIDEO_BYTES:
+        msg = f"Dosya çok büyük ({file_size/(1024**3):.2f}GB) — LinkedIn limiti aşıldı"
+        ops.warning("Boyut Limiti", msg)
+        logger_db.log_video(page_id=page_id, status="Failed", source_url=page.get("notion_url", ""), note=msg)
+        return False
+
+    downloaded = drive.download_file(chosen["id"], output_name=f"li_{short_id}_{chosen['name']}")
+    if not downloaded:
+        logger_db.log_video(page_id=page_id, status="Failed", source_url=page.get("notion_url", ""), note="Drive indirme başarısız")
+        return False
+
+    prepared_path = ""
     try:
-        # Step 4: Metadata Strip + 1080p Ensure
-        cleaned_path = processor.strip_metadata(downloaded_path)
-        if not cleaned_path:
-            ops.error("FFmpeg İşleme Başarısız", message=f"Video {video_id} metadata strip hatası")
-            logger_db.log_video(
-                video_id=video_id, status="Failed", tiktok_url=video_url,
-                filter_decision="Approved", filter_reason=f"FFmpeg processing failed. Filter reason: {reason}"
-            )
+        prepared_path = processor.prepare_for_upload(downloaded)
+        if not prepared_path:
+            logger_db.log_video(page_id=page_id, status="Failed", source_url=page.get("notion_url", ""), note="Video processor başarısız")
             return False
 
-        # Step 5: Adapt Caption for LinkedIn (LLM)
-        linkedin_caption = content_filter.adapt_caption_for_linkedin(video_title)
-        ops.info("Caption Üretildi", f"'{linkedin_caption[:80]}...'")
+        body_text = selector.get_page_body_text(page_id)
+        caption = captioner.generate(page, body_text)
+        ops.info("Caption", f"'{caption[:140]}'")
 
-        # Step 6: Upload Video to LinkedIn
-        video_urn = publisher.upload_video(cleaned_path)
+        video_urn = publisher.upload_video(prepared_path)
         if not video_urn:
-            ops.error("LinkedIn Upload Başarısız", message=f"Video {video_id} yüklenemedi")
-            logger_db.log_video(
-                video_id=video_id, status="Failed", tiktok_url=video_url,
-                filter_decision="Approved", filter_reason=f"LinkedIn upload failed. Filter reason: {reason}",
-                adapted_caption=linkedin_caption
-            )
+            logger_db.log_video(page_id=page_id, status="Failed", source_url=page.get("notion_url", ""), adapted_caption=caption, note="LinkedIn upload başarısız")
             return False
 
-        # Step 7: Create LinkedIn Post
-        post_urn = publisher.create_post(text=linkedin_caption, video_urn=video_urn)
+        post_urn = publisher.create_post(text=caption, video_urn=video_urn)
         if not post_urn:
-            ops.error("LinkedIn Post Başarısız", message=f"Video {video_id} post oluşturulamadı")
-            logger_db.log_video(
-                video_id=video_id, status="Failed", tiktok_url=video_url,
-                filter_decision="Approved", filter_reason=f"Post creation failed. Filter reason: {reason}",
-                adapted_caption=linkedin_caption
-            )
+            logger_db.log_video(page_id=page_id, status="Failed", source_url=page.get("notion_url", ""), adapted_caption=caption, note="LinkedIn post oluşturulamadı")
             return False
 
-        # Step 8: Log Success
         linkedin_url = f"https://www.linkedin.com/feed/update/{post_urn}/"
         logger_db.log_video(
-            video_id=video_id, status="Success", tiktok_url=video_url,
-            linkedin_url=linkedin_url, filter_decision="Approved",
-            filter_reason=reason, adapted_caption=linkedin_caption
+            page_id=page_id,
+            status="Success",
+            source_url=page.get("notion_url", ""),
+            linkedin_url=linkedin_url,
+            adapted_caption=caption,
+            note=f"Drive file: {chosen['name']}",
         )
-        ops.success("Workflow Tamamlandı", f"Video başarıyla paylaşıldı — {linkedin_url}")
+        ops.success("Workflow Tamamlandı", f"Yayınlandı → {linkedin_url}")
         return True
 
     finally:
-        # Cleanup temp files
-        scraper.clean_tmp_files(downloaded_path)
-        if 'cleaned_path' in locals() and cleaned_path:
-            scraper.clean_tmp_files(cleaned_path)
+        drive.cleanup(downloaded)
+        if prepared_path and prepared_path != downloaded:
+            drive.cleanup(prepared_path)
 
 
 def job():
-    ops.info("Workflow Başladı", "Daily TikTok → LinkedIn Video Pipeline")
-
+    ops.info("Workflow Başladı", "Notion → Drive → LinkedIn (master kalite)")
     try:
-        # Initialize Core Modules
-        scraper = TikTokScraper()
+        selector = NotionVideoSelector()
+        drive = DriveDownloader()
         processor = VideoProcessor()
-        content_filter = ContentFilter()
+        captioner = CaptionGenerator()
         publisher = LinkedInPublisher()
         logger_db = NotionLogger()
 
-        # Step 1: Fetch Recent Videos (last 10)
-        recent_videos = scraper.get_recent_videos(count=20)
-        if not recent_videos:
-            ops.warning("Workflow Durdu", "TikTok'tan video çekilemedi")
+        pages = selector.query_published()
+        if not pages:
+            ops.warning("Workflow Durdu", "'Yayınlandı' video yok")
             return
 
-        ops.info("Video Listesi", f"{len(recent_videos)} video kontrol ediliyor")
-
-        # Step 2: Loop through videos — find first suitable, unprocessed one
-        rejected_candidates = []  # Fallback için: filter reddederse en uygununu seç
-
-        for idx, video in enumerate(recent_videos, 1):
-            video_id = video["id"]
-            video_url = video["url"]
-            video_title = video.get("title", "")
-
-            # 2a: Duplication Check (already posted OR filtered)
-            if logger_db.is_video_posted(video_id):
-                ops.info("Atlandı", f"[{idx}/{len(recent_videos)}] {video_id} — zaten işlenmiş")
+        for raw in pages:
+            page = NotionVideoSelector.parse_page(raw)
+            if not page["drive_url"]:
+                ops.info("Atlandı", f"{page['name'][:40]} — Drive linki yok")
                 continue
-
-            ops.info("Yeni Video Bulundu", f"[{idx}/{len(recent_videos)}] ID: {video_id} — {video_title[:60]}...")
-
-            # 2b: LLM Content Filter
-            filter_result = content_filter.evaluate_content(video_title)
-            decision = filter_result["decision"]
-            reason = filter_result["reason"]
-            confidence = filter_result["confidence"]
-
-            ops.info("Filter Sonucu", f"{decision} (güven: {confidence:.2f}) — {reason[:80]}")
-
-            if decision == "REJECT":
-                # Reddedilen videoyu fallback listesine ekle
-                rejected_candidates.append({
-                    "video": video, "confidence": confidence, "reason": reason
-                })
-                logger_db.log_video(
-                    video_id=video_id,
-                    status="Filtered",
-                    tiktok_url=video_url,
-                    filter_decision="Rejected",
-                    filter_reason=reason
-                )
-                ops.info("Video Reddedildi", f"Content filter: {reason[:100]}")
+            if logger_db.is_video_posted(page["page_id"]):
+                ops.info("Atlandı", f"{page['name'][:40]} — zaten işlenmiş")
                 continue
-
-            # Filter geçti — bu videoyu işle
-            result = _process_and_post_video(video, reason, scraper, processor, content_filter, publisher, logger_db)
-            if result:
-                return  # SUCCESS — exit after first successful post
-
-        # ── FALLBACK: Tüm videolar reddedildiyse, en düşük güvenli reddedileni ZORLA kabul et ──
-        if rejected_candidates:
-            best = min(rejected_candidates, key=lambda x: x["confidence"])
-            ops.warning(
-                "Fallback Aktivasyon",
-                f"Tüm {len(rejected_candidates)} video filtrelendi — en düşük güvenli reddedileni kabul ediyorum: {best['video']['id']} (güven: {best['confidence']:.2f})"
-            )
-            result = _process_and_post_video(
-                best["video"], f"FALLBACK — orijinal ret: {best['reason'][:80]}",
-                scraper, processor, content_filter, publisher, logger_db
-            )
-            if result:
+            if _process_one(page, selector, drive, processor, captioner, publisher, logger_db):
                 return
 
-        # If we reach here, all videos were either already processed or processing failed
-        ops.info("Workflow Tamamlandı", "Uygun yeni video bulunamadı — tümü zaten işlenmiş veya işleme başarısız")
-
+        ops.info("Workflow Tamamlandı", "Yeni paylaşılacak video kalmadı")
     except Exception as e:
         ops.error("FATAL ERROR", exception=e, message=str(e)[:500])
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    import os
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     mode = os.environ.get("RUN_MODE", "cron").lower()
-
     if mode == "schedule":
-        # Lokal geliştirme veya sürekli çalışan mod
         ops.info("Başlatıldı", "SCHEDULE mode (local dev) — Her gün 13:00")
         schedule.every().day.at("13:00").do(job)
         while True:
             schedule.run_pending()
             time.sleep(60)
     else:
-        # Railway Cron modu: container açılır, job çalışır, container kapanır.
         ops.info("Başlatıldı", "CRON mode — tek çalışma")
         job()
         ops.info("Job Bitti", "Container kapanıyor")

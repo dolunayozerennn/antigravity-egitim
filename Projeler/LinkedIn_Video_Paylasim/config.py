@@ -1,51 +1,54 @@
 import os
 import sys
 import shutil
-from dotenv import load_dotenv
 
-env_path = os.path.join(os.path.dirname(__file__), "..", "..", "_knowledge", "credentials", "master.env")
-if os.path.exists(env_path):
-    load_dotenv(env_path)
+from env_loader import get_env, get_sa_json_path
 
-# Antigravity V2 Fail-Fast Environment Validation
+
 class Config:
     def __init__(self):
-        # 1. Check if ENV is defined (Development or Production)
-        self.ENV = os.environ.get("ENV", "development").lower()
+        self.ENV = (os.environ.get("ENV") or get_env("ENV") or "development").lower()
         self.IS_DRY_RUN = self.ENV == "development" or os.environ.get("DRY_RUN", "0") == "1"
 
-        # System dependency check: ffmpeg is critical for video processing
         if not shutil.which("ffmpeg"):
             raise EnvironmentError("CRITICAL STARTUP FAILURE: ffmpeg binary bulunamadı! nixpacks.toml doğru yapılandırılmalı.")
 
-        # LinkedIn API
-        self.LINKEDIN_ACCESS_TOKEN = self._require_env("LINKEDIN_ACCESS_TOKEN")
-        self.LINKEDIN_PERSON_URN = self._require_env("LINKEDIN_PERSON_URN")
+        self.LINKEDIN_ACCESS_TOKEN = self._require("LINKEDIN_ACCESS_TOKEN")
+        self.LINKEDIN_PERSON_URN = self._require("LINKEDIN_PERSON_URN")
 
-        # Content Filter Strictness: "relaxed", "moderate", "strict"
-        # Moderate prompt is tuned for Dolunay's profile — permits lifestyle/education content
-        self.LINKEDIN_FILTER_STRICTNESS = os.environ.get("LINKEDIN_FILTER_STRICTNESS", "moderate")
+        self.GROQ_API_KEY = self._require("GROQ_API_KEY")
+        self.GROQ_BASE_URL = get_env("GROQ_BASE_URL") or "https://api.groq.com/openai/v1"
+        self.GROQ_MODEL = get_env("GROQ_MODEL") or "llama-3.3-70b-versatile"
 
-        # Groq (LLM - Content Filter & Caption Adaptation)
-        self.GROQ_API_KEY = self._require_env("GROQ_API_KEY")
-        self.GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
-        self.GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+        self.NOTION_TOKEN = self._require("NOTION_SOCIAL_TOKEN")
+        self.NOTION_DB_REELS = self._require("NOTION_DB_REELS_KAPAK")
+        self.NOTION_LINKEDIN_DB_ID = self._require("NOTION_LINKEDIN_DB_ID")
 
-        # Notion (LinkedIn sayfası NOTION_SOCIAL_TOKEN workspace'inde)
-        self.NOTION_TOKEN = self._require_env("NOTION_SOCIAL_TOKEN", os.environ.get("NOTION_TOKEN"))
-        self.NOTION_LINKEDIN_DB_ID = self._require_env("NOTION_LINKEDIN_DB_ID")
+        self.GOOGLE_SA_JSON_PATH = get_sa_json_path()
+        if not self.GOOGLE_SA_JSON_PATH:
+            raise EnvironmentError(
+                "CRITICAL STARTUP FAILURE: Google Service Account JSON bulunamadı! "
+                "Railway: GOOGLE_SERVICE_ACCOUNT_JSON env var (base64). "
+                "Lokal: _knowledge/credentials/google-service-account.json"
+            )
 
-        # App specific
-        self.TIKTOK_USERNAME = os.environ.get("TIKTOK_USERNAME", "dolunayozeren")
+        self.VIDEO_PATTERN_PRIORITY = [
+            p.strip().lower() for p in
+            (get_env("VIDEO_PATTERN_PRIORITY") or "tiktok,insta").split(",")
+            if p.strip()
+        ]
 
-    def _require_env(self, key, default=None):
-        """Fetches an environment variable, raises error if missing."""
-        val = os.environ.get(key, default)
+        self.MAX_VIDEO_BYTES = int(get_env("MAX_VIDEO_BYTES") or (5 * 1024 * 1024 * 1024))
+        thr = get_env("REENCODE_OVER_BYTES")
+        self.REENCODE_OVER_BYTES = int(thr) if thr else None
+
+    def _require(self, key: str) -> str:
+        val = get_env(key)
         if not val:
             raise EnvironmentError(f"CRITICAL STARTUP FAILURE: Gerekli ortam değişkeni {key} bulunamadı!")
         return val
 
-# Instantiating the config globally so it fails fast on module load.
+
 try:
     settings = Config()
 except EnvironmentError as e:

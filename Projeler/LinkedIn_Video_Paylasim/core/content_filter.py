@@ -1,150 +1,94 @@
-from ops_logger import get_ops_logger
-ops = get_ops_logger("LinkedIn_Video_Paylasim", "ContentFilter")
-import json
+"""LinkedIn caption üretici — Groq LLM, tek cümle hard rule."""
+
+import re
 import requests
 
+from ops_logger import get_ops_logger
 from config import settings
 
+ops = get_ops_logger("LinkedIn_Video_Paylasim", "CaptionGenerator")
 
-class ContentFilter:
-    """
-    LLM-based content filter and caption adapter for LinkedIn.
-    Uses Groq (llama-3.3-70b-versatile) for:
-    1. Deciding if a TikTok video is appropriate for LinkedIn
-    2. Adapting the caption to a professional LinkedIn tone
-    """
 
-    STRICTNESS_PROMPTS = {
-        "relaxed": "Her türlü içerik LinkedIn'de paylaşılabilir. Sadece açık küfür, nefret söylemi veya cinsel içerik içeren videoları reddet. Bunların dışındaki TÜM içerikler — eğlence, günlük hayat, kişisel, lifestyle, motivasyon, komedi dahil — KABUL EDİLMELİDİR. Şüphe durumunda MUTLAKA KABUL ET.",
-        "moderate": "Dolunay bir içerik üreticisi ve girişimcidir. LinkedIn profilinde her türlü konuyu paylaşır — gayrimenkul, teknoloji, motivasyon, lifestyle, komedi, günlük hayat, kişisel deneyimler, eğlence. Bir videonun kurumsal veya profesyonel olması GEREKMEZ. Eğlenceli, kişisel, casual, günlük hayata dair içerikler de LinkedIn'de gayet paylaşılabilir. Sadece açık küfür, nefret söylemi, spam veya cinsel içerik barındıran videoları reddet. Diğer HER ŞEYİ KABUL ET. Şüphe durumunda MUTLAKA KABUL ET. REJECT kararı verme eşiğin ÇOK YÜKSEK olmalı.",
-        "strict": "Sadece doğrudan iş dünyası, gayrimenkul, finans, yatırım, kariyer gelişimi veya profesyonel eğitim içeriklerini kabul et. Diğer her şeyi reddet."
-    }
+class CaptionGenerator:
+    SYSTEM_PROMPT = (
+        "Sen Dolunay Özeren'in (Dubai gayrimenkul + içerik üreticisi) LinkedIn caption yazarısın. "
+        "Sana videonun script ham metni veriliyor. Görevin: o videoyu izlemek isteyecek TEK BİR CÜMLE üretmek. "
+        "KURALLAR (hepsi zorunlu): "
+        "1) Yalnızca tek cümle. İkinci cümle veya alt satır YOK. "
+        "2) En fazla 280 karakter. "
+        "3) 'yorumlara X yaz', 'profilimdeki link', 'etiketle' gibi closing/CTA İSTEME. "
+        "4) Hashtag YOK. "
+        "5) Konuyu açıklamaya çalışma — merak uyandır, ama spoiler verme. "
+        "6) Türkçe, sade, samimi profesyonel ton. "
+        "Sadece cümleyi döndür, açıklama yapma, tırnak ekleme."
+    )
 
     def __init__(self):
         self.api_key = settings.GROQ_API_KEY
         self.base_url = settings.GROQ_BASE_URL
         self.model = settings.GROQ_MODEL
-        self.strictness = settings.LINKEDIN_FILTER_STRICTNESS
 
-    def _call_groq(self, system_prompt: str, user_prompt: str) -> str:
-        """Makes a chat completion call to Groq API."""
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
+    def _call_groq(self, user_prompt: str) -> str:
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "system", "content": self.SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
             ],
-            "temperature": 0.3,
-            "max_tokens": 1024
+            "temperature": 0.5,
+            "max_tokens": 200,
         }
-
         try:
-            resp = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=30)
             resp.raise_for_status()
-            data = resp.json()
-            return data["choices"][0]["message"]["content"].strip()
+            return resp.json()["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            ops.error(f"Groq API call failed: {e}", exception=e)
-            return None
+            ops.error(f"Groq API hatası: {e}", exception=e)
+            return ""
 
-    def evaluate_content(self, video_title: str, video_description: str = "") -> dict:
-        """
-        Evaluates whether a TikTok video is appropriate for LinkedIn.
-        
-        Returns dict:
-            {
-                "decision": "APPROVE" or "REJECT",
-                "reason": "...",
-                "confidence": 0.0-1.0
-            }
-        """
-        strictness_instruction = self.STRICTNESS_PROMPTS.get(self.strictness, self.STRICTNESS_PROMPTS["moderate"])
+    @staticmethod
+    def _strip_closings(body: str) -> str:
+        if not body:
+            return ""
+        pattern = re.compile(r"\n\s*(instagram|tiktok|shorts)[\s/]*closing\s*[:：]?", re.IGNORECASE)
+        m = pattern.search(body)
+        return body[:m.start()].strip() if m else body.strip()
 
-        system_prompt = f"""Sen bir içerik moderatörüsün. Bir TikTok videosunun LinkedIn'de paylaşılıp paylaşılmaması gerektiğine karar veriyorsun.
+    @staticmethod
+    def _enforce_single_sentence(text: str) -> str:
+        if not text:
+            return ""
+        text = text.strip().strip('"').strip("'").strip("`").strip()
+        text = text.split("\n", 1)[0].strip()
+        m = re.search(r"[.!?]", text)
+        if m:
+            text = text[: m.end()].strip()
+        if len(text) > 280:
+            text = text[:277].rstrip() + "..."
+        return text
 
-Profil: Dolunay Özeren — Dubai'de gayrimenkul danışmanı, yatırımcı, girişimci.
+    def generate(self, page: dict, body_text: str) -> str:
+        if page.get("caption_property"):
+            source = page["caption_property"]
+            ops.info("Caption kaynağı: Notion 'Caption' property")
+        elif body_text and body_text.strip():
+            source = self._strip_closings(body_text)
+            ops.info(f"Caption kaynağı: sayfa body ({len(source)} karakter, closing'ler hariç)")
+        else:
+            source = page.get("name", "")
+            ops.info("Caption kaynağı: sayfa Name (fallback)")
 
-Filtreleme kuralı:
-{strictness_instruction}
-
-SADECE aşağıdaki JSON formatında yanıt ver, başka hiçbir şey yazma:
-{{"decision": "APPROVE" veya "REJECT", "reason": "kısa açıklama", "confidence": 0.0-1.0}}"""
-
-        user_prompt = f"Video başlığı: {video_title}"
-        if video_description:
-            user_prompt += f"\nVideo açıklaması: {video_description}"
-
-        if settings.IS_DRY_RUN:
-            ops.info(f"[DRY-RUN] Would evaluate content: '{video_title[:50]}...'")
-            return {"decision": "APPROVE", "reason": "Dry-run mode", "confidence": 1.0}
-
-        raw_response = self._call_groq(system_prompt, user_prompt)
-        if not raw_response:
-            ops.warning("LLM evaluation failed — defaulting to REJECT for safety.")
-            return {"decision": "REJECT", "reason": "LLM API çağrısı başarısız", "confidence": 0.0}
-
-        try:
-            # Try to parse JSON from response
-            # Sometimes LLM wraps in ```json ... ```
-            clean = raw_response.strip()
-            if clean.startswith("```"):
-                clean = clean.split("\n", 1)[1] if "\n" in clean else clean[3:]
-                clean = clean.rsplit("```", 1)[0]
-            result = json.loads(clean.strip())
-
-            decision = result.get("decision", "REJECT").upper()
-            if decision not in ("APPROVE", "REJECT"):
-                decision = "REJECT"
-
-            return {
-                "decision": decision,
-                "reason": result.get("reason", "Bilinmeyen sebep"),
-                "confidence": float(result.get("confidence", 0.5))
-            }
-        except (json.JSONDecodeError, ValueError) as e:
-            ops.error(f"Failed to parse LLM filter response: {raw_response[:200]}. Error: {e}", exception=e)
-            return {"decision": "REJECT", "reason": f"JSON parse hatası: {raw_response[:100]}", "confidence": 0.0}
-
-    def adapt_caption_for_linkedin(self, original_caption: str) -> str:
-        """
-        Takes a TikTok caption and adapts it to a professional LinkedIn tone.
-        Uses Groq LLM to rewrite the caption.
-        """
-        if not original_caption or not original_caption.strip():
-            return "Siz bu konuda ne düşünüyorsunuz? 💬"
+        if not source.strip():
+            return self._enforce_single_sentence(page.get("name", "Yeni içerik."))
 
         if settings.IS_DRY_RUN:
-            ops.info(f"[DRY-RUN] Would adapt caption: '{original_caption[:50]}...'")
-            return f"[LinkedIn Adapted] {original_caption}"
+            ops.info(f"[DRY-RUN] Caption üretimi atlanıyor; kaynak: '{source[:80]}...'")
+            return self._enforce_single_sentence(source) or "Yeni içerik."
 
-        system_prompt = """Sen bir LinkedIn içerik uzmanısın. Dolunay Özeren adlı Dubai merkezli bir gayrimenkul danışmanı ve girişimcinin TikTok'ta paylaştığı videonun caption'ını LinkedIn'e uyarlaman isteniyor.
+        raw = self._call_groq(f"Video script:\n\n{source[:3000]}")
+        if not raw:
+            ops.warning("LLM caption boş döndü — sayfa adıyla fallback")
+            return self._enforce_single_sentence(page.get("name", "Yeni içerik."))
 
-Kurallar:
-1. Profesyonel ama samimi bir ton kullan (çok kurumsal olma, çok casual da olma)
-2. TikTok tarzı hashtag'leri kaldır, LinkedIn'e uygun 2-3 hashtag ekle (sondaki satırda)
-3. Metin 200 karakteri geçmesin (hashtag'ler hariç)
-4. Emoji kullanabilirsin ama abartma (1-2 tane yeterli)
-5. Okuyucuya bir soru sor veya düşünmeye davet et (engagement)
-6. Türkçe yaz
-7. Sadece caption metnini döndür, başka açıklama yapma"""
-
-        user_prompt = f"Orijinal TikTok caption'ı:\n{original_caption}"
-
-        adapted = self._call_groq(system_prompt, user_prompt)
-        if not adapted:
-            ops.warning("Caption adaptation failed — using cleaned original.")
-            # Fallback: basic cleanup
-            words = original_caption.split()
-            clean_words = [w for w in words if not w.startswith("#")]
-            return " ".join(clean_words).strip()
-
-        return adapted.strip()
+        return self._enforce_single_sentence(raw)
