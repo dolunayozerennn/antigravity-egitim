@@ -163,6 +163,13 @@ Projeler/Whatsapp_Onboarding/test-volkan.js
 Projeler/Dolunay_Otonom_Kapak/test_notion.py
 Projeler/Dolunay_Otonom_Kapak/test_img.png
 
+# whatsapp-onboarding scratch/test çalışmaları (50+ debug dosyası, push helper'lar)
+# ⚠️ legacy-scripts altında push_*.* token içeriyor olabilir — KESİNLİKLE commit'lenmemeli
+Projeler/Whatsapp_Onboarding/tests/
+Projeler/Whatsapp_Onboarding/scripts/
+Projeler/Whatsapp_Onboarding/.npmrc
+Projeler/Whatsapp_Onboarding/utils/phone.js
+
 # Netlify local state
 **/.netlify/
 
