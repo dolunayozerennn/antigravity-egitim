@@ -1,16 +1,13 @@
 """
 database.py — Tahsilat Bildirim Filtresi (state-less)
 
-Doğruluk kaynağı:
-  - Marka tahsilat etti mi? → Tahsilat Takip > "Tahsil Tarihi" alanı dolu mu
-  - "Ceren Ödeme" video DB'sindeki Ceren komisyonu için, marka tahsilatı DEĞİL.
+Tek tahsilat sinyali: video DB'deki 'Check' kutusu.
+  - Check = True  → tahsilat alınmış, atla
+  - Check = False → tahsilat bekleniyor
 
 Atlama kuralları (uyarı GÖNDERİLMEZ):
   1. Ceren Ödeme = "Ödeme Yok"  → işbirliği değil, baştan elenir
-  2. Tahsilat Takip kaydı VAR ve Tahsil Tarihi DOLU → markadan alınmış
-  3. Check = True → manuel "tahsil edildi" işareti
-
-Tahsilat Takip kaydı YOK ise: kayıp olabileceği için atlamayız, uyarıya dahil ederiz.
+  2. Check = True               → tahsilat tamam
 """
 
 from datetime import datetime
@@ -26,24 +23,14 @@ def _bracket(days_passed):
     return None
 
 
-def get_pending_notifications(videos, payment_status=None):
-    payment_status = payment_status or {}
+def get_pending_notifications(videos, amounts=None):
+    amounts = amounts or {}
     pending = []
     now = datetime.now()
 
     for video in videos:
-        # 1. İşbirliği değil
         if video.get("ceren_odeme", "") == "Ödeme Yok":
             continue
-
-        page_id = video["id"]
-        ps = payment_status.get(page_id) or {}
-
-        # 2. Markadan tahsilat alınmış
-        if ps.get("paid"):
-            continue
-
-        # 3. Manuel check işareti
         if video.get("check", False):
             continue
 
@@ -63,13 +50,14 @@ def get_pending_notifications(videos, payment_status=None):
         if bracket is None:
             continue
 
+        page_id = video["id"]
         pending.append({
             "id": page_id,
             "title": video["title"],
             "published_date": pub_date.strftime("%Y-%m-%d"),
             "days_passed": days_passed,
             "bracket": bracket,
-            "amount": ps.get("amount"),
+            "amount": amounts.get(page_id),
             "notion_url": video.get("notion_url", "https://www.notion.so")
         })
 
