@@ -217,9 +217,30 @@ class ProductionPipeline:
 
                 if video_result["status"] != "success" or not video_result.get("urls"):
                     error_msg = video_result.get("error", "Video üretimi başarısız")
-                    
+
+                    # Reference image format hatası → text-to-video fallback
+                    if reference_images and "image format" in error_msg.lower():
+                        log.warning(f"Single-scene ref_image reddedildi → text-to-video fallback: {error_msg}")
+                        if progress_callback:
+                            await progress_callback("retry_no_ref", "⚠️ Ürün görseli desteklenmiyor — referans görsel olmadan tekrar deneniyor...")
+                        video_task_fallback = await asyncio.to_thread(
+                            self.kie.create_video,
+                            prompt=video_prompt,
+                            duration=duration,
+                            aspect_ratio=aspect_ratio,
+                            generate_audio=True,
+                            reference_images=None,
+                        )
+                        video_result_fallback = await self.kie.async_poll_task(video_task_fallback)
+                        if video_result_fallback["status"] == "success" and video_result_fallback.get("urls"):
+                            raw_video_url = video_result_fallback["urls"][0]
+                            result["raw_video_url"] = raw_video_url
+                            log.info(f"Text-to-video fallback başarılı: {raw_video_url[:60]}...")
+                        else:
+                            raise RuntimeError(f"Seedance 2.0 fallback de başarısız: {video_result_fallback.get('error', '?')}")
+
                     # Safety filter — prompt rewrite ile tekrar dene
-                    if any(keyword in error_msg.lower() for keyword in ["safety", "sensitive", "content policy", "nsfw"]):
+                    elif any(keyword in error_msg.lower() for keyword in ["safety", "sensitive", "content policy", "nsfw"]):
                         log.warning(f"Safety filter tetiklendi: {error_msg[:100]}. Prompt yeniden yazılıyor...")
                         if progress_callback:
                             await progress_callback("retry_safety", "⚠️ Güvenlik filtresi tetiklendi — prompt yeniden yazılıyor...")
@@ -542,7 +563,11 @@ class ProductionPipeline:
 
         # ── PARALEL SAHNE ÜRETİMİ ──
         async def _produce_single_scene(scene: dict, idx: int) -> str:
-            """Tek sahneyi üretir ve video URL'ini döner."""
+            """Tek sahneyi üretir ve video URL'ini döner.
+
+            Reference image Seedance tarafından reddedilirse (örn. SVG/uzantısız OG image),
+            otomatik olarak text-to-video moduna fallback yapar — sahne yine de üretilir.
+            """
             prompt = scene.get("video_prompt", "")
             scene_name = scene.get("scene_name", f"Scene_{idx}")
 
@@ -551,16 +576,30 @@ class ProductionPipeline:
 
             log.info(f"Sahne {idx+1}/{scene_count} başlatılıyor: {scene_name}")
 
-            task = await asyncio.to_thread(
-                self.kie.create_video,
-                prompt=prompt,
-                duration=per_scene_duration,
-                aspect_ratio=aspect_ratio,
-                generate_audio=True,
-                reference_images=reference_images if reference_images else None,
-            )
+            async def _run(use_refs: bool) -> dict:
+                task = await asyncio.to_thread(
+                    self.kie.create_video,
+                    prompt=prompt,
+                    duration=per_scene_duration,
+                    aspect_ratio=aspect_ratio,
+                    generate_audio=True,
+                    reference_images=reference_images if (use_refs and reference_images) else None,
+                )
+                return await self.kie.async_poll_task(task)
 
-            result = await self.kie.async_poll_task(task)
+            result = await _run(use_refs=True)
+
+            # Reference image format hatası → text-to-video fallback
+            if (
+                result.get("status") != "success"
+                and reference_images
+                and "image format" in str(result.get("error", "")).lower()
+            ):
+                log.warning(
+                    f"Sahne {idx+1}/{scene_count} ref_image reddedildi → text-to-video fallback: "
+                    f"{result.get('error')}"
+                )
+                result = await _run(use_refs=False)
 
             if result["status"] != "success" or not result.get("urls"):
                 error = result.get("error", "Bilinmeyen hata")

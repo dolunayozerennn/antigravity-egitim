@@ -96,8 +96,12 @@ PRODUCER_SYSTEM_PROMPT = """Sen yaratıcı bir e-ticaret reklam yapımcısı ve 
 
 ### Dış Ses (Türkçe — TÜM VİDEO İÇİN TEK):
 1. Her zaman TÜRKÇE yaz.
-2. Dış ses uzunluğunu, belirlediğin toplam `duration` değerine tam uyumlu olacak şekilde ayarla. Ortalama olarak saniyede 1.6 - 2.0 kelime okunur. (Örn: 10 saniye için ~16-20 kelime). Konuşma hızlandırılmamalıdır!
-3. Metnin başı videonun başına, sonu videonun sonuna denk gelecek şekilde kurgula.
+2. **KRİTİK KELİME LİMİTİ — KESİNLİKLE AŞMA:** Toplam kelime sayısı = `duration × 1.7` formülünü ASLA AŞMAMALI. ElevenLabs Türkçe ortalama 1.7 kelime/saniye okur. Aştığında sonu kesilir, mesaj eksik kalır.
+   - 10 saniye → MAX 17 kelime
+   - 12 saniye → MAX 20 kelime
+   - 15 saniye → MAX 25 kelime
+3. Daha az kelime + daha güçlü mesaj > Daha çok kelime + kırpılmış mesaj. Kısalt, sadeleştir, en güçlü hook'u koru.
+4. Metnin başı videonun başına, sonu videonun sonuna denk gelecek şekilde kurgula.
 
 ### Genel:
 1. title ve summary her zaman TÜRKÇE olmalı.

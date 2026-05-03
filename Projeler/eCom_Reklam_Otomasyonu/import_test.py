@@ -4,11 +4,17 @@ import os
 sys.path.append(os.getcwd())
 
 modules_to_test = [
-    "services.web_scraper_service",
+    "services.firecrawl_service",
     "services.openai_service",
+    "services.kie_api",
+    "services.elevenlabs_service",
+    "services.replicate_service",
+    "services.notion_service",
     "core.scenario_engine",
     "core.conversation_manager",
-    "main"
+    "core.production_pipeline",
+    "core.url_data_extractor",
+    "main",
 ]
 
 for mod in modules_to_test:

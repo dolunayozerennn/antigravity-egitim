@@ -1,43 +1,37 @@
+"""Firecrawl + URLDataExtractor sağlık testi (eski WebScraperService kaldırıldı)."""
+
 import asyncio
 import os
 import sys
 
-# Yollari ekle
 sys.path.append(os.getcwd())
 
-with open('../../_knowledge/credentials/master.env') as f:
-    for line in f:
-        if line.startswith('OPENAI_API_KEY='):
-            os.environ['OPENAI_API_KEY'] = line.split('=', 1)[1].strip()
-
-from services.web_scraper_service import WebScraperService
+import config
+from services.firecrawl_service import FirecrawlService
 from services.openai_service import OpenAIService
+from core.url_data_extractor import URLDataExtractor
+
+settings = config.settings
+
 
 async def test():
-    scraper = WebScraperService()
-    openai_svc = OpenAIService(api_key=os.environ['OPENAI_API_KEY'])
-    
-    url = "https://www.apple.com/shop/buy-iphone/iphone-15"
-    print(f"Scraping: {url}...")
-    
-    # 1. Scrape
-    data = scraper.scrape_product_data(url, max_images=5)
-    
-    print("\n--- TEXT EXTRACTED ---")
-    print(data.get("page_text")[:500] + "...")
-    
-    images = data.get("images", [])
-    print(f"\n--- IMAGES EXTRACTED ({len(images)}) ---")
-    for img in images:
-        print(img["url"])
-        
-    if not images:
-        print("No images found.")
-        return
-        
-    # 2. Select best
-    print("\n--- AI SELECTION ---")
-    best_image = openai_svc.select_best_product_image([img["url"] for img in images])
-    print(f"Best Image: {best_image}")
+    fc = FirecrawlService(api_key=settings.FIRECRAWL_API_KEY)
+    openai_svc = OpenAIService(api_key=settings.OPENAI_API_KEY, model=settings.OPENAI_MODEL)
+    extractor = URLDataExtractor(openai_service=openai_svc, firecrawl_service=fc)
 
-asyncio.run(test())
+    url = "https://www.trendyol.com/the-ordinary/niacinamide-10-zinc-1-30-ml-p-67669559"
+    print(f"Scraping: {url}...")
+
+    extracted = await extractor.extract(url)
+    print("\n--- EXTRACTED ---")
+    print(f"brand     : {extracted.get('brand_name')}")
+    print(f"product   : {extracted.get('product_name')}")
+    print(f"concept   : {(extracted.get('ad_concept') or '')[:200]}")
+    print(f"audience  : {extracted.get('target_audience')}")
+    print(f"images    : {len(extracted.get('best_image_urls') or [])}")
+    for u in (extracted.get("best_image_urls") or [])[:3]:
+        print(f"  - {u}")
+
+
+if __name__ == "__main__":
+    asyncio.run(test())
