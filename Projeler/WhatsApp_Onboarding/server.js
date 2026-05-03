@@ -31,13 +31,19 @@ const resend = require('./services/resend');
 const log = require('./utils/logger');
 
 // ─────────────────────────────────────────────────────────────
-// In-Memory Lock (Race Condition Prevention)
+// In-Memory Lock — KISA SÜRELİ DEDUP (Zapier retry burst için 30s)
 // ─────────────────────────────────────────────────────────────
-const processingLocks = new Set();
+// Source of truth artık Notion (transaction_id bazlı findByTransactionId).
+// In-memory lock yalnızca aynı saniye içinde 5x retry'ı verimli yutmak için.
+const processingLocks = new Map(); // key -> timestamp(ms)
+const LOCK_TTL_MS = 30 * 1000;
 
 function acquireLock(key) {
-  if (processingLocks.has(key)) return false;
-  processingLocks.add(key);
+  const now = Date.now();
+  // Eski lock'ları temizle
+  const stamp = processingLocks.get(key);
+  if (stamp && (now - stamp) < LOCK_TTL_MS) return false;
+  processingLocks.set(key, now);
   return true;
 }
 
@@ -46,22 +52,52 @@ function releaseLock(key) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Graceful Shutdown — SIGTERM / SIGINT (P1 #11)
+// ─────────────────────────────────────────────────────────────
+let httpServer = null;
+let shuttingDown = false;
+// Cron tarafı bu flag'i okuyup iterasyonunu yarıda kesebilsin diye global
+// bir kanal kullanıyoruz. cron.js bunu `globalThis.__SHUTTING_DOWN__` üzerinden okur.
+globalThis.__SHUTTING_DOWN__ = false;
+
+function initiateShutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  globalThis.__SHUTTING_DOWN__ = true;
+  log.warn(`[shutdown] ${signal} alındı — yeni istekler kabul edilmiyor, in-flight bekleniyor (max 10s)`);
+
+  const forceTimer = setTimeout(() => {
+    log.error('[shutdown] 10s timeout doldu, zorla çıkış');
+    process.exit(1);
+  }, 10000);
+  forceTimer.unref();
+
+  if (httpServer) {
+    httpServer.close((err) => {
+      if (err) log.error(`[shutdown] server.close hatası: ${err.message}`);
+      log.info('[shutdown] Server kapatıldı, çıkılıyor');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+}
+
+process.on('SIGTERM', () => initiateShutdown('SIGTERM'));
+process.on('SIGINT', () => initiateShutdown('SIGINT'));
+
+// ─────────────────────────────────────────────────────────────
 // Security Middleware — Webhook & Admin Auth
 // ─────────────────────────────────────────────────────────────
-if (!process.env.WEBHOOK_SECRET) {
-  log.warn('⚠️ WEBHOOK_SECRET tanımlı değil — webhook auth DEVRE DIŞI. Production için tehlikeli!');
-}
+// WEBHOOK_SECRET artık zorunlu — config/env.js içindeki validateEnv()
+// tarafından boot zamanı garantilendi. Bypass yok (fail-secure).
 if (!process.env.ADMIN_SECRET) {
   log.warn('⚠️ ADMIN_SECRET tanımlı değil — admin auth DEVRE DIŞI. Production için tehlikeli!');
 }
 function webhookAuth(req, res, next) {
-  if (!config.webhookSecret) {
-    log.warn('[security] WEBHOOK_SECRET tanımlı değil — auth atlanıyor');
-    return next();
-  }
   const authHeader = req.headers['authorization'] || req.headers['x-webhook-secret'] || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (token !== config.webhookSecret) {
+  if (!token || token !== config.webhookSecret) {
     log.warn(`[security] Webhook auth başarısız — IP: ${req.ip}`);
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -83,6 +119,40 @@ function adminAuth(req, res, next) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Admin Rate Limit — Faz 4 P2 #21
+// 10 req / 60s / IP. Sadece /admin/* için. Webhook ve /health hariç.
+// ─────────────────────────────────────────────────────────────
+const ADMIN_RL_WINDOW_MS = 60 * 1000;
+const ADMIN_RL_MAX = 10;
+const adminRateBuckets = new Map(); // ip -> { count, windowStart }
+
+function adminRateLimit(req, res, next) {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  const now = Date.now();
+  let bucket = adminRateBuckets.get(ip);
+  if (!bucket || (now - bucket.windowStart) > ADMIN_RL_WINDOW_MS) {
+    bucket = { count: 0, windowStart: now };
+    adminRateBuckets.set(ip, bucket);
+  }
+  bucket.count += 1;
+  if (bucket.count > ADMIN_RL_MAX) {
+    log.warn(`[security] Admin rate limit aşıldı — IP: ${ip} (${bucket.count}/${ADMIN_RL_MAX})`);
+    const retryAfter = Math.ceil((ADMIN_RL_WINDOW_MS - (now - bucket.windowStart)) / 1000);
+    res.set('Retry-After', String(Math.max(retryAfter, 1)));
+    return res.status(429).json({ error: 'Too Many Requests' });
+  }
+  next();
+}
+
+// Eski bucket'ları periyodik temizle (memory sızıntı önlemi)
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, b] of adminRateBuckets) {
+    if ((now - b.windowStart) > ADMIN_RL_WINDOW_MS * 2) adminRateBuckets.delete(ip);
+  }
+}, ADMIN_RL_WINDOW_MS).unref();
+
+// ─────────────────────────────────────────────────────────────
 // POST /webhook/new-paid-member — Zapier Zap #1
 // ─────────────────────────────────────────────────────────────
 app.post('/webhook/new-paid-member', webhookAuth, async (req, res) => {
@@ -96,16 +166,23 @@ app.post('/webhook/new-paid-member', webhookAuth, async (req, res) => {
   }
 
   const lockKey = `tx_${transaction_id}`;
+  // In-memory dedup yalnızca 30s'lik retry burst optimizasyonu — source of truth Notion.
   if (!acquireLock(lockKey)) {
-    log.warn(`[new-paid-member] Race condition engellendi (Lock aktif): ${transaction_id}`);
-    return res.status(429).json({ error: 'Şu an işleniyor, lütfen daha sonra tekrar deneyin (Zapier Auto-Retry).' });
+    log.warn(`[new-paid-member] Aynı tx_id 30s içinde tekrar geldi (in-memory dedup): ${transaction_id}`);
+    return res.status(200).json({ status: 'duplicate', source: 'in-memory' });
   }
 
   try {
     const cleanEmail = (email && email !== 'No data' && email.includes('@')) ? email : null;
 
-    // Notion'da var mı kontrol et
+    // Notion'da var mı kontrol et — Notion = source of truth
     const existing = await notion.findByTransactionId(transaction_id);
+
+    // Idempotent erken-çıkış: kayıt zaten "tamamlandı" / "atlandı" ise hiçbir şey yapma
+    if (existing && ['tamamlandı', 'atlandı'].includes(existing.onboardingStatus)) {
+      log.info(`[new-paid-member] Idempotent skip (status=${existing.onboardingStatus}): ${transaction_id}`);
+      return res.status(200).json({ status: 'duplicate', source: 'notion' });
+    }
 
     if (existing) {
       const registrationDateValue = date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD');
@@ -123,10 +200,12 @@ app.post('/webhook/new-paid-member', webhookAuth, async (req, res) => {
         updates.onboardingStatus = 'email';
         updates.onboardingChannel = 'email';
         updates.onboardingStep = 0;
-        const nowEmail = moment().tz('Europe/Istanbul');
-        updates.onboardingStartDate = nowEmail.hour() < 6
-          ? nowEmail.clone().subtract(1, 'day').format('YYYY-MM-DD')
-          : nowEmail.format('YYYY-MM-DD');
+        // Faz 3 NEW (5am cutoff bug fix): startDate her zaman bugün (Istanbul).
+        // Önceden hour<6 → dün rollback yapılıyordu; bu, cron noon'da daysDiff=1
+        // olduğunda Day 0 webhook'tan + Day 1 cron'dan aynı gün gönderilmesine yol
+        // açıyordu. Cron tarafındaki `daysDiff < 1` skip + WA loop'taki
+        // `daysDiff <= step` skip aynı-gün korumasını zaten sağlıyor.
+        updates.onboardingStartDate = moment().tz('Europe/Istanbul').format('YYYY-MM-DD');
         isRecovered = true;
       }
 
@@ -190,8 +269,8 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
 
   const lockKey = `tx_${transaction_id}`;
   if (!acquireLock(lockKey)) {
-    log.warn(`[membership-questions] Race condition engellendi (Lock aktif): ${transaction_id}`);
-    return res.status(429).json({ error: 'Şu an işleniyor, lütfen daha sonra tekrar deneyin (Zapier Auto-Retry).' });
+    log.warn(`[membership-questions] Aynı tx_id 30s içinde tekrar geldi (in-memory dedup): ${transaction_id}`);
+    return res.status(200).json({ status: 'duplicate', source: 'in-memory' });
   }
 
   try {
@@ -217,11 +296,27 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
     }
     log.info(`[membership-questions] Validasyon sonucu: ${JSON.stringify(phoneResult)}`);
 
-    // 2. Notion'da kaydı bul
+    // 2. Notion'da kaydı bul.
+    // Faz 3 P1 #15: Zapier Zap #2 bazen Zap #1'den önce ulaşıyor (sıra garantisi yok).
+    // Doğrudan placeholder yaratmak yerine 3 retry × 2s ile new-paid-member'ı bekle.
+    // Toplam ~6s; webhook timeout (Zapier 30s) bunun çok üstünde, güvenli.
     let member = await notion.findByTransactionId(transaction_id);
+    let raceRetried = false;
+    if (!member) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        await new Promise(r => setTimeout(r, 2000));
+        member = await notion.findByTransactionId(transaction_id);
+        if (member) {
+          log.info(`[membership-questions] Race retry başarılı (deneme ${attempt}/3): ${transaction_id}`);
+          raceRetried = true;
+          break;
+        }
+        log.info(`[membership-questions] Race retry deneme ${attempt}/3 boş döndü: ${transaction_id}`);
+      }
+    }
 
     if (!member) {
-      // New Paid Member webhook'u henüz gelmemiş olabilir (race condition)
+      // 6s sonra hala yok — placeholder yarat ama observability için açıkça flagle.
       if (!cleanEmail) {
         member = await notion.createMember({
           firstName: first_name,
@@ -230,11 +325,11 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
           registrationDate: date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
           onboardingStatus: "error"
         });
-        await notion.appendNote(member.id, "[HATA] Zap #2 önce geldi, ancak geçerli email adresi yok.");
-        log.warn(`[membership-questions] Yeni kayıt "error" statüsünde oluşturuldu (Email eksik)`);
-        
+        await notion.appendNote(member.id, "[HATA] membership-questions arrived before new-paid-member (3×2s retry sonrası bulunamadı), email yok.");
+        log.warn(`[membership-questions] Yeni kayıt "error" statüsünde oluşturuldu (Race + Email eksik)`);
+
         await resend.sendAdminAlertEmail(`Zombie Üye Tespit Edildi (Zap #2)`, {
-          error: "Yeni üye Zap #2 (membership-questions) ile oluşturulmaya çalışıldı, ancak email adresi yok. Onboarding askıya alındı.",
+          error: "Yeni üye Zap #2 (membership-questions) ile oluşturulmaya çalışıldı, 3×2s race retry sonrası new-paid-member yok ve email adresi yok. Onboarding askıya alındı.",
           transaction_id: transaction_id,
           first_name: first_name
         }).catch(e => log.error('Admin alert failed', e));
@@ -247,8 +342,11 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
           registrationDate: date || moment().tz('Europe/Istanbul').format('YYYY-MM-DD'),
           onboardingStatus: "bekliyor"
         });
-        log.info(`[membership-questions] Kayıt oluşturuldu (new-paid-member henüz gelmemiş)`);
+        await notion.appendNote(member.id, "membership-questions arrived before new-paid-member (3×2s retry sonrası bulunamadı, email mevcut)");
+        log.info(`[membership-questions] Kayıt oluşturuldu (new-paid-member yok, race retry exhausted)`);
       }
+    } else if (raceRetried) {
+      await notion.appendNote(member.id, "[RACE] membership-questions Zap #1'den önce geldi, retry ile yakalandı");
     }
 
     // 3. Deduplication kontrolü
@@ -281,11 +379,10 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
         ONBOARDING_FLOWS[0].flow_id
       );
 
-      // 6. Notion'ı güncelle
-      const nowWa = moment().tz('Europe/Istanbul');
-      const startDateWa = nowWa.hour() < 6
-        ? nowWa.clone().subtract(1, 'day').format('YYYY-MM-DD')
-        : nowWa.format('YYYY-MM-DD');
+      // 6. Notion'ı güncelle.
+      // Faz 3 NEW (5am cutoff bug fix): startDate her zaman bugün (Istanbul).
+      // Önceki hour<6 rollback aynı gün Day 0 + Day 1 gönderilmesine yol açıyordu.
+      const startDateWa = moment().tz('Europe/Istanbul').format('YYYY-MM-DD');
       
       const memberCleanEmail = (member.email && member.email !== 'No data' && member.email.includes('@')) ? member.email : null;
       
@@ -317,10 +414,8 @@ app.post('/webhook/membership-questions', webhookAuth, async (req, res) => {
       const failReason = !phoneResult.valid ? phoneResult.reason : "Düşük güven skoru";
       const confidenceStr = phoneResult.confidence !== undefined ? phoneResult.confidence : 'N/A';
       
-      const nowEmail = moment().tz('Europe/Istanbul');
-      const startDateEmail = nowEmail.hour() < 6
-        ? nowEmail.clone().subtract(1, 'day').format('YYYY-MM-DD')
-        : nowEmail.format('YYYY-MM-DD');
+      // Faz 3 NEW (5am cutoff bug fix): startDate her zaman bugün (Istanbul).
+      const startDateEmail = moment().tz('Europe/Istanbul').format('YYYY-MM-DD');
 
       // 5. Email fallback'e düşmeden önce email kontrolü yap
       const memberCleanEmail = (member.email && member.email !== 'No data' && member.email.includes('@')) ? member.email : null;
@@ -649,7 +744,7 @@ app.post('/webhook/wa-failed', webhookAuth, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // POST /admin/trigger-flow — Manuel ManyChat Flow Tetikleme
 // ─────────────────────────────────────────────────────────────
-app.post('/admin/trigger-flow', adminAuth, async (req, res) => {
+app.post('/admin/trigger-flow', adminRateLimit, adminAuth, async (req, res) => {
   try {
     const { phone, first_name, flow_step } = req.body;
 
@@ -692,7 +787,7 @@ app.post('/admin/trigger-flow', adminAuth, async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 // GET /admin/get-user — Geçici Kullanıcı Arama
 // ─────────────────────────────────────────────────────────────
-app.get('/admin/get-user', adminAuth, async (req, res) => {
+app.get('/admin/get-user', adminRateLimit, adminAuth, async (req, res) => {
   try {
     const { Client } = require('@notionhq/client');
     const notionClient = new Client({ auth: config.notionApiKey });
@@ -746,6 +841,44 @@ app.get('/health', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// Boot-Time Validations: ManyChat flows + Notion şema drift
+// ─────────────────────────────────────────────────────────────
+async function runBootValidations() {
+  // 1) ManyChat flow ID'leri
+  try {
+    const flowIds = Object.values(ONBOARDING_FLOWS)
+      .map(f => f.flow_id)
+      .filter(id => id && !id.startsWith('TODO_'));
+    await manychat.validateAllFlows(flowIds);
+  } catch (err) {
+    console.error('❌ FATAL: ManyChat flow validasyonu başarısız');
+    console.error(err.message);
+    try {
+      await resend.sendAdminAlertEmail('[BOOT] ManyChat flow validasyonu başarısız', {
+        error: err.message,
+        stack: err.stack
+      });
+    } catch (_) { /* alert gönderilemese bile boot'u durdur */ }
+    process.exit(1);
+  }
+
+  // 2) Notion şema drift kontrolü
+  try {
+    await notion.validateSchema();
+  } catch (err) {
+    console.error('❌ FATAL: Notion şema drift tespit edildi');
+    console.error(err.message);
+    try {
+      await resend.sendAdminAlertEmail('[BOOT] Notion şema drift', {
+        error: err.message,
+        stack: err.stack
+      });
+    } catch (_) { /* alert gönderilemese bile boot'u durdur */ }
+    process.exit(1);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // Cron job'ları başlat
 // ─────────────────────────────────────────────────────────────
 require('./cron');
@@ -754,7 +887,8 @@ require('./cron');
 // Server başlat
 // ─────────────────────────────────────────────────────────────
 const PORT = config.port;
-app.listen(PORT, '0.0.0.0', async () => {
+httpServer = app.listen(PORT, '0.0.0.0', async () => {
+  await runBootValidations();
   log.info(`WhatsApp Onboarding server başlatıldı: 0.0.0.0:${PORT}`);
   log.info(`Webhook URL'ler:`);
   log.info(`  POST /webhook/new-paid-member`);

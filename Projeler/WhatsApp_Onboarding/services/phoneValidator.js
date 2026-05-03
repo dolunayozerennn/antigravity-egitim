@@ -12,8 +12,20 @@
 const { parsePhoneNumberFromString } = require('libphonenumber-js');
 const { config } = require('../config/env');
 const log = require('../utils/logger');
+const { maskPhone } = require('../utils/phone');
 
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+// Faz 3 P0 #8: KVKK uyumu için ham girdiyi loglarda maskeli göster.
+// Sadece son 4 hane logging hatlarına çıkar; Groq prompt'una gönderilen
+// içerik DEĞİŞTİRİLMEZ (LLM'in numarayı görmesi gerekiyor).
+function maskInputForLog(input) {
+  if (!input) return '***';
+  return maskPhone(input);
+}
+
+// Groq, OpenAI-uyumlu /v1/chat/completions endpoint'i sağlar.
+// llama-3.3-70b-versatile: hızlı, ucuz, JSON mode destekli.
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_MODEL = "llama-3.3-70b-versatile";
 
 const SYSTEM_PROMPT = `Sen bir veri dönüştürme aracısın. Gelen metinden telefon numarasını çıkar ve SADECE JSON döndür.
 JSON formatı:
@@ -58,7 +70,7 @@ function libraryValidate(input) {
     const phone = parsePhoneNumberFromString(candidate, 'TR');
     if (phone && phone.isValid()) {
       const normalized = phone.number; // E.164 format: +905380168954
-      log.info(`[phoneValidator] ✅ libphonenumber başarılı: "${input}" → ${normalized} (${phone.country})`);
+      log.info(`[phoneValidator] ✅ libphonenumber başarılı: "${maskInputForLog(input)}" → ${maskPhone(normalized)} (${phone.country})`);
       return {
         valid: true,
         normalized,
@@ -72,22 +84,28 @@ function libraryValidate(input) {
   return null; // Tanımlanamadı → Groq'a gönder
 }
 
-// ─── KATMAN 2: OpenAI LLM Validasyonu ─────────────────────────
+// ─── KATMAN 2: Groq LLM Validasyonu ───────────────────────────
 // Karmaşık girdiler için (metin + numara karışık, çoklu numara vb.)
-async function openaiValidate(input) {
+// Groq'un OpenAI-uyumlu endpoint'i kullanılır — payload aynı.
+async function groqValidate(input) {
   try {
-    const response = await fetch(OPENAI_API_URL, {
+    // Faz 3 P0 #8: Groq'a gönderilen prompt içeriği SADECE telefon-ilgili metin olmalı.
+    // Çağıran (server.js) zaten yalnızca `answer_1` (telefon alanı) gönderiyor — başka
+    // PII (email/isim) bu fonksiyona ulaşmıyor. Yine de güvenlik için trim ediyoruz.
+    const safeInput = String(input || '').trim();
+    const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${config.openaiApiKey}`,
+        'Authorization': `Bearer ${config.groqApiKey}`,
         'Content-Type': 'application/json'
       },
-      signal: AbortSignal.timeout(5000), // 5s timeout
+      // Faz 3 P1 #13: 8s timeout (önceden 5s; LLM ısınması için yetersizdi).
+      signal: AbortSignal.timeout(8000),
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: GROQ_MODEL,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: input }
+          { role: "user", content: safeInput }
         ],
         max_tokens: 200,
         temperature: 0,
@@ -96,31 +114,37 @@ async function openaiValidate(input) {
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI HTTP ${response.status}: ${await response.text()}`);
+      throw new Error(`Groq HTTP ${response.status}: ${await response.text()}`);
     }
 
     const data = await response.json();
     const result = JSON.parse(data.choices[0].message.content);
-    log.info(`[phoneValidator] OpenAI sonuç: ${JSON.stringify(result)}`);
+    // Faz 3 P0 #8: Sonucu loglarken normalized numara maskeli göster.
+    const maskedResult = {
+      ...result,
+      normalized: result.normalized ? maskPhone(result.normalized) : null,
+      extracted_raw: result.extracted_raw ? maskPhone(result.extracted_raw) : null
+    };
+    log.info(`[phoneValidator] Groq sonuç: ${JSON.stringify(maskedResult)}`);
     return result;
 
   } catch (error) {
-    log.error(`[phoneValidator] OpenAI hatası: ${error.message}`, error.stack);
+    log.error(`[phoneValidator] Groq hatası: ${error.message}`, error.stack);
 
-    // OpenAI tamamen down — admin'e alert gönder (1 saat cooldown, spam önleme)
-    if (!global._openaiAlertSent) {
-      global._openaiAlertSent = true;
-      setTimeout(() => { global._openaiAlertSent = false; }, 3600000);
+    // Groq tamamen down — admin'e alert gönder (1 saat cooldown, spam önleme)
+    if (!global._groqAlertSent) {
+      global._groqAlertSent = true;
+      setTimeout(() => { global._groqAlertSent = false; }, 3600000);
       try {
         const resend = require('./resend');
         await resend.sendAdminAlertEmail(
-          '[PHONE] OpenAI API down — fallback aktif',
-          { body: `OpenAI API'ye ulaşılamıyor. Tüm telefon validasyonları libphonenumber fallback'ine düşüyor.\n\nHata: ${error.message}` }
+          '[PHONE] Groq API down — fallback aktif',
+          { body: `Groq API'ye ulaşılamıyor. Tüm telefon validasyonları libphonenumber fallback'ine düşüyor.\n\nHata: ${error.message}` }
         );
       } catch (_) { /* alert gönderilemezse bile devam et */ }
     }
 
-    return null; // OpenAI başarısız → null dön, fallback devreye girsin
+    return null; // Groq başarısız → null dön, fallback devreye girsin
   }
 }
 
@@ -140,7 +164,7 @@ function libraryFallback(input) {
   for (const candidate of candidates) {
     const phone = parsePhoneNumberFromString(candidate, 'TR');
     if (phone && phone.isValid()) {
-      log.info(`[phoneValidator] ✅ libphonenumber fallback başarılı: "${input}" → ${phone.number}`);
+      log.info(`[phoneValidator] ✅ libphonenumber fallback başarılı: "${maskInputForLog(input)}" → ${maskPhone(phone.number)}`);
       return {
         valid: true,
         normalized: phone.number,
@@ -162,40 +186,41 @@ async function validatePhone(input) {
     return libResult;
   }
 
-  // KATMAN 2: OpenAI LLM (karmaşık girdiler için)
-  log.info(`[phoneValidator] Kütüphane eşleşmedi, OpenAI gpt-4o-mini'ye gönderiliyor: "${input}"`);
-  const openaiResult = await openaiValidate(input);
+  // KATMAN 2: Groq LLM (karmaşık girdiler için).
+  // P0 #8 (KVKK): Ham PII loglara basılmaz; sadece son 4 hane.
+  log.info(`[phoneValidator] Kütüphane eşleşmedi, Groq ${GROQ_MODEL}'ye gönderiliyor: "${maskInputForLog(input)}"`);
+  const groqResult = await groqValidate(input);
 
-  if (openaiResult) {
-    // OpenAI bir numara çıkardıysa, kütüphane ile doğrula
-    if (openaiResult.valid && openaiResult.normalized) {
-      const verifyPhone = parsePhoneNumberFromString(openaiResult.normalized, 'TR');
+  if (groqResult) {
+    // Groq bir numara çıkardıysa, kütüphane ile doğrula
+    if (groqResult.valid && groqResult.normalized) {
+      const verifyPhone = parsePhoneNumberFromString(groqResult.normalized, 'TR');
       if (verifyPhone && verifyPhone.isValid()) {
-        openaiResult.normalized = verifyPhone.number; // E.164 normalize
-        openaiResult.reason = `openai+libphonenumber (${verifyPhone.country})`;
-        return openaiResult;
+        groqResult.normalized = verifyPhone.number; // E.164 normalize
+        groqResult.reason = `groq+libphonenumber (${verifyPhone.country})`;
+        return groqResult;
       }
-      // OpenAI'ın çıkardığı numara kütüphaneden geçemediyse → düşük güven
-      log.warn(`[phoneValidator] ⚠️ OpenAI valid dedi ama libphonenumber doğrulamadı: ${openaiResult.normalized}`);
-      openaiResult.confidence = Math.min(openaiResult.confidence || 0, 0.4);
-      openaiResult.reason = `openai-only (libphonenumber doğrulamadı)`;
-      return openaiResult;
+      // Groq'un çıkardığı numara kütüphaneden geçemediyse → düşük güven
+      log.warn(`[phoneValidator] ⚠️ Groq valid dedi ama libphonenumber doğrulamadı: ${maskPhone(groqResult.normalized)}`);
+      groqResult.confidence = Math.min(groqResult.confidence || 0, 0.4);
+      groqResult.reason = `groq-only (libphonenumber doğrulamadı)`;
+      return groqResult;
     }
 
-    // OpenAI "false" dedi → fallback ile son şans
-    if (!openaiResult.valid) {
+    // Groq "false" dedi → fallback ile son şans
+    if (!groqResult.valid) {
       const overrideResult = libraryFallback(input);
       if (overrideResult.valid) {
-        log.warn(`[phoneValidator] ⚠️ OPENAI OVERRIDE: OpenAI false dedi ama libphonenumber geçerli numara buldu.`);
-        overrideResult.reason = `openai-override (OpenAI: ${openaiResult.reason})`;
+        log.warn(`[phoneValidator] ⚠️ GROQ OVERRIDE: Groq false dedi ama libphonenumber geçerli numara buldu.`);
+        overrideResult.reason = `groq-override (Groq: ${groqResult.reason})`;
         return overrideResult;
       }
     }
-    return openaiResult;
+    return groqResult;
   }
 
-  // OpenAI tamamen başarısız oldu → kütüphane fallback
-  log.warn(`[phoneValidator] OpenAI tamamen başarısız, libphonenumber fallback kullanılıyor.`);
+  // Groq tamamen başarısız oldu → kütüphane fallback
+  log.warn(`[phoneValidator] Groq tamamen başarısız, libphonenumber fallback kullanılıyor.`);
   return libraryFallback(input);
 }
 

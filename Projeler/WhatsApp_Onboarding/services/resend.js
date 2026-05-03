@@ -43,6 +43,8 @@ async function sendOnboardingEmail(toEmail, firstName, dayNumber) {
         'Authorization': `Bearer ${config.resendApiKey}`,
         'Content-Type': 'application/json'
       },
+      // Faz 3 P1 #13: 10s timeout — Resend bazen yavaş yanıt veriyor
+      signal: AbortSignal.timeout(10000),
       body: JSON.stringify({
         from: `AI Factory <dolunay@dolunay.ai>`,
         to: [toEmail],
@@ -334,6 +336,8 @@ async function sendHybridFallbackEmail(toEmail, firstName, dayNumber, waBusiness
         'Authorization': `Bearer ${config.resendApiKey}`,
         'Content-Type': 'application/json'
       },
+      // Faz 3 P1 #13: 10s timeout — Resend bazen yavaş yanıt veriyor
+      signal: AbortSignal.timeout(10000),
       body: JSON.stringify({
         from: `AI Factory <dolunay@dolunay.ai>`,
         to: [toEmail],
@@ -382,6 +386,8 @@ ${escapeHtml(JSON.stringify(errorDetails, null, 2))}
         'Authorization': `Bearer ${config.resendApiKey}`,
         'Content-Type': 'application/json'
       },
+      // Faz 3 P1 #13: 10s timeout — Resend bazen yavaş yanıt veriyor
+      signal: AbortSignal.timeout(10000),
       body: JSON.stringify({
         from: `AI Factory Alerts <dolunay@dolunay.ai>`,
         to: ['ozerendolunay@gmail.com'],

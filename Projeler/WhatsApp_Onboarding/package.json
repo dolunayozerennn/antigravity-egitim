@@ -4,7 +4,8 @@
   "description": "AI Factory WhatsApp Onboarding System — 7-day drip via ManyChat + Notion CRM",
   "main": "server.js",
   "scripts": {
-    "start": "node manual_onboard.js && node server.js",
+    "start": "node server.js",
+    "migrate": "node manual_onboard.js",
     "dev": "node --watch server.js",
     "validate": "node -e \"require('./server')\""
   },
@@ -17,6 +18,6 @@
     "node-cron": "3.0.3"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }
