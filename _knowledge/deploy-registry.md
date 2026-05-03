@@ -23,7 +23,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 | isbirligi-tahsilat-takip | CronJob | 2026-04-02 | ✅ Aktif | 2 |
 | marka-is-birligi | CronJob | 2026-04-16 | ✅ Aktif | 2 |
 | akilli-watchdog | CronJob | 2026-04-20 | ✅ Aktif | 3 |
-| linkedin-video-cron | CronJob | 2026-04-16 | ✅ Aktif | 4 |
+| linkedin-video-cron | CronJob | 2026-05-03 | ✅ Aktif | 5 |
 | linkedin-text-cron | CronJob | 2026-04-20 | ✅ Aktif | 3 |
 | twitter-video-cron | CronJob | 2026-04-08 | ✅ Aktif | 4 |
 | supplement-telegram-bot | Worker | 2026-03-31 | ✅ Aktif | 2 |
@@ -177,10 +177,10 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/LinkedIn_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 10 * * *` (Günlük, UTC 10:00 = TR 13:00)
-- **Son Deploy:** 2026-04-16 (fix: LinkedIn video yükleme işlemi zaman aşımı 5 dakikadan 15 dakikaya çıkarıldı)
-- **Durum:** ✅ Aktif (TikTok→LinkedIn video pipeline, günde 1 kez)
-- **Hassasiyetler:** ffmpeg (nixpacks.toml ZORUNLU), LinkedIn Video API timeout (15dk polling), TikTok scraping (yt-dlp versiyon uyumu), filtre strictness ayari
-- **Env Vars:** LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, GROQ_API_KEY, LINKEDIN_FILTER_STRICTNESS=relaxed, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID, NOTION_DB_OPS_LOG
+- **Son Deploy:** 2026-05-03 (commit `4309f3c` — TikTok scraper kaldırıldı, Notion+Drive master pipeline'a geçildi)
+- **Durum:** ✅ Aktif (Notion "Yayınlandı" → Drive master `.mp4` → kayıpsız faststart remux → LinkedIn, günde 1 kez)
+- **Hassasiyetler:** ffmpeg (nixpacks.toml ZORUNLU; sadece kayıpsız remux için), LinkedIn Video API timeout (15dk polling), Drive Service Account erişimi (klasörün SA ile paylaşımı şart), `ignoreWatchPatterns: true` (push auto-deploy etmez — `serviceInstanceDeployV2(commitSha)` mutation gerekli), pattern öncelik (default `tiktok,insta`)
+- **Env Vars:** LINKEDIN_ACCESS_TOKEN, LINKEDIN_PERSON_URN, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_LINKEDIN_DB_ID (logger), NOTION_DB_REELS_KAPAK (kaynak), GOOGLE_SERVICE_ACCOUNT_JSON (base64), VIDEO_PATTERN_PRIORITY (opsiyonel), MAX_VIDEO_BYTES (opsiyonel), REENCODE_OVER_BYTES (opsiyonel)
 
 ---
 
