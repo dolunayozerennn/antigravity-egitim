@@ -209,9 +209,10 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Twitter_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 8,11,14 * * *` (Günde 3 kez, UTC 08/11/14 = TR 11/14/17)
-- **Son Deploy:** 2026-04-08 (auto-deploy — SUCCESS doğrulandı)
+- **Son Deploy:** 2026-05-03 (manuel `serviceInstanceDeployV2` — HEAD `29f92d92`. 2026-04-30 — 05-03 arası eski broken commit `5ec2dbb`'de takılı kaldı, ~8 cron run kaçırıldı)
 - **Durum:** ✅ Aktif (TikTok→X/Twitter video pipeline, günde 3 kez)
-- **Hassasiyetler:** ffmpeg (nixpacks.toml ZORUNLU), X/Twitter API rate limit, Notion DB ID cakismasi (LinkedIn ile ayni DB), yt-dlp versiyon
+- **⚠️ Auto-deploy KAPALI:** `ignoreWatchPatterns: true` — `git push` deploy tetiklemez. Yeni fix'ler için GraphQL `serviceInstanceDeployV2` mutation kullan (memory: `project_twitter_watchpatterns.md`)
+- **Hassasiyetler:** ffmpeg (nixpacks.toml ZORUNLU), X/Twitter API rate limit, Notion DB ID cakismasi (LinkedIn ile ayni DB), yt-dlp versiyon (`==2026.4.24` gibi var-olmayan pin'lerden kaçın), ignoreWatchPatterns auto-deploy engelliyor
 - **Env Vars:** NOTION_SOCIAL_TOKEN, NOTION_TWITTER_DB_ID, X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
 
 ---
@@ -242,9 +243,10 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/eCom_Reklam_Otomasyonu`)
 - **Lokal Klasör:** `Projeler/eCom_Reklam_Otomasyonu/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-28 (feat: Aspect Ratio normalization ve exception handling iyileştirmesi tamamlandı)
+- **Son Deploy:** 2026-05-03 (commit `3056ecd` — görsel referansı kaybı + ses hızlandırma fix; deployment ID `439c429c-4283-40ed-b0cf-49d40fe247d7`)
 - **Durum:** ✅ Aktif (7/24 Telegram bot — ürün reklam videosu üretim otomasyonu)
-- **Hassasiyetler:** Bellek sizintisi (UserSession 10dk idle timeout), asyncio task hata yutma, Seedance API parametre isimleri (model bazli farklilik), Kie AI 512 upstream hatasi (retry mevcut)
+- **🔴 Kritik fix (2026-05-03):** `rootDirectory` boştu → tüm yeni `git push`'lar RAILPACK builder'da sessizce FAILED oluyordu. `Projeler/eCom_Reklam_Otomasyonu` olarak set edildi. `railway up` artık çalışmıyor — git push veya GraphQL `serviceInstanceDeployV2` kullan (memory: `feedback_railway_railpack_rootdir.md`)
+- **Hassasiyetler:** Bellek sizintisi (UserSession 10dk idle timeout), asyncio task hata yutma, Seedance API parametre isimleri (model bazli farklilik), Kie AI 512 upstream hatasi (retry mevcut), rootDirectory ayarı (boş bırakma!)
 - **Env Vars:** ENV, TELEGRAM_ECOM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, OPENAI_API_KEY, OPENAI_MODEL=gpt-4.1-mini, PERPLEXITY_API_KEY, IMGBB_API_KEY, KIE_API_KEY, ELEVENLABS_API_KEY, ELEVENLABS_MODEL, REPLICATE_API_TOKEN, NOTION_SOCIAL_TOKEN, NOTION_DB_ECOM_REKLAM, NOTION_CHAT_DB_ID, FIRECRAWL_API_KEY
 
 ---
@@ -320,9 +322,10 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/Lead_Notifier_Bot`)
 - **Lokal Klasör:** `Projeler/Lead_Notifier_Bot/`
 - **Start Komutu:** `python main.py`
-- **Son Deploy:** 2026-04-26 (Fix: OAuth fallback (GOOGLE_OUTREACH_TOKEN_JSON) eklendi, manuel yetki için share_sheet.py eklendi)
+- **Son Deploy:** 2026-05-03 (commit `cf37471` lead-notifier ad_type Telegram fix; deployment ID `95636e63-10aa-46ba-8e99-86b890098a73`)
 - **Durum:** ✅ Aktif (Railway deploy başarılı ve çalışıyor)
-- **Hassasiyetler:** Google Sheets SA yetkilendirme (manuel share ZORUNLU), GOOGLE_OUTREACH_TOKEN_JSON fallback, SMTP yasak
+- **🔴 Kritik fix (2026-05-03):** `rootDirectory` boştu → RAILPACK builder yeni deploy'ları FAILED ediyordu (eCom ile aynı sorun). `Projeler/Lead_Notifier_Bot` olarak set edildi (memory: `feedback_railway_railpack_rootdir.md`)
+- **Hassasiyetler:** Google Sheets SA yetkilendirme (manuel share ZORUNLU), GOOGLE_OUTREACH_TOKEN_JSON fallback, SMTP yasak, rootDirectory ayarı
 - **Env Vars:** TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_OUTREACH_TOKEN_JSON, NOTIFY_EMAIL, SENDER_EMAIL, POLL_INTERVAL_SECONDS, MAX_BATCH_SIZE
 
 ### ceren-marka-takip-cron
