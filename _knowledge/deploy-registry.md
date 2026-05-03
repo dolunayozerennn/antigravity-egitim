@@ -29,7 +29,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 | supplement-telegram-bot | Worker | 2026-03-31 | ✅ Aktif | 2 |
 | ecom-reklam-otomasyonu | Worker | 2026-04-25 | ✅ Aktif | 4 |
 | youtube-otomasyonu-v3 | CronJob | 2026-04-19 | ✅ Aktif | 4 |
-| whatsapp-onboarding | Express | 2026-04-27 | ✅ Aktif | 5 |
+| whatsapp-onboarding | Express | 2026-05-03 | ✅ Aktif | 9 |
 | lead-notifier-bot-v3 | Worker | 2026-04-26 | ✅ Aktif | 3 |
 | ceren-marka-takip-cron | CronJob | 2026-05-03 | ✅ Aktif | 4 |
 
@@ -272,22 +272,37 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Railway Project ID:** `5f346c33-6af1-4788-8405-34133c98451b`
 - **Service ID:** `64673112-d65a-4286-abc7-808af50901ce`
 - **Environment ID:** `f2000489-b711-4224-9fd4-44791bdb59d4`
-- **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `Projeler/WhatsApp_Onboarding`)
-- **Lokal Klasör:** `Projeler/WhatsApp_Onboarding/`
-- **Start Komutu:** `node server.js`
-- **Cron Schedule:** `0 12 * * *` (Günlük, UTC 09:00 = TR 12:00 — app-level cron)
+- **GitHub Repo:** `dolunayozerennn/whatsapp-onboarding` ⚠️ **STANDALONE REPO** (monorepo değil — servis monorepo migration'ından önce kuruldu, standalone bağlantısı korundu)
+- **Lokal Monorepo Yansıma:** `Projeler/Whatsapp_Onboarding/` (referans/edit; deploy buradan TETİKLENMEZ — push standalone'a yapılır)
+- **Start Komutu:** `node server.js` (manual_onboard.js artık `npm run migrate` ile manuel)
+- **Cron Schedule:** `0 12 * * *` (Günlük, UTC 09:00 = TR 12:00 — app-level cron, Notion-backed run-lock ile multi-instance safe)
 - **Domain:** `whatsapp-onboarding-production.up.railway.app`
 - **Webhook URL'ler:**
   - `POST /webhook/new-paid-member` (Zapier Zap #1)
-  - `POST /webhook/membership-questions` (Zapier Zap #2)
+  - `POST /webhook/membership-questions` (Zapier Zap #2 — race retry: 3×2s)
   - `POST /webhook/wa-optin` (ManyChat — Email→WhatsApp kanal geçişi)
   - `POST /webhook/wa-failed` (ManyChat — Hibrit fallback email tetikleyici)
   - `GET /health` (Monitoring)
-- **Son Deploy:** 2026-04-28 (fix: Zapier membership-questions webhook ReferenceError çözüldü, ManyChat API subscriber lookup hatası fatal error'dan fallback warning seviyesine çekildi)
-- **Durum:** ✅ Aktif (Health check OK — Zapier webhook replay SUCCESS)
-- **Hassasiyetler:** Webhook idempotency, ManyChat API timeout (8s), Notion rate limit (429), race condition (lock mekanizmasi mevcut), Groq API timeout (5s)
-- **Env Vars:** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL, WA_BUSINESS_PHONE
-- **Not:** ✅ Hibrit fallback aktif: WA teslim başarısızsa → Resend email (dolunay.ai) + WhatsApp CTA butonu. v1.2.0
+- **Son Deploy:** 2026-05-03 — kapsamlı 4-faz audit + production hardening (standalone commit `0c4001f`, monorepo commit `3a21697`):
+  - Faz 1: WEBHOOK_SECRET fail-secure, ManyChat flow + Notion schema validation boot'ta, OpenAI→Groq config drift fix, Node 20+
+  - Faz 2: Day 0 dedup, in-memory lock → Notion-backed (transaction_id), 429 exponential backoff (2s/5s/10s × 3), multi-instance run-lock (Notion sentinel page), SIGTERM graceful shutdown, atomic dual-channel
+  - Faz 3: KVKK PII masking, AbortSignal.timeout her fetch'te, utils/phone.js (E.164 normalize), 5am-cutoff bug kaldırıldı, membership-questions race retry
+  - Faz 4: log redaction layer, admin route rate limit (10 req/60s), .npmrc engine-strict
+- **Durum:** ✅ Aktif (5 ardışık /health check'i HTTP 200, services connected)
+- **Hassasiyetler:**
+  1. Webhook idempotency (transaction_id Notion source-of-truth + 30s TTL Map)
+  2. ManyChat fetch timeout (10s) + retry (AbortError + ECONNRESET dahil)
+  3. Notion 429 exponential backoff — silent skip kaldırıldı
+  4. Multi-instance cron run-lock (Notion sentinel page, 23.5h TTL)
+  5. Atomic dual-channel: WA + email başarı durumu `lastError` field'ında structured marker (`wa-failed-day-N`)
+  6. Groq fetch timeout (8s) + KVKK PII masking
+  7. Boot-time validation: ManyChat flows + Notion schema + WEBHOOK_SECRET zorunlu
+  8. Graceful shutdown (SIGTERM/SIGINT, 10s force-timer)
+  9. E.164 phone normalize her read+write boundary'sinde
+- **Env Vars (zorunlu):** PORT, NOTION_API_KEY, NOTION_DATABASE_ID, MANYCHAT_API_TOKEN, GROQ_API_KEY, CRON_TIMEZONE, CRON_SCHEDULE, RESEND_API_KEY, RESEND_FROM_EMAIL, WA_BUSINESS_PHONE, **WEBHOOK_SECRET** (yeni — fail-secure, yoksa boot fail)
+- **Env Vars (opsiyonel):** ADMIN_SECRET (admin endpoints için)
+- **Bilinen açık konular:** (a) 6 npm vulnerability — manuel `npm audit` review gerek, (b) monorepo'da `WhatsApp_Onboarding` vs `Whatsapp_Onboarding` case mismatch, ayrı `git mv` PR'ı ile düzeltilmeli
+- **Versiyon:** v2.0.0 (4-faz production hardening) — Hibrit fallback hâlâ aktif
 
 ---
 
