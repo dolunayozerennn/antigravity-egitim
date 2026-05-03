@@ -17,5 +17,11 @@ notion-client==2.2.1
 # Replicate (Video + Ses Birleştirme)
 replicate==1.0.4
 
+# MP3 süre ölçümü — saf Python (ffmpeg gerekmez)
+mutagen==1.47.0
+
+# Türkçe sayı/yazı dönüşümü — TTS sayı normalizasyonu
+num2words==0.5.14
+
 # Web Scraping (Ürün Fotoğrafı Çekme)
 

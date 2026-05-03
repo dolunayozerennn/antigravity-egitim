@@ -45,9 +45,9 @@ class ElevenLabsService:
         self,
         text: str,
         voice_name: str = "Sarah",
-        stability: float = 0.5,
+        stability: float = 0.4,
         similarity_boost: float = 0.75,
-        style: float = 0.4,
+        style: float = 0.6,
         output_format: str = "mp3_44100_128",
     ) -> bytes:
         """
@@ -170,15 +170,29 @@ class ElevenLabsService:
     @staticmethod
     def estimate_duration_seconds(text: str, words_per_second: float = 1.7) -> float:
         """
-        Metin uzunluğundan tahmini ses süresini hesaplar.
-        Türkçe eleven_multilingual_v2 gerçekçi: ~1.7 kelime/saniye
-
-        Args:
-            text: Ses metni
-            words_per_second: Kelime/saniye oranı
-
-        Returns:
-            float: Tahmini süre (saniye)
+        Metin uzunluğundan TAHMİNİ ses süresi (kararsız — gerçek üretim için
+        measure_audio_duration kullan).
         """
         word_count = len(text.split())
         return word_count / words_per_second
+
+    @staticmethod
+    def measure_audio_duration(audio_bytes: bytes) -> float:
+        """
+        Üretilen MP3'ün GERÇEK süresini saniye cinsinden döndür.
+        mutagen ile saf-Python — ffmpeg gerekmiyor.
+
+        Args:
+            audio_bytes: MP3 ses verisi
+
+        Returns:
+            float: Süre (saniye). Ölçüm başarısızsa 0.0.
+        """
+        import io
+        try:
+            from mutagen.mp3 import MP3
+            mp3 = MP3(io.BytesIO(audio_bytes))
+            return float(mp3.info.length)
+        except Exception:
+            log.warning("MP3 süre ölçümü başarısız", exc_info=True)
+            return 0.0

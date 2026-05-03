@@ -170,9 +170,101 @@ class ProductionPipeline:
 
         try:
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # MULTI-SCENE BRANCHING (UGC tarzı)
+            # ADIM 0: ÖNCE VOICEOVER ÜRET → SÜRE ÖLÇ → VIDEO DURATION'I AYARLA
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            if scenario.get("is_multi_scene"):
+            # WHY: Önceki akışta video üretilip voiceover sonra geldiğinden,
+            # ses video'dan kısa kalıp 7-9s sessiz boşluk doğuyordu. Şimdi
+            # ses gerçek süresine göre video duration'ı round'lanıyor.
+            voiceover_text = scenario.get("voiceover_text", "") or ""
+
+            # Türkçe sayı/yüzde/birim normalizasyonu — LLM "%10" yazsa bile düzelt
+            if voiceover_text:
+                from utils.text_normalizer import normalize_for_tts
+                normalized = normalize_for_tts(voiceover_text)
+                if normalized != voiceover_text:
+                    log.info(
+                        f"Voiceover normalize edildi: rakam/birim Türkçe yazıya çevrildi"
+                    )
+                    voiceover_text = normalized
+
+            audio_bytes = None
+            audio_url = ""
+            audio_duration = 0.0
+            voiceover_succeeded = True  # boş voiceover veya başarılı = True
+
+            if voiceover_text:
+                voiceover_succeeded = False
+                try:
+                    if progress_callback:
+                        await progress_callback(
+                            "step_voiceover",
+                            "🎙️ Türkçe dış ses üretiliyor (ElevenLabs v3)..."
+                        )
+                    log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
+                    audio_bytes = await asyncio.to_thread(
+                        self.elevenlabs.generate_speech,
+                        text=voiceover_text,
+                        voice_name="Sarah",
+                    )
+                    from services.elevenlabs_service import ElevenLabsService
+                    audio_duration = ElevenLabsService.measure_audio_duration(audio_bytes)
+                    log.info(f"Voiceover gerçek süresi: {audio_duration:.2f}s")
+
+                    # Replicate storage'a yükle (merge için URL lazım)
+                    audio_url = await self.replicate.async_upload_audio(audio_bytes)
+                    result["audio_url"] = audio_url
+                    log.info(f"Dış ses Replicate storage'a yüklendi: {audio_url[:80]}...")
+                    voiceover_succeeded = True
+                except Exception as vo_err:
+                    log.error(
+                        f"Dış ses üretim hatası (graceful degradation): {vo_err}",
+                        exc_info=True,
+                    )
+                    result["voiceover_error"] = str(vo_err)[:300]
+                    if progress_callback:
+                        await progress_callback(
+                            "voiceover_warning",
+                            "⚠️ Dış ses üretilemedi — video ambient seslerle teslim edilecek."
+                        )
+
+            # Video duration'ı ses süresine göre round et (Seedance 5/10/15)
+            def _round_to_seedance_duration(audio_sec: float) -> int:
+                if audio_sec <= 7:
+                    return 5
+                elif audio_sec <= 12:
+                    return 10
+                elif audio_sec <= 15:
+                    return 15
+                else:
+                    # >15s: multi-scene'e bırak — caller >15 olduğunda multi'ye girer
+                    return 15
+
+            if audio_duration > 0:
+                new_duration = _round_to_seedance_duration(audio_duration)
+                if new_duration != duration:
+                    log.info(
+                        f"Video duration ses süresine göre güncellendi: "
+                        f"{duration}s → {new_duration}s (ses {audio_duration:.1f}s)"
+                    )
+                duration = new_duration
+
+            # Multi-scene koruyucu: scene_count>1 ama final duration ≤15 ise tek sahneye düşür
+            is_multi = bool(scenario.get("is_multi_scene")) and duration > 15
+            if scenario.get("is_multi_scene") and not is_multi:
+                scenes_list = scenario.get("scenes") or []
+                if scenes_list:
+                    log.warning(
+                        f"Multi-scene senaryo {duration}s için tek sahneye düşürüldü "
+                        f"(tutarlılık için 1 sahne tercih edildi)"
+                    )
+                    scenario["is_multi_scene"] = False
+                    scenario["scene_count"] = 1
+                    scenario["scenes"] = [scenes_list[0]]
+
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            # ADIM 1: VIDEO ÜRETİMİ
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            if scenario.get("is_multi_scene") and duration > 15:
                 raw_video_url = await self._produce_multi_scene(
                     scenario=scenario,
                     reference_images=reference_images,
@@ -190,11 +282,16 @@ class ProductionPipeline:
                     ref_count = len(reference_images) if reference_images else 0
                     await progress_callback(
                         "step_1",
-                        f"🎬 Video üretiliyor (Seedance 2.0, {ref_count} referans görsel)... "
+                        f"🎬 Video üretiliyor (Seedance 2.0, {duration}s, {ref_count} referans görsel)... "
                         f"Bu 3-5 dakika sürebilir."
                     )
 
-                video_prompt = scenario.get("video_prompt", "")
+                # scenes[0].video_prompt öncelikli, yoksa eski video_prompt key'i
+                scenes_list = scenario.get("scenes") or []
+                if scenes_list and scenes_list[0].get("video_prompt"):
+                    video_prompt = scenes_list[0]["video_prompt"]
+                else:
+                    video_prompt = scenario.get("video_prompt", "")
 
                 # Güvenlik: Konuşma yasağını prompt'a zorla ekle
                 no_dialogue_clause = "No character dialogue, no speaking, no lip movement. Enable ambient and environmental sounds, natural atmosphere."
@@ -280,86 +377,38 @@ class ProductionPipeline:
                 log.info(f"Video üretildi: {raw_video_url[:60]}...")
 
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # ADIM 2: Türkçe Dış Ses (ElevenLabs)
+            # ADIM 2: Video + Ses Birleştirme (Replicate)
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            voiceover_text = scenario.get("voiceover_text", "")
-            voiceover_succeeded = True  # voiceover yoksa veya başarılıysa True kalır
-
-            if voiceover_text:
-                # ── Graceful Degradation: Dış ses başarısız olursa video yine teslim edilir ──
-                voiceover_succeeded = False
+            # Voiceover ADIM 0'da üretildi. Burada sadece merge.
+            if voiceover_succeeded and audio_url:
                 try:
-                    if progress_callback:
-                        await progress_callback(
-                            "step_2",
-                            "🎙️ Türkçe dış ses üretiliyor (ElevenLabs)..."
-                        )
-
-                    # Dış ses süre kontrolü — video süresini aşarsa metni kırp.
-                    # NOT: Türkçe eleven_multilingual_v2 gerçek konuşma hızı ~1.7 wps
-                    # (eski 2.0 değeri iyimserdi → 12s sananı 14s konuşuyordu).
-                    from services.elevenlabs_service import ElevenLabsService
-                    est_duration = ElevenLabsService.estimate_duration_seconds(voiceover_text)
-                    if est_duration > duration + 1:  # 1 saniye tolerans
-                        target_words = int(duration * 1.7)
-                        words = voiceover_text.split()
-                        if len(words) > target_words:
-                            voiceover_text = " ".join(words[:target_words])
-                            log.warning(
-                                f"Dış ses metni kırpıldı: {est_duration:.1f}s → ~{duration}s "
-                                f"({len(words)} → {target_words} kelime)"
-                            )
-
-                    # ElevenLabs TTS
-                    log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
-                    audio_bytes = await asyncio.to_thread(
-                        self.elevenlabs.generate_speech,
-                        text=voiceover_text,
-                        voice_name="Sarah",
-                        stability=0.5,
-                        similarity_boost=0.75,
-                        style=0.4,
-                    )
-
-                    # Ses dosyasını Replicate storage'a yükle (Data URI yerine gerçek URL)
-                    audio_url = await self.replicate.async_upload_audio(audio_bytes)
-                    result["audio_url"] = audio_url
-                    log.info(f"Dış ses Replicate storage'a yüklendi: {audio_url[:80]}...")
-
-                    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-                    # ADIM 3: Video + Ses Birleştirme (Replicate)
-                    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                     if progress_callback:
                         await progress_callback(
                             "step_3",
                             "🔀 Video ve dış ses birleştiriliyor (Replicate)..."
                         )
-
-                    # Async merge — ambient ses korunur + dış ses overlay
                     final_video_url = await self.replicate.async_merge_video_audio(
                         video_url=raw_video_url,
                         audio_url=audio_url,
                         replace_audio=False,  # Ambient sesler + Türkçe dış ses
                     )
                     log.info(f"Video+ses birleştirildi: {final_video_url[:60]}...")
-                    voiceover_succeeded = True
-
-                except Exception as vo_err:
-                    # ── GRACEFUL DEGRADATION ──
-                    # Dış ses veya birleştirme başarısız → ambient-only video teslim edilir
+                except Exception as merge_err:
                     log.error(
-                        f"Dış ses/birleştirme hatası (graceful degradation): {vo_err}",
+                        f"Merge hatası (graceful degradation): {merge_err}",
                         exc_info=True,
                     )
                     final_video_url = raw_video_url
-                    result["voiceover_error"] = str(vo_err)[:300]
+                    voiceover_succeeded = False
+                    result["voiceover_error"] = str(merge_err)[:300]
                     if progress_callback:
                         await progress_callback(
-                            "voiceover_warning",
-                            "⚠️ Dış ses eklenemedi — video ambient seslerle teslim edilecek."
+                            "merge_warning",
+                            "⚠️ Ses birleştirme başarısız — video ambient seslerle teslim edilecek."
                         )
             else:
-                log.warning("Dış ses metni boş — ses eklenmeden devam ediliyor")
+                if not voiceover_text:
+                    log.warning("Dış ses metni boş — ses eklenmeden devam ediliyor")
                 final_video_url = raw_video_url
 
             result["video_url"] = final_video_url
