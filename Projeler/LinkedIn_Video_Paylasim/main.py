@@ -8,7 +8,7 @@ import config  # boot-time validation
 from core.notion_video_selector import NotionVideoSelector
 from core.drive_downloader import DriveDownloader
 from core.video_processor import VideoProcessor
-from core.content_filter import CaptionGenerator
+from core.content_filter import CaptionGenerator, SuitabilityFilter
 from core.linkedin_publisher import LinkedInPublisher
 from core.notion_logger import NotionLogger
 from ops_logger import get_ops_logger, wait_all_loggers
@@ -16,7 +16,7 @@ from ops_logger import get_ops_logger, wait_all_loggers
 ops = get_ops_logger("LinkedIn_Video_Paylasim", "Pipeline")
 
 
-def _process_one(page, selector, drive, processor, captioner, publisher, logger_db) -> bool:
+def _process_one(page, selector, drive, processor, captioner, publisher, logger_db, body_text: str = "") -> bool:
     page_id = page["page_id"]
     short_id = page_id.replace("-", "")[:8]
     name = page["name"]
@@ -64,7 +64,8 @@ def _process_one(page, selector, drive, processor, captioner, publisher, logger_
             logger_db.log_video(page_id=page_id, status="Failed", source_url=page.get("notion_url", ""), note="Video processor başarısız")
             return False
 
-        body_text = selector.get_page_body_text(page_id)
+        if not body_text:
+            body_text = selector.get_page_body_text(page_id)
         caption = captioner.generate(page, body_text)
         ops.info("Caption", f"'{caption[:140]}'")
 
@@ -103,6 +104,7 @@ def job():
         drive = DriveDownloader()
         processor = VideoProcessor()
         captioner = CaptionGenerator()
+        suitability = SuitabilityFilter()
         publisher = LinkedInPublisher()
         logger_db = NotionLogger()
 
@@ -119,7 +121,27 @@ def job():
             if logger_db.is_video_posted(page["page_id"]):
                 ops.info("Atlandı", f"{page['name'][:40]} — zaten işlenmiş")
                 continue
-            if _process_one(page, selector, drive, processor, captioner, publisher, logger_db):
+            if page.get("is_youtube"):
+                ops.info("Filtrelendi", f"{page['name'][:40]} — YouTube videosu (LinkedIn için uygun değil)")
+                logger_db.log_video(
+                    page_id=page["page_id"],
+                    status="Filtered",
+                    source_url=page.get("notion_url", ""),
+                    note="YouTube videosu — LinkedIn'de short-form olarak paylaşılmıyor",
+                )
+                continue
+            body_text = selector.get_page_body_text(page["page_id"])
+            ok, reason = suitability.is_suitable(page, body_text)
+            if not ok:
+                ops.info("Filtrelendi", f"{page['name'][:40]} — {reason}")
+                logger_db.log_video(
+                    page_id=page["page_id"],
+                    status="Filtered",
+                    source_url=page.get("notion_url", ""),
+                    note=f"LinkedIn için uygun değil: {reason}",
+                )
+                continue
+            if _process_one(page, selector, drive, processor, captioner, publisher, logger_db, body_text):
                 return
 
         ops.info("Workflow Tamamlandı", "Yeni paylaşılacak video kalmadı")

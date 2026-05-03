@@ -1,5 +1,6 @@
-"""LinkedIn caption üretici — Groq LLM, tek cümle hard rule."""
+"""LinkedIn caption üretici + konu uygunluk filtresi (Groq LLM)."""
 
+import json
 import re
 import requests
 
@@ -7,6 +8,63 @@ from ops_logger import get_ops_logger
 from config import settings
 
 ops = get_ops_logger("LinkedIn_Video_Paylasim", "CaptionGenerator")
+filter_ops = get_ops_logger("LinkedIn_Video_Paylasim", "SuitabilityFilter")
+
+
+class SuitabilityFilter:
+    """LinkedIn için bariz uygunsuz içerikleri eler. Esnek — şüphede UYGUN der."""
+
+    SYSTEM_PROMPT = (
+        "Bir videonun LinkedIn (profesyonel feed) için uygun olup olmadığına karar veriyorsun. "
+        "Dolunay Özeren'in profili: Dubai gayrimenkul + AI/teknoloji + iş otomasyonu içerik üreticisi, "
+        "B2B kitle (girişimciler, profesyoneller). "
+        "PRENSİP: ESNEK ol. Şüphedeysen UYGUN de. Sadece BARİZ uygunsuzları ele. "
+        "UYGUN olanlar (örnek): AI araçları, otomasyon, KOBİ, iş, üretkenlik, gayrimenkul, finans, "
+        "iş kuruyor, kariyer, profesyonel beceri, yazılım, dijital pazarlama. "
+        "UYGUN DEĞİL olanlar (örnek): kendi müzik klibini yapma, kişisel eğlence, şaka, "
+        "tamamen tüketici odaklı (ör: TikTok dans efekti), profesyonel bağlamı olmayan AI gimmick. "
+        "Yanıtı SADECE şu JSON formatında ver: "
+        '{"suitable": true|false, "reason": "kısa Türkçe gerekçe"}'
+    )
+
+    def __init__(self):
+        self.api_key = settings.GROQ_API_KEY
+        self.base_url = settings.GROQ_BASE_URL
+        self.model = settings.GROQ_MODEL
+
+    def is_suitable(self, page: dict, body_text: str) -> tuple[bool, str]:
+        if settings.IS_DRY_RUN:
+            filter_ops.info("[DRY-RUN] Suitability check atlanıyor → uygun kabul")
+            return True, "dry-run"
+
+        source = (body_text or page.get("caption_property") or page.get("name") or "").strip()
+        if not source:
+            return True, "kaynak boş — varsayılan uygun"
+
+        user_prompt = f"Video başlık: {page.get('name','')}\n\nVideo script/caption:\n{source[:2500]}"
+        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": self.SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.2,
+            "max_tokens": 150,
+            "response_format": {"type": "json_object"},
+        }
+        try:
+            resp = requests.post(f"{self.base_url}/chat/completions", headers=headers, json=payload, timeout=30)
+            resp.raise_for_status()
+            raw = resp.json()["choices"][0]["message"]["content"].strip()
+            data = json.loads(raw)
+            suitable = bool(data.get("suitable", True))
+            reason = str(data.get("reason", ""))[:200]
+            filter_ops.info(f"Suitability: {'UYGUN' if suitable else 'ELENDI'} — {reason}")
+            return suitable, reason
+        except Exception as e:
+            filter_ops.warning(f"Filter hatası ({e}) — varsayılan uygun (fail-open)")
+            return True, f"filter hatası: {e}"
 
 
 class CaptionGenerator:

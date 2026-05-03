@@ -51,6 +51,13 @@ class NotionVideoSelector:
         publish_date = date_obj.get("start") if date_obj else None
         cap_parts = props.get("Caption", {}).get("rich_text", [])
         caption = "".join(t.get("plain_text", "") for t in cap_parts).strip()
+
+        icon = page.get("icon") or {}
+        is_youtube = (
+            icon.get("type") == "custom_emoji"
+            and (icon.get("custom_emoji", {}).get("name") or "").lower() == "youtube_logo"
+        )
+
         return {
             "page_id": page["id"],
             "name": name or "Untitled",
@@ -58,6 +65,7 @@ class NotionVideoSelector:
             "publish_date": publish_date,
             "caption_property": caption,
             "notion_url": page.get("url", ""),
+            "is_youtube": is_youtube,
         }
 
     def get_page_body_text(self, page_id: str) -> str:
