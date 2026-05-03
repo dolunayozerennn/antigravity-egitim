@@ -31,7 +31,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 | youtube-otomasyonu-v3 | CronJob | 2026-04-19 | ✅ Aktif | 4 |
 | whatsapp-onboarding | Express | 2026-04-27 | ✅ Aktif | 5 |
 | lead-notifier-bot-v3 | Worker | 2026-04-26 | ✅ Aktif | 3 |
-| ceren-marka-takip-cron | CronJob | 2026-04-24 | ✅ Aktif | 4 |
+| ceren-marka-takip-cron | CronJob | 2026-05-03 | ✅ Aktif | 4 |
 
 ---
 
@@ -317,12 +317,13 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Environment ID:** `817dd65c-57f2-4cb7-a4df-92422f9fd36a`
 - **GitHub Repo:** `dolunayozerennn/antigravity-egitim` (monorepo, Root Dir: `/Projeler/Ceren_Marka_Takip`)
 - **Lokal Klasör:** `Projeler/Ceren_Marka_Takip/`
-- **Start Komutu:** `cd Projeler/Ceren_Marka_Takip && pip install -r requirements.txt && python main.py`
-- **Cron Schedule:** `0 7 * * *` (Günde 1 kez, UTC 07:00 = İstanbul 10:00)
-- **Son Deploy:** 2026-04-24 (Fix: Groq timeout bug, business_hours fix, SMTP cleanup, nixpacks.toml eklendi, cron 2h→günlük)
-- **Durum:** ✅ Aktif (Günde 1 kez, sabah 10:00 İstanbul)
-- **Hassasiyetler:** Groq timeout, nixpacks.toml (ffmpeg yoksa da nixpacks gerekli), SMTP yasak (Gmail API), business_hours hesaplama
-- **Env Vars:** GOOGLE_CEREN_TOKEN_JSON, GOOGLE_DOLUNAY_AI_TOKEN_JSON, GOOGLE_OUTREACH_TOKEN_JSON, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_OPS_LOG
+- **Start Komutu:** `python main.py`
+- **Cron Schedule:** `0 7 * * *` (Günde 1 kez, UTC 07:00 = İstanbul 10:00) — Railway API ile doğrulandı
+- **Notion DB (Thread Tracker):** `2a6f7057-a50c-44cf-9f7e-cddd1b2291f9` ("Ceren — Marka Collab Thread Tracker", parent: Ceren sayfası)
+- **Son Deploy:** 2026-05-03 (refactor: hatırlatma + sınıflandırma yeniden kuruldu — Notion-backed thread lifecycle, carry-forward, kategori enum + confidence + is_personalized; Groq response_format=json_object kapatıldı; cron gerçekten 2h idi → günlüğe çekildi)
+- **Durum:** ✅ Aktif (Günde 1 kez, sabah 10:00 İstanbul) — Canlı doğrulandı 2026-05-03 07:57 UTC: 74 thread tarandı, 17 açık (14 yeni + 2 carry-forward), digest mail gönderildi.
+- **Hassasiyetler:** Cron schedule'ın **gerçek değerini Railway API ile doğrula** (registry yanıltıcı olmuştu); Groq strict response_format=json_object 8-kategorili promptta 400 dönüyor → kapalı tutulmalı; SMTP yasak (Gmail API); Notion DB'de manuel olarak `Status=false_positive` set edilirse sistem dokunmaz (kullanıcı feedback loop'u).
+- **Env Vars:** GOOGLE_CEREN_TOKEN_JSON, GOOGLE_DOLUNAY_AI_TOKEN_JSON, GOOGLE_OUTREACH_TOKEN_JSON, GROQ_API_KEY, NOTION_SOCIAL_TOKEN, NOTION_DB_CEREN_COLLAB_THREADS, ALERT_EMAIL
 
 ---
 
