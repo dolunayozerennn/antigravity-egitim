@@ -1,8 +1,10 @@
 """
 database.py — Tahsilat Bildirim Filtresi (state-less)
 
-Günde 1 tek toplu özet mail atıldığı için kalıcı state takibine gerek yok.
-Notion'a hiçbir şey yazılmaz; comment okuma/yazma kaldırıldı.
+Atlama kuralları (uyarı gönderilmez):
+  - Ceren Ödeme = "Ödeme Yok"  → işbirliği değil, kayıt göz ardı
+  - Ceren Ödeme = "Ödendi"     → tahsilat tamam
+  - Check = True                → tahsilat manuel işaretlenmiş
 """
 
 from datetime import datetime
@@ -19,16 +21,20 @@ def _bracket(days_passed):
 
 
 def get_pending_notifications(videos, amounts=None):
-    """
-    'Yayınlandı' + 'Check kapalı' + 14+ gün geçmiş videoları döner.
-
-    Her item: id, title, db_type, published_date, days_passed, bracket, amount, notion_url
-    """
     amounts = amounts or {}
     pending = []
     now = datetime.now()
 
     for video in videos:
+        ceren_odeme = video.get("ceren_odeme", "")
+
+        # İşbirliği değil → kayıt baştan elenir, Check'e bakılmaz
+        if ceren_odeme == "Ödeme Yok":
+            continue
+
+        # Tahsilat tamam (Ceren Ödeme = Ödendi veya Check işaretli)
+        if ceren_odeme == "Ödendi":
+            continue
         if video.get("check", False):
             continue
 
@@ -52,7 +58,6 @@ def get_pending_notifications(videos, amounts=None):
         pending.append({
             "id": page_id,
             "title": video["title"],
-            "db_type": video["database_type"],
             "published_date": pub_date.strftime("%Y-%m-%d"),
             "days_passed": days_passed,
             "bracket": bracket,

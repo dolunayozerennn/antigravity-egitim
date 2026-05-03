@@ -36,6 +36,8 @@ if not NOTION_API_TOKEN:
     print("❌ KRİTİK: NOTION_SOCIAL_TOKEN veya NOTION_API_TOKEN bulunamadı!")
     raise EnvironmentError("NOTION_API_TOKEN eksik, uygulama başlatılamıyor.")
 
-# Notion Database ID'leri — Yeni Workspace (Mart 2026+)
-YOUTUBE_DB_ID = "5bb95514-0a32-821f-98cc-81605e4a971f"
-REELS_DB_ID = "27b95514-0a32-8385-89eb-813222d532a2"
+# Tek birleşik DB (YouTube + Reels) — Mayıs 2026'dan beri
+COLLAB_DB_ID = "27b95514-0a32-8385-89eb-813222d532a2"
+
+# Mail link formatı için parent page slug (Video İçerik Akışları)
+COLLAB_PARENT_SLUG = "Video-erik-Ak-lar-038955140a3283aabf77810b495fdfe7"

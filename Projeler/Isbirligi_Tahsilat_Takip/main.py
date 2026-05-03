@@ -17,20 +17,18 @@ def _fmt_amount(amount):
     if amount is None:
         return "—"
     if float(amount).is_integer():
-        return f"{int(amount):,} TL".replace(",", ".")
-    return f"{amount:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"${int(amount):,}"
+    return f"${amount:,.2f}"
 
 
 def _render_table(items, color):
     rows = "".join(
         f"""
         <tr>
-            <td style="padding:8px 10px;border-bottom:1px solid #eee;">{it['title']}</td>
-            <td style="padding:8px 10px;border-bottom:1px solid #eee;">{it['db_type']}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #eee;"><a href="{it['notion_url']}" style="color:#1f1f1f;text-decoration:none;font-weight:600;">{it['title']}</a></td>
             <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">{it['published_date']}</td>
             <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;"><strong>{it['days_passed']}</strong></td>
             <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;">{_fmt_amount(it['amount'])}</td>
-            <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;"><a href="{it['notion_url']}">aç</a></td>
         </tr>
         """
         for it in items
@@ -40,11 +38,9 @@ def _render_table(items, color):
         <thead>
             <tr style="background:{color};color:#fff;">
                 <th style="padding:10px;text-align:left;">Marka / Video</th>
-                <th style="padding:10px;text-align:left;">Tür</th>
                 <th style="padding:10px;text-align:center;">Yayın</th>
                 <th style="padding:10px;text-align:center;">Geçen Gün</th>
                 <th style="padding:10px;text-align:right;">Tutar</th>
-                <th style="padding:10px;text-align:center;">Notion</th>
             </tr>
         </thead>
         <tbody>{rows}</tbody>
