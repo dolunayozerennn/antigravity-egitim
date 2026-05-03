@@ -47,11 +47,11 @@ Kullanıcıya kısa ve net bir plan sun:
 ⚠️ Riskler: [yan etkiler varsa]
 ```
 
-## Adım 3: ONAYLA — Kullanıcı Onayı
+## Adım 3: KARAR — Teknik Fix Senin İşin
 
-- Kök neden + çözüm planı sunulduktan sonra **her zaman** kullanıcı onayı bekle
-- Kullanıcı "Onaylıyorum" dedikten sonra fix'i uygula
-- ⛔ Onay almadan kod değiştirme — bu kural istisnasızdır (Mimar Modu prensibi)
+- Kök neden + çözüm planı netleştikten sonra **direkt uygula** — kullanıcıyı teknik plana onaylatma.
+- Sadece şu durumlarda dur ve sor: (a) fix'in kullanıcıya görünür bir davranış değişikliği yaratıyor (ton, dil, akış), (b) geri-dönüşü zor + dış-dünyaya görünür (deploy/mesaj/silme), (c) ürünsel bir tercih gerekiyor (hangi model/servis).
+- Tek bir teknik yaklaşım yerine birden fazla ürünsel okuma çıkıyorsa hangisini tercih ettiğini sor; teknik tercihi (kütüphane/refactor/dosya yapısı) sen seç.
 
 ## Adım 4: UYGULA — Minimal Müdahale
 

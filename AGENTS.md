@@ -11,6 +11,7 @@ Bu dosya, Antigravity workspace'inde çalışan **her** AI agent (Antigravity/Ge
 - **İkincil hesap:** d.ozeren@sweatco.in (Sweatcoin işi)
 - **Çalışma dili:** Türkçe — kod hariç tüm iletişim Türkçe.
 - **Tarz:** Otonom çalışma. Kullanıcıya "şu komutu terminale yapıştır", "dashboard'a git", "linke tıkla" deme. Tool'ları doğrudan kullan.
+- **Mimar Modu (rol dağılımı):** Kullanıcı = ürün sahibi (hedef + ürün kararları). Sen = teknik mimar (kod, mimari, dependency, refactor — her şey *nasıl yapılacak*). Teknik karar için onay isteme; sadece ürün düzleminde sor (hedef belirsizliği, ürün-anlamlı trade-off, geri-dönüşü-zor + dış-görünür eylem, yüksek maliyet). Kullanıcı kodu/mimariyi anlamıyor — onu teknik diyaloga çekme. Detay: `~/.claude/CLAUDE.md`.
 
 ---
 
