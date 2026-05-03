@@ -50,75 +50,32 @@ def upload_to_imgbb(image_path: str) -> str:
         print(f"ImgBB network error: {e}")
         return None
 
-def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: list = None) -> str:
-    print("Sending generation request to Nano Banana Pro...")
-    
-    create_url = "https://api.kie.ai/api/v1/jobs/createTask"
-    headers = {
-        "Authorization": f"Bearer {KIE_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    # Build image_input list: primary ref + up to 2 extra refs for stronger face identity
-    image_inputs = [image_url]
-    if extra_ref_urls:
-        for ref_url in extra_ref_urls[:2]:  # Max 3 total (1 primary + 2 extra)
-            if ref_url and ref_url != image_url:
-                image_inputs.append(ref_url)
-    
-    print(f"  Using {len(image_inputs)} reference image(s) for face identity locking.")
-    
-    payload = {
-        "model": "nano-banana-pro",
-        "input": {
-            "prompt": prompt,
-            "aspect_ratio": "9:16",
-            "image_input": image_inputs
-        }
-    }
-    
-    try:
-        response = requests.post(create_url, headers=headers, json=payload, timeout=30)
-        if response.status_code != 200:
-            print(f"Failed to create task: {response.text}")
-            return None
-    except requests.exceptions.RequestException as e:
-        print(f"Kie AI network error during task creation: {e}")
-        return None
-        
-    task_id = response.json().get("data", {}).get("taskId")
-    if not task_id:
-        print("taskId not found in generation response.")
-        return None
-        
-    print(f"Task created successfully. Task ID: {task_id}. Waiting for completion...")
-    
-    # Polling for result with MAX TIMEOUT (5 minutes)
-    poll_url = f"https://api.kie.ai/api/v1/jobs/recordInfo?taskId={task_id}"
-    max_poll_seconds = 300  # 5 dakika max
+KIE_CREATE_URL = "https://api.kie.ai/api/v1/jobs/createTask"
+KIE_POLL_URL_TPL = "https://api.kie.ai/api/v1/jobs/recordInfo?taskId={task_id}"
+KIE_MAX_POLL_SECONDS = 300
+
+
+def _poll_kie_task(task_id: str, headers: dict) -> str:
+    poll_url = KIE_POLL_URL_TPL.format(task_id=task_id)
     poll_start = time.time()
-    
     while True:
-        # Timeout guard: sonsuz döngüyü engelle
-        elapsed = time.time() - poll_start
-        if elapsed > max_poll_seconds:
-            print(f"⏱️ Polling timeout ({max_poll_seconds}s). Aborting.")
+        if time.time() - poll_start > KIE_MAX_POLL_SECONDS:
+            print(f"⏱️ Polling timeout ({KIE_MAX_POLL_SECONDS}s). Aborting.")
             return None
-        
         try:
             poll_resp = requests.get(poll_url, headers=headers, timeout=30)
             if poll_resp.status_code != 200:
-                 print(f"Polling failed: {poll_resp.text}")
-                 time.sleep(5)
-                 continue
+                print(f"Polling failed: {poll_resp.text}")
+                time.sleep(5)
+                continue
         except requests.exceptions.RequestException as e:
             print(f"Polling network error: {e}")
             time.sleep(5)
             continue
-             
-        data = poll_resp.json().get("data", {})
+        data = poll_resp.json().get("data") or {}
+        if not isinstance(data, dict):
+            data = {}
         state = data.get("state")
-        
         if state == "success":
             result_json = data.get("resultJson", "{}")
             result_data = json.loads(result_json)
@@ -131,23 +88,106 @@ def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: 
             elif isinstance(result_data, dict) and "images" in result_data:
                 final_image_url = result_data["images"][0]["url"]
             elif isinstance(result_data, dict) and "url" in result_data:
-                 final_image_url = result_data["url"]
-                 
+                final_image_url = result_data["url"]
             if final_image_url:
                 return final_image_url
-            else:
-                print(f"Could not parse result URL from: {result_json}")
-                return None
-                
+            print(f"Could not parse result URL from: {result_json}")
+            return None
         elif state == "failed":
             print(f"Generation failed. Msg: {data.get('failMsg')}")
             return None
-        
-        elif state in ["processing", "wait", "waiting"]:
-             time.sleep(10)
+        elif state in ["processing", "wait", "waiting", "generating"]:
+            time.sleep(10)
         else:
-             print(f"Unknown state: {state}")
-             time.sleep(10)
+            print(f"Unknown state: {state}")
+            time.sleep(10)
+
+
+def _create_kie_task(payload: dict, headers: dict, label: str) -> str:
+    try:
+        response = requests.post(KIE_CREATE_URL, headers=headers, json=payload, timeout=30)
+        if response.status_code != 200:
+            print(f"❌ {label} createTask failed (HTTP {response.status_code}): {response.text}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"❌ {label} network error: {e}")
+        return None
+    try:
+        resp_json = response.json()
+    except ValueError:
+        print(f"❌ {label}: response is not JSON: {response.text[:300]}")
+        return None
+    data = resp_json.get("data")
+    if not isinstance(data, dict):
+        print(f"❌ {label}: taskId not found. Full response: {resp_json}")
+        return None
+    task_id = data.get("taskId")
+    if not task_id:
+        print(f"❌ {label}: taskId missing in data. Full response: {resp_json}")
+        return None
+    return task_id
+
+
+def _call_kie_gpt_image_2(image_inputs: list, prompt: str) -> str:
+    print(f"🎨 GPT Image 2 ({len(image_inputs)} ref)...")
+    headers = {"Authorization": f"Bearer {KIE_API_KEY}", "Content-Type": "application/json"}
+    payload = {
+        "model": "gpt-image-2-image-to-image",
+        "input": {
+            "prompt": prompt,
+            "aspect_ratio": "9:16",
+            "resolution": "1K",
+            "input_urls": image_inputs,
+        },
+    }
+    task_id = _create_kie_task(payload, headers, "GPT Image 2")
+    if not task_id:
+        return None
+    print(f"✅ GPT Image 2 task: {task_id}")
+    print(f"   🔗 https://kie.ai/gpt-image-2?taskId={task_id}")
+    return _poll_kie_task(task_id, headers)
+
+
+def _call_kie_nano_banana(image_inputs: list, prompt: str) -> str:
+    print(f"🍌 Nano Banana Pro ({len(image_inputs)} ref)...")
+    headers = {"Authorization": f"Bearer {KIE_API_KEY}", "Content-Type": "application/json"}
+    payload = {
+        "model": "nano-banana-pro",
+        "input": {
+            "prompt": prompt,
+            "aspect_ratio": "9:16",
+            "image_input": image_inputs,
+        },
+    }
+    task_id = _create_kie_task(payload, headers, "Nano Banana Pro")
+    if not task_id:
+        return None
+    print(f"✅ Nano Banana task: {task_id}")
+    print(f"   🔗 https://kie.ai/nano-banana?taskId={task_id}")
+    return _poll_kie_task(task_id, headers)
+
+
+def generate_cover_with_nanobanana(image_url: str, prompt: str, extra_ref_urls: list = None) -> str:
+    """Cover orchestrator: GPT Image 2 primary, Nano Banana Pro fallback."""
+    image_inputs = [image_url]
+    if extra_ref_urls:
+        for ref_url in extra_ref_urls[:2]:
+            if ref_url and ref_url != image_url:
+                image_inputs.append(ref_url)
+    print(f"  Using {len(image_inputs)} reference image(s) for face identity locking.")
+
+    result = _call_kie_gpt_image_2(image_inputs, prompt)
+    if result:
+        return result
+
+    print("⚠️ GPT Image 2 başarısız → Nano Banana Pro fallback...")
+    result = _call_kie_nano_banana(image_inputs, prompt)
+    if result:
+        print("✅ Fallback (Nano Banana Pro) başarılı.")
+        return result
+
+    print("❌ Hem GPT Image 2 hem Nano Banana Pro başarısız.")
+    return None
 
 
 def generate_cover_text_and_scene(video_name: str, script_text: str) -> dict:
