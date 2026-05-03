@@ -95,8 +95,11 @@ def analyze_thread(thread_messages: str, system_prompt: str) -> Optional[Dict[st
                     {"role": "user", "content": thread_messages},
                 ],
                 temperature=0.1,
-                max_tokens=500,
-                response_format={"type": "json_object"},
+                max_tokens=800,
+                # response_format=json_object kasten KAPATILDI — Groq'un strict
+                # JSON validator'ı karmaşık prompt'larda 400 dönüyor (failed_generation /
+                # validate_failed). Kendi _extract_json_from_text() parser'ımız
+                # ```json``` wrap, leading text vb. her durumu yakalıyor.
             )
 
             content = response.choices[0].message.content
