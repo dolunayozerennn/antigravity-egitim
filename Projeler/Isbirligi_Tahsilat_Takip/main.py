@@ -1,129 +1,153 @@
 from datetime import datetime
-from notion_client import fetch_published_videos
-from database import get_pending_notifications, mark_as_notified
+from notion_client import fetch_published_videos, fetch_payment_amounts
+from database import get_pending_notifications
 from email_client import send_email_notification
 from ops_logger import get_ops_logger
 
 ops = get_ops_logger("Isbirligi_Tahsilat_Takip", "Pipeline")
 
+BRACKETS = [
+    ("yellow", "🟡 Sarı (14-29 gün)", "#faad14", "#fffbe6"),
+    ("red",    "🔴 Kırmızı (30-59 gün)", "#ff4d4f", "#fff1f0"),
+    ("black",  "⚫ Siyah (60+ gün)", "#1f1f1f", "#ececec"),
+]
+
+
+def _fmt_amount(amount):
+    if amount is None:
+        return "—"
+    if float(amount).is_integer():
+        return f"{int(amount):,} TL".replace(",", ".")
+    return f"{amount:,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _render_table(items, color):
+    rows = "".join(
+        f"""
+        <tr>
+            <td style="padding:8px 10px;border-bottom:1px solid #eee;">{it['title']}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #eee;">{it['db_type']}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">{it['published_date']}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;"><strong>{it['days_passed']}</strong></td>
+            <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;">{_fmt_amount(it['amount'])}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;"><a href="{it['notion_url']}">aç</a></td>
+        </tr>
+        """
+        for it in items
+    )
+    return f"""
+    <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:14px;">
+        <thead>
+            <tr style="background:{color};color:#fff;">
+                <th style="padding:10px;text-align:left;">Marka / Video</th>
+                <th style="padding:10px;text-align:left;">Tür</th>
+                <th style="padding:10px;text-align:center;">Yayın</th>
+                <th style="padding:10px;text-align:center;">Geçen Gün</th>
+                <th style="padding:10px;text-align:right;">Tutar</th>
+                <th style="padding:10px;text-align:center;">Notion</th>
+            </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+    </table>
+    """
+
+
+def _build_email(pending):
+    grouped = {key: [] for key, *_ in BRACKETS}
+    for item in pending:
+        grouped[item["bracket"]].append(item)
+
+    counts = {k: len(v) for k, v in grouped.items()}
+
+    total_known_amount = sum(it["amount"] or 0 for it in pending)
+    has_unknown = any(it["amount"] is None for it in pending)
+    total_label = _fmt_amount(total_known_amount)
+    if has_unknown:
+        total_label += " (+ bilinmeyen)"
+
+    sections = ""
+    for key, label, color, _bg in BRACKETS:
+        items = grouped[key]
+        if not items:
+            continue
+        sections += f"""
+        <h3 style="margin:24px 0 4px 0;color:{color};">{label} — {len(items)} kayıt</h3>
+        {_render_table(items, color)}
+        """
+
+    subject = (
+        f"Tahsilat Özeti — {len(pending)} bekleyen "
+        f"({counts['yellow']} sarı / {counts['red']} kırmızı / {counts['black']} siyah)"
+    )
+
+    html = f"""
+    <html>
+    <body style="font-family:Arial,Helvetica,sans-serif;color:#222;line-height:1.5;">
+        <h2 style="margin-bottom:4px;">💰 Tahsilat Özeti</h2>
+        <p style="margin-top:0;color:#666;">{datetime.now().strftime('%Y-%m-%d')} — toplam <strong>{len(pending)}</strong> bekleyen işbirliği,
+        bilinen tutar toplamı: <strong>{total_label}</strong>.</p>
+        {sections}
+        <p style="margin-top:24px;color:#888;font-size:12px;">
+            Tahsilat alındığında Notion'da ilgili kaydın <strong>Check</strong> kutusunu işaretle — bir sonraki tarama dışı bırakır.
+        </p>
+    </body>
+    </html>
+    """
+    return subject, html
+
+
 def check_for_alerts():
-    """
-    Notion'dan yayınlanmış videoları çeker ve ödeme süresi geçenleri tespit eder.
-    
-    Akış:
-    1. Notion'dan tüm 'Yayınlandı' durumundaki videoları çek (Bildirim Seviyesi + tarih dahil)
-    2. Ödeme alınmamış + süre geçmiş + bildirim yükseltme gerektirenleri filtrele
-    3. E-posta bildirimi gönder
-    4. Notion'da bildirim seviyesini güncelle
-    
-    SQLite'a gerek kalmadı — tüm state Notion'da tutuluyor.
-    """
     print(f"[{datetime.now()}] Notion veritabanları kontrol ediliyor...")
-    
-    # 1. Notion'dan tüm yayınlanmış videoları çek
+
     try:
         videos = fetch_published_videos()
     except Exception as e:
-        print(f"Notion verisi çekerken hata: {e}")
+        print(f"Notion video çekme hatası: {e}")
         ops.error("Notion veri çekme hatası", exception=e)
         return
-    
+
     if not videos:
-        print("İncelenecek 'Yayınlandı' konumunda video bulunamadı.")
+        print("İncelenecek 'Yayınlandı' kayıt yok.")
         return
-    
-    print(f"Toplam {len(videos)} yayınlanmış video bulundu.")
-    
-    # İstatistik: ödeme bekleyenler
-    unchecked = [v for v in videos if not v.get("check", False)]
-    print(f"  → Ödeme onayı bekleyen: {len(unchecked)}")
-    print(f"  → Ödeme tamamlanan: {len(videos) - len(unchecked)}")
-    
-    # 2. Bildirim gereken kayıtları filtrele
-    pending = get_pending_notifications(videos, days_threshold=14)
-    
+
+    try:
+        amounts = fetch_payment_amounts()
+    except Exception as e:
+        print(f"Tahsilat Takip okuma hatası (devam ediliyor, tutarlar boş): {e}")
+        amounts = {}
+
+    print(f"Toplam {len(videos)} yayınlanmış video, {len(amounts)} tahsilat eşlemesi bulundu.")
+
+    pending = get_pending_notifications(videos, amounts=amounts)
+
     if not pending:
-        print("Uyarı gerektiren tahsilat bulunmuyor.")
+        print("Uyarı gerektiren tahsilat yok — mail atılmayacak.")
+        ops.success("Tahsilat özeti", "Bekleyen yok, mail atlandı")
         return
-    
-    print(f"{len(pending)} adet bildirim gönderilecek.")
-    
-    # 3. Her bekleyen kayıt için e-posta bildirimi gönder
-    for item in pending:
-        days_passed = item.get('days_passed', 0)
-        notified_level = item.get('notified_level', 0)
-        
-        # 28 günden fazla oldu ve kırmızı bildirim (seviye 2) atılmadıysa
-        if days_passed >= 28 and notified_level < 2:
-            subject = f"🔴 KRİTİK: Ödeme Uyarısı - {item['title']}"
-            color = "#ff4d4f"
-            bg_color = "#fff1f0"
-            headline = "🚨 28 Günü Geçen Kritik Tahsilat Bildirimi"
-            new_level = 2
-        # 14 ile 28 gün arası ve sarı bildirim (seviye 1) atılmadıysa
-        elif days_passed >= 14 and days_passed < 28 and notified_level < 1:
-            subject = f"🟡 Geciken Ödeme: {item['title']}"
-            color = "#faad14"
-            bg_color = "#fffbe6"
-            headline = "⚠️ 14 Günü Geçen Tahsilat Bildirimi"
-            new_level = 1
-        else:
-            # Bildirim atılmayacak
-            continue
 
-        html_body = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="background-color: {bg_color}; padding: 20px; border-radius: 8px; border-left: 5px solid {color};">
-                <h2 style="color: {color}; margin-top: 0;">{headline}</h2>
-                <p>Aşağıdaki videonun yayınlanmasının üzerinden <strong>{days_passed} gün</strong> geçti ancak henüz tahsilat onayı verilmedi.</p>
-                <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Proje/Video Adı:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #eee;">{item['title']}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>İşbirliği Türü:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #eee;">{item['db_type']}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Yayın Tarihi:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #eee;">{item['published_date']}</td>
-                    </tr>
-                </table>
-                <p style="margin-top: 20px;">Lütfen <a href="{item.get('notion_url', 'https://www.notion.so')}">Notion'da bu kaydı aç</a> ve durumu kontrol et. Tahsilat sağlandıysa <strong>'Check'</strong> kutusunu işaretlemeyi unutma.</p>
-            </div>
-        </body>
-        </html>
-        """
-        
-        success = send_email_notification(subject, html_body)
-        if success:
-            mark_as_notified(item["id"], new_level)
-            print(f"Uyarı başarıyla gönderildi (Seviye {new_level}): {item['title']}")
-            ops.success(f"Tahsilat uyarısı gönderildi (Seviye {new_level})", item['title'])
-        else:
-            print(f"Uyarı gönderilemedi (Seviye {new_level}): {item['title']}")
-            ops.warning(f"Tahsilat uyarısı gönderilemedi (Seviye {new_level})", item['title'])
+    print(f"{len(pending)} bekleyen kayıt → tek toplu mail hazırlanıyor.")
 
-def job():
-    print(f"[{datetime.now()}] Zamanlanmis gorev basliyor...")
-    check_for_alerts()
-    print(f"[{datetime.now()}] Zamanlanmis gorev bitti.")
+    subject, html_body = _build_email(pending)
+    success = send_email_notification(subject, html_body)
+
+    if success:
+        print(f"Toplu özet maili gönderildi: {len(pending)} kayıt.")
+        ops.success("Tahsilat özeti gönderildi", f"{len(pending)} bekleyen")
+    else:
+        print("Toplu özet maili gönderilemedi.")
+        ops.warning("Tahsilat özeti gönderilemedi", f"{len(pending)} bekleyen")
+
 
 def main():
     print("Isbirligi_Tahsilat_Takip baslatildi. (Cron Modu)")
-    
-    # Doğrudan job'ı çalıştır
-    job()
-    
-    # Ops loglarının yazılmasını bekle
+    print(f"[{datetime.now()}] Zamanlanmis gorev basliyor...")
+    check_for_alerts()
+    print(f"[{datetime.now()}] Zamanlanmis gorev bitti.")
     ops.wait_for_logs()
-    
     print("İşlem tamamlandı, çıkılıyor.")
     import sys
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

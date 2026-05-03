@@ -1,46 +1,50 @@
 # 💰 İşbirliği Tahsilat Takip
 
-Sosyal medya işbirlikleri (YouTube & Reels) için **otomatik tahsilat hatırlatma sistemi**.
-Yayınlanmış videoların ödeme durumunu Notion üzerinden takip eder ve geciken ödemeler için kademeli e-posta bildirimi gönderir.
+Sosyal medya işbirlikleri (YouTube & Reels) için **günlük toplu tahsilat özeti**.
+Her sabah Notion'daki "Yayınlandı" durumundaki videoları tarar, ödeme alınmamış olanlardan
+14+ gün geçenleri tek bir HTML e-postada özetler.
 
 ---
 
 ## 🎯 Ne Yapar?
 
-1. **Notion'dan veri çeker** — YouTube İşbirliği ve Reels İşbirliği veritabanlarından "Yayınlandı" durumundaki videoları alır
-2. **Gecikme hesaplar** — Yayın tarihinden itibaren kaç gün geçtiğini hesaplar
-3. **Kademeli bildirim gönderir:**
-   - 🟡 **14 gün** geçtiyse → Sarı uyarı e-postası
-   - 🔴 **28 gün** geçtiyse → Kırmızı kritik uyarı e-postası
-4. **State'i Notion'da tutar** — Bildirim geçmişi Notion page yorumları üzerinden takip edilir (SQLite kullanılmaz)
+1. **Notion'dan veri çeker** — YouTube İşbirliği ve Reels İşbirliği veritabanlarından "Yayınlandı" durumundaki videoları alır.
+2. **Tutar bilgisini join'ler** — `Gelir > Tahsilat Takip` veritabanını **sadece okur** ve `Dolunay Reels` relation'ı üzerinden video → tutar eşlemesi yapar.
+3. **Gecikme hesaplar** — Yayın tarihinden bugüne kaç gün geçtiğini hesaplar.
+4. **Tek toplu e-posta atar** — Bekleyen kayıtlar üç banda ayrılır:
+   - 🟡 **14-29 gün** → Sarı bandı
+   - 🔴 **30-59 gün** → Kırmızı bandı
+   - ⚫ **60+ gün** → Siyah bandı
+5. **Bekleyen yoksa mail atılmaz.** Notion'a hiçbir şey yazılmaz.
 
 ---
 
 ## 🏗️ Mimari
 
 ```
-Notion (YouTube DB + Reels DB)
-         │
-         ▼
-   notion_client.py ──── Veritabanı sorgusu + yorum okuma/yazma
-         │
-         ▼
-    database.py ──── Bildirim filtresi (gün hesabı + seviye kontrolü)
-         │
-         ▼
-     main.py ──── Railway Native Cron + ana logic
-         │
-         ▼
-   email_client.py ──── Gmail API (OAuth2) ile HTML e-posta gönderimi
+Notion (YouTube DB + Reels DB)        Notion (Gelir > Tahsilat Takip)
+            │                                       │ (READ-ONLY)
+            ▼                                       ▼
+                       notion_client.py
+                              │
+                              ▼
+                         database.py — gecikme + bant filtresi
+                              │
+                              ▼
+                            main.py — tek HTML özet hazırlar
+                              │
+                              ▼
+                         email_client.py — Gmail API
 ```
 
-### Bildirim Seviyeleri (Notion Yorumları ile)
+State takibi **yok** — günde 1 mail atıldığı için duplicate riski olmadan stateless çalışır.
 
-| Seviye | Koşul | Yorum İşareti |
-|--------|-------|---------------|
-| 0 | Henüz bildirim yok | — |
-| 1 | 14+ gün, ödeme alınmamış | `[SİSTEM] Sarı uyarı` |
-| 2 | 28+ gün, ödeme alınmamış | `[SİSTEM] Kırmızı uyarı` |
+---
+
+## 🔒 Tahsilat Takip DB — Kritik Veri (sadece okuma)
+
+`notion_client.fetch_payment_amounts()` **yalnızca** `databases/{id}/query` çağrısı yapar.
+Bu DB üzerinde hiçbir `pages PATCH`, `comments POST` veya yazma çağrısı yoktur.
 
 ---
 
@@ -48,12 +52,12 @@ Notion (YouTube DB + Reels DB)
 
 | Dosya | Açıklama |
 |-------|----------|
-| `main.py` | Ana giriş noktası — scheduler + alert mantığı + HTML e-posta şablonu |
-| `config.py` | Ortam değişkenlerini `master.env`'den yükler, Notion DB ID'lerini tutar |
-| `notion_client.py` | Notion API entegrasyonu — veritabanı sorgusu, yorum okuma/yazma |
-| `database.py` | Bildirim filtresi — tarih hesabı, seviye kontrolü |
-| `email_client.py` | Gmail API (OAuth2) ile e-posta gönderimi (Railway: env token, Lokal: merkezi OAuth) |
-| `railway.json` | Railway deploy konfigürasyonu |
+| `main.py` | Toplu HTML özet + Gmail gönderim |
+| `config.py` | Ortam değişkenleri ve DB ID'leri |
+| `notion_client.py` | Video DB sorgusu + Tahsilat Takip read-only join |
+| `database.py` | Gecikme + bant filtresi (state-less) |
+| `email_client.py` | Gmail API (OAuth2) ile gönderim |
+| `railway.json` | Railway native cron config |
 | `requirements.txt` | Python bağımlılıkları |
 
 ---
@@ -62,17 +66,18 @@ Notion (YouTube DB + Reels DB)
 
 | Değişken | Kaynak | Açıklama |
 |----------|--------|----------|
-| `NOTION_SOCIAL_TOKEN` | `master.env` | Notion Social API (yeni workspace) anahtarı |
-| `GOOGLE_OUTREACH_TOKEN_JSON` | Railway env | Gmail API OAuth2 token (Railway'de JSON olarak) |
+| `NOTION_SOCIAL_TOKEN` | `master.env` / Railway env | Notion Social workspace anahtarı |
+| `GOOGLE_OUTREACH_TOKEN_JSON` | Railway env | Gmail API OAuth2 token |
 
 ---
 
 ## 📡 Notion Veritabanları
 
-| Veritabanı | DB ID | Anahtar Property'ler |
-|------------|-------|---------------------|
-| YouTube İşbirliği | `1af5cd68ba1b80c58a5ae23c91af2571` | Video Adı, Durum, Check |
-| Reels İşbirliği | `1af5cd68ba1b816ebb6efff889efbb44` | Name, Status, Check, Paylaşım Tarihi |
+| DB | ID | Erişim |
+|----|----|----|
+| YouTube İşbirliği | `5bb95514-0a32-821f-98cc-81605e4a971f` | read |
+| Reels İşbirliği | `27b95514-0a32-8385-89eb-813222d532a2` | read |
+| Tahsilat Takip (Gelir) | `2cb955140a3282708ada810e72dbd0d2` | **read-only** |
 
 ---
 
@@ -82,21 +87,16 @@ Notion (YouTube DB + Reels DB)
 # Lokal
 python main.py
 
-# Railway'de otomatik çalışır (Railway Cron)
-# Tek seferlik uyanır, işlemi yapar ve kapanır. (Örn: Her gün 09:00 UTC)
+# Railway: native cron (her gün 07:00 UTC)
 ```
 
 ---
 
-## 🚂 Deploy Bilgisi
+## 🚂 Deploy
 
-- **Platform:** Railway (Native Cron Job)
+- **Platform:** Railway (Native Cron)
 - **GitHub Repo:** `dolunayozerennn/isbirligi-tahsilat-takip`
-- **Start Komutu:** `python main.py`
-- **Restart Policy:** `NEVER`
-- **Zamanlama:** Her gün 07:00 UTC (Railway formatında `0 7 * * *`)
-
-*Not: Sistem sürekli çalışan bir servis olmaktan çıkarılmıştır. İhtiyaç anında tetiklenir, görevini yerine getirip saniyeler içinde tamamen sonlanır.*
+- **Start:** `python main.py` · **Restart:** `NEVER` · **Cron:** `0 7 * * *`
 
 ---
 
@@ -104,9 +104,9 @@ python main.py
 
 | Tarih | Değişiklik |
 |-------|-----------|
-| 2026-03-24 | 🚀 Production Stabilizasyonu: Tekrarlayan spam bildirimler önlendi (tam Notion state entegrasyonu), infinite hang'e karşı API timeout eklendi, config Railway uyumlu yapıldı |
-| 2026-03-16 | Notion comment-based state'e geçiş (schema pollution önlendi) |
+| 2026-05-03 | Toplu özet maile geçiş, eşikler 14/30/60'a güncellendi, Tahsilat Takip read-only join eklendi, Notion'a yorum yazımı tamamen kaldırıldı |
+| 2026-03-24 | Production stabilizasyonu (timeout, schema fix) |
+| 2026-03-16 | Notion comment-based state'e geçiş |
 | 2026-03-15 | SQLite → Notion state migration |
-| 2026-03-14 | Reels yayın tarihi düzeltmesi (Paylaşım Tarihi property'si) |
-| 2026-03-13 | 7 gün sarı + 14 gün kırmızı bildirim sistemi |
+| 2026-03-13 | Kademeli bildirim sistemi |
 | 2026-03-12 | İlk sürüm |
