@@ -23,6 +23,7 @@ import ssl
 import sys
 import json
 import time
+import hashlib
 import logging
 import argparse
 import smtplib
@@ -60,6 +61,10 @@ TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
 RAILWAY_GQL_URL = "https://backboard.railway.app/graphql/v2"
 ALERT_EMAIL = "ozerendolunay@gmail.com"
 
+# Aynı sorun için tekrar mail göndermeden önce beklenecek süre
+DEDUP_WINDOW_HOURS = 24
+STATE_FILE = Path.home() / ".antigravity" / "watchdog_state.json"
+
 # Alarm verilmeyecek durumlar
 HEALTHY_STATUSES = {"SUCCESS", "SLEEPING", "BUILDING", "DEPLOYING", "INITIALIZING", "WAITING"}
 TRANSIENT_STATUSES = {"BUILDING", "DEPLOYING", "INITIALIZING", "WAITING", "SLEEPING"}
@@ -90,6 +95,8 @@ FALSE_POSITIVE_PATTERNS = re.compile(
     r"|No error handlers are registered.*logging exception"
     r"|1 sorun tespit edildi"
     r"|OpsLog_Akilli_Watchdog"
+    r"|INFO:\s+(GET|POST|PUT|DELETE)\s+/[\w\-/]*(failed|error)"
+    r"|/webhook/[\w\-]*(failed|error)"
     r")",
     re.IGNORECASE,
 )
@@ -560,6 +567,124 @@ def scan_log_file(log_path: str, hours: int = 24) -> dict:
         result["errors"] = [f"Dosya okunamadı: {str(e)[:100]}"]
 
     return result
+
+
+# ── State (dedup + haftalık özet zamanı) ────────────────
+def _problem_signature(problem: dict) -> str:
+    """Aynı sorunu tekrar tetiklendiğinde tanımak için kararlı bir imza üret."""
+    raw = f"{problem.get('name','')}|{problem.get('status','')}|{problem.get('detail','')[:200]}"
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def load_state() -> dict:
+    """Watchdog state dosyasını oku — yoksa boş başlat."""
+    try:
+        if STATE_FILE.exists():
+            return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except Exception as e:
+        logging.warning(f"State okunamadı, sıfırdan başlanıyor: {e}")
+    return {"alerts": {}, "last_weekly_summary": None}
+
+
+def save_state(state: dict) -> None:
+    """State dosyasını yaz."""
+    try:
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        STATE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    except Exception as e:
+        logging.warning(f"State yazılamadı: {e}")
+
+
+def filter_new_problems(problems: list, state: dict) -> list:
+    """24 saat içinde aynı imza ile bildirilmiş sorunları çıkar — sadece yeni olanlar mail'e girer."""
+    if not problems:
+        return []
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=DEDUP_WINDOW_HOURS)
+    fresh = []
+    alerts = state.get("alerts", {})
+    for p in problems:
+        sig = _problem_signature(p)
+        last_iso = alerts.get(sig)
+        if last_iso:
+            try:
+                last_dt = datetime.fromisoformat(last_iso)
+                if last_dt > cutoff:
+                    continue  # son 24 saatte zaten bildirildi
+            except Exception:
+                pass
+        fresh.append(p)
+        alerts[sig] = now.isoformat()
+    state["alerts"] = {
+        k: v for k, v in alerts.items()
+        if datetime.fromisoformat(v) > cutoff - timedelta(days=7)
+    }
+    return fresh
+
+
+def should_send_weekly_summary(state: dict) -> bool:
+    """Pazar günü ve son haftalık özetten >6 gün geçmişse True."""
+    today = datetime.now()
+    if today.weekday() != 6:  # 6 = Pazar
+        return False
+    last = state.get("last_weekly_summary")
+    if not last:
+        return True
+    try:
+        last_dt = datetime.fromisoformat(last)
+        return (today - last_dt).days >= 6
+    except Exception:
+        return True
+
+
+def send_weekly_summary_email(smtp_user: str, smtp_password: str,
+                              total: int, healthy: int, problems: int,
+                              healed: int) -> None:
+    """Pazar günleri kısa haftalık özet — sessizliği teyit eder."""
+    subject = "🟢 Antigravity Haftalık Özet — Sessizlikti"
+    if problems > 0:
+        subject = f"📊 Antigravity Haftalık Özet — {problems} sorun, {healed} otomatik düzeltildi"
+
+    text = (
+        f"Antigravity Haftalık Özet\n"
+        f"{'='*40}\n\n"
+        f"Toplam servis: {total}\n"
+        f"Sağlıklı: {healthy}\n"
+        f"Bu kontrolde sorun: {problems}\n"
+        f"Otomatik düzeltilen: {healed}\n\n"
+        f"Tarih: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+        f"Hafta içi sessizlik, her şey yolunda demek. ✨"
+    )
+    html = f"""
+    <html><body style="font-family: -apple-system, sans-serif; background:#f7fafc; padding:24px;">
+      <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.08);">
+        <div style="background:linear-gradient(135deg,#10b981,#059669);padding:20px;color:#fff;">
+          <h1 style="margin:0;font-size:18px;">🟢 Antigravity Haftalık Özet</h1>
+        </div>
+        <div style="padding:24px;color:#334155;font-size:14px;line-height:1.6;">
+          <p><b>Toplam servis:</b> {total}</p>
+          <p><b>Sağlıklı:</b> {healthy}</p>
+          <p><b>Son kontrolde sorun:</b> {problems}</p>
+          <p><b>Otomatik düzeltilen:</b> {healed}</p>
+          <p style="margin-top:16px;color:#64748b;">Hafta içi sessizlik = her şey yolunda. ✨</p>
+        </div>
+      </div>
+    </body></html>
+    """
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = smtp_user
+    msg["To"] = ALERT_EMAIL
+    msg.attach(MIMEText(text, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(smtp_user, smtp_password)
+            server.send_message(msg)
+        logging.info(f"📧 Haftalık özet gönderildi → {ALERT_EMAIL}")
+    except Exception as e:
+        logging.error(f"❌ Haftalık özet gönderilemedi: {e}")
 
 
 # ── E-posta Gönderimi ────────────────────────────────────
@@ -1047,24 +1172,41 @@ def run_health_check(dry_run: bool = False, target_project: str = None,
     
     meaningful_heals = [h for h in heal_results if h.get("action") != "ignore_transient"]
 
-    if meaningful_heals and not dry_run:
-        # Self-heal raporu gönder
+    # ── Tek karar noktası: hangi sorunlar gerçekten mail edilecek? ──
+    # auto-heal modunda kalan sorunlar = mail adayı; auto-heal yoksa hepsi aday
+    candidates = remaining_problems if auto_heal else list(all_problems)
+
+    state = load_state()
+    fresh_problems = filter_new_problems(candidates, state) if not dry_run else candidates
+    suppressed = len(candidates) - len(fresh_problems)
+
+    if dry_run and candidates:
+        logging.info(f"\n🏃 DRY-RUN — {problem_count} sorun tespit edildi, mail gönderilmedi")
+    elif fresh_problems:
         if smtp_user and smtp_password:
-            send_healing_report_email(smtp_user, smtp_password, heal_results, all_problems)
-    elif remaining_problems and not dry_run:
-        # Normal alarm gönder (heal olmadan kalan sorunlar)
-        if smtp_user and smtp_password:
-            send_alert_email(smtp_user, smtp_password, remaining_problems)
+            send_alert_email(smtp_user, smtp_password, fresh_problems)
+            if suppressed:
+                logging.info(f"🔇 {suppressed} sorun son 24 saatte zaten bildirildi — tekrar mail yok")
         else:
             logging.warning("⚠️ SMTP bilgileri eksik → e-posta gönderilemedi")
-    elif all_problems and not auto_heal and not dry_run:
-        # auto-heal kapalı, normal alarm gönder
-        if smtp_user and smtp_password:
-            send_alert_email(smtp_user, smtp_password, all_problems)
-        else:
-            logging.warning("⚠️ SMTP bilgileri eksik → e-posta gönderilemedi")
-    elif all_problems and dry_run:
-        logging.info(f"\n🏃 DRY-RUN modu — {problem_count} sorun tespit edildi, e-posta gönderilmedi")
+    elif candidates:
+        logging.info(f"🔇 {len(candidates)} sorun var ama hepsi son 24 saatte bildirildi — sessizlik")
+    else:
+        logging.info("✅ Mail gönderilecek aksiyon yok")
+
+    # Haftalık özet (Pazar günleri, sessizlik = iyi haber teyidi)
+    if not dry_run and smtp_user and smtp_password and should_send_weekly_summary(state):
+        send_weekly_summary_email(
+            smtp_user, smtp_password,
+            total=len(all_results),
+            healthy=healthy_count,
+            problems=problem_count,
+            healed=len(healed_problems),
+        )
+        state["last_weekly_summary"] = datetime.now().isoformat()
+
+    if not dry_run:
+        save_state(state)
 
     # 6. Özet
     logging.info("")

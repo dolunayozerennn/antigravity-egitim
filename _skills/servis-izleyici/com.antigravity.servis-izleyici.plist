@@ -13,9 +13,14 @@
         <string>--auto-heal</string>
     </array>
     
-    <!-- Her saat başı çalıştır -->
-    <key>StartInterval</key>
-    <integer>3600</integer>
+    <!-- Her gün 10:30 (Türkiye / yerel saat) -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>10</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
     
     <!-- Log dosyaları -->
     <key>StandardOutPath</key>
