@@ -1,24 +1,37 @@
-# LinkedIn Paylaşım — TikTok → LinkedIn Otonom Pipeline
+# LinkedIn Paylaşım — Notion + Drive → LinkedIn Master Pipeline
 
-TikTok'taki en son videoyu akıllı bir şekilde LinkedIn'de paylaşan otonom pipeline.
+Notion'daki "Yayınlandı" videoları, Google Drive'daki master kalitedeki dosyalardan
+LinkedIn'e otomatik paylaşan günlük pipeline.
 
 ## Özellikler
 
-- **LLM İçerik Filtresi:** Groq (llama-3.3-70b) ile LinkedIn'e uygun olmayan içerikler otomatik filtrelenir
-- **Akıllı Caption:** TikTok caption'ı LLM ile LinkedIn'e uygun profesyonel tona dönüştürülür
-- **1080p Video:** Metadata temizlenmiş, 1080p kalitede video
-- **Notion Log:** Tüm paylaşım ve filtreleme kararları Notion database'ine loglanır
-- **Günlük 1 Paylaşım:** LinkedIn'in profesyonel yapısına uygun, 13:00'te tek paylaşım
+- **Master Kalite:** Drive'daki orijinal master `.mp4` dosyası kullanılır — TikTok kompresyonu yok, watermark yok
+- **Sıfır Kayıp:** FFmpeg sadece kayıpsız faststart remux yapar (`-c copy`); reencode yok
+- **Akıllı Caption:** Groq LLM, sayfa script'inden tek cümlelik LinkedIn caption üretir (max 280 char, hashtag yok, CTA yok)
+- **Notion Dedup:** Aynı video iki kez paylaşılmaz; logger DB sorgu yapar
+- **Günlük 1 Paylaşım:** Cron `0 10 * * *` (UTC) = 13:00 TR
+
+## Akış
+
+1. Notion `Dolunay Reels & YouTube` DB → `Status = "Yayınlandı"` videoları çek (Paylaşım Tarihi DESC)
+2. Logger DB'de zaten paylaşılmamış ilk video
+3. `Drive` property'sindeki klasörü Service Account ile aç
+4. Klasördeki dosyalardan pattern öncelikli seç: `tiktok` > `insta` (env: `VIDEO_PATTERN_PRIORITY`)
+5. Drive'dan indir → kayıpsız faststart remux
+6. Notion sayfa body'sinden Groq ile tek cümle caption üret
+7. LinkedIn Videos API (chunked upload) + Posts API
+8. Logger DB'ye `page_id` ile kayıt at
 
 ## Mimari
 
 ```
-main.py → Scheduler + Workflow Orchestration
-├── core/tiktok_scraper.py    → TikTok'tan video çekme (yt-dlp)
-├── core/video_processor.py   → FFmpeg metadata strip + 1080p
-├── core/content_filter.py    → LLM filtre + caption adaptation (Groq)
-├── core/linkedin_publisher.py → LinkedIn Videos API + Posts API
-└── core/notion_logger.py     → Notion database logging
+main.py → Pipeline orchestration
+├── core/notion_video_selector.py → Notion DB sorgu + Drive URL parse
+├── core/drive_downloader.py      → Service Account ile klasör listele + dosya indir
+├── core/video_processor.py       → Faststart remux (kayıpsız); >REENCODE_OVER_BYTES ise compress
+├── core/content_filter.py        → CaptionGenerator (Groq, tek cümle)
+├── core/linkedin_publisher.py    → LinkedIn Videos API + Posts API (chunked)
+└── core/notion_logger.py         → Logger DB (dedup birincil anahtar: page_id)
 ```
 
 ## Environment Variables
@@ -26,31 +39,25 @@ main.py → Scheduler + Workflow Orchestration
 | Variable | Açıklama |
 |----------|----------|
 | `LINKEDIN_ACCESS_TOKEN` | OAuth2 Bearer Token |
-| `LINKEDIN_PERSON_URN` | urn:li:person:XXXXX |
-| `LINKEDIN_FILTER_STRICTNESS` | relaxed / moderate / strict |
+| `LINKEDIN_PERSON_URN` | `urn:li:person:XXXXX` |
 | `GROQ_API_KEY` | Groq API key |
-| `NOTION_SOCIAL_TOKEN` | Notion integration token (Social workspace) |
-| `NOTION_LINKEDIN_DB_ID` | LinkedIn log database ID |
-| `TIKTOK_USERNAME` | TikTok kullanıcı adı |
+| `GROQ_MODEL` | (opsiyonel) default `llama-3.3-70b-versatile` |
+| `NOTION_SOCIAL_TOKEN` | Notion integration token |
+| `NOTION_DB_REELS_KAPAK` | Kaynak DB ("Dolunay Reels & YouTube") |
+| `NOTION_LINKEDIN_DB_ID` | Logger DB |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | (Railway) base64 encoded SA JSON; lokal: `_knowledge/credentials/google-service-account.json` |
+| `VIDEO_PATTERN_PRIORITY` | (opsiyonel) Virgüllü liste, default `tiktok,insta` |
+| `MAX_VIDEO_BYTES` | (opsiyonel) Üzerini skip et, default 5GB (LinkedIn limit) |
+| `REENCODE_OVER_BYTES` | (opsiyonel) Bunun üzerinde compress yap; default OFF |
 
-## Filter Strictness Seviyeleri
+## Çalıştırma
 
-- **relaxed:** (varsayılan) Her türlü içerik kabul edilir — sadece açık küfür, nefret veya cinsel içerik reddedilir
-- **moderate:** Eğlence, lifestyle, kişisel içerikler dahil kabul edilir — sadece açıkça uygunsuz reddedilir
-- **strict:** Sadece direkt iş/yatırım/kariyer içerikleri geçer
+```bash
+ENV=development python main.py    # lokal DRY-RUN
+RUN_MODE=cron python main.py      # Railway cron
+```
 
-> **Fallback:** Tüm videolar content filter tarafından reddedilirse, en düşük güvenle reddedilen video otomatik olarak kabul edilir.
+## Deploy
 
-## 🛡️ Stabilizasyon ve Hata Giderme
-
-### 2026-03-26
-- **Fix 1:** LinkedIn API versiyon `202403` sunset olmuştu → `202503`'e güncellendi
-- **Fix 2:** yt-dlp `2024.3.10` → `2026.3.17`'ye güncellendi (TikTok extraction uyumluluğu)
-- **Fix 3:** `.gitignore`'a `token.json`, `credentials.json`, `.venv/` eklendi
-- **Fix 4:** README'deki `NOTION_TOKEN` env var adı `NOTION_SOCIAL_TOKEN` olarak düzeltildi
-
-### 2026-04-11 (Büyük Fix)
-- **Fix 5:** Content filter prompt'ları ultra-esnek yapıldı — 7+ gün boyunca tüm videolar reddediliyordu
-- **Fix 6:** Fallback mekanizması eklendi — tüm videolar filtrelenince en düşük güvenli reddedilen kabul ediliyor
-- **Fix 7:** `wait_all_loggers()` eklendi — tüm OpsLogger queue'ları container exit öncesi flush
-- **Fix 8:** Railway env var `LINKEDIN_FILTER_STRICTNESS` → `relaxed` olarak güncellendi
+Railway servis: `linkedin-video-cron` (auto-deploy KAPALI; `serviceInstanceDeployV2` mutation
+ile manuel commit deploy gerekli — bkz. `_knowledge/deploy-registry.md`).
