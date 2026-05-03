@@ -35,6 +35,15 @@ def _clean_phone(raw_phone: str) -> str:
     return phone or "-"
 
 
+def _extract_ad_type(raw_ad_name: str) -> str:
+    """ad_name (D sütunu) değerinden ilk 27 karakteri atar.
+    Örn: 'SS | Lead Form - B2B - V1 - chat agent' → 'chat agent'
+    """
+    if not raw_ad_name:
+        return ""
+    return raw_ad_name[27:].strip()
+
+
 def _format_time(raw_time: str) -> str:
     """ISO 8601 tarihini Türkçe formata çevirir."""
     if not raw_time:
@@ -95,8 +104,8 @@ def build_telegram_message(lead: dict) -> str:
     email = lead.get("email", "-")
     phone = _clean_phone(lead.get("phone", ""))
     created = _format_time(lead.get("created_time", ""))
-    platform = lead.get("platform", "").upper()
     campaign = lead.get("campaign_name", "")
+    ad_type = _extract_ad_type(lead.get("ad_name", ""))
 
     lines = [
         "🚀 *Yeni Lead Düştü!*",
@@ -107,15 +116,13 @@ def build_telegram_message(lead: dict) -> str:
         f"📞 *Telefon:* {phone}",
     ]
 
-    if platform:
-        lines.append(f"📱 *Platform:* {platform}")
     if campaign:
         lines.append(f"📢 *Kampanya:* {campaign}")
 
-    lines.extend([
-        f"⏰ *Tarih:* {created}",
-        f"📋 *Kaynak:* {Config.SHEET_TAB}",
-    ])
+    lines.append(f"⏰ *Tarih:* {created}")
+
+    if ad_type:
+        lines.append(f"🏷️ *Reklam:* {ad_type}")
 
     return "\n".join(lines)
 
@@ -129,6 +136,7 @@ def build_html_email(lead: dict) -> str:
     created = _format_time(lead.get("created_time", ""))
     platform = lead.get("platform", "").upper() or "-"
     campaign = lead.get("campaign_name", "") or "-"
+    ad_type = _extract_ad_type(lead.get("ad_name", "")) or "-"
     now = datetime.now().strftime("%d.%m.%Y %H:%M")
 
     return f"""
@@ -155,6 +163,10 @@ def build_html_email(lead: dict) -> str:
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding:12px 16px; font-weight:bold; color:#555;">📞 Telefon</td>
                     <td style="padding:12px 16px;">{phone}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding:12px 16px; font-weight:bold; color:#555;">🏷️ Tür</td>
+                    <td style="padding:12px 16px;">{ad_type}</td>
                 </tr>
                 <tr style="border-bottom: 1px solid #eee;">
                     <td style="padding:12px 16px; font-weight:bold; color:#555;">📱 Platform</td>
@@ -185,16 +197,22 @@ def build_plain_email(lead: dict) -> str:
     email = lead.get("email", "-")
     phone = _clean_phone(lead.get("phone", ""))
     created = _format_time(lead.get("created_time", ""))
+    ad_type = _extract_ad_type(lead.get("ad_name", ""))
 
-    return (
-        f"🚀 Yeni Lead Düştü!\n\n"
-        f"👤 İsim: {full_name}\n"
-        f"🏢 Şirket: {company}\n"
-        f"📧 E-posta: {email}\n"
-        f"📞 Telefon: {phone}\n"
-        f"⏰ Tarih: {created}\n"
-        f"📋 Kaynak: {Config.SHEET_TAB}\n"
-    )
+    parts = [
+        "🚀 Yeni Lead Düştü!\n",
+        f"👤 İsim: {full_name}",
+        f"🏢 Şirket: {company}",
+        f"📧 E-posta: {email}",
+        f"📞 Telefon: {phone}",
+    ]
+    if ad_type:
+        parts.append(f"🏷️ Tür: {ad_type}")
+    parts.extend([
+        f"⏰ Tarih: {created}",
+        f"📋 Kaynak: {Config.SHEET_TAB}",
+    ])
+    return "\n".join(parts) + "\n"
 
 
 # ── TELEGRAM ─────────────────────────────────────────────────
