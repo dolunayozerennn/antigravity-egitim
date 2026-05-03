@@ -506,8 +506,10 @@ def evaluate_image_with_vision(image_url: str, style_guide: str, expected_text: 
 
 
 def run_autonomous_generation(local_person_image_path: str, video_topic: str, main_text: str, output_path: str, max_retries: int = 2, variant_index: int = 1, script_text: str = "", scene_description: str = "", extra_cutout_paths: list = None):
-    # Load style guide
-    with open("rourke_style_guide.md", "r") as f:
+    # Load style guide (CWD-independent: resolve relative to project root)
+    _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    style_guide_path = os.path.join(_project_root, "rourke_style_guide.md")
+    with open(style_guide_path, "r") as f:
          style_guide = f.read()
     
     # Load learnings
