@@ -201,10 +201,11 @@ class ProductionPipeline:
                             "🎙️ Türkçe dış ses üretiliyor (ElevenLabs v3)..."
                         )
                     log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
+                    # WHY: voice_name belirtmiyoruz → servis default'u "İrem" (Türkçe)
+                    # stability=0.3 + style=0.7 = ElevenLabs v3 "Creative" mode (audio tag'ler maksimum etkili)
                     audio_bytes = await asyncio.to_thread(
                         self.elevenlabs.generate_speech,
                         text=voiceover_text,
-                        voice_name="Sarah",
                     )
                     from services.elevenlabs_service import ElevenLabsService
                     audio_duration = ElevenLabsService.measure_audio_duration(audio_bytes)
@@ -248,23 +249,29 @@ class ProductionPipeline:
                     )
                 duration = new_duration
 
-            # Multi-scene koruyucu: scene_count>1 ama final duration ≤15 ise tek sahneye düşür
-            is_multi = bool(scenario.get("is_multi_scene")) and duration > 15
-            if scenario.get("is_multi_scene") and not is_multi:
-                scenes_list = scenario.get("scenes") or []
+            # Multi-scene sınırlama: Seedance min 5s/sahne → max sahne = duration // 5
+            # WHY: Dolunay multi-scene istiyor (dinamik kamera + farklı ortam).
+            # Tek-sahneye sadece duration < 10s ise düşürüyoruz (1×5s dışında seçenek yok).
+            scenes_list = scenario.get("scenes") or []
+            requested_scene_count = max(len(scenes_list), int(scenario.get("scene_count", 1) or 1))
+            max_possible_scenes = max(1, duration // 5)
+            final_scene_count = min(requested_scene_count, max_possible_scenes)
+
+            if final_scene_count < requested_scene_count:
+                log.warning(
+                    f"Sahne sayısı {requested_scene_count} → {final_scene_count} sınırlandırıldı "
+                    f"(duration {duration}s, min 5s/sahne)"
+                )
                 if scenes_list:
-                    log.warning(
-                        f"Multi-scene senaryo {duration}s için tek sahneye düşürüldü "
-                        f"(tutarlılık için 1 sahne tercih edildi)"
-                    )
-                    scenario["is_multi_scene"] = False
-                    scenario["scene_count"] = 1
-                    scenario["scenes"] = [scenes_list[0]]
+                    scenario["scenes"] = scenes_list[:final_scene_count]
+
+            scenario["scene_count"] = final_scene_count
+            scenario["is_multi_scene"] = final_scene_count > 1
 
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             # ADIM 1: VIDEO ÜRETİMİ
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            if scenario.get("is_multi_scene") and duration > 15:
+            if scenario.get("is_multi_scene"):
                 raw_video_url = await self._produce_multi_scene(
                     scenario=scenario,
                     reference_images=reference_images,

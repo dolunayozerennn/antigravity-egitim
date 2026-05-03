@@ -98,14 +98,19 @@ Her senaryoda şu hook formüllerinden BİRİNİ uygula ve `hook_pattern` alanı
 
 Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerden KESİNLİKLE KAÇIN.
 
-### Sahne Yapısı ve Süre:
-1. **duration**: 5–15 saniye arası, içeriğe göre dinamik karar ver.
-2. **scene_count kuralı (KATIDIR)**:
-   - **≤10 saniye → 1 sahne ZORUNLU** (karakter ve hikaye tutarlılığı için)
-   - **11–15 saniye → tercihen 1 sahne, max 2**
-   - **>15 saniye → multi-scene gerekli** (Seedance 15s sınırı)
-   Tek sahnede güçlü hikaye, 3 kopuk sahneden DAİMA iyidir.
+### Sahne Yapısı ve Süre (MULTI-SCENE VARSAYILAN):
+1. **duration**: 15-25 saniye arası seç. Daha kısa video = daha az sahne = daha sıkıcı.
+2. **scene_count kuralı (KATIDIR — MULTI-SCENE TERCİH EDİLİR)**:
+   - **DEFAULT: 3 sahne** (15s video, her sahne 5s)
+   - **DİNAMİK PROFESYONEL: 4-5 sahne** (20-25s video) → REKLAM HİSSİ İÇİN İDEAL
+   - **Tek sahne**: SADECE çok minimal/sinematik bir konsept varsa (nadir).
+   - Seedance her sahneyi 5s üretir → toplam = scene_count × 5s.
 3. Her sahne Seedance 2.0'da ayrı üretilip birleştirilir — her sahne kendi içinde TAM olmalı.
+4. **HER SAHNE FARKLI OLMALI — TEKRARDAN KESİNLİKLE KAÇIN**:
+   - **Farklı KAMERA AÇISI**: close-up macro / wide establishing shot / POV first-person / overhead top-down / tracking side / dutch angle / over-the-shoulder — her sahne farklı bir açı.
+   - **Farklı ORTAM/MEKAN**: yatak odası → sokak → kafe → spor salonu → araba içi → banyo → park gibi.
+   - **Farklı KOMPOZİSYON**: ürün ön planda / model ön planda / detay zoom / context wide.
+   Tek bir mekanda tek bir karakter yürüyen 15s video = BAŞARISIZLIK.
 
 ### Video Prompt (İngilizce — REALISM ZORUNLU):
 1. Her zaman İNGİLİZCE yaz.
@@ -122,23 +127,24 @@ Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerd
    ürünü giyen, hareket eden GERÇEK BİR İNSAN (saçı, yüzü, bedeni) tanımla.
 6. Kamera hareketlerini, ışığı, atmosferi net tanımla.
 
-### Voiceover (Türkçe — V3 AUDIO TAGS ZORUNLU):
-1. TÜRKÇE yaz.
-2. **Audio tag'ler ZORUNLU — 2 ila 4 ElevenLabs v3 cue ekle** (cümle içine doğal yerleştir):
-   `[excited]`, `[whispers]`, `[confident]`, `[pause]`, `[playful]`, `[gentle]`,
-   `[reassuring]`, `[curious]`, `[bold]`, `[smirk]`, `[crisp]`, `[surprised]`
-   Kategori önerileri:
-   - **Skincare**: `[whispers]`, `[gentle]`, `[reassuring]`, `[curious]`, `[pause]`
-   - **Tech**: `[excited]`, `[confident]`, `[crisp]`, `[surprised]`
-   - **Fashion**: `[confident]`, `[bold]`, `[playful]`, `[smirk]`
+### Voiceover (Türkçe — V3 AUDIO TAGS DUYGU İÇİN KRİTİK):
+1. TÜRKÇE yaz. Türkçe ses olan İrem ile okunacak.
+2. **Audio tag'ler ZORUNLU — EN AZ 4-6 ElevenLabs v3 cue ekle** (cümle içine doğal yerleştir).
+   Tag'ler bracket içinde, ses motorunun GERÇEKTEN duygu üretmesi için olmazsa olmaz.
+   Geniş palet kullan — sadece [confident] tekrarlamak değil, ZIT TONLAR arası geçişler:
+   - **Duygu**: `[excited]`, `[curious]`, `[surprised]`, `[mischievously]`, `[in awe]`, `[delighted]`
+   - **Hız/Ses**: `[whispers]`, `[shouts]`, `[laughs]`, `[sighs]`, `[exhales]`
+   - **Ton**: `[confident]`, `[playful]`, `[reassuring]`, `[seductive]`, `[sarcastic]`, `[deadpan]`
+   - **Tempo**: `[pause]`, `[slowly]`, `[quickly]`
+   - **Vurgu**: `[emphasizing]`, `[bold]`, `[dramatic]`
+   Örnek mükemmel kullanım: "[whispers] Cildiniz... [pause] [in awe] inanılmaz değişim! [confident] Niacinamide farkı bu işte. [playful] Bir damla yetiyor."
 3. **Sayılar TÜRKÇE YAZIYLA — ASLA RAKAM KULLANMA**:
-   - "10%" → "yüzde on"
-   - "30 ml" → "otuz mililitre"
-   - "2.5 saat" → "iki nokta beş saat"
-   - Marka adlarındaki rakamlar (Air Force 1, AirPods Pro, iPhone 15) KORUNUR — sadece açıklayıcı sayılar yazıya çevrilir.
-4. **Süre**: doğal akıcı 1-2 cümle. Video duration sonradan ses süresine eşitlenecek —
-   kelime sayma, akıcılığı koru. Ama gereksiz uzatma; etkili ve net olsun.
-5. Hook formülü voiceover'ın TONUNDA da hissedilmeli.
+   - "10%" → "yüzde on", "30 ml" → "otuz mililitre", "2.5 saat" → "iki nokta beş saat"
+   - Marka adlarındaki rakamlar (Air Force 1, AirPods Pro, iPhone 15) KORUNUR.
+4. **Süre**: doğal akıcı 2-3 cümle. Video duration sonradan ses süresine eşitlenecek —
+   kelime sayma, akıcılığı koru. Reklam etkili ve net olsun.
+5. Hook formülü voiceover'ın TONUNDA da hissedilmeli — sadece kelimelerle değil,
+   tag'lerle (örn. Sürpriz reveal hook → [in awe] / [surprised] / [whispers] kullan).
 
 ### Genel:
 1. title ve summary TÜRKÇE.

@@ -19,14 +19,22 @@ ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 REQUEST_TIMEOUT = 60  # TTS uzun sürebilir
 
 # Önerilen ses ID'leri (ElevenLabs varsayılan sesler — API'den doğrulanmış)
+# WHY: İrem = Türkçe narrative-story optimize, v3 audio tag'leri ile dolu
+# duygu üretir. Sarah İngilizce voice'tu — Türkçe'de tam expressivity vermiyordu.
 DEFAULT_VOICES = {
-    "Sarah": "EXAVITQu4vr4xnSDxMaL",        # Kadın, olgun, güven verici — reklam dış sesi
-    "Charlie": "IKne3meq5aSn9XLyUdCD",       # Erkek, derin, enerjik
-    "Roger": "CwhRBWXzGAHq8TQ4Fs17",         # Erkek, rahat, doğal
-    "Laura": "FGY2WhTYpPnrIDTdsKH5",         # Kadın, enerjik
-    "George": "JBFqnCBsd6RMkjVDRZzb",        # Erkek, sıcak hikaye anlatıcısı
-    "Daniel": "onwK4e9ZLuTAKqWW03F9",        # Erkek, spiker
-    "Liam": "TX3LPaxmHKxFdv7VOQHJ",          # Erkek, genç
+    "İrem": "uvU9jrgGLWNPeNA4NgNT",          # 🇹🇷 Profesyonel Türkçe kadın, narrative — DEFAULT
+    "Filiz": "PHNT5rJxxIZ4i7JkGLjC",         # 🇹🇷 Konuşma tarzı Türkçe kadın
+    "Ahu": "xyqF3vGMQlPk3e7yA4DI",           # 🇹🇷 Türkçe doğal kadın (clone)
+    "Dolunay": "lR8i9ML52TYdcTkZm9sE",       # 🇹🇷 Dolunay'ın kendi kloned sesi (kişisel içerik)
+    "Brian": "nPczCjzI2devNBz1zQrb",         # 🇬🇧 Derin, resonant erkek — sosyal medya
+    "George": "JBFqnCBsd6RMkjVDRZzb",        # 🇬🇧 Sıcak hikaye anlatıcısı erkek
+    "Bill": "pqHfZKP75CvOlQylNhV4",          # 🇬🇧 Bilge, olgun, dengeli — reklam tonu
+    "Lily": "pFZP5JQG7iQjIQuC4Bku",          # 🇬🇧 Velvety actress kadın
+    "Sarah": "EXAVITQu4vr4xnSDxMaL",         # 🇬🇧 Eski default — geriye dönük uyumluluk
+    "Charlie": "IKne3meq5aSn9XLyUdCD",       # 🇬🇧 Erkek, derin, enerjik
+    "Laura": "FGY2WhTYpPnrIDTdsKH5",         # 🇬🇧 Kadın, enerjik
+    "Daniel": "onwK4e9ZLuTAKqWW03F9",        # 🇬🇧 Erkek, spiker
+    "Liam": "TX3LPaxmHKxFdv7VOQHJ",          # 🇬🇧 Erkek, genç
 }
 
 
@@ -44,10 +52,10 @@ class ElevenLabsService:
     def generate_speech(
         self,
         text: str,
-        voice_name: str = "Sarah",
-        stability: float = 0.4,
+        voice_name: str = "İrem",
+        stability: float = 0.3,
         similarity_boost: float = 0.75,
-        style: float = 0.6,
+        style: float = 0.7,
         output_format: str = "mp3_44100_128",
     ) -> bytes:
         """
