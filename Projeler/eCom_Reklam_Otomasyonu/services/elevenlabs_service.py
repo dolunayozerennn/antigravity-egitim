@@ -18,23 +18,36 @@ log = get_logger("elevenlabs_service")
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 REQUEST_TIMEOUT = 60  # TTS uzun sürebilir
 
-# Önerilen ses ID'leri (ElevenLabs varsayılan sesler — API'den doğrulanmış)
-# WHY: İrem = Türkçe narrative-story optimize, v3 audio tag'leri ile dolu
-# duygu üretir. Sarah İngilizce voice'tu — Türkçe'de tam expressivity vermiyordu.
+# Türkçe Professional Voice Clone (PVC / Studio Quality) ses kataloğu
+# — Senaryo LLM bu metadata'ya bakarak ürün/tonlama'ya göre dinamik ses seçer.
+# Format: voice_name → (voice_id, gender, use_case, age, persona)
+TURKISH_VOICE_CATALOG = {
+    "Ahu":     ("xyqF3vGMQlPk3e7yA4DI", "kadın",  "conversational",   "orta-yaş", "Doğal, samimi, arkadaş tonu — UGC ideal"),
+    "Filiz":   ("PHNT5rJxxIZ4i7JkGLjC", "kadın",  "conversational",   "orta-yaş", "Konuşma tarzı, sıcak — günlük tavsiye tonu"),
+    "İrem":    ("uvU9jrgGLWNPeNA4NgNT", "kadın",  "narrative_story",  "orta-yaş", "Profesyonel anlatıcı — bilgi/eğitim/narrative"),
+    "Nisa":    ("bj1uMlYGikistcXNmFoh", "kadın",  "entertainment_tv", "genç",     "Enerjik, genç, eğlenceli — Z kuşağı/spor"),
+    "Adam":    ("RXCCWbOxP7Hisa63Xsv5", "erkek",  "narrative_story",  "orta-yaş", "Sakin, derin Türkçe erkek — guide/anlatıcı"),
+}
+
+# Geriye dönük uyumluluk için düz dict — tüm sesler (Türkçe + İngilizce)
 DEFAULT_VOICES = {
-    "İrem": "uvU9jrgGLWNPeNA4NgNT",          # 🇹🇷 Profesyonel Türkçe kadın, narrative — DEFAULT
-    "Filiz": "PHNT5rJxxIZ4i7JkGLjC",         # 🇹🇷 Konuşma tarzı Türkçe kadın
-    "Ahu": "xyqF3vGMQlPk3e7yA4DI",           # 🇹🇷 Türkçe doğal kadın (clone)
-    "Dolunay": "lR8i9ML52TYdcTkZm9sE",       # 🇹🇷 Dolunay'ın kendi kloned sesi (kişisel içerik)
-    "Brian": "nPczCjzI2devNBz1zQrb",         # 🇬🇧 Derin, resonant erkek — sosyal medya
-    "George": "JBFqnCBsd6RMkjVDRZzb",        # 🇬🇧 Sıcak hikaye anlatıcısı erkek
-    "Bill": "pqHfZKP75CvOlQylNhV4",          # 🇬🇧 Bilge, olgun, dengeli — reklam tonu
-    "Lily": "pFZP5JQG7iQjIQuC4Bku",          # 🇬🇧 Velvety actress kadın
-    "Sarah": "EXAVITQu4vr4xnSDxMaL",         # 🇬🇧 Eski default — geriye dönük uyumluluk
-    "Charlie": "IKne3meq5aSn9XLyUdCD",       # 🇬🇧 Erkek, derin, enerjik
-    "Laura": "FGY2WhTYpPnrIDTdsKH5",         # 🇬🇧 Kadın, enerjik
-    "Daniel": "onwK4e9ZLuTAKqWW03F9",        # 🇬🇧 Erkek, spiker
-    "Liam": "TX3LPaxmHKxFdv7VOQHJ",          # 🇬🇧 Erkek, genç
+    # 🇹🇷 Türkçe Professional Voice Clone (Studio Quality)
+    "Ahu":     "xyqF3vGMQlPk3e7yA4DI",
+    "Filiz":   "PHNT5rJxxIZ4i7JkGLjC",
+    "İrem":    "uvU9jrgGLWNPeNA4NgNT",
+    "Nisa":    "bj1uMlYGikistcXNmFoh",
+    "Adam":    "RXCCWbOxP7Hisa63Xsv5",
+    "Dolunay": "lR8i9ML52TYdcTkZm9sE",       # Kişisel clone
+    # 🇬🇧 İngilizce premade (yedek)
+    "Brian":   "nPczCjzI2devNBz1zQrb",
+    "George":  "JBFqnCBsd6RMkjVDRZzb",
+    "Bill":    "pqHfZKP75CvOlQylNhV4",
+    "Lily":    "pFZP5JQG7iQjIQuC4Bku",
+    "Sarah":   "EXAVITQu4vr4xnSDxMaL",
+    "Charlie": "IKne3meq5aSn9XLyUdCD",
+    "Laura":   "FGY2WhTYpPnrIDTdsKH5",
+    "Daniel":  "onwK4e9ZLuTAKqWW03F9",
+    "Liam":    "TX3LPaxmHKxFdv7VOQHJ",
 }
 
 
@@ -52,7 +65,7 @@ class ElevenLabsService:
     def generate_speech(
         self,
         text: str,
-        voice_name: str = "İrem",
+        voice_name: str = "Ahu",
         stability: float = 0.3,
         similarity_boost: float = 0.75,
         style: float = 0.7,

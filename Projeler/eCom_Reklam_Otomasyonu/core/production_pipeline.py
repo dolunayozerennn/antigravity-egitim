@@ -201,11 +201,14 @@ class ProductionPipeline:
                             "🎙️ Türkçe dış ses üretiliyor (ElevenLabs v3)..."
                         )
                     log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
-                    # WHY: voice_name belirtmiyoruz → servis default'u "İrem" (Türkçe)
-                    # stability=0.3 + style=0.7 = ElevenLabs v3 "Creative" mode (audio tag'ler maksimum etkili)
+                    # Senaryo LLM voice_name seçer (ürün/tonlama/cinsiyet uyumu için).
+                    # Geçersiz/boşsa → servis default'u "Ahu" (Türkçe conversational PVC).
+                    selected_voice = (scenario.get("voice_name") or "Ahu").strip()
+                    log.info(f"Voiceover voice: {selected_voice} (LLM seçimi)")
                     audio_bytes = await asyncio.to_thread(
                         self.elevenlabs.generate_speech,
                         text=voiceover_text,
+                        voice_name=selected_voice,
                     )
                     from services.elevenlabs_service import ElevenLabsService
                     audio_duration = ElevenLabsService.measure_audio_duration(audio_bytes)
@@ -726,17 +729,28 @@ class ProductionPipeline:
             elif isinstance(res, str) and res:
                 scene_video_urls.append(res)
 
-        if len(scene_video_urls) < 2:
+        if len(scene_video_urls) < 1:
             raise RuntimeError(
-                f"{scene_count} sahneden {failed_count} başarısız oldu — "
-                f"concat için yeterli sahne yok ({len(scene_video_urls)} başarılı)"
+                f"{scene_count} sahneden TÜM SAHNELER başarısız oldu — "
+                f"concat için en az 1 başarılı sahne gerek"
             )
 
+        # SAHNE TEKRARI ile DOLDURMA (sync için kritik)
+        # WHY: Failed scene varsa video planlanan duration'dan kısa kalır → ses kesilir veya
+        # video freeze eder. Bunun yerine BAŞARILI bir sahneyi tekrarlayıp toplam scene_count'u
+        # tamamlıyoruz. Tekrar pozisyonu ortadaki sahne (genelde aksiyon sahnesi).
         if failed_count > 0:
             log.warning(
                 f"Multi-scene degraded mode: {len(scene_video_urls)}/{scene_count} sahne başarılı, "
-                f"{failed_count} fail"
+                f"{failed_count} fail → sahne tekrarı ile {scene_count} sahneye tamamlanıyor"
             )
+            filler_scene = scene_video_urls[len(scene_video_urls) // 2]  # ortadaki sahne
+            while len(scene_video_urls) < scene_count:
+                scene_video_urls.append(filler_scene)
+                log.info(
+                    f"Sahne tekrarı eklendi: {filler_scene[:50]}... "
+                    f"({len(scene_video_urls)}/{scene_count})"
+                )
 
         log.info(f"{len(scene_video_urls)} sahne hazır, concat başlıyor")
 
@@ -750,4 +764,5 @@ class ProductionPipeline:
         concat_url = await self.replicate.async_concat_videos(list(scene_video_urls))
         log.info(f"Multi-scene concat tamamlandı: {concat_url[:60]}...")
 
+        # WHY: scene_video_urls tekrarlarla scene_count'a tamamlandı → toplam süre tam.
         return concat_url, len(scene_video_urls), per_scene_duration

@@ -76,8 +76,10 @@ prompt'ta mutlaka GERÇEK BİR İNSAN (model) tanımla — kafası kopuk kıyafe
   "title": "Senaryo başlığı (Türkçe)",
   "summary": "1-2 cümlelik Türkçe özet",
   "hook_pattern": "Sürpriz reveal | Before/After | POV | Problem-Solution | ASMR | Unexpected analogy",
-  "scene_count": 1,
-  "duration": 10,
+  "voice_name": "Ahu",
+  "character_gender": "kadın",
+  "scene_count": 3,
+  "duration": 15,
   "scenes": [
     {
       "scene_name": "Sahne adı (İngilizce, kısa)",
@@ -88,6 +90,25 @@ prompt'ta mutlaka GERÇEK BİR İNSAN (model) tanımla — kafası kopuk kıyafe
   "technical_notes": "Teknik notlar"
 }
 ```
+
+### Ses Seçimi (voice_name) — KATI KURAL
+Voiceover sesi **bu Türkçe Professional Voice Clone kataloğundan birini seç** ve
+seçimini ürünün havasına/karakterine göre yap. Karakter cinsiyeti (`character_gender`)
+**MUTLAKA seçtiğin sesin cinsiyetiyle aynı olmalı**, ve **video promptlarındaki
+karakter de aynı cinsiyette tanımlanmalı**. Erkek ses + kadın model olamaz.
+
+| voice_name | cinsiyet | tip               | yaş      | ne için en iyi                                |
+|------------|----------|-------------------|----------|-----------------------------------------------|
+| Ahu        | kadın    | conversational    | orta-yaş | Doğal/samimi UGC, "kızlar abi cidden" tonu    |
+| Filiz      | kadın    | conversational    | orta-yaş | Sıcak günlük tavsiye, samimi anne tonu        |
+| İrem       | kadın    | narrative_story   | orta-yaş | Profesyonel anlatıcı, bilgi/eğitim/skincare    |
+| Nisa       | kadın    | entertainment_tv  | genç     | Enerjik genç, Z kuşağı, spor/fashion/eğlence  |
+| Adam       | erkek    | narrative_story   | orta-yaş | Sakin/derin Türkçe erkek, tech/araç/guide     |
+
+### `character_gender` (KATI)
+Değer: "kadın" veya "erkek". Seçtiğin voice'un cinsiyetiyle aynı olmalı,
+ve video_prompt'larındaki karakter de bu cinsiyette tanımlanmalı (örn. erkek
+seçtinse model kadın olamaz).
 
 ## KRİTİK KURALLAR (İSTİSNASIZ UYGULA):
 
