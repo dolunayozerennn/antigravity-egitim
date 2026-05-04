@@ -113,14 +113,14 @@ def _spawn_bg_task(app, coro, name: str | None = None) -> asyncio.Task:
 async def _cleanup_idle_sessions(app=None):
     """Bellek sızıntısını önle — inaktif session'ları periyodik temizle.
 
-    Ayrıca: 5dk+ COLLECTING_PREFERENCES watchdog → soft reset + kullanıcıya bildirim.
+    Ayrıca: 5dk+ brief-stuck watchdog → soft reset + kullanıcıya bildirim.
     """
     while True:
         await asyncio.sleep(300)  # 5 dakikada bir kontrol et
         try:
-            # ── COLLECTING_PREFERENCES watchdog (5dk+) ──
+            # ── brief-stuck watchdog (5dk+) ──
             try:
-                stuck_uids = conversation_mgr.find_stuck_collecting_preferences(max_idle_seconds=300)
+                stuck_uids = conversation_mgr.find_stuck_brief(max_idle_seconds=300)
                 for uid in stuck_uids:
                     conversation_mgr.soft_reset_to_idle(uid)
                     if app is not None:
@@ -135,9 +135,9 @@ async def _cleanup_idle_sessions(app=None):
                         except Exception as send_exc:
                             log.warning(f"Watchdog bildirim gönderilemedi user={uid}: {send_exc}")
                 if stuck_uids:
-                    log.info(f"COLLECTING_PREFERENCES watchdog: {len(stuck_uids)} session soft-reset edildi")
+                    log.info(f"brief-stuck watchdog: {len(stuck_uids)} session soft-reset edildi")
             except Exception:
-                log.error("COLLECTING_PREFERENCES watchdog hatası", exc_info=True)
+                log.error("brief-stuck watchdog hatası", exc_info=True)
 
             import time as _time
             now = _time.time()
@@ -158,8 +158,15 @@ async def _cleanup_idle_sessions(app=None):
                     # IDLE/DELIVERED → 10 dakika sonra temizle
                     if state_name in ("IDLE", "DELIVERED") and idle_seconds > 600:
                         to_delete.append(uid)
-                    # SCENARIO_APPROVAL → 30 dakika sonra temizle
-                    elif state_name in ("SCENARIO_APPROVAL", "COLLECTING_PREFERENCES", "AWAITING_CUSTOM_NOTE") and idle_seconds > 1800:
+                    # Brief akışı / Scenario approval → 30 dakika sonra temizle
+                    elif state_name in (
+                        "SCENARIO_APPROVAL",
+                        "ASKING_FORMAT",
+                        "ASKING_STYLE",
+                        "WAITING_STYLE_TEXT",
+                        "ASKING_CUSTOM_NOTE",
+                        "WAITING_CUSTOM_NOTE_TEXT",
+                    ) and idle_seconds > 1800:
                         to_delete.append(uid)
 
                 for uid in to_delete:
@@ -248,11 +255,14 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session = conversation_mgr.get_session(user.id)
     state_labels = {
         ConversationState.IDLE: "⚪ Boşta",
+        ConversationState.ASKING_FORMAT: "📐 Format seçimi bekleniyor",
+        ConversationState.ASKING_STYLE: "🎨 Tarz seçimi bekleniyor",
+        ConversationState.WAITING_STYLE_TEXT: "🎨 Tarz metni bekleniyor",
+        ConversationState.ASKING_CUSTOM_NOTE: "✍️ Ek not seçimi bekleniyor",
+        ConversationState.WAITING_CUSTOM_NOTE_TEXT: "✍️ Ek not metni bekleniyor",
         ConversationState.URL_PROCESSING: "🔗 URL inceleniyor",
         ConversationState.RESEARCHING: "🔍 Araştırma & Senaryo",
         ConversationState.SCENARIO_APPROVAL: "📋 Senaryo onayı",
-        ConversationState.COLLECTING_PREFERENCES: "🎛️ Tercih toplama",
-        ConversationState.AWAITING_CUSTOM_NOTE: "✍️ Ek not bekleniyor",
         ConversationState.PRODUCING: "🎬 Video üretimi",
         ConversationState.DELIVERED: "✅ Teslim edildi",
     }
@@ -270,8 +280,76 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 💬 MESAJ HANDLER'LARI
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+async def _send_button_payload(send_target, btn_data: dict) -> None:
+    """Standart buton payload'ını render et ve gönder.
+
+    `send_target.reply_text` çağrılabilir bir mesaj-benzeri objedir
+    (update.message veya query.message).
+    """
+    keyboard_rows = []
+    options = btn_data.get("options", [])
+    choice_key = btn_data.get("choice_key", "unknown")
+    question = btn_data.get("question", "Lütfen seçiminizi yapın:")
+
+    for opt in options:
+        val = opt.get("value", "unkn")
+        label = opt.get("label", "Seçenek")
+        cb_data = f"pref:{choice_key}:{val}"
+        if len(cb_data.encode("utf-8")) > 64:
+            cb_data = cb_data.encode("utf-8")[:64].decode("utf-8", errors="ignore")
+        keyboard_rows.append([InlineKeyboardButton(label, callback_data=cb_data)])
+
+    if btn_data.get("allow_freetext"):
+        cb_data = f"pref:{choice_key}:__freetext__"
+        keyboard_rows.append([InlineKeyboardButton("✍️ Kendim yazacağım", callback_data=cb_data)])
+
+    markup = InlineKeyboardMarkup(keyboard_rows)
+    try:
+        await send_target.reply_text(question, reply_markup=markup, parse_mode="Markdown")
+    except Exception:
+        await send_target.reply_text(question, reply_markup=markup)
+
+
+async def _send_note_buttons(send_target) -> None:
+    """ASKING_CUSTOM_NOTE durumunda 'Not yaz / Atla' butonlarını gönder."""
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("✍️ Not yaz", callback_data="note:write")],
+        [InlineKeyboardButton("⏩ Atla", callback_data="note:skip")],
+    ])
+    try:
+        await send_target.reply_text(
+            "Aşağıdan seç:", reply_markup=keyboard, parse_mode="Markdown"
+        )
+    except Exception:
+        await send_target.reply_text("Aşağıdan seç:", reply_markup=keyboard)
+
+
+def _kick_off_lite_extract(user_id: int, url: str, app) -> None:
+    """Lite extract'i bg task olarak başlat — session.product_category'yi günceller."""
+    session = conversation_mgr.get_session(user_id)
+    if session.lite_extract_task is not None and not session.lite_extract_task.done():
+        return  # Zaten çalışıyor
+
+    async def _runner():
+        try:
+            lite_data = await url_extractor.extract_lite(url)
+            session.product_category = lite_data.get("category") or "general"
+            session.lite_brand = lite_data.get("brand_name") or session.lite_brand
+            session.lite_product = lite_data.get("product_name") or session.lite_product
+            log.info(
+                f"Lite extract tamam: user={user_id}, category={session.product_category}"
+            )
+        except Exception as exc:
+            log.warning(f"Lite extract hatası (user={user_id}): {exc}")
+            # Fallback: kategori yoksa generic
+            if not session.product_category:
+                session.product_category = "general"
+
+    session.lite_extract_task = _spawn_bg_task(app, _runner(), name=f"lite-{user_id}")
+
+
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Metin mesajı handler — ana giriş noktası (URL bekler)."""
+    """Metin mesajı handler — ana giriş noktası."""
     user = update.effective_user
     if not is_authorized(user.id):
         return await unauthorized_reply(update)
@@ -282,34 +360,26 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_name = user.first_name or user.username or ""
 
-    # ── Lite kategori extract (paralel, hızlı) ──
-    # Kullanıcı yeni bir URL gönderdiyse ürün kategorisini hızlıca öğren ki
-    # LLM dinamik tarz önerileri (ör. "Sabah rutini UGC") üretebilsin.
+    # ── URL algılandıysa lite_extract'i ARKAPLAN'da başlat (UI bloklanmasın) ──
     pre_url = URLDataExtractor.extract_url_from_text(text)
     if pre_url:
         session = conversation_mgr.get_session(user.id)
-        # Sadece henüz bilinmiyorsa veya URL değiştiyse tetikle
-        if not session.product_category or session.current_url != pre_url:
-            try:
-                lite_data = await asyncio.wait_for(
-                    url_extractor.extract_lite(pre_url),
-                    timeout=8.0,
-                )
-                session.product_category = lite_data.get("category") or "general"
-                session.lite_brand = lite_data.get("brand_name") or session.lite_brand
-                session.lite_product = lite_data.get("product_name") or session.lite_product
-                log.info(
-                    f"Lite extract tamam: user={user.id}, category={session.product_category}"
-                )
-            except asyncio.TimeoutError:
-                log.warning(f"Lite extract 8s içinde dönmedi (user={user.id}) — kategori sonra senaryoda çıkacak")
-            except Exception as exc:
-                log.warning(f"Lite extract hatası (user={user.id}): {exc}")
+        # Yalnızca yeni URL ise veya henüz kategori yoksa başlat
+        if (
+            not session.product_category
+            or session.current_url != pre_url
+            or session.pending_url != pre_url
+        ):
+            # Eski category'yi temizle ki yeni brief doğru kategoriyi alsın
+            session.product_category = None
+            session.lite_brand = None
+            session.lite_product = None
+            _kick_off_lite_extract(user.id, pre_url, context.application)
 
-    # URL veya aksiyon algılama
+    # Manager'a yönlendir
     result = await conversation_mgr.handle_text_message(user.id, text, user_name)
 
-    # SCENARIO_APPROVAL: Metin tabanlı onay/iptal
+    # SCENARIO_APPROVAL: Metin tabanlı onay
     if result.get("action") == "approve":
         reply_msg = "🚀 **Üretim başlıyor!**\nHer adımda bildirim alacaksın."
         cancel_kb = InlineKeyboardMarkup([[InlineKeyboardButton("❌ İptal", callback_data="prod:cancel")]])
@@ -339,45 +409,28 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             log.warning("Markdown parse hatası — parse_mode=None ile tekrar deneniyor")
             await update.message.reply_text(result["reply"])
-            
         await chat_tracker.log_interaction(str(user.id), text, result["reply"])
 
-    # Buton yanıtı
+    # Buton yanıtı (format butonları — yeni brief başlangıcı)
     if result.get("buttons"):
         try:
-            btn_data = result["buttons"]
-            keyboard_rows = []
-            options = btn_data.get("options", [])
-            choice_key = btn_data.get("choice_key", "unknown")
-            question = btn_data.get("question", "Lütfen seçiminizi yapın:")
-            
-            for opt in options:
-                val = opt.get('value', 'unkn')
-                label = opt.get('label', 'Seçenek')
-                cb_data = f"pref:{choice_key}:{val}"
-                # Telegram callback_data limit extends to 64 bytes - ensuring it fits
-                if len(cb_data.encode('utf-8')) > 64:
-                    cb_data = cb_data[:64]
-                keyboard_rows.append([InlineKeyboardButton(label, callback_data=cb_data)])
-            
-            if btn_data.get("allow_freetext"):
-                cb_data = f"pref:{choice_key}:__freetext__"
-                if len(cb_data.encode('utf-8')) > 64:
-                    cb_data = cb_data[:64]
-                keyboard_rows.append([InlineKeyboardButton("✍️ Kendi cevabımı yazacağım", callback_data=cb_data)])
-            
-            markup = InlineKeyboardMarkup(keyboard_rows)
-            try:
-                await update.message.reply_text(question, reply_markup=markup, parse_mode="Markdown")
-            except Exception:
-                await update.message.reply_text(question, reply_markup=markup)
-                
-            await chat_tracker.log_interaction(str(user.id), "[Sistem - Buton Gösterildi]", question)
+            await _send_button_payload(update.message, result["buttons"])
+            await chat_tracker.log_interaction(
+                str(user.id), "[Sistem - Buton Gösterildi]",
+                result["buttons"].get("question", ""),
+            )
         except Exception as e:
             log.error(f"Buton yanıtı oluşturulurken hata: {e}", exc_info=True)
-            await update.message.reply_text("⚠️ Seçenekler gösterilirken bir hata oluştu, lütfen manuel yazın.")
+            await update.message.reply_text("⚠️ Seçenekler gösterilemedi, lütfen tekrar dene.")
 
-    # Eğer URL bulunduysa Pipeline'ı başlat
+    # Note buttons (custom_note state'i — sadece manager'dan gelirse)
+    if result.get("note_buttons"):
+        try:
+            await _send_note_buttons(update.message)
+        except Exception as e:
+            log.error(f"Note butonu hatası: {e}", exc_info=True)
+
+    # URL pipeline'ı başlat
     if result.get("has_url") and result.get("url"):
         _spawn_bg_task(
             context.application,
@@ -512,60 +565,119 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown",
         )
     elif data.startswith("pref:"):
-        parts = data.split(":", 2)  # pref:choice_key:value
-        choice_key = parts[1]
-        choice_value = parts[2] if len(parts) > 2 else ""
+        await _handle_pref_callback(query, user.id, data, context)
 
-        session = conversation_mgr.get_session(user.id)
-        
-        if choice_value == "__freetext__":
-            # Serbest metin modu
-            session.pending_choice_key = choice_key
-            await query.edit_message_reply_markup(reply_markup=None)
-            await query.message.reply_text("✍️ Lütfen tercihini metin olarak yazarak bana gönder:")
-        else:
-            # Butondan seçildi
-            await query.edit_message_reply_markup(reply_markup=None)
-            
-            result = await conversation_mgr.handle_preference_set(user.id, choice_key, choice_value)
-            
-            if result.get("reply"):
-                try:
-                    await query.message.reply_text(result["reply"], parse_mode="Markdown")
-                except Exception:
-                    await query.message.reply_text(result["reply"], parse_mode=None)
-
-            if result.get("buttons"):
-                btn_data = result["buttons"]
-                keyboard_rows = []
-                for opt in btn_data["options"]:
-                    cb_data = f"pref:{btn_data['choice_key']}:{opt['value']}"
-                    if len(cb_data.encode('utf-8')) > 64:
-                        cb_data = cb_data[:64]
-                    keyboard_rows.append([InlineKeyboardButton(opt["label"], callback_data=cb_data)])
-                
-                if btn_data.get("allow_freetext"):
-                    cb_data = f"pref:{btn_data['choice_key']}:__freetext__"
-                    if len(cb_data.encode('utf-8')) > 64:
-                        cb_data = cb_data[:64]
-                    keyboard_rows.append([InlineKeyboardButton("✍️ Kendi cevabımı yazacağım", callback_data=cb_data)])
-                
-                markup = InlineKeyboardMarkup(keyboard_rows)
-                try:
-                    await query.message.reply_text(btn_data["question"], reply_markup=markup, parse_mode="Markdown")
-                except Exception:
-                    await query.message.reply_text(btn_data["question"], reply_markup=markup)
-            # Eğer URL algılandıysa (Agent text handle sonrası pipeline başlatmak isterse)
-            if result.get("has_url") and result.get("url"):
-                _spawn_bg_task(
-                    context.application,
-                    _process_url_and_scenario(query.message, user.id, result["url"]),
-                    name=f"url-scenario-{user.id}",
-                )
+    elif data.startswith("note:"):
+        await _handle_note_callback(query, user.id, data, context)
 
     else:
         log.warning(f"Bilinmeyen callback data: {data}")
+        try:
+            await query.edit_message_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+
+
+async def _handle_pref_callback(query, user_id: int, data: str, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """`pref:choice_key:value` callback'ini işler — format/style/freetext routing."""
+    parts = data.split(":", 2)
+    if len(parts) < 3:
+        return
+    choice_key = parts[1]
+    choice_value = parts[2]
+
+    # Butonları kapat
+    try:
         await query.edit_message_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+
+    # ── video_format ──
+    if choice_key == "video_format":
+        conversation_mgr.set_format(user_id, choice_value)
+        # Lite extract bittiyse direkt style buttons; bitmediyse "kategorize ediyorum" + bekle
+        if not conversation_mgr.category_ready(user_id):
+            await query.message.reply_text(
+                "🔎 Ürünü hızlıca inceliyorum, tarz seçenekleri bir kaç saniye içinde geliyor...",
+                parse_mode="Markdown",
+            )
+            await conversation_mgr.await_lite_extract(user_id, timeout=10.0)
+        try:
+            buttons = await conversation_mgr.build_style_buttons(user_id)
+            await _send_button_payload(query.message, buttons)
+            await chat_tracker.log_interaction(
+                str(user_id), f"[Format seçildi: {choice_value}]",
+                buttons.get("question", ""),
+            )
+        except Exception as e:
+            log.error(f"Style butonları oluşturulamadı: {e}", exc_info=True)
+            await query.message.reply_text(
+                "⚠️ Tarz seçenekleri üretilemedi. /start ile yeniden başla."
+            )
+        return
+
+    # ── video_style ──
+    if choice_key == "video_style":
+        if choice_value == "__freetext__":
+            # Kullanıcı kendi tarzını yazacak → WAITING_STYLE_TEXT
+            session = conversation_mgr.get_session(user_id)
+            from core.conversation_manager import ConversationState as CS
+            session.state = CS.WAITING_STYLE_TEXT
+            await query.message.reply_text(
+                "✍️ Tarzını yaz (örn. 'Sokakta UGC', 'Sinematik close-up'):",
+                parse_mode="Markdown",
+            )
+            return
+        # Index-based çözüm
+        full_value = conversation_mgr.resolve_style_value(user_id, choice_value)
+        result = conversation_mgr.set_style(user_id, full_value)
+        if result.get("reply"):
+            try:
+                await query.message.reply_text(result["reply"], parse_mode="Markdown")
+            except Exception:
+                await query.message.reply_text(result["reply"])
+        if result.get("note_buttons"):
+            await _send_note_buttons(query.message)
+        return
+
+    # Tanınmayan choice_key
+    log.warning(f"Tanınmayan choice_key: {choice_key}")
+
+
+async def _handle_note_callback(query, user_id: int, data: str, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """`note:skip` veya `note:write` callback'ini işler."""
+    action = data.split(":", 1)[1] if ":" in data else ""
+
+    try:
+        await query.edit_message_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+
+    if action == "skip":
+        result = conversation_mgr.handle_note_skip(user_id)
+        if result.get("reply"):
+            try:
+                await query.message.reply_text(result["reply"], parse_mode="Markdown")
+            except Exception:
+                await query.message.reply_text(result["reply"])
+        if result.get("has_url") and result.get("url"):
+            _spawn_bg_task(
+                context.application,
+                _process_url_and_scenario(query.message, user_id, result["url"]),
+                name=f"url-scenario-{user_id}",
+            )
+        return
+
+    if action == "write":
+        result = conversation_mgr.handle_note_write_request(user_id)
+        if result.get("reply"):
+            try:
+                await query.message.reply_text(result["reply"], parse_mode="Markdown")
+            except Exception:
+                await query.message.reply_text(result["reply"])
+        return
+
+    log.warning(f"Tanınmayan note action: {action}")
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
