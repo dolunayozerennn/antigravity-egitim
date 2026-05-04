@@ -997,12 +997,12 @@ class ProductionPipeline:
                 f"concat için en az 1 başarılı sahne gerek"
             )
 
-        # FAIL EDEN SAHNELER ATLA (sahne tekrarı YOK)
-        # WHY: Önceki strateji başarısız sahneyi sahne 1 (HOOK) ile dolduruyordu — bu
-        # özellikle birden fazla sahne fail ettiğinde aynı sahne 2-3 kez ardışık görünüyor
-        # ("15-20s ile 20-25s aynı"). Yeni strateji: failed sahneleri at, scene_count düşür.
-        # Audio sync zaten downstream'de duration_mode="video" ile koruyor (ses video boyuna kırpılır).
-        # Min 2 sahne garantisi: tek sahne kalırsa hata.
+        # SAHNE FAIL FILLER — akıllı tekrar (ses-video sync için)
+        # WHY: scene_count'u koruruz çünkü voiceover scene_count*per_scene_duration'a göre
+        # planlandı. Sahne kısalırsa ses video'dan uzun kalır → kesilir.
+        # Strateji: failed sahnelerin SAYISI kadar, başarılı sahnelerden TÜR'üne göre
+        # tekrar ekle (orta sahne öncelikli — HOOK'u tekrarlamak izleyici dikkati için kötü).
+        # Maksimum 1 tekrar (2+ fail durumunda yine düşürülür).
         if failed_count > 0:
             actual_count = len(scene_video_urls)
             if actual_count < 2:
@@ -1010,11 +1010,23 @@ class ProductionPipeline:
                     f"{scene_count} sahneden sadece {actual_count} başarılı — "
                     f"minimum 2 sahne gerek (tekrar dene)"
                 )
-            log.warning(
-                f"Multi-scene degraded mode: {actual_count}/{scene_count} sahne başarılı, "
-                f"{failed_count} fail → BAŞARISIZLAR ATILDI (sahne tekrarı YOK), "
-                f"video {actual_count} sahneye düştü ({actual_count * per_scene_duration}s)"
-            )
+            # 1 sahne eksikse: ortadaki başarılı sahneyi 1 kez listenin sonuna ekle
+            # (HOOK'u tekrar etmek yerine — ortadaki sahne PAYOFF olur)
+            missing = scene_count - actual_count
+            if missing == 1 and actual_count >= 2:
+                filler_idx = len(scene_video_urls) // 2  # orta sahne
+                scene_video_urls.append(scene_video_urls[filler_idx])
+                log.warning(
+                    f"Multi-scene filler: {actual_count}/{scene_count} sahne başarılı, "
+                    f"1 fail → orta sahne (idx={filler_idx}) tekrar eklendi → "
+                    f"video {scene_count} sahnede ({scene_count * per_scene_duration}s) kalır"
+                )
+            else:
+                log.warning(
+                    f"Multi-scene degraded mode: {actual_count}/{scene_count} sahne başarılı, "
+                    f"{failed_count} fail (filler max 1) → video "
+                    f"{actual_count} sahneye düştü ({actual_count * per_scene_duration}s)"
+                )
 
         log.info(f"{len(scene_video_urls)} sahne hazır, concat başlıyor")
 
