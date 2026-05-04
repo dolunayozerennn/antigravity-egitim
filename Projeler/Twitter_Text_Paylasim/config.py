@@ -1,0 +1,55 @@
+"""Twitter_Text_Paylasim — config & env."""
+
+import sys
+
+from env_loader import get_env
+
+
+class Config:
+    def __init__(self):
+        self.ENV = (get_env("ENV") or "development").lower()
+        self.IS_DRY_RUN = self.ENV == "development" or get_env("DRY_RUN") == "1"
+
+        # Typefully (X publisher proxy, draft mode)
+        self.TYPEFULLY_API_KEY = self._require("TYPEFULLY_API_KEY")
+        self.TYPEFULLY_SOCIAL_SET_ID = int(self._require("TYPEFULLY_SOCIAL_SET_ID"))
+
+        # OpenAI (tweet writer + scoring)
+        self.OPENAI_API_KEY = self._require("OPENAI_API_KEY")
+        self.WRITER_MODEL = get_env("WRITER_MODEL") or "gpt-4o-mini"
+
+        # Perplexity (AI haberleri)
+        self.PERPLEXITY_API_KEY = self._require("PERPLEXITY_API_KEY")
+        self.PERPLEXITY_BASE_URL = get_env("PERPLEXITY_BASE_URL") or "https://api.perplexity.ai"
+
+        # GitHub (repo discovery)
+        self.GITHUB_TOKEN = self._require("GITHUB_TOKEN")
+
+        # YouTube (kanal RSS + transcript)
+        # Channel ID veya handle (@dolunayozeren). Handle verilirse RSS feed'e
+        # çevirmek için YouTube Data API gerekecek; pratikte kullanıcı UC ID'sini
+        # verir. Şimdilik UC ID bekliyoruz.
+        self.YOUTUBE_CHANNEL_ID = get_env("YOUTUBE_CHANNEL_ID")
+
+        # Notion
+        self.NOTION_TOKEN = self._require("NOTION_SOCIAL_TOKEN")
+        self.NOTION_X_DB_ID = get_env("NOTION_X_DB_ID")  # ilk koşuştan önce doldurulacak
+
+        # Kalite eşiği — kalibrasyon dönemi 7, sonra 8
+        self.QUALITY_THRESHOLD = int(get_env("QUALITY_THRESHOLD") or 7)
+
+        # Dedup penceresi (gün)
+        self.DEDUP_DAYS = int(get_env("DEDUP_DAYS") or 30)
+
+    def _require(self, key: str) -> str:
+        val = get_env(key)
+        if not val:
+            raise EnvironmentError(f"CRITICAL STARTUP FAILURE: {key} bulunamadı")
+        return val
+
+
+try:
+    settings = Config()
+except EnvironmentError as e:
+    print(f"BOOT ERROR: {e}")
+    sys.exit(1)
