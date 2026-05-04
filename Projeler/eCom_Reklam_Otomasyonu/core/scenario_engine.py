@@ -46,6 +46,7 @@ ELEVENLABS_COST_PER_CHAR = 0.0001    # ~$0.0001 / karakter
 REPLICATE_MERGE_COST_USD = 0.005     # video+ses merge sabit
 OPENAI_SCENARIO_COST_USD = 0.02      # senaryo + vision sabit
 PERPLEXITY_RESEARCH_COST_USD = 0.005 # marka araştırması sabit
+GPT_IMAGE_USD = 0.07                 # GPT-Image 2 karakter portre sabit
 
 # Sabit parametreler (varsayılanlar)
 FIXED_ASPECT_RATIO = "9:16"
@@ -80,6 +81,7 @@ prompt'ta mutlaka GERÇEK BİR İNSAN (model) tanımla — kafası kopuk kıyafe
   "character_gender": "kadın",
   "scene_count": 3,
   "duration": 15,
+  "character_visual_prompt": "GPT-Image 2 için TEK karakter portresi İngilizce promptu",
   "scenes": [
     {
       "scene_name": "Sahne adı (İngilizce, kısa)",
@@ -109,6 +111,37 @@ karakter de aynı cinsiyette tanımlanmalı**. Erkek ses + kadın model olamaz.
 Değer: "kadın" veya "erkek". Seçtiğin voice'un cinsiyetiyle aynı olmalı,
 ve video_prompt'larındaki karakter de bu cinsiyette tanımlanmalı (örn. erkek
 seçtinse model kadın olamaz).
+
+### Character Visual Prompt Yazımı (`character_visual_prompt`) — KATI
+Tüm sahnelerde aynı kişiyi göstermek için, GPT-Image 2 ile ÖN reklamın açılmadan
+önce TEK bir karakter portresi üreteceğiz. Bu portre 3 sahnenin tamamına
+referans olarak verilecek — tutarlılık için kritik.
+
+Şablon (İNGİLİZCE, tek string, ~60-90 kelime):
+```
+Single [age] [gender] [ethnicity hint matching brand vibe], [hair description],
+[outfit fitting brand identity and product category], natural skin texture with
+subtle imperfections, casual three-quarter shot, neutral plain studio background
+or soft window-lit interior, soft natural light, photorealistic iPhone selfie
+aesthetic, candid expression, no text, no logos, no watermarks, 9:16 vertical
+```
+
+**Marka kimliği → karakter arketipi rehberi (ÖRNEK — DİNAMİK uygula, statik mapping DEĞİL):**
+- Skincare/beauty → late-20s natural-look woman, dewy skin, minimal makeup, cozy knit
+- Tech/gadgets → casual genç techie (kadın veya erkek), oversized hoodie, light beard veya messy bun
+- Fashion/sneakers → urban stylish young adult, streetwear, edgy hair
+- Supplements/fitness → athletic mid-20s, fitted top, healthy glow
+- Default → marka tonu + ürün kategorisi + hedef kitleyi harmanla, kendi karakterini kur
+
+**TUTARLILIK KURALI (İSTİSNASIZ):**
+`character_visual_prompt` ile her `video_prompt` içindeki karakter tarifi
+BİREBİR aynı kişiyi tarif etmeli — yaş aralığı, cinsiyet, etnisite, saç rengi/stili,
+kıyafet renk+tipi EŞLEŞMELİ. Karakter portresinde "blonde late-20s woman in beige
+oversized knit" yazdıysan, video_prompt'larda da aynı şekilde "the same blonde
+woman in beige oversized knit" diye geçir. Sahneden sahneye outfit/saç değiştirme.
+
+`character_gender`, voice cinsiyeti VE `character_visual_prompt` cinsiyeti — üçü
+aynı olmalı.
 
 ## KRİTİK KURALLAR (İSTİSNASIZ UYGULA):
 
@@ -418,9 +451,10 @@ class ScenarioEngine:
             replicate_usd += REPLICATE_MERGE_COST_USD
         openai_usd = OPENAI_SCENARIO_COST_USD
         perplexity_usd = PERPLEXITY_RESEARCH_COST_USD
+        gpt_image_usd = GPT_IMAGE_USD  # Karakter portresi (tutarlılık için)
 
         total_usd = (
-            seedance_usd + elevenlabs_usd + replicate_usd + openai_usd + perplexity_usd
+            seedance_usd + elevenlabs_usd + replicate_usd + openai_usd + perplexity_usd + gpt_image_usd
         )
 
         mode_label = "reference-image" if has_reference_image else "text-to-video"
@@ -432,6 +466,7 @@ class ScenarioEngine:
             "replicate_usd": round(replicate_usd, 4),
             "openai_usd": round(openai_usd, 4),
             "perplexity_usd": round(perplexity_usd, 4),
+            "gpt_image_usd": round(gpt_image_usd, 4),
         }
 
         breakdown_text = (
@@ -440,7 +475,8 @@ class ScenarioEngine:
             f"[{resolution}, {mode_label}, {scene_label}] | "
             f"ElevenLabs ${elevenlabs_usd:.4f} | "
             f"Replicate ${replicate_usd:.3f} | "
-            f"OpenAI ${openai_usd:.3f} | Perplexity ${perplexity_usd:.3f}"
+            f"OpenAI ${openai_usd:.3f} | Perplexity ${perplexity_usd:.3f} | "
+            f"GPT-Image ${gpt_image_usd:.3f}"
         )
 
         return {

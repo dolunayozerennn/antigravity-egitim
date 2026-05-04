@@ -170,11 +170,11 @@ class ProductionPipeline:
 
         try:
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # ADIM 0: ÖNCE VOICEOVER ÜRET → SÜRE ÖLÇ → VIDEO DURATION'I AYARLA
+            # ADIM 0: VOICEOVER + KARAKTER GÖRSELİ — PARALEL
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            # WHY: Önceki akışta video üretilip voiceover sonra geldiğinden,
-            # ses video'dan kısa kalıp 7-9s sessiz boşluk doğuyordu. Şimdi
-            # ses gerçek süresine göre video duration'ı round'lanıyor.
+            # WHY: voiceover ses süresini, karakter görseli ise tüm sahnelerde
+            # tutarlı karakteri sağlıyor. İkisi de senaryo çıktısına bağımlı,
+            # birbirinden bağımsız → asyncio.gather ile paralel.
             voiceover_text = scenario.get("voiceover_text", "") or ""
 
             # Türkçe sayı/yüzde/birim normalizasyonu — LLM "%10" yazsa bile düzelt
@@ -187,13 +187,14 @@ class ProductionPipeline:
                     )
                     voiceover_text = normalized
 
-            audio_bytes = None
-            audio_url = ""
-            audio_duration = 0.0
-            voiceover_succeeded = True  # boş voiceover veya başarılı = True
+            character_visual_prompt = (scenario.get("character_visual_prompt") or "").strip()
+            character_gender = (scenario.get("character_gender") or "").strip()
+            voice_name = (scenario.get("voice_name") or "Ahu").strip()
 
-            if voiceover_text:
-                voiceover_succeeded = False
+            async def _produce_voiceover():
+                """Voiceover üret. Return: (audio_bytes, audio_url, audio_duration, success, err)."""
+                if not voiceover_text:
+                    return None, "", 0.0, True, ""
                 try:
                     if progress_callback:
                         await progress_callback(
@@ -201,35 +202,78 @@ class ProductionPipeline:
                             "🎙️ Türkçe dış ses üretiliyor (ElevenLabs v3)..."
                         )
                     log.info(f"ElevenLabs TTS başlıyor: {len(voiceover_text)} karakter")
-                    # Senaryo LLM voice_name seçer (ürün/tonlama/cinsiyet uyumu için).
-                    # Geçersiz/boşsa → servis default'u "Ahu" (Türkçe conversational PVC).
-                    selected_voice = (scenario.get("voice_name") or "Ahu").strip()
-                    log.info(f"Voiceover voice: {selected_voice} (LLM seçimi)")
-                    audio_bytes = await asyncio.to_thread(
+                    log.info(f"Voiceover voice: {voice_name} (LLM seçimi)")
+                    ab = await asyncio.to_thread(
                         self.elevenlabs.generate_speech,
                         text=voiceover_text,
-                        voice_name=selected_voice,
+                        voice_name=voice_name,
                     )
                     from services.elevenlabs_service import ElevenLabsService
-                    audio_duration = ElevenLabsService.measure_audio_duration(audio_bytes)
-                    log.info(f"Voiceover gerçek süresi: {audio_duration:.2f}s")
-
-                    # Replicate storage'a yükle (merge için URL lazım)
-                    audio_url = await self.replicate.async_upload_audio(audio_bytes)
-                    result["audio_url"] = audio_url
-                    log.info(f"Dış ses Replicate storage'a yüklendi: {audio_url[:80]}...")
-                    voiceover_succeeded = True
+                    ad = ElevenLabsService.measure_audio_duration(ab)
+                    log.info(f"Voiceover gerçek süresi: {ad:.2f}s")
+                    au = await self.replicate.async_upload_audio(ab)
+                    log.info(f"Dış ses Replicate storage'a yüklendi: {au[:80]}...")
+                    return ab, au, ad, True, ""
                 except Exception as vo_err:
                     log.error(
                         f"Dış ses üretim hatası (graceful degradation): {vo_err}",
                         exc_info=True,
                     )
-                    result["voiceover_error"] = str(vo_err)[:300]
                     if progress_callback:
                         await progress_callback(
                             "voiceover_warning",
                             "⚠️ Dış ses üretilemedi — video ambient seslerle teslim edilecek."
                         )
+                    return None, "", 0.0, False, str(vo_err)[:300]
+
+            async def _produce_character_image():
+                """Karakter portresi üret. Fail olursa None — pipeline ürün görselleriyle devam eder."""
+                if not character_visual_prompt:
+                    log.info("character_visual_prompt boş — karakter üretimi atlanıyor (geriye dönük uyum)")
+                    return None
+                try:
+                    if progress_callback:
+                        await progress_callback(
+                            "step_character",
+                            "👤 Karakter portresi üretiliyor (GPT-Image 2)..."
+                        )
+                    log.info(
+                        f"Karakter prompt (gender={character_gender or '?'}, voice={voice_name}): "
+                        f"{character_visual_prompt[:140]}..."
+                    )
+                    cu = await self.kie.async_create_character_image(
+                        prompt=character_visual_prompt,
+                        aspect_ratio="9:16",
+                        resolution="2K",
+                    )
+                    log.info(f"Karakter görseli üretildi: {cu}")
+                    return cu
+                except Exception as ce:
+                    log.warning(
+                        f"Karakter görseli üretilemedi, ürün görselleriyle devam ediliyor: {ce}",
+                        exc_info=True,
+                    )
+                    return None
+
+            (vo_bytes, audio_url, audio_duration, voiceover_succeeded, vo_err_msg), character_image_url = (
+                await asyncio.gather(_produce_voiceover(), _produce_character_image())
+            )
+
+            if audio_url:
+                result["audio_url"] = audio_url
+            if vo_err_msg:
+                result["voiceover_error"] = vo_err_msg
+
+            # Karakter URL'sini ürün görsellerinin BAŞINA ekle (Seedance referans listesi)
+            product_image_urls = list(reference_images or [])
+            if character_image_url:
+                reference_images = ([character_image_url] + product_image_urls)[:9]
+                log.info(
+                    f"Referans görseller hazır: 1 karakter + {len(product_image_urls)} ürün "
+                    f"= {len(reference_images)} (max 9)"
+                )
+            else:
+                reference_images = product_image_urls[:9]
 
             # Video duration'ı ses süresine göre round et (Seedance 5/10/15)
             def _round_to_seedance_duration(audio_sec: float) -> int:

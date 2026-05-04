@@ -322,6 +322,98 @@ class KieAIService:
         return task_id
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 👤 KARAKTER GÖRSELİ — GPT-Image 2 (text-to-image)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    def create_character_image(
+        self,
+        prompt: str,
+        aspect_ratio: str = "9:16",
+        resolution: str = "2K",
+    ) -> str:
+        """
+        GPT-Image 2 (text-to-image) ile tek karakter portresi üretir.
+
+        Bu portre, sahnelerde tutarlı karakter için Seedance 2.0'a referans
+        olarak verilir (reference_image_urls'in başında).
+
+        Args:
+            prompt: Karakter portresi için İngilizce prompt
+            aspect_ratio: "9:16" (default) — dikey portre
+            resolution: "2K" (default) — yüksek detay. "auto" sadece 1K verir.
+
+        Returns:
+            str: Üretilen karakter görselinin URL'si
+
+        Raises:
+            RuntimeError: Üretim başarısız olursa
+        """
+        safe_aspect = normalize_aspect_ratio(aspect_ratio)
+
+        input_data = {
+            "prompt": prompt,
+            "aspect_ratio": safe_aspect,
+        }
+
+        # NOT: GPT-Image 2 (`gpt-image-2-text-to-image`) Kie AI tarafında
+        # 500 Internal Error dönüyor (2026-05-04 itibarıyla). Karakter üretimi
+        # için Nano Banana 2 text-to-image kullanılıyor — kanıtlanmış çalışıyor.
+        payload = {
+            "model": "nano-banana-2",
+            "input": input_data,
+        }
+
+        task_id = self._create_task(payload)
+        log.info(
+            f"Karakter görseli görevi oluşturuldu (nano-banana-2): {task_id} "
+            f"({safe_aspect})"
+        )
+
+        result = self.poll_task(task_id)
+        if result.get("status") != "success" or not result.get("urls"):
+            raise RuntimeError(
+                f"Karakter üretimi başarısız: {result.get('error', 'Bilinmeyen hata')}"
+            )
+
+        url = result["urls"][0]
+        log.info(f"Karakter görseli URL: {url[:80]}...")
+        return url
+
+    async def async_create_character_image(
+        self,
+        prompt: str,
+        aspect_ratio: str = "9:16",
+        resolution: str = "2K",
+    ) -> str:
+        """
+        Asenkron varyant — voiceover ile paralel çalıştırmak için.
+        create_task sync HTTP'dir → to_thread ile sarmaladık.
+        Polling ise event loop dostu (async_poll_task).
+        """
+        import asyncio as _asyncio
+        safe_aspect = normalize_aspect_ratio(aspect_ratio)
+        payload = {
+            "model": "nano-banana-2",
+            "input": {
+                "prompt": prompt,
+                "aspect_ratio": safe_aspect,
+            },
+        }
+        task_id = await _asyncio.to_thread(self._create_task, payload)
+        log.info(
+            f"Karakter görseli görevi (async, nano-banana-2) oluşturuldu: {task_id} "
+            f"({safe_aspect})"
+        )
+        result = await self.async_poll_task(task_id)
+        if result.get("status") != "success" or not result.get("urls"):
+            raise RuntimeError(
+                f"Karakter üretimi başarısız: {result.get('error', 'Bilinmeyen hata')}"
+            )
+        url = result["urls"][0]
+        log.info(f"Karakter görseli URL: {url[:80]}...")
+        return url
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 🔊 TTS — ElevenLabs (via Kie AI)
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
