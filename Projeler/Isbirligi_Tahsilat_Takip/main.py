@@ -21,18 +21,57 @@ def _fmt_amount(amount):
     return f"${amount:,.2f}"
 
 
+_BRAND_SEPARATORS = [" - ", " – ", " — ", " | ", ": ", " x ", " X ", " ile "]
+
+
+def _brand_label(title):
+    if not title:
+        return ""
+    t = title
+    for sep in _BRAND_SEPARATORS:
+        if sep in t:
+            t = t.split(sep, 1)[0]
+            break
+    words = t.strip().split()
+    return words[0] if words else ""
+
+
+def _brand_key(title):
+    return _brand_label(title).lower()
+
+
 def _render_table(items, color):
-    rows = "".join(
-        f"""
-        <tr>
-            <td style="padding:8px 10px;border-bottom:1px solid #eee;"><a href="{it['notion_url']}" style="color:#1f1f1f;text-decoration:none;font-weight:600;">{it['title']}</a></td>
-            <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">{it['published_date']}</td>
-            <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;"><strong>{it['days_passed']}</strong></td>
-            <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;">{_fmt_amount(it['amount'])}</td>
-        </tr>
-        """
-        for it in items
+    from itertools import groupby
+    items_sorted = sorted(
+        items,
+        key=lambda it: (_brand_key(it["title"]), it.get("published_date") or ""),
     )
+
+    parts = []
+    for _, group_iter in groupby(items_sorted, key=lambda it: _brand_key(it["title"])):
+        group = list(group_iter)
+        if len(group) > 1:
+            brand_label = _brand_label(group[0]["title"]) or "—"
+            brand_total = sum((it["amount"] or 0) for it in group)
+            has_unknown = any(it["amount"] is None for it in group)
+            subtotal_label = _fmt_amount(brand_total) + (" (+ bilinmeyen)" if has_unknown else "")
+            parts.append(f"""
+            <tr style="background:#fafafa;">
+                <td colspan="3" style="padding:8px 10px;border-top:2px solid {color};font-weight:700;color:#444;">{brand_label} <span style="color:#888;font-weight:400;">({len(group)} kayıt)</span></td>
+                <td style="padding:8px 10px;border-top:2px solid {color};text-align:right;font-weight:700;">{subtotal_label}</td>
+            </tr>
+            """)
+        for it in group:
+            parts.append(f"""
+            <tr>
+                <td style="padding:8px 10px;border-bottom:1px solid #eee;"><a href="{it['notion_url']}" style="color:#1f1f1f;text-decoration:none;font-weight:600;">{it['title']}</a></td>
+                <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">{it['published_date']}</td>
+                <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;"><strong>{it['days_passed']}</strong></td>
+                <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;">{_fmt_amount(it['amount'])}</td>
+            </tr>
+            """)
+
+    rows = "".join(parts)
     return f"""
     <table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:14px;">
         <thead>
