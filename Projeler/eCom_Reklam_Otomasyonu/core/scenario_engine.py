@@ -290,7 +290,12 @@ Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerd
    "shot"lar olarak tasarla — sahneler birleşince hikâye anlamlı kalsın ama her sahne
    tek başına da seyirlik olmalı.
 3. Her sahne Seedance 2.0'da ayrı üretilip birleştirilir — her sahne kendi içinde TAM olmalı.
-4. **HER SAHNE FARKLI OLMALI — TEKRARDAN KESİNLİKLE KAÇIN**:
+4. **HER SAHNE BİREBİR FARKLI OLMALI — İKİ SAHNE AYNI `setting`/`action`/`video_prompt` İÇEREMEZ**:
+   - Hiçbir sahne diğer bir sahneyle aynı mekan + aynı aksiyon kombinasyonunda olamaz.
+   - Örn. 4. sahne "bedroom mirror, applying serum" ise 5. sahne ASLA aynı setup'ta olamaz —
+     mekan, açı veya aksiyondan en az ikisi farklı olmalı.
+   - 5. sahne (PAYOFF) çoğu zaman ürün close-up'ı — diğer sahnelerden net biçimde ayrışmalı.
+
    - **Farklı KAMERA AÇISI**: close-up macro / wide establishing shot / POV first-person / overhead top-down / tracking side / dutch angle / over-the-shoulder — her sahne farklı bir açı.
    - **Farklı ORTAM/MEKAN**: yatak odası → sokak → kafe → spor salonu → araba içi → banyo → park gibi.
    - **Farklı KOMPOZİSYON**: ürün ön planda / model ön planda / detay zoom / context wide.
@@ -335,7 +340,9 @@ Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerd
 ### Voiceover (Türkçe — UGC ARKADAŞ TONU + V3 AUDIO TAGS):
 
 **🚨 VAZGEÇİLMEZ KATI KURAL — VOICEOVER KELİME LİMİTİ 🚨**
-**`voiceover_text` MAKSİMUM 30 KELİME OLABİLİR. 35 DEĞİL. AŞAMAZ. PAZARLIK YOK.**
+**`voiceover_text` MAKSİMUM 30 KELİME OLABİLİR. ASLA AŞMA.**
+**Aştığın takdirde sistem voiceover'ını otomatik kesip son cümleleri silecek — bu kullanıcıya zarar verir.**
+**Bu yüzden 30 kelime sınırına kendin uy: 25-30 arası ideal, 30 üstü YASAK.**
 - Türkçe ortalama 2.5 kelime/saniye → 30 kelime ≈ 12 saniye (rahat tampon).
 - 30 üstüne çıkarsan video sesi ortada kesilir. 25-30 arası ideal.
 - Audio tag'ler (`[whispers]`, `[pause]`, `[delighted]`, `[laughs softly]` vb.)

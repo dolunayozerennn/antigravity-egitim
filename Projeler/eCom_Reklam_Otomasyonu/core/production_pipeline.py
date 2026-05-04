@@ -202,6 +202,23 @@ class ProductionPipeline:
                         f"(~{_est_sec:.1f}s) — limit 35 ✅"
                     )
 
+            # ── ZORLA KELİME KIRPMA (post-process) ──
+            # WHY: LLM 30 kelime sınırına uymuyor (43-50 kelime üretiyor) → ses video'dan
+            # uzun çıkıyor. Cümle bütünlüğünü koruyacak şekilde son cümleden başlayarak kırp.
+            if voiceover_text:
+                from utils.text_normalizer import trim_voiceover_to_word_limit
+                trimmed, orig_wc, final_wc, dropped = trim_voiceover_to_word_limit(
+                    voiceover_text, max_words=30, min_words=20
+                )
+                if dropped > 0 or final_wc != orig_wc:
+                    log.info(
+                        f"Voiceover kırpıldı: {orig_wc} kelime → {final_wc} kelime "
+                        f"({dropped} cümle atıldı)"
+                    )
+                    voiceover_text = trimmed
+                    # Senaryoyu da güncelle ki audio_duration ölçümü doğru olsun
+                    scenario["voiceover_text"] = trimmed
+
             # Türkçe sayı/yüzde/birim normalizasyonu — LLM "%10" yazsa bile düzelt
             if voiceover_text:
                 from utils.text_normalizer import normalize_for_tts
@@ -817,34 +834,24 @@ class ProductionPipeline:
                 f"concat için en az 1 başarılı sahne gerek"
             )
 
-        # SAHNE TEKRARI ile DOLDURMA (sync için kritik)
-        # WHY: Failed scene varsa video planlanan duration'dan kısa kalır → ses kesilir veya
-        # video freeze eder. Bunun yerine BAŞARILI HOOK sahnesini (sahne 1) tekrarlayıp toplam
-        # scene_count'u tamamlıyoruz.
-        # NEDEN HOOK (sahne 1)?
-        # - Son sahne (PAYOFF) genelde ürün close-up'ı — onu loop'lamak farkedilir
-        # - Sahne 1 (HOOK) genelde merak uyandıran açılış — tekrarlandığında daha az dikkat çeker
-        # - Önceki ortadaki-sahne mantığı yan ürün/aksesuar gösteren sahnelerde marka sapması yaratabiliyordu
+        # FAIL EDEN SAHNELER ATLA (sahne tekrarı YOK)
+        # WHY: Önceki strateji başarısız sahneyi sahne 1 (HOOK) ile dolduruyordu — bu
+        # özellikle birden fazla sahne fail ettiğinde aynı sahne 2-3 kez ardışık görünüyor
+        # ("15-20s ile 20-25s aynı"). Yeni strateji: failed sahneleri at, scene_count düşür.
+        # Audio sync zaten downstream'de duration_mode="video" ile koruyor (ses video boyuna kırpılır).
+        # Min 2 sahne garantisi: tek sahne kalırsa hata.
         if failed_count > 0:
-            log.warning(
-                f"Multi-scene degraded mode: {len(scene_video_urls)}/{scene_count} sahne başarılı, "
-                f"{failed_count} fail → HOOK sahnesi (sahne 1) tekrarı ile {scene_count} sahneye tamamlanıyor"
-            )
-            filler_scene = scene_video_urls[0]  # sahne 1 (HOOK) — markaya en sadık açılış
-            # Hangi sahne pozisyonlarının filler olduğunu açıkça logla
-            fill_count = scene_count - len(scene_video_urls)
-            filler_positions = list(range(len(scene_video_urls) + 1, scene_count + 1))
-            log.info(
-                f"Filler kullanım planı: {fill_count} sahne pozisyonu {filler_positions} "
-                f"sahne 1 (HOOK) ile dolduruluyor → {filler_scene[:50]}..."
-            )
-            while len(scene_video_urls) < scene_count:
-                pos = len(scene_video_urls) + 1
-                scene_video_urls.append(filler_scene)
-                log.info(
-                    f"  Pozisyon {pos}: sahne 1 (HOOK) tekrarı yerleştirildi "
-                    f"({len(scene_video_urls)}/{scene_count})"
+            actual_count = len(scene_video_urls)
+            if actual_count < 2:
+                raise RuntimeError(
+                    f"{scene_count} sahneden sadece {actual_count} başarılı — "
+                    f"minimum 2 sahne gerek (tekrar dene)"
                 )
+            log.warning(
+                f"Multi-scene degraded mode: {actual_count}/{scene_count} sahne başarılı, "
+                f"{failed_count} fail → BAŞARISIZLAR ATILDI (sahne tekrarı YOK), "
+                f"video {actual_count} sahneye düştü ({actual_count * per_scene_duration}s)"
+            )
 
         log.info(f"{len(scene_video_urls)} sahne hazır, concat başlıyor")
 
