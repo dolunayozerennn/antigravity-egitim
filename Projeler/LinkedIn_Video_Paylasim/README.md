@@ -7,7 +7,7 @@ LinkedIn'e otomatik paylaşan günlük pipeline.
 
 - **Master Kalite:** Drive'daki orijinal master `.mp4` dosyası kullanılır — TikTok kompresyonu yok, watermark yok
 - **Sıfır Kayıp:** FFmpeg sadece kayıpsız faststart remux yapar (`-c copy`); reencode yok
-- **Akıllı Caption:** Groq LLM, sayfa script'inden tek cümlelik LinkedIn caption üretir (max 280 char, hashtag yok, CTA yok)
+- **Akıllı Caption:** Groq LLM, sayfa script'inden tek cümlelik LinkedIn caption üretir (max 280 char, hashtag yok, CTA yok, **spesifik ürün adı yok** — jenerik kategori + tavsiye dili)
 - **Notion Dedup:** Aynı video iki kez paylaşılmaz; logger DB sorgu yapar
 - **Günlük 1 Paylaşım:** Cron `0 10 * * *` (UTC) = 13:00 TR
 

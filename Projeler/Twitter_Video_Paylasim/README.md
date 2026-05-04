@@ -7,7 +7,7 @@ X (Twitter)'a otomatik paylaşan günde 3 kez çalışan pipeline.
 
 - **Master Kalite:** Drive'daki orijinal master `.mp4` dosyası kullanılır — TikTok kompresyonu yok, watermark yok
 - **Sıfır Kayıp:** FFmpeg sadece kayıpsız faststart remux yapar (`-c copy`); >200MB'da otomatik compress (X limitine güvenli)
-- **Akıllı Caption:** Groq LLM, sayfa script'inden tek cümlelik tweet üretir (max 280 char, hashtag yok, CTA yok)
+- **Akıllı Caption:** Groq LLM, sayfa script'inden tek cümlelik tweet üretir (max 280 char, hashtag yok, CTA yok, **spesifik ürün adı yok** — jenerik kategori + tavsiye dili)
 - **Notion Dedup:** Aynı video iki kez paylaşılmaz; logger DB sorgu yapar
 - **Günde 3 Paylaşım:** Cron `0 8,11,14 * * *` (UTC) = TR 11/14/17
 
