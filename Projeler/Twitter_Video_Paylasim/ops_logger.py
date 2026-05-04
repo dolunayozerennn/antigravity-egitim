@@ -110,9 +110,9 @@ class OpsLogger:
 
     Kullanım:
         from ops_logger import get_ops_logger
-        ops = get_ops_logger("Twitter_Video_Paylasim", "Pipeline")
-        ops.info("Workflow başladı", "TikTok → X/Twitter video pipeline")
-        ops.error("Tweet gönderme hatası", exception=e)
+        ops = get_ops_logger("LinkedIn_Video_Paylasim", "Pipeline")
+        ops.info("Workflow başladı", "TikTok → LinkedIn video pipeline")
+        ops.error("Video upload hatası", exception=e)
     """
 
     def __init__(self, project_name: str, component: str = "Pipeline"):
@@ -194,3 +194,13 @@ def get_ops_logger(project_name: str, component: str = "Pipeline") -> OpsLogger:
     if key not in _instances:
         _instances[key] = OpsLogger(project_name, component)
     return _instances[key]
+
+
+def wait_all_loggers():
+    """Tüm OpsLogger instance'larının kuyruklarını boşaltır.
+    CronJob container'ları kapanmadan önce çağrılmalıdır.
+    Aksi halde core modüllerdeki (TiktokScraper, ContentFilter vb.) loglar kaybolur.
+    """
+    for key, logger in _instances.items():
+        logger.wait_for_logs()
+

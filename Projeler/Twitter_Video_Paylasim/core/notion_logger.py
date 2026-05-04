@@ -1,7 +1,13 @@
+"""X (Twitter) paylaşım logu — birincil anahtar Notion page_id."""
+
 import requests
+from datetime import datetime, timezone
+
 from ops_logger import get_ops_logger
-ops = get_ops_logger("Twitter_Video_Paylasim", "NotionLogger")
 from config import settings
+
+ops = get_ops_logger("Twitter_Video_Paylasim", "NotionLogger")
+
 
 class NotionLogger:
     def __init__(self):
@@ -10,92 +16,56 @@ class NotionLogger:
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Notion-Version": "2022-06-28",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
-    def is_video_posted(self, video_id: str) -> bool:
-        """
-        Check if the given video_id has already been posted successfully to X (Twitter).
-        Uses platform filter to avoid confusion with LinkedIn entries sharing the same DB.
-        """
+    def is_video_posted(self, page_id: str) -> bool:
         try:
             url = f"https://api.notion.com/v1/databases/{self.db_id}/query"
-            payload = {
-                "filter": {
-                    "and": [
-                        {
-                            "property": "Video ID",
-                            "title": {
-                                "equals": video_id
-                            }
-                        },
-                        {
-                            "property": "Status",
-                            "select": {
-                                "equals": "Success"
-                            }
-                        },
-                        {
-                            "property": "Platform",
-                            "select": {
-                                "equals": "X (Twitter)"
-                            }
-                        }
-                    ]
-                }
-            }
+            payload = {"filter": {"property": "Video ID", "title": {"equals": page_id}}}
             resp = requests.post(url, headers=self.headers, json=payload, timeout=10)
             resp.raise_for_status()
-            data = resp.json()
-            return len(data.get("results", [])) > 0
+            results = resp.json().get("results", [])
+            if not results:
+                return False
+            for record in results:
+                status_prop = record.get("properties", {}).get("Status", {}).get("select")
+                status_name = status_prop.get("name", "") if status_prop else ""
+                if status_name in ("Success", "Filtered"):
+                    return True
+            ops.info(f"Video {page_id[:8]}… daha önce Failed — yeniden denenecek")
+            return False
         except Exception as e:
-            ops.error(f"Error checking Notion for video_id {video_id}: {e}", exception=e)
-            # Fail-OPEN: API hatasında paylaşmayı dene.
-            # En kötü ihtimalle duplicate tweet olur ama hiç paylaşmamaktan iyidir.
+            ops.error(f"Notion dedup hatası ({page_id[:8]}…): {e}", exception=e)
             return False
 
-    def log_video(self, video_id: str, platform: str, status: str, tiktok_url: str, twitter_url: str):
-        """
-        Logs a video attempt or success to the Notion database.
-        """
+    def log_video(self, page_id, status, source_url="", twitter_url="", adapted_caption="", note=""):
         if settings.IS_DRY_RUN:
-            ops.info(f"[DRY-RUN] Would log to Notion -> ID: {video_id}, Status: {status}")
+            ops.info(f"[DRY-RUN] Notion log → page_id={page_id[:8]}… status={status}")
             return True
 
-        from datetime import datetime
-        now_iso = datetime.utcnow().isoformat() + "Z"
+        now_iso = datetime.now(timezone.utc).isoformat()
+        properties = {
+            "Video ID": {"title": [{"text": {"content": page_id}}]},
+            "Status": {"select": {"name": status}},
+            "Platform": {"select": {"name": "X (Twitter)"}},
+            "Paylasim Tarihi": {"date": {"start": now_iso}},
+        }
+        if source_url:
+            properties["TikTok URL"] = {"url": source_url}
+        if twitter_url:
+            properties["Twitter URL"] = {"url": twitter_url}
+        if note:
+            properties["Filter Sebebi"] = {"rich_text": [{"text": {"content": note[:2000]}}]}
+        if adapted_caption:
+            properties["Caption"] = {"rich_text": [{"text": {"content": adapted_caption[:2000]}}]}
 
+        payload = {"parent": {"database_id": self.db_id}, "properties": properties}
         try:
-            url = "https://api.notion.com/v1/pages"
-            payload = {
-                "parent": {"database_id": self.db_id},
-                "properties": {
-                    "Video ID": {
-                        "title": [
-                            {"text": {"content": video_id}}
-                        ]
-                    },
-                    "Platform": {
-                        "select": {"name": platform}
-                    },
-                    "Status": {
-                        "select": {"name": status}
-                    },
-                    "TikTok URL": {
-                        "url": tiktok_url if tiktok_url else "https://www.tiktok.com"
-                    },
-                    "Twitter URL": {
-                        "url": twitter_url if twitter_url else "https://x.com"
-                    },
-                    "Paylaşım Tarihi": {
-                        "date": {"start": now_iso}
-                    }
-                }
-            }
-            resp = requests.post(url, headers=self.headers, json=payload, timeout=10)
+            resp = requests.post("https://api.notion.com/v1/pages", headers=self.headers, json=payload, timeout=10)
             resp.raise_for_status()
-            ops.info(f"Successfully logged Video ID {video_id} to Notion with status {status}.")
+            ops.info(f"Notion log yazıldı: {page_id[:8]}… ({status})")
             return True
         except Exception as e:
-            ops.error(f"Error logging video {video_id} to Notion: {e}", exception=e)
+            ops.error(f"Notion log hatası ({page_id[:8]}…): {e}", exception=e)
             return False

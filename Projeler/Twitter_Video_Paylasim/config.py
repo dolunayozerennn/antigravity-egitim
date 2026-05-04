@@ -1,59 +1,60 @@
 import os
 import sys
 import shutil
-from dotenv import load_dotenv
 
-env_path = os.path.join(os.path.dirname(__file__), "..", "..", "_knowledge", "credentials", "master.env")
-if os.path.exists(env_path):
-    load_dotenv(env_path)
+from env_loader import get_env, get_sa_json_path
 
-# Antigravity V2 Fail-Fast Environment Validation
+
 class Config:
     def __init__(self):
-        # 1. Check if ENV is defined (Development or Production)
-        self.ENV = os.environ.get("ENV", "development").lower()
+        self.ENV = (os.environ.get("ENV") or get_env("ENV") or "development").lower()
         self.IS_DRY_RUN = self.ENV == "development" or os.environ.get("DRY_RUN", "0") == "1"
 
-        # System dependency check: ffmpeg is critical for video processing
-        # On Railway/Nixpacks, ffmpeg may not be on PATH but exists under /nix/store
-        ffmpeg_found = shutil.which("ffmpeg")
-        if not ffmpeg_found:
-            try:
-                import imageio_ffmpeg
-                ffmpeg_found = imageio_ffmpeg.get_ffmpeg_exe()
-            except (ImportError, RuntimeError):
-                pass
-                
-        if not ffmpeg_found:
-            print("⚠️ UYARI: ffmpeg binary bulunamadı! Video metadata temizleme adımı atlanacak.")
-            self.FFMPEG_PATH = None
-        else:
-            self.FFMPEG_PATH = ffmpeg_found
-            print(f"✅ ffmpeg found at: {ffmpeg_found}")
-        # Notion
-        self.NOTION_TOKEN = self._require_env("NOTION_SOCIAL_TOKEN")
-        self.NOTION_TWITTER_DB_ID = self._require_env("NOTION_TWITTER_DB_ID")
-        
-        # X API (Twitter)
-        self.X_CONSUMER_KEY = self._require_env("X_CONSUMER_KEY", "dummy" if self.IS_DRY_RUN else None)
-        self.X_CONSUMER_SECRET = self._require_env("X_CONSUMER_SECRET", "dummy" if self.IS_DRY_RUN else None)
-        self.X_ACCESS_TOKEN = self._require_env("X_ACCESS_TOKEN", "dummy" if self.IS_DRY_RUN else None)
-        self.X_ACCESS_TOKEN_SECRET = self._require_env("X_ACCESS_TOKEN_SECRET", "dummy" if self.IS_DRY_RUN else None)
-        
-        # App specific
-        self.TIKTOK_USERNAME = os.environ.get("TIKTOK_USERNAME", "dolunayozeren")
-        
-    def _require_env(self, key, default=None):
-        """Fetches an environment variable, raises error if missing."""
-        val = os.environ.get(key, default)
+        if not shutil.which("ffmpeg"):
+            raise EnvironmentError("CRITICAL STARTUP FAILURE: ffmpeg binary bulunamadı! nixpacks.toml doğru yapılandırılmalı.")
+
+        # Typefully üzerinden X paylaşımı (Free X API video upload yapamaz; Typefully proxy)
+        self.TYPEFULLY_API_KEY = self._require("TYPEFULLY_API_KEY")
+        self.TYPEFULLY_SOCIAL_SET_ID = int(self._require("TYPEFULLY_SOCIAL_SET_ID"))
+        self.X_HANDLE = get_env("X_HANDLE") or "dolunayozeren"
+
+        self.GROQ_API_KEY = self._require("GROQ_API_KEY")
+        self.GROQ_BASE_URL = get_env("GROQ_BASE_URL") or "https://api.groq.com/openai/v1"
+        self.GROQ_MODEL = get_env("GROQ_MODEL") or "llama-3.3-70b-versatile"
+
+        self.NOTION_TOKEN = self._require("NOTION_SOCIAL_TOKEN")
+        self.NOTION_DB_REELS = self._require("NOTION_DB_REELS_KAPAK")
+        self.NOTION_TWITTER_DB_ID = self._require("NOTION_TWITTER_DB_ID")
+
+        self.GOOGLE_SA_JSON_PATH = get_sa_json_path()
+        if not self.GOOGLE_SA_JSON_PATH:
+            raise EnvironmentError(
+                "CRITICAL STARTUP FAILURE: Google Service Account JSON bulunamadı! "
+                "Railway: GOOGLE_SERVICE_ACCOUNT_JSON env var (base64). "
+                "Lokal: _knowledge/credentials/google-service-account.json"
+            )
+
+        self.VIDEO_PATTERN_PRIORITY = [
+            p.strip().lower() for p in
+            (get_env("VIDEO_PATTERN_PRIORITY") or "tiktok,insta").split(",")
+            if p.strip()
+        ]
+
+        # X (Twitter) tweet_video limit: 512MB, 140s — keep margin
+        self.MAX_VIDEO_BYTES = int(get_env("MAX_VIDEO_BYTES") or (500 * 1024 * 1024))
+        thr = get_env("REENCODE_OVER_BYTES")
+        # Default: re-encode anything over 200MB to stay safely under X limit
+        self.REENCODE_OVER_BYTES = int(thr) if thr else (200 * 1024 * 1024)
+
+    def _require(self, key: str) -> str:
+        val = get_env(key)
         if not val:
             raise EnvironmentError(f"CRITICAL STARTUP FAILURE: Gerekli ortam değişkeni {key} bulunamadı!")
         return val
 
-# Instantiating the config globally so it fails fast on module load.
+
 try:
     settings = Config()
 except EnvironmentError as e:
-    # Use a basic print here because logger might not be ready, or generic logging might depend on config.
     print(f"BOOT ERROR: {e}")
     sys.exit(1)
