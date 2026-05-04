@@ -51,6 +51,20 @@ class TypefullyDraftPublisher:
         posts = [{"text": t} for t in tweets if t and t.strip()]
         return self._create_draft(posts)
 
+    def create_thread_draft_with_image(self, tweets: list[str], image_path: str) -> dict:
+        """Thread draft'ı, görsel ilk tweet'e iliştirilir."""
+        if not tweets:
+            raise TypefullyDraftError("Boş thread")
+        if not image_path or not os.path.exists(image_path):
+            return self.create_thread_draft(tweets)
+        media_id = self._upload_image(image_path)
+        if not media_id:
+            return self.create_thread_draft(tweets)
+        posts = [{"text": t} for t in tweets if t and t.strip()]
+        if posts:
+            posts[0]["media_ids"] = [media_id]
+        return self._create_draft(posts)
+
     def create_single_draft_with_image(self, text: str, image_path: str) -> dict:
         """Görselli tek tweet draft'ı. Görsel yoksa text-only fallback."""
         if not image_path or not os.path.exists(image_path):

@@ -37,9 +37,10 @@ class Config:
         # Notion
         self.NOTION_TOKEN = self._require("NOTION_SOCIAL_TOKEN")
         self.NOTION_X_DB_ID = get_env("NOTION_X_DB_ID")  # ilk koşuştan önce doldurulacak
+        self.NOTION_DB_REELS_KAPAK = get_env("NOTION_DB_REELS_KAPAK")  # YouTube script kaynağı
 
-        # Kalite eşiği — kalibrasyon dönemi 7, sonra 8
-        self.QUALITY_THRESHOLD = int(get_env("QUALITY_THRESHOLD") or 7)
+        # Kalite eşiği — v3: 8 (prompt'lar sıkılaştığı için)
+        self.QUALITY_THRESHOLD = int(get_env("QUALITY_THRESHOLD") or 8)
 
         # Dedup penceresi (gün)
         self.DEDUP_DAYS = int(get_env("DEDUP_DAYS") or 30)

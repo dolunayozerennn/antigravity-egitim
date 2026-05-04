@@ -162,29 +162,44 @@ def run_ai_use_case_job():
                            title=title)
         return
 
+    thread = result.get("thread_tweets") or []
     tweet = result.get("tweet_text", "")
-    if not tweet:
-        ops.warning("Use case tweet metni boş")
+    if not thread and not tweet:
+        ops.warning("Use case çıktısı boş (thread ve tweet ikisi de yok)")
         return
 
-    # Görsel üret
-    image_path, image_url = img_gen.generate_image_for_use_case(tweet, use_case.get("takeaway", ""))
+    # Görsel üret — ilk tweet metnini görselin caption'ı için referans veriyoruz
+    caption_for_image = thread[0] if thread else tweet
+    image_path, image_url = img_gen.generate_image_for_use_case(
+        caption_for_image, use_case.get("takeaway") or use_case.get("outcome", "")
+    )
 
     try:
-        if image_path:
-            draft = publisher.create_single_draft_with_image(tweet, image_path)
+        if thread:
+            if image_path:
+                draft = publisher.create_thread_draft_with_image(thread, image_path)
+            else:
+                ops.warning("Görsel üretilemedi, text-only thread")
+                draft = publisher.create_thread_draft(thread)
+            notion.log_draft(source="AI Use Case", source_url="", score=score,
+                             tweet_text=thread[0], thread_tweets=thread,
+                             draft_url=draft.get("share_url", ""),
+                             title=title, image_url=image_url)
+            ops.success(f"AI Use Case thread draft ({len(thread)} tweet, skor {score})")
         else:
-            ops.warning("Görsel üretilemedi, text-only draft")
-            draft = publisher.create_single_draft(tweet)
-        notion.log_draft(source="AI Use Case", source_url="", score=score,
-                         tweet_text=tweet, draft_url=draft.get("share_url", ""),
-                         title=title, image_url=image_url)
-        ops.success(f"AI Use Case draft oluşturuldu (skor {score})")
+            if image_path:
+                draft = publisher.create_single_draft_with_image(tweet, image_path)
+            else:
+                ops.warning("Görsel üretilemedi, text-only draft")
+                draft = publisher.create_single_draft(tweet)
+            notion.log_draft(source="AI Use Case", source_url="", score=score,
+                             tweet_text=tweet, draft_url=draft.get("share_url", ""),
+                             title=title, image_url=image_url)
+            ops.success(f"AI Use Case draft (skor {score})")
     except TypefullyDraftError as e:
         ops.error("Use case Typefully error", message=str(e))
         notion.log_failed(source="AI Use Case", source_url="", error=str(e), title=title)
     finally:
-        # Tmp görseli temizle
         if image_path and _os.path.exists(image_path):
             try: _os.remove(image_path)
             except Exception: pass

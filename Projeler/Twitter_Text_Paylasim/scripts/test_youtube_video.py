@@ -1,12 +1,14 @@
-"""One-shot YouTube thread testi.
+"""One-shot YouTube thread testi (v3).
 
 Verilen video ID'siyle uçtan uca pipeline'ı çalıştırır:
-  - Transkript çek
+  - ÖNCE Notion 'Yayınlandı' DB'sinde aynı video_id varsa script_text kullan.
+  - Yoksa RSS+transcript-api fallback.
   - tweet_writer.write_for_youtube_video() ile thread + standalone üret
-  - Eşik geçerse Typefully'ye gerçek draft + Notion log
+  - --dry flag verilirse Typefully push atlanır (sadece konsola yazdırır)
 
 Kullanım:
-  python scripts/test_youtube_video.py q3Dp4AQYb-I
+  python scripts/test_youtube_video.py q3Dp4AQYb-I --dry
+  python scripts/test_youtube_video.py q3Dp4AQYb-I        # gerçek draft basar
 """
 
 import sys
@@ -21,33 +23,53 @@ from core.youtube_watcher import YoutubeWatcher
 from core.tweet_writer import TweetWriter
 from core.typefully_publisher import TypefullyDraftPublisher
 from core.notion_logger import NotionLogger
+from core.notion_scripts import get_published_youtube_videos
 
 
 def main():
     setup_logging()
     if len(sys.argv) < 2:
-        print("Kullanım: python scripts/test_youtube_video.py <video_id>")
+        print("Kullanım: python scripts/test_youtube_video.py <video_id> [--dry]")
         sys.exit(1)
     video_id = sys.argv[1]
-    print(f"=== Test başladı: {video_id} ===")
+    dry_run = "--dry" in sys.argv
+    print(f"=== Test başladı: {video_id} (dry={dry_run}) ===")
 
     watcher = YoutubeWatcher()
     writer = TweetWriter()
     publisher = TypefullyDraftPublisher()
     notion = NotionLogger()
 
-    transcript = watcher.fetch_transcript(video_id)
-    if not transcript:
-        print("HATA: transkript boş, çıkılıyor.")
-        sys.exit(1)
-    print(f"Transcript: {len(transcript)} karakter")
+    # 1) Notion script ara
+    transcript = ""
+    source = "rss"
+    title = ""
+    notion_videos = get_published_youtube_videos(limit=20)
+    for nv in notion_videos:
+        if nv.get("video_id") == video_id:
+            script = (nv.get("script_text") or "").strip()
+            if len(script) >= 200:
+                transcript = script
+                source = "notion"
+                title = nv.get("title", "")
+                print(f"Notion script bulundu: {len(transcript)} char — {title[:80]}")
+            break
 
-    # Video meta — başlığı RSS'ten çekelim ya da generic verelim
-    videos = watcher.fetch_recent_videos(limit=20)
-    title = next((v["title"] for v in videos if v["video_id"] == video_id), f"Video {video_id}")
+    # 2) Fallback: transcript-api
+    if not transcript:
+        transcript = watcher.fetch_transcript(video_id)
+        if not transcript:
+            print("HATA: ne Notion ne transcript bulundu, çıkılıyor.")
+            sys.exit(1)
+        print(f"Transcript (RSS fallback): {len(transcript)} karakter")
+
+    # Video meta
+    if not title:
+        videos = watcher.fetch_recent_videos(limit=20)
+        title = next((v["title"] for v in videos if v["video_id"] == video_id), f"Video {video_id}")
     url = f"https://www.youtube.com/watch?v={video_id}"
 
-    video_data = {"title": title, "url": url, "transcript": transcript}
+    video_data = {"title": title, "url": url, "transcript": transcript, "source": source}
     print(f"Title: {title}")
 
     print("\nLLM'e gönderiliyor (thread + standalone adayları)...")
@@ -59,6 +81,23 @@ def main():
         print(f"Skip: {result['skip_reason']}")
 
     score = int(result.get("score") or 0)
+
+    thread = result.get("thread_tweets") or []
+    standalones = result.get("standalone_tweets") or []
+    if thread:
+        print("\n--- THREAD (önizleme) ---")
+        for i, t in enumerate(thread, 1):
+            print(f"[{i}/{len(thread)}] ({len(t)} char)\n{t}\n")
+    if standalones:
+        print("\n--- STANDALONES ---")
+        for i, st in enumerate(standalones, 1):
+            print(f"[{i}] ({len(st)} char)\n{st}\n")
+
+    if dry_run:
+        print("\n[DRY-RUN] Typefully push atlanıyor.")
+        wait_all_loggers()
+        return
+
     if score < 7:
         print("Eşik altı — atlandı, Typefully'ye gönderilmiyor.")
         notion.log_skipped(
@@ -70,7 +109,6 @@ def main():
         return
 
     # Thread draft
-    thread = result.get("thread_tweets") or []
     if thread:
         print("\nThread draft oluşturuluyor...")
         td = publisher.create_thread_draft(thread)
@@ -83,7 +121,6 @@ def main():
         )
 
     # Standalone'lar
-    standalones = result.get("standalone_tweets") or []
     for i, st in enumerate(standalones, 1):
         if not st or len(st) < 30:
             continue
