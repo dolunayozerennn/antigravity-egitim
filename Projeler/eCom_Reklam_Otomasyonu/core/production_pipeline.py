@@ -177,6 +177,13 @@ class ProductionPipeline:
             # birbirinden bağımsız → asyncio.gather ile paralel.
             voiceover_text = scenario.get("voiceover_text", "") or ""
 
+            # ── NARRATIVE HOOK LOG (Dolunay görsün) ──
+            _hook = (scenario.get("narrative_hook") or "").strip()
+            if _hook:
+                log.info(f"🧭 Narrative hook: {_hook}")
+            else:
+                log.warning("⚠️ Narrative hook eksik — voiceover/sahne paralelliği zayıf olabilir")
+
             # Voiceover kelime sayısı log (35 limit kontrolü — sadece konuşulan kelimeler)
             if voiceover_text:
                 import re as _re_count

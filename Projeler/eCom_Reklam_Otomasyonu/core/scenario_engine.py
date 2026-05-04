@@ -74,6 +74,7 @@ prompt'ta mutlaka GERÇEK BİR İNSAN (model) tanımla — kafası kopuk kıyafe
 ## Çıktı Formatı (JSON):
 ```json
 {
+  "narrative_hook": "Tek cümlelik çekirdek hikaye fikri (Türkçe) — voiceover ve sahnelerin ETRAFINDA inşa edileceği ANA mesaj",
   "title": "Senaryo başlığı (Türkçe)",
   "summary": "1-2 cümlelik Türkçe özet",
   "hook_pattern": "Sürpriz reveal | Before/After | POV | Problem-Solution | ASMR | Unexpected analogy",
@@ -85,13 +86,76 @@ prompt'ta mutlaka GERÇEK BİR İNSAN (model) tanımla — kafası kopuk kıyafe
   "scenes": [
     {
       "scene_name": "Sahne adı (İngilizce, kısa)",
-      "video_prompt": "Seedance 2.0 için DETAYLI İngilizce video promptu"
+      "video_prompt": "Seedance 2.0 için DETAYLI İngilizce video promptu",
+      "voiceover_segment": "Bu sahnede karakterin söylediği Türkçe içses parçası (5-15 kelime, audio tag dahil değil)"
     }
   ],
-  "voiceover_text": "Türkçe dış ses metni (audio tag'lerle)",
+  "voiceover_text": "Türkçe dış ses metni (tüm voiceover_segment'lerin doğal birleşimi + audio tag'ler)",
   "technical_notes": "Teknik notlar"
 }
 ```
+
+## 🧭 CENTRAL NARRATIVE HOOK — EN ÖNEMLİ KURAL
+
+**Önce `narrative_hook` belirle. Sonra hem sahneleri hem voiceover'ı BU HOOK ÜZERİNE inşa et — başka konuya sapma.**
+
+`narrative_hook` = TEK BİR çekirdek hikaye fikri (Türkçe, 1 cümle, 1. tekil şahıs). Bu hook,
+videodaki HER SAHNENİN görsel olarak ANLATTIĞI ve voiceover'ın KELİMELERLE DİLE GETİRDİĞİ
+aynı ana mesajdır. Sahneler hook'u GÖSTERİR, voiceover hook'u SÖYLER. İkisi paraleldir.
+
+**İYİ narrative_hook örnekleri:**
+- Fashion (sneaker): *"Bu ayakkabı o kadar rahat ki ayağımda yokmuş gibi hissediyorum"*
+- Tech (kulaklık): *"Tüm gün boyunca AirPods'umla bir başka dünyadayım, dış sesleri unutuyorum"*
+- Skincare (serum): *"Sabah uyandığımda cildim hiç bu kadar parlak olmamıştı"*
+- Supplement: *"İki haftadır bu vitamini alıyorum, akşam saat onda hâlâ formum tepe"*
+
+**KÖTÜ narrative_hook örnekleri (genel/jenerik tavsiye — YASAK):**
+- ❌ "Kaliteli bir ürün, herkese tavsiye ederim" (genel övgü)
+- ❌ "Cilt bakımının önemi" (1. tekil değil, tema)
+- ❌ "Bu ürünün özellikleri harika" (3. şahıs övgü)
+
+Hook 1. tekil şahıs, somut bir AN/HIS, ürünün NE YAPTIĞI değil ürünün BENDE NASIL HİSSETTİRDİĞİ.
+
+## 🎯 SAHNE — VOİCEOVER PARALEL HİKAYELEME (İSTİSNASIZ)
+
+**Voiceover ve sahneler AYNI HİKAYENİN parçasıdır. Paralel ama ayrık DEĞİL.**
+
+Sahne N'de karakter X yapıyorsa, o sahnenin `voiceover_segment`'i X'i anlatmalı.
+Sahne 1: ayakkabıyı elinde tutuyor → voiceover_segment: "Ayağımda Air Force var zannediyordum"
+Sahne 2: çorapla yürüyor → voiceover_segment: "halbuki çıplak ayakla yürüyormuşum"
+Sahne 3: ayakkabıyı giyerken → voiceover_segment: "çünkü bu ayakkabıyı giyince ayağımda yokmuş gibi hissediyorum cidden"
+
+`voiceover_text` = tüm `voiceover_segment`'lerin doğal birleşimi + audio tag'ler.
+Önce segment'leri yaz, sonra concat ederek voiceover_text'i kur.
+
+### Sahne sırası ve hook konumu
+- **Sahne 1 (HOOK):** Görsel sürpriz/merak yaratan an. voiceover_segment izleyiciyi içeri çeker — soru veya çelişki kurar.
+- **Sahne 2-3 (BUILD):** Ana iddia/durum. voiceover_segment hook'un nedenini açıklar.
+- **Sahne 4-5 (PAYOFF, varsa):** Sonuç/ürün anı. voiceover_segment sonucu netleştirir, marka adını burada bir kez geçirebilirsin.
+
+### Hook formülü ile ses entegrasyonu örnekleri
+- **Sürpriz reveal**: Sahne 1 görsel beklenmedik (örn. çorapla yürümek) → voiceover_segment merak uyandırır ("zannediyordum...")
+- **Before/After**: Sahne 1 öncesi → segment "şikâyet"; Sahne sonrası → segment "şimdi farkı söyle"
+- **POV**: Karakter kameraya bakıyor → segment direkt izleyiciyle konuşma ("kızlar, dur sana göstereyim")
+- **Problem-Solution**: Sahne 1 problem anı → segment problemi içsesle anlatır
+- **ASMR**: Sahne ses/doku odaklı → segment fısıltı tag + minik kelime ("şuna bak...")
+- **Unexpected analogy**: Sahne benzetme görseli → segment benzetmeyi söyler
+
+## 🚫 VOICEOVER YASAKLARI (KATI)
+
+Voiceover **karakterin İÇSESİDİR**. Sahnelerde olanın ANLATIMIDIR. Asla genel ürün tavsiyesi DEĞİL.
+
+- ❌ "Bu ürün şu özelliği sunar" — 3. şahıs övgü YASAK
+- ❌ "Air Force 1, hem sağlam hem konforlu, ben her gün giyiyorum" — tavsiye broşürü tonu YASAK
+- ❌ "X marka harika kalite vaadediyor" — YASAK
+- ❌ Ses ve sahne içeriği bağımsız (ses ürün özelliği sayarken video alakasız aktivite gösteriyor) — YASAK
+- ❌ Genel "tavsiye" tonu — hep "ben şu an" tonu olacak
+- ❌ Marka adının metinde 2 kereden fazla geçmesi
+
+✅ "Ayağımda Air Force var zannediyordum, halbuki çıplak ayakla yürüyormuşum; bu ayakkabıyı
+giyince ayağımda yokmuş gibi hissediyorum cidden."
+
+Voiceover her zaman: 1. tekil şahıs (ben/benim/ediyorum/hissediyorum) + ŞU AN olanı anlatır.
 
 ### Ses Seçimi (voice_name) — KATI KURAL
 Voiceover sesi **bu Türkçe Professional Voice Clone kataloğundan birini seç** ve
@@ -233,10 +297,14 @@ Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerd
   pürüzsüz, parlak, bayıldım, abi → 21 kelime ≈ 8.5s ✅
 
 1. TÜRKÇE yaz. Türkçe ses olan İrem ile okunacak.
-2. **TON**: Bir arkadaşın seninle samimi konuşuyor — reklam spikeri DEĞİL.
-   - ✅ "Kızlar, bunu yıllardır kullanıyorum cidden..."
+2. **TON**: Karakterin İÇSESİ — sahnede olanı anlatıyor. Reklam spikeri / 3. şahıs tavsiye DEĞİL.
+   ZORUNLU: 1. tekil şahıs (ben/benim/-yorum/-iyorum/hissediyorum/zannediyordum).
+   Voiceover sahnede gösterilenle BİREBİR paralel ilerlemelidir. Sahne 1'de karakter X yapıyorsa,
+   voiceover'ın o sahneye denk gelen kısmı (`voiceover_segment`) X'i anlatır.
+   - ✅ "Ayağımda Air Force var zannediyordum, halbuki çıplak ayakla yürüyormuşum"
    - ✅ "Tamam söylüyorum, AirPods Pro'suz dışarı çıkmıyorum artık."
    - ❌ "X marka süper bir ürün sunuyor"
+   - ❌ "Bu ürün şu özelliği sunar" (3. şahıs övgü YASAK)
    - ❌ "Hayatınıza renk katın"
    Konuşma dili, kasıntısız. "Cidden", "yani", "tamam", "abi/kızlar" gibi gerçek
    konuşma kelimeleri AKICILIK için kullanılabilir.
@@ -401,13 +469,43 @@ class ScenarioEngine:
         # Dinamik parametreleri varsayılan değerlerle güvene al
         duration = scenario.get("duration", 10)
         scene_count = scenario.get("scene_count", 1)
-        
+
         # Sahneleri array olarak bekle, yoksa tekil video_prompt üzerinden array oluştur
         if "scenes" not in scenario and "video_prompt" in scenario:
             scenario["scenes"] = [{"scene_name": "Main Scene", "video_prompt": scenario.pop("video_prompt")}]
-        
+
         if not scenario.get("scenes"):
             scenario["scenes"] = [{"scene_name": "Main Scene", "video_prompt": "Cinematic shot of the product."}]
+
+        # ── NARRATIVE HOOK + voiceover_segment validasyonu ──
+        # WHY: voiceover/sahne kopukluğu kök problem; LLM'in hook + segment yazma
+        # disiplinine uyduğunu doğrula. Eksikse warning logla (pipeline blokesi yok).
+        narrative_hook = (scenario.get("narrative_hook") or "").strip()
+        if not narrative_hook:
+            log.warning(
+                "⚠️ narrative_hook boş — LLM merkezi hikaye fikrini üretmedi. "
+                "Voiceover/sahne paralelliği zayıf olabilir."
+            )
+            scenario["narrative_hook"] = ""
+        else:
+            log.info(f"🧭 Narrative hook: {narrative_hook}")
+
+        # Her sahnenin voiceover_segment'i 5-15 kelime aralığında olmalı
+        for idx, scene in enumerate(scenario.get("scenes", []), 1):
+            seg = (scene.get("voiceover_segment") or "").strip()
+            if not seg:
+                log.warning(
+                    f"⚠️ Sahne {idx} voiceover_segment boş — sahne-ses paralelliği kayboldu"
+                )
+                continue
+            seg_words = len([w for w in seg.split() if w.strip()])
+            if seg_words < 3 or seg_words > 20:
+                log.warning(
+                    f"⚠️ Sahne {idx} voiceover_segment kelime sayısı dışı: {seg_words} "
+                    f"(beklenen 5-15) → '{seg[:60]}'"
+                )
+            else:
+                log.info(f"  Sahne {idx} segment ({seg_words} kelime): {seg}")
 
         # Maliyet hesapla — voiceover length de dahil
         voiceover_text = scenario.get("voiceover_text", "") or ""
