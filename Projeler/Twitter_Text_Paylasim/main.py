@@ -143,8 +143,9 @@ def run_ai_use_case_job():
 
     recent_titles = notion.fetch_recent_titles_by_source("AI Use Case", days=30, limit=30)
     use_case = generator.generate_new_use_case(recent_titles=recent_titles)
-    if not use_case or not use_case.get("scenario"):
-        ops.warning("Use case üretilemedi")
+    # Yeni şemada `problem` zorunlu; eski `scenario` opsiyonel uyumluluk alanı.
+    if not use_case or not (use_case.get("problem") or use_case.get("scenario")):
+        ops.warning("Use case üretilemedi", f"keys={list((use_case or {}).keys())}")
         return
 
     title = use_case.get("title", "AI Use Case")

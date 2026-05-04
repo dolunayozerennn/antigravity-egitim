@@ -319,9 +319,34 @@ GÖREV:
             source_url=video_data.get('url', ''),
         )
 
+    _SCHEMA_SINGLE_OR_THREAD = {
+        "type": "object",
+        "properties": {
+            "score": {"type": "integer", "minimum": 0, "maximum": 10},
+            "tweet_text": {"type": "string", "description": "Tek tweet ise dolu; aksi halde boş string"},
+            "thread_tweets": {"type": "array", "items": {"type": "string"}, "description": "Thread ise her eleman bir tweet (max 270 char). Tek tweet ise boş array."},
+            "skip_reason": {"type": "string", "description": "Skor < eşik ise nedeni; aksi halde boş"},
+        },
+        "required": ["score", "tweet_text", "thread_tweets", "skip_reason"],
+        "additionalProperties": False,
+    }
+
+    _SCHEMA_YOUTUBE = {
+        "type": "object",
+        "properties": {
+            "score": {"type": "integer", "minimum": 0, "maximum": 10},
+            "thread_tweets": {"type": "array", "items": {"type": "string"}, "description": "4-12 tweetlik thread"},
+            "standalone_tweets": {"type": "array", "items": {"type": "string"}, "description": "2-3 bağımsız tek tweet"},
+            "skip_reason": {"type": "string"},
+        },
+        "required": ["score", "thread_tweets", "standalone_tweets", "skip_reason"],
+        "additionalProperties": False,
+    }
+
     def _call_llm(self, system_msg: str, user_msg: str, mode: str, source_url: str) -> dict:
+        schema = self._SCHEMA_YOUTUBE if mode == "youtube" else self._SCHEMA_SINGLE_OR_THREAD
         data = self.llm.chat_json(system=system_msg, user=user_msg,
-                                   max_tokens=2500, temperature=0.7)
+                                   max_tokens=3000, temperature=0.7, schema=schema)
         if not data:
             return {
                 "score": 0,

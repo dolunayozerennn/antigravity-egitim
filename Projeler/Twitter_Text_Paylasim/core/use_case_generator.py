@@ -148,9 +148,29 @@ gerçek araç adları ve ölçülebilir sonuç ZORUNLU. Yasaklı klişeler ("yar
 konuşturun", "fark yaratın", "potansiyelinizi keşfedin", "devrim yapmaya hazır mısınız")
 KESİNLİKLE YASAK."""
 
+        schema = {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string", "description": "kısa senaryo adı (max 60 char)"},
+                "hook": {"type": "string", "description": "1 cümlelik vurucu açılış + DEVAMA ÇAĞIRAN VAAD"},
+                "problem": {"type": "string", "description": "1-2 cümle: kitlenin yaşadığı somut ağrı"},
+                "steps": {"type": "array", "items": {"type": "string"}, "description": "numaralı adımlar — araç adı + örnek prompt"},
+                "tools": {"type": "array", "items": {"type": "string"}, "description": "kullanılan araçların adları"},
+                "outcome": {"type": "string", "description": "1 cümle: ölçülebilir sonuç"},
+                "scenario": {"type": "string", "description": "(uyumluluk) problem + adımların 1-2 cümle özeti"},
+                "takeaway": {"type": "string", "description": "(uyumluluk) kim için, ne zaman değer katar"},
+            },
+            "required": ["title", "hook", "problem", "steps", "tools", "outcome"],
+            "additionalProperties": False,
+        }
         data = self.llm.chat_json(system=system, user=user,
-                                   max_tokens=1500, temperature=0.7)
+                                   max_tokens=2000, temperature=0.7, schema=schema)
         if not data:
             return {}
+        # Eski uyumluluk: scenario/takeaway boşsa problem/outcome'tan türet
+        if not data.get("scenario"):
+            data["scenario"] = data.get("problem", "")
+        if not data.get("takeaway"):
+            data["takeaway"] = data.get("outcome", "")
         ops.info(f"Use case üretildi: {data.get('title','?')[:60]}")
         return data

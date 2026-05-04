@@ -30,41 +30,61 @@ class LLMClient:
             self.model = settings.WRITER_MODEL
 
     def chat_json(self, system: str, user: str,
-                  max_tokens: int = 2500, temperature: float = 0.7) -> dict:
-        """JSON dict döner. Hata olursa boş dict + ops log."""
+                  max_tokens: int = 2500, temperature: float = 0.7,
+                  schema: dict | None = None) -> dict:
+        """JSON dict döner. Hata olursa boş dict + ops log.
+
+        schema (Anthropic): tool input_schema olarak kullanılır. None ise permissive
+        ('additionalProperties: True') şema. Claude permissive şemada bazen çıktıyı
+        {"response": {...}} ile sarmalıyor — explicit schema bunu engeller.
+        """
         if self.provider == "anthropic":
-            return self._anthropic_json(system, user, max_tokens, temperature)
+            return self._anthropic_json(system, user, max_tokens, schema)
         return self._openai_json(system, user, max_tokens, temperature)
 
-    _SUBMIT_TOOL = {
-        "name": "submit_response",
-        "description": (
-            "Submit your structured response as a JSON object. "
-            "Include all fields specified in the user's instructions."
-        ),
-        "input_schema": {
-            "type": "object",
-            # Permissive schema: prompt'taki JSON şablonu alanları belirler
-            "additionalProperties": True,
-        },
+    _PERMISSIVE_SCHEMA = {
+        "type": "object",
+        "additionalProperties": True,
     }
 
     def _anthropic_json(self, system: str, user: str,
-                        max_tokens: int, temperature: float) -> dict:
+                        max_tokens: int, schema: dict | None) -> dict:
+        # NOT: Claude Opus 4.7 `temperature` parametresini deprecate etti.
+        # Anthropic çağrılarında temperature kullanılmıyor; OpenAI'da kullanılmaya devam ediyor.
+        tool = {
+            "name": "submit_response",
+            "description": (
+                "Submit your structured response. Fill the fields exactly as defined "
+                "in input_schema; do not wrap in any container field."
+            ),
+            "input_schema": schema or self._PERMISSIVE_SCHEMA,
+        }
         try:
             resp = self.client.messages.create(
                 model=self.model,
                 max_tokens=max_tokens,
-                temperature=temperature,
-                system=system + "\n\nUse the submit_response tool to return your JSON answer.",
+                system=system + "\n\nUse the submit_response tool to return your answer. "
+                                "Fill the schema fields directly — do NOT nest your output under any 'response' key.",
                 messages=[{"role": "user", "content": user}],
-                tools=[self._SUBMIT_TOOL],
+                tools=[tool],
                 tool_choice={"type": "tool", "name": "submit_response"},
             )
             for b in resp.content:
                 if getattr(b, "type", "") == "tool_use" and b.name == "submit_response":
-                    return dict(b.input)
-            ops.error("Anthropic: submit_response tool block bulunamadı", message=str(resp.content)[:300])
+                    inp = dict(b.input) if b.input else {}
+                    # Claude bazen permissive schema'ya {"response": {...}} şeklinde sarmalıyor — unwrap
+                    if len(inp) == 1 and "response" in inp and isinstance(inp["response"], dict):
+                        inp = inp["response"]
+                    if not inp:
+                        ops.warning(
+                            "Anthropic: tool_use input boş",
+                            f"stop_reason={resp.stop_reason}"
+                        )
+                    return inp
+            ops.error(
+                "Anthropic: submit_response tool block bulunamadı",
+                message=f"stop_reason={resp.stop_reason}, blocks={[getattr(x,'type','?') for x in resp.content]}, raw={str(resp.content)[:400]}"
+            )
             return {}
         except Exception as e:
             ops.error("Anthropic JSON çağrısı başarısız", exception=e)
