@@ -25,7 +25,7 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 | akilli-watchdog | CronJob | 2026-04-20 | ✅ Aktif | 3 |
 | linkedin-video-cron | CronJob | 2026-05-03 | ✅ Aktif | 5 |
 | linkedin-text-cron | CronJob | 2026-04-20 | ✅ Aktif | 3 |
-| twitter-video-cron | CronJob | 2026-04-08 | ✅ Aktif | 4 |
+| twitter-video-cron | CronJob | 2026-05-04 | ✅ Aktif | 7 |
 | supplement-telegram-bot | Worker | 2026-03-31 | ✅ Aktif | 2 |
 | ecom-reklam-otomasyonu | Worker | 2026-04-25 | ✅ Aktif | 4 |
 | youtube-otomasyonu-v3 | CronJob | 2026-04-19 | ✅ Aktif | 4 |
@@ -209,11 +209,11 @@ Health check scripti bu dosyayı okuyarak tüm projelerin sağlık durumunu kont
 - **Lokal Klasör:** `Projeler/Twitter_Video_Paylasim/`
 - **Start Komutu:** `python main.py`
 - **Cron Schedule:** `0 8,11,14 * * *` (Günde 3 kez, UTC 08/11/14 = TR 11/14/17)
-- **Son Deploy:** 2026-05-03 (manuel `serviceInstanceDeployV2` — HEAD `29f92d92`. 2026-04-30 — 05-03 arası eski broken commit `5ec2dbb`'de takılı kaldı, ~8 cron run kaçırıldı)
-- **Durum:** ✅ Aktif (TikTok→X/Twitter video pipeline, günde 3 kez)
+- **Son Deploy:** 2026-05-04 (manuel `serviceInstanceDeployV2` — HEAD `4128411`, SUCCESS. TikTok scraper kaldırıldı, Notion+Drive master pipeline + Typefully proxy publisher kuruldu — LinkedIn_Video_Paylasim mimarisinin bire bir kopyası)
+- **Durum:** ✅ Aktif (Notion "Yayınlandı" → Drive master → Typefully → X, günde 3 kez)
 - **⚠️ Auto-deploy KAPALI:** `ignoreWatchPatterns: true` — `git push` deploy tetiklemez. Yeni fix'ler için GraphQL `serviceInstanceDeployV2` mutation kullan (memory: `project_twitter_watchpatterns.md`)
-- **Hassasiyetler:** ffmpeg (nixpacks.toml ZORUNLU), X/Twitter API rate limit, Notion DB ID cakismasi (LinkedIn ile ayni DB), yt-dlp versiyon (`==2026.4.24` gibi var-olmayan pin'lerden kaçın), ignoreWatchPatterns auto-deploy engelliyor
-- **Env Vars:** NOTION_SOCIAL_TOKEN, NOTION_TWITTER_DB_ID, X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
+- **Hassasiyetler:** ffmpeg (nixpacks.toml ZORUNLU), Typefully API rate limit (Pro 10K/saat), Typefully Free video limiti 10MB → master kalite için **Typefully Pro şart**, X Free API video upload yapamıyor (Typefully aşar), ignoreWatchPatterns auto-deploy engelliyor
+- **Env Vars:** NOTION_SOCIAL_TOKEN, NOTION_TWITTER_DB_ID (32f955140a3281e4b284ff17f67088ff — ayrı Twitter DB), NOTION_DB_REELS_KAPAK, GROQ_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON, TYPEFULLY_API_KEY, TYPEFULLY_SOCIAL_SET_ID
 
 ---
 

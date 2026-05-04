@@ -78,6 +78,11 @@ class CaptionGenerator:
         "4) Hashtag YOK. "
         "5) Konuyu açıklamaya çalışma — merak uyandır, ama spoiler verme. "
         "6) Türkçe, sade, samimi profesyonel ton. "
+        "7) ASLA spesifik ürün/marka adı geçirme (örn. 'Rythmix', 'Suno', 'Midjourney', "
+        "'LawChat' vb. — script'te bile geçse caption'a koyma). Yerine jenerik kategori "
+        "kullan: 'AI müzik aracı', 'AI video üreticisi', 'AI hukuk asistanı' vb. "
+        "Reklam/sponsorlu görünmesin; bilgi/tavsiye dili kullan. "
+        "(İstisna: 'Claude', 'Notion', 'ChatGPT' gibi yaygın araçlar geçebilir.) "
         "Sadece cümleyi döndür, açıklama yapma, tırnak ekleme."
     )
 
