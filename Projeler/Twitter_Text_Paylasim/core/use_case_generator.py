@@ -88,7 +88,11 @@ ASIL çözüm Claude Code üzerinden anlatılmalı. Yukarıdaki Örnek 1'de Many
 geçse bile YENİ üreteceğin senaryoda Claude Code'u merkeze al.
 
 ═══ DİL VE ÜSLUP (zorunlu) ═══
-- Cümleler KISA olmalı (max 15 kelime). Süslü, iç içe cümle YASAK.
+- Cümleler KISA olmalı (max 15 kelime).
+- Bir cümlede en fazla 1 sayı. Birden fazla sayı varsa ayrı cümlelere böl.
+- İç içe / zincirleme yapı YASAK ("X'in Y'yi nasıl Z edeceğinizi anlatıyorum" gibi).
+  Yanlış: "3 adımda haftalık 10 saatlik manuel planlamayı 1 saate nasıl indireceğinizi anlatıyorum."
+  Doğru: "Haftada 10 saatinizi alan manuel planlamayı 1 saate indireceksiniz. 3 adımda anlatıyorum."
 - Em-dash (—) HİÇBİR YERDE kullanma. Nokta veya virgül kullan.
 - Tek nefeste okunup anlaşılsın testi: telefonda hızlı okuyan biri her cümleyi
   duraksamadan kavrayabilmeli.

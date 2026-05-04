@@ -104,10 +104,24 @@ fabrikatör yarışabilir mi? Bugün AI'da aynı kırılma noktasındayız."
 - AI yaygın kelimeleri (agent, MCP, LLM) gerekiyorsa kısa açıklama: "MCP (yapay zekayı
   dış sistemlere bağlayan protokol)".
 - Türkçe, sade. Hashtag YOK.
-- KISA CÜMLE ZORUNLULUĞU: Cümleler kısa olmalı — bir tweet'te tek bir fikir. Uzun süslü
-  cümle YASAK. "Tek nefeste okunup anlaşılmalı" testi: cümle 15 kelimeyi geçmesin.
-  Birleşik / iç içe cümle yerine 2 ayrı kısa cümle yaz. Kitle telefonda hızlı okuyor —
-  ağır cümle dikkati kaybettirir.
+- KISA CÜMLE + DÜŞÜK BİLİŞSEL YOĞUNLUK ZORUNLULUĞU:
+  Kelime sayısı tek başına yetmez — okuyucunun **tek nefeste** anlaması gerekir.
+  Kurallar:
+    (a) Her cümle TEK bir fikir taşısın. Birden fazla bilgi varsa ayrı cümlelere böl.
+    (b) Bir cümlede en fazla **1 sayı** geçsin. Birden fazla sayı varsa ayır.
+    (c) İç içe / nested yapı YASAK: "X'in Y'yi nasıl Z edeceğinizi anlatıyorum" gibi
+        zincirleme inşalar dağıtılmalı.
+    (d) Cümle 15 kelimeyi geçmesin. Geçtiyse böl.
+
+  YANLIŞ (yoğun, 3 sayı + nested):
+    "3 adımda haftalık 10 saatlik manuel planlamayı 1 saate nasıl indireceğinizi anlatıyorum."
+
+  DOĞRU (parçalanmış, akıcı):
+    "Haftada 10 saatinizi alan manuel planlamayı 1 saate indireceksiniz. 3 adımda anlatıyorum."
+  veya:
+    "Manuel planlama haftada 10 saatinizi alıyor. Bunu 1 saate indireceğiz. Aşağıda 3 adım."
+
+  Kitle telefonda hızlı kayıyor. Yoğun cümlede gözü kayar, devamı okumaz.
 - EM-DASH (—) YASAK. Hiçbir koşulda kullanma. Yerine nokta veya virgül koy. Em-dash
   Türkçe'de doğal değil ve okumayı yavaşlatıyor. Tespit edilirse skor ≤6.
 - Emoji: Konuyu DESTEKLEYİCİ olmak şartıyla kullanılabilir, ama abartı YASAK.
