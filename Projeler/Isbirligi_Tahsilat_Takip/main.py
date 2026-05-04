@@ -56,17 +56,23 @@ def _render_table(items, color):
             has_unknown = any(it["amount"] is None for it in group)
             subtotal_label = _fmt_amount(brand_total) + (" (+ bilinmeyen)" if has_unknown else "")
             parts.append(f"""
-            <tr style="background:#fafafa;">
-                <td colspan="3" style="padding:8px 10px;border-top:2px solid {color};font-weight:700;color:#444;">{brand_label} <span style="color:#888;font-weight:400;">({len(group)} kayıt)</span></td>
-                <td style="padding:8px 10px;border-top:2px solid {color};text-align:right;font-weight:700;">{subtotal_label}</td>
+            <tr style="background:#f5f5f5;">
+                <td style="padding:10px 12px;font-weight:700;color:#222;font-size:15px;">▾ {brand_label} <span style="color:#888;font-weight:400;font-size:13px;">({len(group)} kayıt)</span></td>
+                <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:15px;">{subtotal_label}</td>
             </tr>
             """)
-        for it in group:
+            for it in group:
+                parts.append(f"""
+                <tr>
+                    <td style="padding:6px 10px 6px 36px;border-bottom:1px solid #eee;border-left:3px solid {color};color:#444;"><a href="{it['notion_url']}" style="color:#444;text-decoration:none;">└ {it['title']}</a></td>
+                    <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right;color:#666;">{_fmt_amount(it['amount'])}</td>
+                </tr>
+                """)
+        else:
+            it = group[0]
             parts.append(f"""
             <tr>
                 <td style="padding:8px 10px;border-bottom:1px solid #eee;"><a href="{it['notion_url']}" style="color:#1f1f1f;text-decoration:none;font-weight:600;">{it['title']}</a></td>
-                <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;">{it['published_date']}</td>
-                <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;"><strong>{it['days_passed']}</strong></td>
                 <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;">{_fmt_amount(it['amount'])}</td>
             </tr>
             """)
@@ -77,8 +83,6 @@ def _render_table(items, color):
         <thead>
             <tr style="background:{color};color:#fff;">
                 <th style="padding:10px;text-align:left;">Marka / Video</th>
-                <th style="padding:10px;text-align:center;">Yayın</th>
-                <th style="padding:10px;text-align:center;">Geçen Gün</th>
                 <th style="padding:10px;text-align:right;">Tutar</th>
             </tr>
         </thead>
