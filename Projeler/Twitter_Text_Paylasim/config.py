@@ -25,6 +25,9 @@ class Config:
         # GitHub (repo discovery)
         self.GITHUB_TOKEN = self._require("GITHUB_TOKEN")
 
+        # Kie AI (görsel üretim — AI Use Case serisi)
+        self.KIE_API_KEY = self._require("KIE_API_KEY")
+
         # YouTube (kanal RSS + transcript)
         # Channel ID veya handle (@dolunayozeren). Handle verilirse RSS feed'e
         # çevirmek için YouTube Data API gerekecek; pratikte kullanıcı UC ID'sini

@@ -58,6 +58,27 @@ class NotionLogger:
             ops.warning(f"Dedup query hatası: {e}")
             return False
 
+    def is_already_processed_by_title(self, source: str, title: str) -> bool:
+        """Aynı title aynı source'tan son 30 günde işlenmiş mi?"""
+        if not self._enabled() or not title:
+            return False
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=settings.DEDUP_DAYS)).date().isoformat()
+        payload = {
+            "filter": {"and": [
+                {"property": "Source", "select": {"equals": source}},
+                {"property": "Title", "title": {"equals": title}},
+                {"property": "Date", "date": {"on_or_after": cutoff}},
+            ]},
+            "page_size": 1,
+        }
+        try:
+            r = requests.post(f"{API}/databases/{self.db_id}/query",
+                              headers=self.headers, json=payload, timeout=15)
+            r.raise_for_status()
+            return len(r.json().get("results", [])) > 0
+        except Exception:
+            return False
+
     def get_last_youtube_video_id(self) -> str:
         """En son işlenen YouTube videosunun ID'sini döner (Source URL'den parse)."""
         if not self._enabled():
@@ -100,11 +121,11 @@ class NotionLogger:
 
     def log_draft(self, source: str, source_url: str, score: int,
                   tweet_text: str = "", thread_tweets: list = None,
-                  draft_url: str = "", title: str = ""):
+                  draft_url: str = "", title: str = "", image_url: str = ""):
         """Draft olarak Typefully'ye gönderilmiş içeriği logla."""
         title = (title or tweet_text[:60] or f"{source} draft")[:200]
         thread_str = "\n\n---\n\n".join(thread_tweets) if thread_tweets else ""
-        self._create_page({
+        props = {
             "Title": {"title": [{"text": {"content": title}}]},
             "Source": {"select": {"name": source}},
             "Score": {"number": score},
@@ -114,7 +135,39 @@ class NotionLogger:
             "Source URL": {"url": source_url or None},
             "Typefully Draft URL": {"url": draft_url or None},
             "Date": {"date": {"start": datetime.now(timezone.utc).isoformat()}},
-        })
+        }
+        if image_url:
+            props["Image URL"] = {"url": image_url}
+        self._create_page(props)
+
+    def fetch_recent_titles_by_source(self, source: str, days: int = 30, limit: int = 30) -> list[str]:
+        """Son N gün içinde source'tan üretilmiş Title'ları döner (use case dedup için)."""
+        if not self._enabled():
+            return []
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).date().isoformat()
+        payload = {
+            "filter": {"and": [
+                {"property": "Source", "select": {"equals": source}},
+                {"property": "Date", "date": {"on_or_after": cutoff}},
+            ]},
+            "sorts": [{"property": "Date", "direction": "descending"}],
+            "page_size": limit,
+        }
+        try:
+            r = requests.post(f"{API}/databases/{self.db_id}/query",
+                              headers=self.headers, json=payload, timeout=15)
+            r.raise_for_status()
+            results = r.json().get("results", [])
+            titles = []
+            for row in results:
+                title_arr = row["properties"].get("Title", {}).get("title", [])
+                title = "".join(t.get("plain_text", "") for t in title_arr)
+                if title:
+                    titles.append(title)
+            return titles
+        except Exception as e:
+            ops.warning(f"recent_titles query hatası: {e}")
+            return []
 
     def log_failed(self, source: str, source_url: str, error: str, title: str = ""):
         title = (title or f"{source} failed")[:200]

@@ -23,6 +23,10 @@ from core.notion_logger import NotionLogger
 from core.github_discoverer import GithubDiscoverer
 from core.youtube_watcher import YoutubeWatcher
 from core.perplexity_researcher import PerplexityResearcher
+from core.use_case_generator import UseCaseGenerator
+from core.image_generator import ImageGenerator
+from core.mail_sender import send_summary_mail
+import os as _os
 
 ops = get_ops_logger("Twitter_Text_Paylasim", "Pipeline")
 
@@ -128,6 +132,64 @@ def run_perplexity_job():
     _push_or_skip(notion, publisher, "Perplexity", "", result)
 
 
+def run_ai_use_case_job():
+    """Çarşamba: B2B AI use case + görsel."""
+    ops.info("Job başladı", "AI Use Case serisi")
+    notion = NotionLogger()
+    writer = TweetWriter()
+    publisher = TypefullyDraftPublisher()
+    generator = UseCaseGenerator()
+    img_gen = ImageGenerator()
+
+    recent_titles = notion.fetch_recent_titles_by_source("AI Use Case", days=30, limit=30)
+    use_case = generator.generate_new_use_case(recent_titles=recent_titles)
+    if not use_case or not use_case.get("scenario"):
+        ops.warning("Use case üretilemedi")
+        return
+
+    title = use_case.get("title", "AI Use Case")
+    if notion.is_already_processed_by_title("AI Use Case", title):
+        ops.info("Aynı başlıklı use case son 30 günde paylaşılmış, atlanıyor")
+        return
+
+    result = writer.write_for_use_case(use_case)
+    score = int(result.get("score") or 0)
+    skip_reason = result.get("skip_reason") or ""
+    if score < settings.QUALITY_THRESHOLD:
+        ops.info(f"Use case eşik altı (skor {score})", skip_reason[:200])
+        notion.log_skipped(source="AI Use Case", source_url="", score=score,
+                           skip_reason=skip_reason or f"Skor {score} < {settings.QUALITY_THRESHOLD}",
+                           title=title)
+        return
+
+    tweet = result.get("tweet_text", "")
+    if not tweet:
+        ops.warning("Use case tweet metni boş")
+        return
+
+    # Görsel üret
+    image_path, image_url = img_gen.generate_image_for_use_case(tweet, use_case.get("takeaway", ""))
+
+    try:
+        if image_path:
+            draft = publisher.create_single_draft_with_image(tweet, image_path)
+        else:
+            ops.warning("Görsel üretilemedi, text-only draft")
+            draft = publisher.create_single_draft(tweet)
+        notion.log_draft(source="AI Use Case", source_url="", score=score,
+                         tweet_text=tweet, draft_url=draft.get("share_url", ""),
+                         title=title, image_url=image_url)
+        ops.success(f"AI Use Case draft oluşturuldu (skor {score})")
+    except TypefullyDraftError as e:
+        ops.error("Use case Typefully error", message=str(e))
+        notion.log_failed(source="AI Use Case", source_url="", error=str(e), title=title)
+    finally:
+        # Tmp görseli temizle
+        if image_path and _os.path.exists(image_path):
+            try: _os.remove(image_path)
+            except Exception: pass
+
+
 def run_youtube_job():
     ops.info("Job başladı", "YouTube yeni video kontrolü")
     notion = NotionLogger()
@@ -150,8 +212,9 @@ def run_youtube_job():
 
 
 JOB_FOR_WEEKDAY = {
-    1: run_github_job,       # Salı
-    4: run_perplexity_job,   # Cuma
+    1: run_github_job,         # Salı
+    2: run_ai_use_case_job,    # Çarşamba — YENİ
+    4: run_perplexity_job,     # Cuma
 }
 
 
@@ -167,6 +230,10 @@ def main():
         run_perplexity_job()
     elif mode == "youtube":
         run_youtube_job()
+    elif mode == "use_case":
+        run_ai_use_case_job()
+    elif mode == "mail":
+        send_summary_mail()
     else:
         # Cron (default): YouTube her gün, GitHub salı, Perplexity cuma
         try:
@@ -179,6 +246,12 @@ def main():
                 special_job()
             except Exception as e:
                 ops.error(f"Weekday {today} job exception", exception=e)
+
+        # Pipeline sonu: o gün draft varsa mail at
+        try:
+            send_summary_mail()
+        except Exception as e:
+            ops.error("Mail summarizer exception", exception=e)
 
     ops.info("Container kapanıyor")
     wait_all_loggers()

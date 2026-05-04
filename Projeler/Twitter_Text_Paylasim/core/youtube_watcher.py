@@ -17,6 +17,8 @@ import feedparser
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
 
+_yt_api = YouTubeTranscriptApi()
+
 from ops_logger import get_ops_logger
 from config import settings
 
@@ -58,28 +60,12 @@ class YoutubeWatcher:
             return []
 
     def fetch_transcript(self, video_id: str) -> str:
-        """Transkript metnini birleştirilmiş string olarak döner."""
+        """Transkript metnini birleştirilmiş string olarak döner.
+        youtube-transcript-api v1.x: önce TR, sonra EN, otomatik altyazı dahil.
+        """
         try:
-            # Önce TR, sonra EN, sonra otomatik
-            transcripts = YouTubeTranscriptApi.list_transcripts(video_id)
-            chosen = None
-            for lang_pref in ["tr", "en"]:
-                try:
-                    chosen = transcripts.find_transcript([lang_pref])
-                    break
-                except Exception:
-                    continue
-            if chosen is None:
-                # Otomatik üretilmiş varsa al
-                try:
-                    chosen = transcripts.find_generated_transcript(["tr", "en"])
-                except Exception:
-                    pass
-            if chosen is None:
-                ops.warning(f"Hiç transkript bulunamadı: {video_id}")
-                return ""
-            data = chosen.fetch()
-            text = " ".join(seg["text"] for seg in data if seg.get("text"))
+            fetched = _yt_api.fetch(video_id, languages=["tr", "en"])
+            text = " ".join(s.text for s in fetched if s.text)
             return text
         except (TranscriptsDisabled, NoTranscriptFound) as e:
             ops.warning(f"Transkript yok ({video_id}): {e}")
