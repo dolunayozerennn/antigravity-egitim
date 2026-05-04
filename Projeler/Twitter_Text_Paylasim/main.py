@@ -206,24 +206,52 @@ def run_ai_use_case_job():
 
 
 def run_youtube_job():
+    """Notion 'Yayınlandı' YouTube videolarını sırayla dener;
+    işlenmemiş ilk videoyu içerik üretmek için kullanır.
+    Notion boşsa veya hepsi işlenmişse RSS fallback'a düşer."""
+    from core.notion_scripts import get_published_youtube_videos
+
     ops.info("Job başladı", "YouTube yeni video kontrolü")
     notion = NotionLogger()
     writer = TweetWriter()
     publisher = TypefullyDraftPublisher()
     watcher = YoutubeWatcher()
 
-    last_id = notion.get_last_youtube_video_id()
-    video = watcher.get_new_video(last_processed_id=last_id)
-    if not video:
-        ops.info("YouTube: yeni video yok, çıkılıyor")
-        return
+    # 1) Notion: işlenmemiş ilk video
+    candidate = None
+    try:
+        for nv in get_published_youtube_videos(limit=10):
+            url = nv.get("video_url") or nv.get("page_url", "")
+            script = (nv.get("script_text") or "").strip()
+            if len(script) < 200:
+                continue
+            if notion.is_already_processed(url):
+                continue
+            candidate = {
+                "video_id": nv.get("video_id", ""),
+                "title": nv.get("title", ""),
+                "url": url,
+                "transcript": script,
+                "source": "notion",
+            }
+            break
+    except Exception as e:
+        ops.warning(f"Notion kaynağı hatası, RSS fallback: {e}")
 
-    if notion.is_already_processed(video["url"]):
-        ops.info("Video zaten işlenmiş, atlanıyor")
-        return
+    # 2) Notion'da işlenmemiş yoksa RSS fallback
+    if not candidate:
+        last_id = notion.get_last_youtube_video_id()
+        video = watcher.get_new_video(last_processed_id=last_id)
+        if not video:
+            ops.info("YouTube: yeni video yok, çıkılıyor")
+            return
+        if notion.is_already_processed(video["url"]):
+            ops.info("Video zaten işlenmiş, atlanıyor")
+            return
+        candidate = video
 
-    result = writer.write_for_youtube_video(video)
-    _push_or_skip(notion, publisher, "YouTube", video["url"], result)
+    result = writer.write_for_youtube_video(candidate)
+    _push_or_skip(notion, publisher, "YouTube", candidate["url"], result)
 
 
 JOB_FOR_WEEKDAY = {

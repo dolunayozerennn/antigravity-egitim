@@ -28,8 +28,7 @@ def _get_token() -> str:
 
 
 def _get_db_id() -> str:
-    # Env'de yoksa Dolunay'ın bilinen 'Dolunay Reels & YouTube' DB ID'si
-    return get_env("NOTION_DB_REELS_KAPAK") or "27b955140a32838589eb813222d532a2"
+    return get_env("NOTION_DB_REELS_KAPAK")
 
 
 def _is_youtube_page(item: dict) -> bool:
