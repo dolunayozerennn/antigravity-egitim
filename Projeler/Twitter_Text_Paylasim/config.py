@@ -16,7 +16,9 @@ class Config:
 
         # OpenAI (tweet writer + scoring)
         self.OPENAI_API_KEY = self._require("OPENAI_API_KEY")
-        self.WRITER_MODEL = get_env("WRITER_MODEL") or "gpt-4o-mini"
+        # v3.1: gpt-4o-mini bilgi doğruluğu ve nüans yakalama konusunda zayıf kaldı.
+        # gpt-4o tam model, JSON mode'u destekler ve aynı SDK üzerinden çalışır.
+        self.WRITER_MODEL = get_env("WRITER_MODEL") or "gpt-4o"
 
         # Perplexity (AI haberleri)
         self.PERPLEXITY_API_KEY = self._require("PERPLEXITY_API_KEY")

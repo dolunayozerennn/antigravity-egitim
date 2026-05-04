@@ -135,7 +135,12 @@ def get_published_youtube_videos(limit: int = 20) -> list[dict]:
         page_id = item.get("id", "")
         page_url = item.get("url", "")
         video_id = _extract_video_id(props, title)
-        video_url = f"https://www.youtube.com/watch?v={video_id}" if video_id else page_url
+        if not video_id:
+            # KRİTİK: page_url (internal Notion link) tweet'e bulaşmasın diye
+            # video_id çıkaramadığımız sayfaları tamamen atlıyoruz.
+            ops.warning(f"video_id çıkarılamadı, atlanıyor: {title[:80]}")
+            continue
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
         videos.append({
             "page_id": page_id,
             "title": title,

@@ -86,24 +86,51 @@ Sonuç: Aktivite görünürlüğü %100; geri dönüş oranı 2×.
 class UseCaseGenerator:
     def __init__(self):
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        # Lazy import: circular import riskine karşı modül-içi
+        from core.perplexity_researcher import PerplexityResearcher
+        self.researcher = PerplexityResearcher()
 
     def generate_new_use_case(self, recent_titles: list[str] | None = None) -> dict:
         """Yeni bir senaryo üretir.
         Returns: {title, hook, problem, steps[], tools[], outcome}
         Eski uyumluluk için scenario+takeaway de doldurulur.
+
+        v3.1: Senaryo "kafadan" üretilmek yerine ÖNCE Perplexity'den gerçek dünya
+        kaynaklı 2 senaryo araştırılır; LLM bu kaynaklardan birini seçip Dolunay'ın
+        diline çevirir. Bilgi safsatası ciddi şekilde azalır.
         """
         recent = recent_titles or []
         recent_str = "\n".join(f"- {t}" for t in recent[:20]) if recent else "(yok)"
+
+        # 1) Perplexity ile gerçek dünya kaynaklı 2 senaryo araştırması
+        research = self.researcher.research_b2b_use_case(recent_titles=recent)
+        if research:
+            ops.info("Perplexity araştırması alındı, LLM'e girdi olarak veriliyor")
+            research_block = (
+                "═══ PERPLEXITY ARAŞTIRMASI (gerçek dünya kaynaklı senaryolar) ═══\n"
+                f"{research}\n"
+                "═══ ARAŞTIRMA SONU ═══\n\n"
+                "ÖNEMLİ: Yukarıdaki 2 senaryodan BİRİNİ seç ve onu Dolunay'ın "
+                "gold-standard diline çevir. Araç adlarını, sayıları, akışı KORU. "
+                "Senaryo araştırmada YOKSA uydurma — başka senaryo seçmek için research'i tekrar oku."
+            )
+        else:
+            research_block = (
+                "(Perplexity araştırması erişilemedi — STYLE_GUIDE örneklerinin türünden "
+                "GERÇEK ve uygulanabilir bir senaryo seç. Araç özelliği UYDURMA; emin olmadığın "
+                "yetenekleri yazma.)"
+            )
 
         system = (
             STYLE_GUIDE
             + "\n\nGörev: KOBİ / iş süreçleri için yeni bir AI kullanım senaryosu üret. "
             "Yukarıdaki 4 örnek + son 30 günde paylaşılanları TEKRAR ETME. "
-            "Aşikar / kitlenin zaten bildiği bir tavsiye verme.\n\n"
+            "Aşikar / kitlenin zaten bildiği bir tavsiye verme. "
+            "Bilgi UYDURMA — emin olmadığın araç özelliğini, fiyatını veya yeteneğini yazma.\n\n"
             "Çıktı JSON formatı:\n"
             '{\n'
             '  "title": "kısa senaryo adı (max 60 char)",\n'
-            '  "hook": "1 cümlelik vurucu açılış (somut sayı / ters köşe / analoji / şaşırtıcı iddia)",\n'
+            '  "hook": "1 cümlelik vurucu açılış + DEVAMA ÇAĞIRAN VAAD (somut sayı / ters köşe / analoji / şaşırtıcı iddia + okuyucuyu thread\'e çağıran söz)",\n'
             '  "problem": "1-2 cümle: kitlenin yaşadığı somut ağrı",\n'
             '  "steps": ["1. adım (araç + örnek prompt)", "2. adım", "3. adım"],\n'
             '  "tools": ["Claude Desktop", "Make.com", ...],\n'
@@ -112,22 +139,26 @@ class UseCaseGenerator:
             '  "takeaway": "(uyumluluk) kim için, ne zaman değer katar — 1 cümle"\n'
             '}'
         )
-        user = f"""Son 30 günde paylaşılan use case'ler (bunları TEKRAR ETME):
+        user = f"""{research_block}
+
+Son 30 günde paylaşılan use case'ler (bunları TEKRAR ETME):
 {recent_str}
 
-Yukarıdaki 4 gold-standard örneği de TEKRAR ETME. Yeni bir KOBİ ağrısı + spesifik AI çözümü.
-Hook, somut adımlar, araç adları ve ölçülebilir sonuç ZORUNLU."""
+Yukarıdaki 4 gold-standard örneği de TEKRAR ETME. Hook + VAAD, somut adımlar,
+gerçek araç adları ve ölçülebilir sonuç ZORUNLU. Yasaklı klişeler ("yaratıcılığınızı
+konuşturun", "fark yaratın", "potansiyelinizi keşfedin", "devrim yapmaya hazır mısınız")
+KESİNLİKLE YASAK."""
 
         try:
             r = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=settings.WRITER_MODEL,
                 messages=[
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.85,
-                max_tokens=1200,
+                temperature=0.7,
+                max_tokens=1500,
             )
             data = json.loads(r.choices[0].message.content)
             ops.info(f"Use case üretildi: {data.get('title','?')[:60]}")

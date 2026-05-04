@@ -27,7 +27,8 @@ from core.notion_scripts import get_published_youtube_videos
 ops = get_ops_logger("Twitter_Text_Paylasim", "YoutubeWatcher")
 
 RSS_URL = "https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-MIN_SCRIPT_CHARS = 200
+MIN_SCRIPT_CHARS = 500
+MIN_TRANSCRIPT_CHARS = 1500
 
 
 class YoutubeWatcher:
@@ -94,7 +95,9 @@ class YoutubeWatcher:
 
         for nv in notion_videos:
             vid = nv.get("video_id") or ""
-            if vid and vid == last_processed_id:
+            if not vid:
+                continue  # video_id yoksa atla — page_url asla URL olarak yayılmasın
+            if vid == last_processed_id:
                 continue
             script = (nv.get("script_text") or "").strip()
             if len(script) >= MIN_SCRIPT_CHARS:
@@ -102,13 +105,13 @@ class YoutubeWatcher:
                 return {
                     "video_id": vid,
                     "title": nv.get("title", ""),
-                    "url": nv.get("video_url") or nv.get("page_url", ""),
+                    "url": nv.get("video_url", ""),  # SADECE youtube URL — page_url fallback YOK
                     "page_url": nv.get("page_url", ""),
                     "transcript": script,
                     "source": "notion",
                 }
             else:
-                ops.info(f"Notion script kısa/boş, fallback'a düşülüyor: {nv.get('title','?')[:60]}")
+                ops.info(f"Notion script kısa/boş (<{MIN_SCRIPT_CHARS}), fallback'a düşülüyor: {nv.get('title','?')[:60]}")
 
         # 2) RSS fallback
         videos = self.fetch_recent_videos(limit=5)
@@ -121,6 +124,9 @@ class YoutubeWatcher:
         transcript = self.fetch_transcript(latest["video_id"])
         if not transcript:
             ops.warning(f"Transkript boş, video atlanıyor: {latest['video_id']}")
+            return {}
+        if len(transcript) < MIN_TRANSCRIPT_CHARS:
+            ops.warning(f"Transcript kısa (<{MIN_TRANSCRIPT_CHARS}), video atlanıyor: {latest['video_id']}")
             return {}
         latest["transcript"] = transcript
         latest["source"] = "rss"

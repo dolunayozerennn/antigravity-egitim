@@ -221,14 +221,19 @@ def run_youtube_job():
     candidate = None
     try:
         for nv in get_published_youtube_videos(limit=10):
-            url = nv.get("video_url") or nv.get("page_url", "")
+            vid = nv.get("video_id", "")
+            if not vid:
+                continue  # video_id yoksa atla — page_url asla tweet'e bulaşmasın
+            url = nv.get("video_url", "")  # SADECE youtube.com URL'i (notion_scripts.py garantiliyor)
+            if not url:
+                continue
             script = (nv.get("script_text") or "").strip()
-            if len(script) < 200:
+            if len(script) < 500:
                 continue
             if notion.is_already_processed(url):
                 continue
             candidate = {
-                "video_id": nv.get("video_id", ""),
+                "video_id": vid,
                 "title": nv.get("title", ""),
                 "url": url,
                 "transcript": script,

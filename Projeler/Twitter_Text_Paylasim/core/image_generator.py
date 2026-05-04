@@ -52,17 +52,28 @@ class ImageGenerator:
         """Tweet'ten İngilizce minimal diagram-style görsel promptu üret."""
         system = (
             "You craft minimalist illustration prompts for Twitter/X visuals. "
-            "Style: clean, modern, schematic / diagram-style infographic. "
+            "Style: clean, modern, editorial illustration. Single focal element. "
             "Mood: professional but approachable, like a top tech newsletter cover. "
+            "ABSOLUTE RULES — your prompt MUST enforce these:\n"
+            "  (a) NO TEXT inside the image. Period. No English words, no Turkish words, "
+            "      no numbers, no labels, no captions, no UI mockups with text, no logos. "
+            "      Pure visual only.\n"
+            "  (b) Maximum 3 visual elements total. NO icon collages, NO grid of icons, "
+            "      NO multi-panel illustrations.\n"
+            "  (c) Single focal element strongly preferred (one object, one metaphor).\n"
+            "  (d) End your prompt with a negative-prompt line: "
+            "'Avoid: text, words, letters, numbers, labels, multiple icons, cluttered "
+            "composition, infographic charts, English text, Turkish text, logos, UI mockups.'\n"
             "Output: ONLY the image generation prompt in English, no preamble."
         )
         user = (
             f"Tweet (Turkish): {tweet_text}\n"
             f"Takeaway (Turkish): {takeaway}\n\n"
-            "Create a minimalist English image prompt that visualizes the core concept. "
-            "Square 1:1 ratio. No text inside the image (or only 1-2 short English keywords). "
+            "Create a minimalist English image prompt that visualizes the core concept "
+            "as a single editorial illustration. Square 1:1 ratio. "
             "Limited color palette (2-3 colors). Soft gradients OK. White or off-white background. "
-            "Suitable for B2B AI use-case content."
+            "Suitable for B2B AI use-case content. "
+            "Remember: zero text inside the image, single focal element, max 3 visual elements."
         )
         try:
             r = self.openai.chat.completions.create(

@@ -28,17 +28,31 @@ SCORING_RUBRIC = """Sen Dolunay'ın X (Twitter) hesabı için içerik yazıyorsu
 Dolunay yapay zeka ve otomasyon konusunda eğitim veriyor. Hedef kitle: Türkçe konuşan,
 AI'la ilgilenen herkes — yazılımcı olmayanlar dahil. Geniş bir kitle (~250K).
 
+═══ X PLATFORM GERÇEĞİ (kritik) ═══
+
+X'te kullanıcı önce SADECE thread'in 1. tweet'ini görür. Üzerine TIKLAMASI için
+tweet 1'in net bir VAAD içermesi gerekir: "X adımda Y'yi çözeceğim", "3 araçla şunu
+otomatikleştireceğim", "5 dakikada bu hatayı düzelteceksin" gibi okuyucuya devamı
+açma motivasyonu veren cümle. Sadece sorunu söylemek (örn. "müşteri memnuniyeti
+düşüyor") tıklatmaz — okuyucu "ne olmuş" der ve geçer.
+
 ═══ KALİTE PUANLAMA (1-10) ═══
 
 9-10 (mükemmel — yayınlanabilir):
-  - Vurucu HOOK var (somut sayı / ters köşe / tarihsel analoji / şaşırtıcı iddia).
+  - Vurucu HOOK + DEVAMINA ÇAĞIRAN VAAD var (1. tweet hem dikkati çeker hem "tıklarsan
+    şunu öğreneceksin" der). Hook tipi: somut sayı / ters köşe / tarihsel analoji / şaşırtıcı iddia.
   - Numaralı somut adımlar var: spesifik araç adı + Türkçe örnek prompt + ölçülebilir sonuç.
+  - VAAD TUTULUYOR: "adımları takip edin / şu yöntemi uygulayın" diyorsa o adımlar GERÇEKTEN
+    geliyor; "5 yolla çözeceğim" diyorsa 5 yol gerçekten sayılıyor.
   - Kitlenin BUGÜN uygulayabileceği bir şey öğretiyor.
 
 7-8 (kabul edilebilir — eşik):
-  - Hook iyi ama adımlar yumuşak, VEYA adımlar somut ama açılış yumuşak.
+  - Hook + vaad iyi ama adımlar yumuşak, VEYA adımlar somut ama açılış vaadi yumuşak.
 
 ≤6 (otomatik düşük — atılır):
+  - Tweet 1 vaad içermiyor — sadece sorunu söylüyor, devamı okumaya çağırmıyor.
+  - Vaad tutulmuyor: "adımları takip edin" der, ardından adım gelmez. "X'i çözeceğim" der,
+    çözüm gelmez. Verilen söz yerine getirilmemişse atılır.
   - Görsel-bağımlı referans var: "bu video", "şu otomasyon", "yukarıdaki örnek", "şu üyemiz",
     "bu ekran". Twitter'da görsel/video paylaşılmıyor — adı verilemeyen şey atlanır.
   - Aşikar tavsiye: kitlenin zaten bildiği cümleler. Örn:
@@ -48,6 +62,13 @@ AI'la ilgilenen herkes — yazılımcı olmayanlar dahil. Geniş bir kitle (~250
   - Spesifik araç adı, sayı veya örnek prompt YOK.
   - Dolgu: "AI ile her şey kolay", "yapay zeka sayesinde…" tarzı içi boş övgü.
   - Promosyon/satış dili: "harika ürün", "mutlaka deneyin", marka satışı.
+  - YASAKLI KLİŞE İFADELER (Türkçe samimiyet düşmanı reklam dili):
+    "yaratıcılığınızı konuşturun", "fark yaratın", "potansiyelinizi keşfedin",
+    "devrim yapmaya hazır mısınız", "sınırları zorlayın", "geleceği şekillendirin",
+    "ilham verin", "büyüleyici dünya", "bir adım önde olun", "hayallerinizi gerçeğe dönüştürün".
+    Bu tür ifadelerden HERHANGİ BİRİ varsa skor ≤6.
+  - BİLGİ DOĞRULUĞU: kaynak metinde olmayan araç özelliği, fiyat veya yetenek uydurma.
+    Emin değilsen jenerik kal — yanlış bilgi vermektense az bilgi ver.
 
 ═══ HOOK ÖRNEKLERİ (Dolunay'ın gold-standard'ı) ═══
 
@@ -83,7 +104,11 @@ fabrikatör yarışabilir mi? Bugün AI'da aynı kırılma noktasındayız."
   "otomatik çalışan akış", "yapay zekayı kendi sistemine bağlamak".
 - AI yaygın kelimeleri (agent, MCP, LLM) gerekiyorsa kısa açıklama: "MCP (yapay zekayı
   dış sistemlere bağlayan protokol)".
-- Türkçe, sade. Emoji YOK. Hashtag YOK.
+- Türkçe, sade. Hashtag YOK.
+- Emoji: Konuyu DESTEKLEYİCİ olmak şartıyla kullanılabilir, ama abartı YASAK.
+  Kural: thread başına TOPLAM en fazla 1-2 emoji; tek tweet'te en fazla 1.
+  Hook tweet'inde emoji opsiyonel (vurguyu güçlendiriyorsa kullan, dekoratifse kullanma).
+  Listelerde madde işareti olarak emoji kullanma. Her satıra emoji koyma. Alakasız emoji koyma.
 - Görsel/video referansı YASAK (yukarıda detay).
 - Tek tweet max ~270 karakter. SIĞMIYORSA thread'e böl — kalite > kısalık.
 - Thread max 12 tweet. Her tweet 270 karakter sınırını aşmasın.
@@ -225,13 +250,20 @@ GÖREV:
 - Bu senaryoyu X için içerik yap. KOBİ sahibi / yönetici / iş süreçleriyle uğraşan
   çalışan hedefli — yazılımcı DEĞİL.
 - ÇOĞU USE CASE THREAD OLMALI (somut adımlar tek tweet'e sığmaz). Yapı:
-  Tweet 1: HOOK (somut sayı / ters köşe / tarihsel analoji / şaşırtıcı iddia)
+  Tweet 1: HOOK + VAAD — sadece sorunu söyleme; "X adımda çözeceğim", "3 araçla
+           otomatikleştireceğim" gibi devamı okumaya çağıran somut söz. (somut sayı /
+           ters köşe / tarihsel analoji / şaşırtıcı iddia + vaad)
   Tweet 2: Problemi netleştir (kitlenin yaşadığı somut ağrı)
   Tweet 3-N: 1, 2, 3 numaralı adımlar — araç adı + Türkçe örnek prompt + sonuç
   Son tweet: Kapanış / kim için değerli (promosyon DEĞİL).
+- VAAD TUTMA: 1. tweet'te "şu kadar adımda anlatacağım" dediysen o kadar adım GERÇEKTEN
+  gelmeli. "Adımları takip edin" der demez somut adım gelmek zorunda.
 - Görsel-bağımlı dil YASAK ("bu videoda", "şu otomasyon") — adı verilemeyen şey yok.
 - Aşikar tavsiye YASAK — kitlenin zaten bildiği cümleler skor ≤6.
 - Marka satışı YASAK; araç adı bilgi olarak verilebilir.
+- Reklam-televizyon klişeleri YASAK ("yaratıcılığınızı konuşturun", "fark yaratın",
+  "potansiyelinizi keşfedin", "devrim yapmaya hazır mısınız", "sınırları zorlayın",
+  "geleceği şekillendirin", "ilham verin") — tespit edilirse skor ≤6.
 - Skor >={self.threshold} olmalı; aksi halde skip_reason yaz.
 """
         return self._call_llm(
@@ -242,10 +274,22 @@ GÖREV:
         )
 
     def write_for_youtube_video(self, video_data: dict) -> dict:
+        raw_url = (video_data.get('url') or '').strip()
+        # Sadece geçerli YouTube linki LLM'e geçer; aksi halde URL paylaşılmaz.
+        is_valid_youtube_url = bool(
+            raw_url and ("youtube.com/watch?v=" in raw_url or "youtu.be/" in raw_url)
+        )
+        url_line = f"URL: {raw_url}" if is_valid_youtube_url else "URL: (paylaşma — geçerli YouTube linki yok)"
+        last_tweet_rule = (
+            "Son tweet: Kapanış + video URL (sondaki URL satırında verilen YouTube linkini ekle)."
+            if is_valid_youtube_url else
+            "Son tweet: Kapanış. URL EKLEME — geçerli bir YouTube linki yok. Hiçbir koşulda Notion / dahili sistem linki yazma."
+        )
+
         user_msg = f"""KAYNAK TİPİ: Dolunay'ın YouTube videosu (script veya transkript)
 
 BAŞLIK: {video_data.get('title')}
-URL: {video_data.get('url')}
+{url_line}
 KAYNAK: {video_data.get('source', 'unknown')}  (notion=temiz script, rss=otomatik altyazı)
 
 İÇERİK (script/transkript, kısaltılmış):
@@ -253,17 +297,22 @@ KAYNAK: {video_data.get('source', 'unknown')}  (notion=temiz script, rss=otomati
 
 GÖREV:
 - Önce videonun X kitlene değerini puanla.
+- Kaynak metinde somut araç adı / sayı / örnek prompt YOKSA skor ≤6 ver ve
+  skip_reason='Kaynak yetersiz — somut taktik yok'.
 - Skor >={self.threshold} ise:
   THREAD (4-12 tweet, içerik uzunluğuna göre dinamik):
-    Tweet 1: HOOK (somut sayı / ters köşe / şaşırtıcı iddia — "videomda anlattım" YASAK)
+    Tweet 1: HOOK + VAAD (devamı okumaya çağıran somut söz — "X adımda Y'yi anlatacağım",
+             "3 araçla şu süreci otomatikleştireceğim". Sadece sorun bildirimi YETMEZ.
+             "videomda anlattım" YASAK)
     Tweet 2: Problemi netleştir
     Tweet 3-N: Ana noktaları somut anlat — araç adı + örnek prompt + sonuç
-    Son tweet: Kapanış + video URL
+    {last_tweet_rule}
   STANDALONE (2-3 bağımsız tweet):
     Videodan bağımsız tek başına anlamlı taktikler. "Bu videoda" YASAK — somut taktiği
-    direkt anlat. Hook + 1 net adım veya iddia.
+    direkt anlat. Hook + 1 net adım veya iddia. URL EKLEME (standalone'lar bağımsız).
 - Görsel/video referansı YASAK ("bu video", "şu klipte", "yukarıdaki").
 - Aşikar tavsiye YASAK.
+- Internal link YASAK: notion.so / notion.site URL'i kesinlikle geçmesin.
 """
         return self._call_llm(
             system_msg=SCORING_RUBRIC + "\n\n" + YOUTUBE_FORMAT,

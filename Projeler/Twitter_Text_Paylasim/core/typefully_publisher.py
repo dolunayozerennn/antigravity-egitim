@@ -10,6 +10,7 @@ Akış:
 """
 
 import os
+import re
 import time
 import mimetypes
 from pathlib import Path
@@ -22,6 +23,31 @@ from config import settings
 ops = get_ops_logger("Twitter_Text_Paylasim", "TypefullyPublisher")
 
 BASE = "https://api.typefully.com/v2"
+
+# Internal/private linklerin tweet body'sine sızmasını engelleyen son savunma.
+# Notion sayfaları + diğer dahili sistem linkleri tweet'e asla gitmemeli.
+_FORBIDDEN_URL_PATTERNS = [
+    re.compile(r"https?://(?:www\.)?notion\.so/\S+", re.IGNORECASE),
+    re.compile(r"https?://(?:[\w-]+\.)?notion\.site/\S+", re.IGNORECASE),
+]
+
+
+def _sanitize_tweet(text: str) -> str:
+    """Tweet metnindeki yasaklı internal URL'leri temizler.
+    Tespit ederse loglar; tweet'i dropping yerine URL'i strip ediyoruz ki
+    içerik tamamen kaybolmasın (skor zaten geçtiği için içerik değerli).
+    """
+    if not text:
+        return text
+    cleaned = text
+    for pat in _FORBIDDEN_URL_PATTERNS:
+        if pat.search(cleaned):
+            ops.warning("Internal URL tespit edildi, strip ediliyor", pat.search(cleaned).group(0)[:120])
+            cleaned = pat.sub("", cleaned)
+    # URL strip sonrası fazladan boşluk/satır temizliği
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 class TypefullyDraftError(Exception):
@@ -42,13 +68,13 @@ class TypefullyDraftPublisher:
 
     def create_single_draft(self, text: str) -> dict:
         """Tek tweet draft'ı. Returns {draft_id, share_url} on success, raises on failure."""
-        return self._create_draft([{"text": text}])
+        return self._create_draft([{"text": _sanitize_tweet(text)}])
 
     def create_thread_draft(self, tweets: list[str]) -> dict:
         """Thread draft'ı (5-7 tweet). Returns {draft_id, share_url}."""
         if not tweets:
             raise TypefullyDraftError("Boş thread")
-        posts = [{"text": t} for t in tweets if t and t.strip()]
+        posts = [{"text": _sanitize_tweet(t)} for t in tweets if t and t.strip()]
         return self._create_draft(posts)
 
     def create_thread_draft_with_image(self, tweets: list[str], image_path: str) -> dict:
@@ -60,7 +86,7 @@ class TypefullyDraftPublisher:
         media_id = self._upload_image(image_path)
         if not media_id:
             return self.create_thread_draft(tweets)
-        posts = [{"text": t} for t in tweets if t and t.strip()]
+        posts = [{"text": _sanitize_tweet(t)} for t in tweets if t and t.strip()]
         if posts:
             posts[0]["media_ids"] = [media_id]
         return self._create_draft(posts)
@@ -74,7 +100,7 @@ class TypefullyDraftPublisher:
         if not media_id:
             ops.warning("Görsel upload başarısız, text-only draft'a dönülüyor")
             return self.create_single_draft(text)
-        return self._create_draft([{"text": text, "media_ids": [media_id]}])
+        return self._create_draft([{"text": _sanitize_tweet(text), "media_ids": [media_id]}])
 
     def _upload_image(self, image_path: str) -> str:
         """JPG/PNG upload → media_id (Twitter_Video_Paylasim publisher patternı)."""

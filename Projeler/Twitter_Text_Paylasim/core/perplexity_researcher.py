@@ -61,3 +61,60 @@ Tek bir haber, en güçlüsünü seç."""
         except Exception as e:
             ops.error("Perplexity araştırma hatası", exception=e)
             return ""
+
+    def research_b2b_use_case(self, recent_titles: list[str] | None = None) -> str:
+        """Use Case generator için kaliteli kaynak: gerçek dünyadan KOBİ AI otomasyon
+        örnekleri. Çıktı, use_case_generator'a girdi olarak geçer ki LLM kafasından
+        senaryo uydurmasın — somut, doğrulanmış araç adları + akışlar üzerinden üretsin.
+        """
+        recent = recent_titles or []
+        recent_str = "\n".join(f"- {t}" for t in recent[:15]) if recent else "(yok)"
+
+        prompt = f"""KOBİ sahipleri ve iş süreçleri yöneticileri için, son 6-12 ayda
+yayınlanmış GERÇEK ve UYGULANABİLİR yapay zeka / otomasyon kullanım örneklerinden
+2 farklı senaryo bul. Neil Patel, HubSpot, Make.com blog, Zapier blog, Reforge,
+First Round Review, ya da güvenilir AI/otomasyon kaynaklarından beslen.
+
+Kriterler:
+- KOBİ veya küçük ekip için uygulanabilir (büyük enterprise senaryosu DEĞİL)
+- Kullanılan araç adı NET (Claude Desktop / ChatGPT / Make.com / ManyChat / Zapier / n8n /
+  HubSpot / Pipedrive gibi gerçek araçlar — uydurma araç adı YOK)
+- Somut bir akış var (girdi → AI → çıktı)
+- Ölçülebilir bir sonuç var (kazanılan saat, düşürülen maliyet, artan oran)
+- Aşağıdaki başlıklarla ÇAKIŞMASIN (bunlar son 30 günde işlendi):
+{recent_str}
+
+ÇIKTI FORMATI (sade Türkçe, 350-600 kelime, 2 senaryo):
+
+SENARYO 1:
+- Başlık: kısa
+- Hedef kitle: hangi tip işletme (örn. "muayenehane", "küçük e-ticaret")
+- Problem: 1-2 cümle, somut ağrı
+- Akış (numaralı): araç adı + ne yaptığı + örnek kullanım
+- Sonuç: ölçülebilir (saat / TL / oran)
+- Kaynak URL: [varsa link]
+
+SENARYO 2:
+(Aynı şablon, farklı domain)
+
+Önemli: araç özelliği veya yetenek UYDURMA. Emin değilsen jenerik kal.
+"""
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 2500,
+        }
+        try:
+            r = requests.post(f"{self.base_url}/chat/completions",
+                            headers=headers, json=payload, timeout=90)
+            r.raise_for_status()
+            content = r.json()["choices"][0]["message"]["content"]
+            ops.info("Perplexity B2B use case araştırma tamam", f"{len(content)} karakter")
+            return content
+        except Exception as e:
+            ops.error("Perplexity B2B araştırma hatası", exception=e)
+            return ""
