@@ -79,6 +79,19 @@ Sonuç: Aktivite görünürlüğü %100; geri dönüş oranı 2×.
 - Dil: sıradan, jargon yok ("API endpoint", "deployment" yasak).
 - Aşikar tavsiye YASAK: "AI iletişimi kolaylaştırır", "geri bildirim önemlidir" gibi
   kitlenin zaten bildiği cümleler.
+
+═══ ARAÇ ÖNCELİK SIRASI (zorunlu) ═══
+Çözümün ana aracı ÖNCELİKLE Claude Code, sonra Claude Desktop, sonra Antigravity olmalı.
+Make.com / n8n / ManyChat / Zapier sadece Claude Code'la yapılamayan platform-spesifik
+entegrasyonlar için (örn. WhatsApp resmi API, ödeme provider) ARKA PLAN olarak geçer.
+ASIL çözüm Claude Code üzerinden anlatılmalı. Yukarıdaki Örnek 1'de ManyChat/Make.com
+geçse bile YENİ üreteceğin senaryoda Claude Code'u merkeze al.
+
+═══ DİL VE ÜSLUP (zorunlu) ═══
+- Cümleler KISA olmalı (max 15 kelime). Süslü, iç içe cümle YASAK.
+- Em-dash (—) HİÇBİR YERDE kullanma. Nokta veya virgül kullan.
+- Tek nefeste okunup anlaşılsın testi: telefonda hızlı okuyan biri her cümleyi
+  duraksamadan kavrayabilmeli.
 """
 
 

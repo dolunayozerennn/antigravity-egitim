@@ -49,31 +49,43 @@ class ImageGenerator:
         return (local_path, kie_url)
 
     def _build_image_prompt(self, tweet_text: str, takeaway: str) -> str:
-        """Tweet'ten İngilizce minimal diagram-style görsel promptu üret."""
+        """Tweet'ten İngilizce ultra-realistic photography promptu üret."""
         system = (
-            "You craft minimalist illustration prompts for Twitter/X visuals. "
-            "Style: clean, modern, editorial illustration. Single focal element. "
-            "Mood: professional but approachable, like a top tech newsletter cover. "
+            "You craft ULTRA-REALISTIC PHOTOGRAPHY prompts for Twitter/X visuals — "
+            "real-world, dramatic, scroll-stopping editorial photography. NOT illustration, "
+            "NOT diagram, NOT infographic, NOT minimal vector art. Think Magnum Photos / "
+            "National Geographic / WSJ photo essay quality.\n\n"
             "ABSOLUTE RULES — your prompt MUST enforce these:\n"
-            "  (a) NO TEXT inside the image. Period. No English words, no Turkish words, "
-            "      no numbers, no labels, no captions, no UI mockups with text, no logos. "
-            "      Pure visual only.\n"
-            "  (b) Maximum 3 visual elements total. NO icon collages, NO grid of icons, "
-            "      NO multi-panel illustrations.\n"
-            "  (c) Single focal element strongly preferred (one object, one metaphor).\n"
-            "  (d) End your prompt with a negative-prompt line: "
-            "'Avoid: text, words, letters, numbers, labels, multiple icons, cluttered "
-            "composition, infographic charts, English text, Turkish text, logos, UI mockups.'\n"
+            "  (a) PHOTOREALISTIC. The output must look like a real photograph captured by "
+            "      a professional photographer with a high-end camera (e.g. 'shot on Canon "
+            "      EOS R5, 35mm lens, natural light, shallow depth of field, photojournalistic'). "
+            "      No illustration, no 3D render, no cartoon, no flat design.\n"
+            "  (b) DRAMATIC + SCROLL-STOPPING. Choose a specific real-world moment that "
+            "      visually captures the tweet's tension (e.g. for 'wasted inventory': "
+            "      a real warehouse aisle with cardboard boxes spilling onto the floor, "
+            "      one box mid-fall; for 'lost sales': empty store shelves with a single "
+            "      'sold out' tag dangling; for 'manual work overload': a tired person at "
+            "      desk surrounded by paper stacks at 2am with desk lamp glow). The metaphor "
+            "      must be CONCRETE and PHYSICAL, not abstract.\n"
+            "  (c) NO TEXT inside the image. No English words, no Turkish words, no numbers, "
+            "      no signs with readable text, no labels, no logos. Any incidental writing "
+            "      in the scene must be blurred or out of frame.\n"
+            "  (d) Single focal subject. Editorial composition. Cinematic lighting.\n"
+            "  (e) End your prompt with this negative-prompt line: "
+            "'Avoid: illustration, cartoon, 3D render, flat design, vector art, infographic, "
+            "diagram, icons, text, words, letters, numbers, labels, logos, watermarks, "
+            "AI-generated artifacts, oversaturated colors, stock-photo cliché smiles.'\n\n"
             "Output: ONLY the image generation prompt in English, no preamble."
         )
         user = (
-            f"Tweet (Turkish): {tweet_text}\n"
+            f"Tweet (Turkish, source content): {tweet_text}\n"
             f"Takeaway (Turkish): {takeaway}\n\n"
-            "Create a minimalist English image prompt that visualizes the core concept "
-            "as a single editorial illustration. Square 1:1 ratio. "
-            "Limited color palette (2-3 colors). Soft gradients OK. White or off-white background. "
-            "Suitable for B2B AI use-case content. "
-            "Remember: zero text inside the image, single focal element, max 3 visual elements."
+            "Translate the core tension/metaphor of this tweet into a SPECIFIC real-world "
+            "photographic moment. Be concrete: name the location, the object(s), the lighting, "
+            "the time of day, the camera angle. Square 1:1 ratio. "
+            "Photorealistic, editorial documentary style, cinematic. "
+            "Remember: real photograph not illustration, zero text in image, single focal subject, "
+            "dramatic and scroll-stopping."
         )
         try:
             r = self.openai.chat.completions.create(
@@ -120,8 +132,9 @@ class ImageGenerator:
             return ""
 
         # Polling: GET jobs/recordInfo?taskId=...
+        # Photorealistic prompt'lar nano-banana-2'de bazen 3dk'yı aşıyor — 6dk'ya çekildi.
         poll_url = f"{KIE_BASE}/jobs/recordInfo"
-        for i in range(36):  # ~3 dk
+        for i in range(72):  # ~6 dk
             time.sleep(5)
             try:
                 pr = requests.get(poll_url, headers=headers,
@@ -147,7 +160,7 @@ class ImageGenerator:
                     return ""
             except Exception as e:
                 ops.warning(f"Kie polling hatası: {e}")
-        ops.error("Kie AI polling timeout (3dk)")
+        ops.error("Kie AI polling timeout (6dk)")
         return ""
 
     def _download(self, url: str) -> str:

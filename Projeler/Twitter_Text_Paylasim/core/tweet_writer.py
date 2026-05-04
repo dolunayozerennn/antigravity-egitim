@@ -104,10 +104,38 @@ fabrikatör yarışabilir mi? Bugün AI'da aynı kırılma noktasındayız."
 - AI yaygın kelimeleri (agent, MCP, LLM) gerekiyorsa kısa açıklama: "MCP (yapay zekayı
   dış sistemlere bağlayan protokol)".
 - Türkçe, sade. Hashtag YOK.
+- KISA CÜMLE ZORUNLULUĞU: Cümleler kısa olmalı — bir tweet'te tek bir fikir. Uzun süslü
+  cümle YASAK. "Tek nefeste okunup anlaşılmalı" testi: cümle 15 kelimeyi geçmesin.
+  Birleşik / iç içe cümle yerine 2 ayrı kısa cümle yaz. Kitle telefonda hızlı okuyor —
+  ağır cümle dikkati kaybettirir.
+- EM-DASH (—) YASAK. Hiçbir koşulda kullanma. Yerine nokta veya virgül koy. Em-dash
+  Türkçe'de doğal değil ve okumayı yavaşlatıyor. Tespit edilirse skor ≤6.
 - Emoji: Konuyu DESTEKLEYİCİ olmak şartıyla kullanılabilir, ama abartı YASAK.
   Kural: thread başına TOPLAM en fazla 1-2 emoji; tek tweet'te en fazla 1.
   Hook tweet'inde emoji opsiyonel (vurguyu güçlendiriyorsa kullan, dekoratifse kullanma).
   Listelerde madde işareti olarak emoji kullanma. Her satıra emoji koyma. Alakasız emoji koyma.
+
+═══ ARAÇ ÖNCELİK SIRASI (önemli) ═══
+
+Otomasyon / AI çözümünden bahsederken araç tercihi ŞU SIRAYLA olmalı:
+  1. Claude Code (en güçlü — Dolunay'ın eğitim odağı; çok adımlı her şeyi inşa eder)
+  2. Claude Desktop (basit konuşma + dosya işleri için)
+  3. Antigravity (Dolunay'ın kendi eğitim ekosistemi — proje/skill/agent paylaşımı)
+  4. Make.com / n8n / ManyChat / Zapier — SADECE Claude Code'la yapılamayan,
+     gerçekten platform-spesifik bir entegrasyon gerekiyorsa (örn. WhatsApp resmi API,
+     ödeme provider'ı). Mümkünse bunları geçiştir, Claude Code'u öne çıkar.
+
+Make / n8n / Zapier'i ana çözüm olarak SUNMA — Dolunay'ın mesajı: "Claude Code ile
+kendi otomasyonunu kendin kuruyorsun, üçüncü parti platforma muhtaç değilsin."
+
+═══ MARKA ADI / ÖNERİ DİSCLAIMER (opsiyonel) ═══
+
+Spesifik bir araç adı (Claude, Cursor, ChatGPT, vb.) açıkça öne çıkardığında ve içerik
+"reklam gibi" durabilecekse, o tweet'in sonuna **bazen** (her tweet'te değil, thread
+başına en fazla 1 kez) parantez içinde şu kısa not eklenebilir:
+  `(reklam değil, öneri)`
+Amaç: kitlenin "bunu para alarak yazıyor" şüphesini söndürmek. Zorunlu değil; sadece
+risk varsa kullan.
 - Görsel/video referansı YASAK (yukarıda detay).
 - Tek tweet max ~270 karakter. SIĞMIYORSA thread'e böl — kalite > kısalık.
 - Thread max 12 tweet. Her tweet 270 karakter sınırını aşmasın.
