@@ -159,7 +159,7 @@ async def _cleanup_idle_sessions(app=None):
                     if state_name in ("IDLE", "DELIVERED") and idle_seconds > 600:
                         to_delete.append(uid)
                     # SCENARIO_APPROVAL → 30 dakika sonra temizle
-                    elif state_name in ("SCENARIO_APPROVAL", "COLLECTING_PREFERENCES") and idle_seconds > 1800:
+                    elif state_name in ("SCENARIO_APPROVAL", "COLLECTING_PREFERENCES", "AWAITING_CUSTOM_NOTE") and idle_seconds > 1800:
                         to_delete.append(uid)
 
                 for uid in to_delete:
@@ -251,6 +251,8 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ConversationState.URL_PROCESSING: "🔗 URL inceleniyor",
         ConversationState.RESEARCHING: "🔍 Araştırma & Senaryo",
         ConversationState.SCENARIO_APPROVAL: "📋 Senaryo onayı",
+        ConversationState.COLLECTING_PREFERENCES: "🎛️ Tercih toplama",
+        ConversationState.AWAITING_CUSTOM_NOTE: "✍️ Ek not bekleniyor",
         ConversationState.PRODUCING: "🎬 Video üretimi",
         ConversationState.DELIVERED: "✅ Teslim edildi",
     }
@@ -279,7 +281,31 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     user_name = user.first_name or user.username or ""
-    
+
+    # ── Lite kategori extract (paralel, hızlı) ──
+    # Kullanıcı yeni bir URL gönderdiyse ürün kategorisini hızlıca öğren ki
+    # LLM dinamik tarz önerileri (ör. "Sabah rutini UGC") üretebilsin.
+    pre_url = URLDataExtractor.extract_url_from_text(text)
+    if pre_url:
+        session = conversation_mgr.get_session(user.id)
+        # Sadece henüz bilinmiyorsa veya URL değiştiyse tetikle
+        if not session.product_category or session.current_url != pre_url:
+            try:
+                lite_data = await asyncio.wait_for(
+                    url_extractor.extract_lite(pre_url),
+                    timeout=8.0,
+                )
+                session.product_category = lite_data.get("category") or "general"
+                session.lite_brand = lite_data.get("brand_name") or session.lite_brand
+                session.lite_product = lite_data.get("product_name") or session.lite_product
+                log.info(
+                    f"Lite extract tamam: user={user.id}, category={session.product_category}"
+                )
+            except asyncio.TimeoutError:
+                log.warning(f"Lite extract 8s içinde dönmedi (user={user.id}) — kategori sonra senaryoda çıkacak")
+            except Exception as exc:
+                log.warning(f"Lite extract hatası (user={user.id}): {exc}")
+
     # URL veya aksiyon algılama
     result = await conversation_mgr.handle_text_message(user.id, text, user_name)
 

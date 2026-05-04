@@ -510,10 +510,13 @@ class ScenarioEngine:
             aspect_ratio_override = normalize_aspect_ratio(preferences["video_format"])
         
         if preferences.get("video_style"):
-            style_desc = {
+            # Legacy backward-compat: eski statik değerler için açıklayıcı çevri
+            legacy_map = {
                 "cinematic": "Profesyonel çekim, sinematik ışıklandırma, ürün odaklı (Genelde 1-2 sahne)",
                 "ugc": "Samimi, User Generated Content tarzı, doğal ve gerçekçi (Genelde 2-3 sahne)",
-            }.get(preferences["video_style"], preferences["video_style"])
+            }
+            raw_style = preferences["video_style"]
+            style_desc = legacy_map.get(raw_style, raw_style)
             extra_notes += f"- Video Tarzı: {style_desc}\n"
         
         if preferences.get("custom_note"):

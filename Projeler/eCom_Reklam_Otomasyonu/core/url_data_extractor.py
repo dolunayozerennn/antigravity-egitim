@@ -85,6 +85,31 @@ IMAGE_SELECTION_PROMPT = """Aşağıdaki ürün görsellerini incele. Bu görsel
 {image_list}"""
 
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# LLM PROMPT — Lite (hızlı kategori)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LITE_EXTRACTION_PROMPT = """Aşağıdaki sayfa başlığı/meta bilgisinden ürün için kısa kategori çıkarımı yap.
+
+## Kurallar:
+- SADECE JSON döndür, başka metin ekleme.
+- category alanı ŞU listeden bir tanesi olsun (en yakın olanı seç): skincare, beauty, fashion, tech, food, supplement, accessory, home, fitness, kids, pet, jewelry, automotive, general.
+- brand_name domain'den veya başlıktan tahmin edilebilir.
+- product_name kısa ve net olsun.
+
+## Çıktı formatı:
+{{
+    "brand_name": "Marka",
+    "product_name": "Ürün adı",
+    "category": "kategori_kodu"
+}}
+
+## Sayfa Bilgisi:
+---
+{page_brief}
+---"""
+
+
 class URLDataExtractor:
     """
     URL → Structured Data pipeline.
@@ -403,6 +428,77 @@ class URLDataExtractor:
             log.warning("Vision görsel seçim hatası — ilk 3 görsel kullanılıyor",
                         exc_info=True)
             return candidates[:3]
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # ⚡ LITE EXTRACT — sadece kategori (5-10s)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    async def extract_lite(self, url: str) -> dict:
+        """Hızlı kategori çıkarımı — sadece title/meta okur, görsel seçmez.
+
+        Format butonları gösterilirken paralel çalışır; LLM'in dinamik tarz
+        önerileri üretebilmesi için ürün kategorisini erkenden öğrenir.
+
+        Returns:
+            dict: {"brand_name": str, "product_name": str, "category": str}
+        """
+        import asyncio
+
+        log.info(f"⚡ Lite extract başlıyor: {url}")
+
+        try:
+            result = await asyncio.to_thread(self.firecrawl.scrape, url)
+        except Exception:
+            log.warning("Lite extract: Firecrawl hatası", exc_info=True)
+            return {"brand_name": "", "product_name": "", "category": "general"}
+
+        if not result.get("success"):
+            log.warning(f"Lite extract: Firecrawl başarısız — {result.get('error')}")
+            return {"brand_name": "", "product_name": "", "category": "general"}
+
+        metadata = result.get("metadata", {}) or {}
+        markdown = result.get("markdown", "") or ""
+
+        page_brief_parts = []
+        if metadata.get("title"):
+            page_brief_parts.append(f"Başlık: {metadata['title']}")
+        if metadata.get("description"):
+            page_brief_parts.append(f"Meta Açıklama: {metadata['description']}")
+        if metadata.get("ogTitle"):
+            page_brief_parts.append(f"OG Başlık: {metadata['ogTitle']}")
+        if metadata.get("ogDescription"):
+            page_brief_parts.append(f"OG Açıklama: {metadata['ogDescription']}")
+        if metadata.get("sourceURL"):
+            page_brief_parts.append(f"URL: {metadata['sourceURL']}")
+        # En fazla ilk 800 karakter markdown — kategori için yeterli
+        if markdown:
+            page_brief_parts.append(f"İçerik (kısaltılmış): {markdown[:800]}")
+
+        page_brief = "\n".join(page_brief_parts) if page_brief_parts else url
+
+        prompt = LITE_EXTRACTION_PROMPT.format(page_brief=page_brief)
+
+        try:
+            messages = [
+                {"role": "system", "content": "Sen bir JSON çıktı üreten asistansın. Sadece geçerli JSON döndür."},
+                {"role": "user", "content": prompt},
+            ]
+            data = await asyncio.to_thread(
+                self.openai.chat_json, messages, max_tokens=200
+            )
+            category = (data.get("category") or "general").strip().lower()
+            log.info(
+                f"⚡ Lite extract tamam: brand='{data.get('brand_name')}', "
+                f"product='{data.get('product_name')}', category='{category}'"
+            )
+            return {
+                "brand_name": data.get("brand_name", "") or "",
+                "product_name": data.get("product_name", "") or "",
+                "category": category,
+            }
+        except Exception:
+            log.warning("Lite extract LLM hatası — general fallback", exc_info=True)
+            return {"brand_name": "", "product_name": "", "category": "general"}
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # YARDIMCI METODLAR

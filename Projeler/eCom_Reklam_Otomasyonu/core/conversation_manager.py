@@ -35,6 +35,7 @@ class ConversationState(Enum):
     RESEARCHING = auto()           # Marka/ürün araştırma + senaryo üretimi
     SCENARIO_APPROVAL = auto()     # Senaryo onayı bekleniyor
     COLLECTING_PREFERENCES = auto() # Agent butonlarla tercih topluyor
+    AWAITING_CUSTOM_NOTE = auto()  # Tercihler tamam, "ek not?" sorusuna cevap bekleniyor
     PRODUCING = auto()             # Video üretim aşaması
     DELIVERED = auto()             # Teslim edildi
 
@@ -85,6 +86,10 @@ class UserSession:
         self.pending_choice_key: str | None = None
         # Kullanıcının gönderdiği ancak henüz işlenmemiş URL (tercihler sorulurken tutulur)
         self.pending_url: str | None = None
+        # Lite extract (hızlı kategori) sonucu — format butonları gösterilirken paralel doldurulur
+        self.product_category: str | None = None
+        self.lite_brand: str | None = None
+        self.lite_product: str | None = None
 
         # Per-session asyncio.Lock — aynı kullanıcının paralel mesajlarında race önler.
         # Lazy: ilk erişimde oluşur (event loop'a bağlı olmamak için).
@@ -114,6 +119,9 @@ class UserSession:
         self.pending_url = None
         self.preferences = {}
         self.pending_choice_key = None
+        self.product_category = None
+        self.lite_brand = None
+        self.lite_product = None
         self.production_task = None
         self.production_progress_msg_id = None
         self.production_chat_id = None
@@ -131,6 +139,9 @@ class UserSession:
         self.production_result = None
         self.current_url = None
         self.pending_url = None
+        self.product_category = None
+        self.lite_brand = None
+        self.lite_product = None
         import time as _time
         self._last_activity = _time.time()
 
@@ -255,6 +266,33 @@ class ConversationManager:
 
     async def _handle_text_message_locked(self, session: 'UserSession', text: str, user_name: str) -> dict:
         """handle_text_message'ın gövdesi — caller per-session lock altında çağırır."""
+        # ── State: AWAITING_CUSTOM_NOTE ──
+        # Tercihler tamam, kullanıcıya "ek not?" soruldu. Cevabı yakala ve pipeline'ı başlat.
+        if session.state == ConversationState.AWAITING_CUSTOM_NOTE:
+            note = (text or "").strip()
+            skip_keywords = {"geç", "gec", "atla", "skip", "yok", "hayır", "hayir", "-", "."}
+            if note.lower() in skip_keywords:
+                log.info(f"Custom note atlandı: user={session.user_id}")
+            elif note:
+                session.preferences["custom_note"] = note
+                log.info(f"Custom note kaydedildi: user={session.user_id} ({len(note)} char)")
+
+            url = session.pending_url
+            if not url:
+                # Olmaması lazım ama emniyet
+                session.state = ConversationState.IDLE
+                return self._reply(session, "⚠️ İşlenecek URL bulunamadı. Lütfen tekrar gönder.")
+            session.pending_url = None
+            session.current_url = url
+            session.state = ConversationState.URL_PROCESSING
+            return self._reply(
+                session,
+                "✅ Not alındı! Şimdi ürün analizi ve senaryo oluşturma başlıyor..." if note and note.lower() not in skip_keywords
+                else "👌 Atlandı! Şimdi ürün analizi ve senaryo oluşturma başlıyor...",
+                has_url=True,
+                url=url,
+            )
+
         # Eğer mesajda yeni bir URL varsa, tercihler sorulduğunda kaybolmaması için hafızaya al
         from core.url_data_extractor import URLDataExtractor
         extracted_url = URLDataExtractor.extract_url_from_text(text)
@@ -262,7 +300,32 @@ class ConversationManager:
             session.pending_url = extracted_url
 
         prefs_str = ", ".join([f"{k}={v}" for k, v in session.preferences.items()]) if session.preferences else "Yok"
-        
+
+        category_hint = session.product_category or "henüz bilinmiyor"
+        product_hint = session.lite_product or session.last_product or ""
+
+        category_style_guide = (
+            f"\n\n## ÜRÜN BAĞLAMI (lite analiz):\n"
+            f"- Kategori: {category_hint}\n"
+            f"- Ürün: {product_hint or '(bilinmiyor)'}\n"
+            f"\n## TARZ ÖNERİSİ KURALLARI:\n"
+            f"Eğer kategori biliniyorsa, `video_style` için STATİK 'UGC/Cinematic' SUNMA. Kategoriye uygun "
+            f"ÜRÜNE-ÖZEL 3 dinamik öneri üret. Örnekler:\n"
+            f"- skincare: 'Sabah rutini UGC' / 'Before-after dramatik' / 'Profesyonel reklam'\n"
+            f"- tech: 'Unboxing reaction' / 'Kullanım senaryosu' / 'Sinematik tanıtım'\n"
+            f"- fashion: 'Sokakta UGC' / 'Lookbook profesyonel' / 'Hikaye-driven'\n"
+            f"- food/supplement: 'Günlük ritüel UGC' / 'Studio çekim' / 'Etki-odaklı hikaye'\n"
+            f"- accessory/jewelry: 'Detay close-up' / 'Lifestyle UGC' / 'Sinematik tanıtım'\n"
+            f"- home/fitness: 'Kullanım anı UGC' / 'Profesyonel demo' / 'Dönüşüm hikayesi'\n"
+            f"Her seçeneğin `value` alanı KISA Türkçe başlık olsun (max 30 karakter, örn: "
+            f"'Sabah Rutini UGC', 'Before-After Dramatik', 'Sinematik Tanıtım'). "
+            f"`label` alanı emojili daha okunaklı versiyon olabilir. value alanı pipeline'a doğrudan "
+            f"'Video Tarzı: {{value}}' olarak iletilecek.\n"
+            f"\n## FORMAT ÖNERİSİ KURALLARI:\n"
+            f"`video_format` için TAM 3 seçenek sun: 9:16 (Reels), 16:9 (YouTube), 1:1 (Kare/Feed). "
+            f"value alanları sırasıyla '9:16', '16:9', '1:1'."
+        )
+
         # Agent sistem talimatı
         messages = [
             {
@@ -278,11 +341,12 @@ class ConversationManager:
                     "`process_url` aracına 'URL Beklemede' olan linki parametre olarak ver.\n"
                     "Kullanıcı e-ticaret ürününü işlemeyi onaylarsa veya \"başla\" derse `approve_scenario` yetkisini kullan. "
                     "Hiçbiri değilse, kullanıcıya nazikçe yardım et ve konuşmayı sürdür."
+                    + category_style_guide
                 )
             },
             {
                 "role": "user",
-                "content": f"[SİSTEM VERİSİ - Durum: {session.state.name}, URL Beklemede: {session.pending_url}, Toplanan Tercihler: {prefs_str}]\nKullanıcı: {text}"
+                "content": f"[SİSTEM VERİSİ - Durum: {session.state.name}, URL Beklemede: {session.pending_url}, Toplanan Tercihler: {prefs_str}, Kategori: {category_hint}]\nKullanıcı: {text}"
             }
         ]
 
@@ -582,19 +646,19 @@ class ConversationManager:
             collected = set(session.preferences.keys()) & REQUIRED_PREFS
 
             if collected >= REQUIRED_PREFS and session.pending_url:
-                url = session.pending_url
-                session.pending_url = None
-                session.current_url = url
-                session.state = ConversationState.URL_PROCESSING
+                # Pipeline'a girmeden önce kullanıcıya "ek not?" sor.
+                session.state = ConversationState.AWAITING_CUSTOM_NOTE
                 log.info(
-                    f"Deterministik tercih tamamlama: tüm tercihler tamam, "
-                    f"pipeline başlatılıyor — user={user_id}, url={url[:60]}"
+                    f"Tercihler tamam — custom_note bekleniyor: user={user_id}"
                 )
                 return self._reply(
                     session,
-                    "✅ Tercihler kaydedildi! Şimdi ürün analizi ve senaryo oluşturma başlıyor...",
-                    has_url=True,
-                    url=url,
+                    (
+                        "✍️ İstersen brief'e ek bir not bırakabilirsin "
+                        "(örn. 'rakipler X yapıyor, biz farklı duralım' veya "
+                        "'tone biraz daha eğlenceli').\n\n"
+                        "Atlamak için **geç** yaz."
+                    ),
                 )
 
         # Tercihler eksik → LLM'e danış (mevcut davranış) — handle_text_message kendi lock'unu alır
@@ -669,7 +733,10 @@ class ConversationManager:
         stuck: list[int] = []
         with self._lock:
             for uid, session in self.sessions.items():
-                if session.state != ConversationState.COLLECTING_PREFERENCES:
+                if session.state not in (
+                    ConversationState.COLLECTING_PREFERENCES,
+                    ConversationState.AWAITING_CUSTOM_NOTE,
+                ):
                     continue
                 if not hasattr(session, "_last_activity"):
                     continue
