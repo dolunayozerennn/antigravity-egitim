@@ -25,7 +25,12 @@ def _load_master_env() -> dict:
                 continue
             if "=" in line:
                 k, _, v = line.partition("=")
-                env[k.strip()] = v.strip()
+                v = v.strip()
+                # Inline yorumu kırp (tırnak içindeki # değil ama burada tırnaklı değer
+                # beklemiyoruz; basit tutuyoruz)
+                if " #" in v:
+                    v = v.split(" #", 1)[0].strip()
+                env[k.strip()] = v
     return env
 
 
