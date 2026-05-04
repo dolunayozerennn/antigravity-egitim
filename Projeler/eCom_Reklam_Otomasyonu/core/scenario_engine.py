@@ -157,11 +157,21 @@ giyince ayağımda yokmuş gibi hissediyorum cidden."
 
 Voiceover her zaman: 1. tekil şahıs (ben/benim/ediyorum/hissediyorum) + ŞU AN olanı anlatır.
 
-### Ses Seçimi (voice_name) — KATI KURAL
-Voiceover sesi **bu Türkçe Professional Voice Clone kataloğundan birini seç** ve
-seçimini ürünün havasına/karakterine göre yap. Karakter cinsiyeti (`character_gender`)
-**MUTLAKA seçtiğin sesin cinsiyetiyle aynı olmalı**, ve **video promptlarındaki
-karakter de aynı cinsiyette tanımlanmalı**. Erkek ses + kadın model olamaz.
+### Ses Seçimi (voice_name) — KATI KURAL (CİNSİYET UYUMU ZORUNLU)
+
+🚨 **KRİTİK CİNSİYET KURALI** 🚨
+`character_gender` + `character_visual_prompt` (video model cinsiyeti) + `voice_name` cinsiyeti
+**ÜÇÜ AYNI OLMAK ZORUNDA**. Hiçbir kombinasyon istisna değildir.
+
+- Karakter ERKEK ise → `voice_name` SADECE "Adam" olabilir.
+- Karakter KADIN ise → `voice_name` SADECE şunlardan biri olabilir: "Ahu", "Filiz", "İrem", "Nisa".
+- Erkek karakter + kadın ses (Ahu/Filiz/İrem/Nisa) = MUTLAK YASAK.
+- Kadın karakter + erkek ses (Adam) = MUTLAK YASAK.
+- `character_visual_prompt` içindeki kişinin cinsiyeti `character_gender` ile birebir aynı olmalı
+  ("male/man" yazıldıysa character_gender="erkek"; "woman/female" yazıldıysa "kadın").
+
+ÇALIŞMA SIRASI: Önce ürün/marka tonuna göre `character_gender`'a karar ver, SONRA o cinsiyete uygun
+voice_name seç, EN SON character_visual_prompt'u o cinsiyete göre yaz. Aksi halde uyumsuzluk olur.
 
 | voice_name | cinsiyet | tip               | yaş      | ne için en iyi                                |
 |------------|----------|-------------------|----------|-----------------------------------------------|
@@ -213,6 +223,49 @@ woman in beige oversized knit" diye geçir. Sahneden sahneye outfit/saç değiş
 
 `character_gender`, voice cinsiyeti VE `character_visual_prompt` cinsiyeti — üçü
 aynı olmalı.
+
+## ⏳ SES-GÖRSEL TENSE DİSİPLİNİ (MUTLAK UYUM)
+
+Voiceover'daki ZAMAN KİPİ (tense), o sahnede gösterilen GÖRSEL DURUMLA birebir uyumlu olmalı.
+Aksi halde izleyici "ses bir şey diyor, video başka şey gösteriyor" diye bağlantısını kaybeder.
+
+**KURAL:**
+- Sahne POZİTİF/SONUÇ durumu gösteriyorsa (parlak cilt, mutlu yüz, ürünün etkisi) → segment ŞİMDİKİ ZAMAN
+  ("şimdi", "artık", "bak", "hissediyorum", "parlıyor")
+- Sahne NEGATİF/ÖNCE durumu gösteriyorsa (kötü cilt, gözenekli yakın çekim, problem anı) → segment GEÇMİŞ ZAMAN
+  ("eskiden", "önceden", "geçen aya kadar", "hep ...du/-tu", "şikayet ediyordum")
+- "Before/After" hook formülü kullanıyorsan: BEFORE sahnelerinde geçmiş zaman ZORUNLU; AFTER sahnelerinde
+  şimdiki zaman ZORUNLU. Sıra: önce 1-2 BEFORE (geçmiş) → sonra AFTER (şimdiki).
+
+**YASAK ÖRNEKLER (asla yazma):**
+- ❌ Sahne: "close-up of pores, dull skin, blemishes" + segment: "şimdi cildim parlıyor"
+  → Tense ters: ses iyi durum diyor, görsel kötü durum gösteriyor.
+- ❌ Sahne: "happy glowing face in morning light" + segment: "eskiden cildim çok kötüydü"
+  → Tense ters: ses kötü durum diyor, görsel iyi durum gösteriyor.
+
+**DOĞRU ÖRNEKLER:**
+- ✅ Sahne: "close-up of pores, dull skin, tired eyes" + segment: "Geçen aya kadar gözeneklerim hep göründü, [sighs] çok rahatsızdım"
+- ✅ Sahne: "morning glow, dewy skin, mirror smile" + segment: "[delighted] Şimdi sabah uyandığımda cildim parlıyor"
+- ✅ Sahne: "frustrated face, oily t-zone macro" + segment: "Önceden öğleye kadar yağlanırdım"
+- ✅ Sahne: "matte balanced skin, calm expression" + segment: "[in awe] Artık akşama kadar matsı kalıyor"
+
+Voiceover'ın TÜMÜ ŞİMDİKİ ZAMAN değil — sahne bazında değişebilir. Sahne ne gösteriyorsa,
+o sahnenin segment'i ona uygun tense'le konuşmalı. Skincare/sağlık/spor gibi before-after
+formülünde bu kural ESPECIALLY KRİTİK.
+
+## 🎯 SON SAHNE (PAYOFF) — ÜRÜN SADAKATİ
+
+Son sahne (5. sahne / PAYOFF) izleyicinin akılda kalan son görselidir. Bu sahnede:
+
+- HER `video_prompt` markanın ana ürününü ismen veya net görsel olarak içermeli (yan ürün/aksesuar
+  değil — REKLAMA KONU OLAN ANA ÜRÜN).
+- Son sahne özellikle: ürünü yakın çekim, ambalajıyla, logosuyla VEYA karakterin ürünü kullanırken
+  net göründüğü an olmalı. ASLA alakasız bir başka ürüne sapma.
+- Örnek: Reklamı yapılan ürün "Nike Air Force 1" ise — son sahne ASLA "yeni bir Adidas spor ayakkabı",
+  "rastgele bir giysi", "evcil hayvan", "yemek" olamaz. Son sahne Air Force 1'in net görseli olmalı.
+
+YASAK: Son sahnede ürün adının `video_prompt`'tan eksik olması veya farklı bir ürün/nesne ile
+yer değiştirmiş olması. Her sahnenin video_prompt'una marka + ürün adı (İngilizce) açıkça yaz.
 
 ## KRİTİK KURALLAR (İSTİSNASIZ UYGULA):
 
@@ -282,8 +335,9 @@ Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerd
 ### Voiceover (Türkçe — UGC ARKADAŞ TONU + V3 AUDIO TAGS):
 
 **🚨 VAZGEÇİLMEZ KATI KURAL — VOICEOVER KELİME LİMİTİ 🚨**
-**`voiceover_text` MAKSİMUM 35 KELİME OLABİLİR. AŞAMAZ. PAZARLIK YOK.**
-- Türkçe ortalama 2.5 kelime/saniye → 35 kelime ≈ 14 saniye (15s video tamponu).
+**`voiceover_text` MAKSİMUM 30 KELİME OLABİLİR. 35 DEĞİL. AŞAMAZ. PAZARLIK YOK.**
+- Türkçe ortalama 2.5 kelime/saniye → 30 kelime ≈ 12 saniye (rahat tampon).
+- 30 üstüne çıkarsan video sesi ortada kesilir. 25-30 arası ideal.
 - Audio tag'ler (`[whispers]`, `[pause]`, `[delighted]`, `[laughs softly]` vb.)
   KELİME SAYISINA DAHİL DEĞİL — onlar serbestçe ekle, sadece konuşulan Türkçe
   kelimeleri say.
@@ -319,7 +373,7 @@ Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerd
 4. **Sayılar TÜRKÇE YAZIYLA — ASLA RAKAM KULLANMA**:
    - "10%" → "yüzde on", "30 ml" → "otuz mililitre", "2.5 saat" → "iki nokta beş saat"
    - Marka adlarındaki rakamlar (Air Force 1, AirPods Pro, iPhone 15) KORUNUR.
-5. **Süre**: doğal akıcı 2-3 cümle, ama **KESİNLİKLE 35 KELİMEYİ AŞMA** (yukarıdaki
+5. **Süre**: doğal akıcı 2-3 cümle, ama **KESİNLİKLE 30 KELİMEYİ AŞMA** (yukarıdaki
    vazgeçilmez kural). Akıcılığı koru ama sıkı sınır içinde kal. Net ama samimi.
 6. Hook formülü voiceover'ın TONUNDA da hissedilmeli — sadece kelimelerle değil,
    tag'lerle (örn. Sürpriz reveal hook → [in awe] / [surprised] / [whispers] kullan).
@@ -476,6 +530,48 @@ class ScenarioEngine:
 
         if not scenario.get("scenes"):
             scenario["scenes"] = [{"scene_name": "Main Scene", "video_prompt": "Cinematic shot of the product."}]
+
+        # ── CİNSİYET ↔ VOICE UYUMU VALIDATION (auto-fix) ──
+        # WHY: LLM bazen character_gender="erkek" planlayıp voice_name="Ahu" (kadın) seçiyor.
+        # Bu uyumsuzluğu otomatik düzelt: voice_name'i karakter cinsiyetine uygun varsayılana çevir.
+        try:
+            from services.elevenlabs_service import TURKISH_VOICE_CATALOG
+            char_gender_raw = (scenario.get("character_gender") or "").strip().lower()
+            voice_name_raw = (scenario.get("voice_name") or "").strip()
+            # Catalog'dan voice cinsiyetini bul
+            voice_meta = TURKISH_VOICE_CATALOG.get(voice_name_raw)
+            voice_gender = (voice_meta[1] if voice_meta else "").lower()
+
+            # character_gender boşsa character_visual_prompt'tan tahmin et
+            if not char_gender_raw:
+                cvp = (scenario.get("character_visual_prompt") or "").lower()
+                if any(w in cvp for w in [" male", " man", " guy", " men "]):
+                    char_gender_raw = "erkek"
+                elif any(w in cvp for w in [" female", " woman", " girl", " women "]):
+                    char_gender_raw = "kadın"
+
+            if char_gender_raw and voice_gender and char_gender_raw != voice_gender:
+                # Uyumsuz — varsayılan eşleşmeyle düzelt
+                if char_gender_raw == "erkek":
+                    new_voice = "Adam"
+                else:
+                    new_voice = "Ahu"  # kadın varsayılanı (UGC tonu)
+                log.warning(
+                    f"⚠️ Cinsiyet uyumsuzluğu düzeltildi: karakter={char_gender_raw}, "
+                    f"voice={voice_name_raw}→{new_voice}"
+                )
+                scenario["voice_name"] = new_voice
+                scenario["character_gender"] = char_gender_raw
+            elif char_gender_raw and not voice_meta:
+                # Voice catalog'da yok → cinsiyete uygun varsayılana zorla
+                fallback = "Adam" if char_gender_raw == "erkek" else "Ahu"
+                log.warning(
+                    f"⚠️ Bilinmeyen voice_name '{voice_name_raw}' → varsayılan '{fallback}' "
+                    f"(karakter={char_gender_raw})"
+                )
+                scenario["voice_name"] = fallback
+        except Exception:
+            log.warning("Cinsiyet validation hatası (yok sayıldı)", exc_info=True)
 
         # ── NARRATIVE HOOK + voiceover_segment validasyonu ──
         # WHY: voiceover/sahne kopukluğu kök problem; LLM'in hook + segment yazma

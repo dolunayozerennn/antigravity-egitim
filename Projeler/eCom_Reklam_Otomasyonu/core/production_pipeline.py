@@ -819,18 +819,30 @@ class ProductionPipeline:
 
         # SAHNE TEKRARI ile DOLDURMA (sync için kritik)
         # WHY: Failed scene varsa video planlanan duration'dan kısa kalır → ses kesilir veya
-        # video freeze eder. Bunun yerine BAŞARILI bir sahneyi tekrarlayıp toplam scene_count'u
-        # tamamlıyoruz. Tekrar pozisyonu ortadaki sahne (genelde aksiyon sahnesi).
+        # video freeze eder. Bunun yerine BAŞARILI HOOK sahnesini (sahne 1) tekrarlayıp toplam
+        # scene_count'u tamamlıyoruz.
+        # NEDEN HOOK (sahne 1)?
+        # - Son sahne (PAYOFF) genelde ürün close-up'ı — onu loop'lamak farkedilir
+        # - Sahne 1 (HOOK) genelde merak uyandıran açılış — tekrarlandığında daha az dikkat çeker
+        # - Önceki ortadaki-sahne mantığı yan ürün/aksesuar gösteren sahnelerde marka sapması yaratabiliyordu
         if failed_count > 0:
             log.warning(
                 f"Multi-scene degraded mode: {len(scene_video_urls)}/{scene_count} sahne başarılı, "
-                f"{failed_count} fail → sahne tekrarı ile {scene_count} sahneye tamamlanıyor"
+                f"{failed_count} fail → HOOK sahnesi (sahne 1) tekrarı ile {scene_count} sahneye tamamlanıyor"
             )
-            filler_scene = scene_video_urls[len(scene_video_urls) // 2]  # ortadaki sahne
+            filler_scene = scene_video_urls[0]  # sahne 1 (HOOK) — markaya en sadık açılış
+            # Hangi sahne pozisyonlarının filler olduğunu açıkça logla
+            fill_count = scene_count - len(scene_video_urls)
+            filler_positions = list(range(len(scene_video_urls) + 1, scene_count + 1))
+            log.info(
+                f"Filler kullanım planı: {fill_count} sahne pozisyonu {filler_positions} "
+                f"sahne 1 (HOOK) ile dolduruluyor → {filler_scene[:50]}..."
+            )
             while len(scene_video_urls) < scene_count:
+                pos = len(scene_video_urls) + 1
                 scene_video_urls.append(filler_scene)
                 log.info(
-                    f"Sahne tekrarı eklendi: {filler_scene[:50]}... "
+                    f"  Pozisyon {pos}: sahne 1 (HOOK) tekrarı yerleştirildi "
                     f"({len(scene_video_urls)}/{scene_count})"
                 )
 
