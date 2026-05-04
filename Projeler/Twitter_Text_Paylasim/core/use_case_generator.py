@@ -12,10 +12,9 @@ yeniden yazıldı. Üretim hook + numaralı adımlar + ölçülebilir sonuç oda
 
 import json
 
-from openai import OpenAI
-
 from ops_logger import get_ops_logger
 from config import settings
+from core.llm_client import LLMClient
 
 ops = get_ops_logger("Twitter_Text_Paylasim", "UseCaseGenerator")
 
@@ -85,7 +84,7 @@ Sonuç: Aktivite görünürlüğü %100; geri dönüş oranı 2×.
 
 class UseCaseGenerator:
     def __init__(self):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        self.llm = LLMClient()
         # Lazy import: circular import riskine karşı modül-içi
         from core.perplexity_researcher import PerplexityResearcher
         self.researcher = PerplexityResearcher()
@@ -149,20 +148,9 @@ gerçek araç adları ve ölçülebilir sonuç ZORUNLU. Yasaklı klişeler ("yar
 konuşturun", "fark yaratın", "potansiyelinizi keşfedin", "devrim yapmaya hazır mısınız")
 KESİNLİKLE YASAK."""
 
-        try:
-            r = self.client.chat.completions.create(
-                model=settings.WRITER_MODEL,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.7,
-                max_tokens=1500,
-            )
-            data = json.loads(r.choices[0].message.content)
-            ops.info(f"Use case üretildi: {data.get('title','?')[:60]}")
-            return data
-        except Exception as e:
-            ops.error("Use case üretme hatası", exception=e)
+        data = self.llm.chat_json(system=system, user=user,
+                                   max_tokens=1500, temperature=0.7)
+        if not data:
             return {}
+        ops.info(f"Use case üretildi: {data.get('title','?')[:60]}")
+        return data

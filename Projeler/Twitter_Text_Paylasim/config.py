@@ -14,11 +14,22 @@ class Config:
         self.TYPEFULLY_API_KEY = self._require("TYPEFULLY_API_KEY")
         self.TYPEFULLY_SOCIAL_SET_ID = int(self._require("TYPEFULLY_SOCIAL_SET_ID"))
 
-        # OpenAI (tweet writer + scoring)
+        # LLM provider: anthropic (default v3.1) veya openai
+        self.LLM_PROVIDER = (get_env("LLM_PROVIDER") or "anthropic").lower()
+
+        # Anthropic Claude (varsayılan writer)
+        self.ANTHROPIC_API_KEY = get_env("ANTHROPIC_API_KEY") or ""
+
+        # OpenAI (image prompt + opsiyonel writer fallback)
         self.OPENAI_API_KEY = self._require("OPENAI_API_KEY")
-        # v3.1: gpt-4o-mini bilgi doğruluğu ve nüans yakalama konusunda zayıf kaldı.
-        # gpt-4o tam model, JSON mode'u destekler ve aynı SDK üzerinden çalışır.
-        self.WRITER_MODEL = get_env("WRITER_MODEL") or "gpt-4o"
+
+        # v3.1: writer modeli Claude Opus 4.7. OpenAI'a düşülürse gpt-4o.
+        if self.LLM_PROVIDER == "anthropic":
+            if not self.ANTHROPIC_API_KEY:
+                raise EnvironmentError("CRITICAL STARTUP FAILURE: LLM_PROVIDER=anthropic ama ANTHROPIC_API_KEY yok")
+            self.WRITER_MODEL = get_env("WRITER_MODEL") or "claude-opus-4-7"
+        else:
+            self.WRITER_MODEL = get_env("WRITER_MODEL") or "gpt-4o"
 
         # Perplexity (AI haberleri)
         self.PERPLEXITY_API_KEY = self._require("PERPLEXITY_API_KEY")

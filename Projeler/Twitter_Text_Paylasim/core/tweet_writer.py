@@ -16,10 +16,9 @@ Dolunay'ın 7 maddelik feedback'i bu prompt'lara işlendi:
 
 import json
 
-from openai import OpenAI
-
 from ops_logger import get_ops_logger
 from config import settings
+from core.llm_client import LLMClient
 
 ops = get_ops_logger("Twitter_Text_Paylasim", "TweetWriter")
 
@@ -175,8 +174,7 @@ def _split_to_thread(text: str, max_chars: int = 270) -> list[str]:
 
 class TweetWriter:
     def __init__(self):
-        self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        self.model = settings.WRITER_MODEL
+        self.llm = LLMClient()
         self.threshold = settings.QUALITY_THRESHOLD
 
     def write_for_github_repo(self, repo_data: dict) -> dict:
@@ -322,43 +320,30 @@ GÖREV:
         )
 
     def _call_llm(self, system_msg: str, user_msg: str, mode: str, source_url: str) -> dict:
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_msg},
-                    {"role": "user", "content": user_msg},
-                ],
-                response_format={"type": "json_object"},
-                temperature=0.7,
-                max_tokens=2500,
-            )
-            raw = response.choices[0].message.content
-            data = json.loads(raw)
-            data["source_url"] = source_url
-
-            # Single_or_thread modunda: LLM yanlışlıkla tek string yazdıysa veya >270
-            # karakter koyduysa thread'e otomatik böl.
-            if mode == "single_or_thread":
-                tt = (data.get("tweet_text") or "").strip()
-                thread = data.get("thread_tweets") or []
-                if not thread and tt and len(tt) > 270:
-                    data["thread_tweets"] = _split_to_thread(tt)
-                    data["tweet_text"] = ""
-                # Thread cap (12)
-                if data.get("thread_tweets") and len(data["thread_tweets"]) > 12:
-                    ops.warning(f"Thread {len(data['thread_tweets'])} tweet — 12'ye kırpılıyor")
-                    data["thread_tweets"] = data["thread_tweets"][:12]
-            elif mode == "youtube":
-                if data.get("thread_tweets") and len(data["thread_tweets"]) > 12:
-                    ops.warning(f"YouTube thread {len(data['thread_tweets'])} — 12'ye kırpılıyor")
-                    data["thread_tweets"] = data["thread_tweets"][:12]
-
-            return data
-        except Exception as e:
-            ops.error("LLM çağrısı başarısız", exception=e)
+        data = self.llm.chat_json(system=system_msg, user=user_msg,
+                                   max_tokens=2500, temperature=0.7)
+        if not data:
             return {
                 "score": 0,
-                "skip_reason": f"LLM error: {e}",
+                "skip_reason": "LLM error",
                 "source_url": source_url,
             }
+        data["source_url"] = source_url
+
+        # Single_or_thread modunda: LLM yanlışlıkla tek string yazdıysa veya >270
+        # karakter koyduysa thread'e otomatik böl.
+        if mode == "single_or_thread":
+            tt = (data.get("tweet_text") or "").strip()
+            thread = data.get("thread_tweets") or []
+            if not thread and tt and len(tt) > 270:
+                data["thread_tweets"] = _split_to_thread(tt)
+                data["tweet_text"] = ""
+            if data.get("thread_tweets") and len(data["thread_tweets"]) > 12:
+                ops.warning(f"Thread {len(data['thread_tweets'])} tweet — 12'ye kırpılıyor")
+                data["thread_tweets"] = data["thread_tweets"][:12]
+        elif mode == "youtube":
+            if data.get("thread_tweets") and len(data["thread_tweets"]) > 12:
+                ops.warning(f"YouTube thread {len(data['thread_tweets'])} — 12'ye kırpılıyor")
+                data["thread_tweets"] = data["thread_tweets"][:12]
+
+        return data
