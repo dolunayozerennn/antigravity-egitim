@@ -177,6 +177,24 @@ class ProductionPipeline:
             # birbirinden bağımsız → asyncio.gather ile paralel.
             voiceover_text = scenario.get("voiceover_text", "") or ""
 
+            # Voiceover kelime sayısı log (35 limit kontrolü — sadece konuşulan kelimeler)
+            if voiceover_text:
+                import re as _re_count
+                # Audio tag'leri çıkar: [whispers], [pause], [delighted] vb.
+                _spoken = _re_count.sub(r"\[[^\]]+\]", " ", voiceover_text)
+                _word_count = len([w for w in _spoken.split() if w.strip()])
+                _est_sec = _word_count / 2.5
+                if _word_count > 35:
+                    log.warning(
+                        f"⚠️ Voiceover kelime sayısı limiti aştı: {_word_count} kelime "
+                        f"(~{_est_sec:.1f}s) — LLM 35 kelime sınırına uymadı, ses kesilebilir"
+                    )
+                else:
+                    log.info(
+                        f"Voiceover kelime sayısı: {_word_count} kelime "
+                        f"(~{_est_sec:.1f}s) — limit 35 ✅"
+                    )
+
             # Türkçe sayı/yüzde/birim normalizasyonu — LLM "%10" yazsa bile düzelt
             if voiceover_text:
                 from utils.text_normalizer import normalize_for_tts
@@ -264,53 +282,66 @@ class ProductionPipeline:
             if vo_err_msg:
                 result["voiceover_error"] = vo_err_msg
 
-            # Karakter URL'sini ürün görsellerinin BAŞINA ekle (Seedance referans listesi)
+            # WHY: Seedance ağırlığı bölmesin diye SADECE karakter görselini referans
+            # olarak veriyoruz. Ürün görselleri zaten LLM tarafından video_prompt
+            # içinde marka+ürün adıyla net tarif ediliyor — referans olarak gönderilmesi
+            # tutarsız karakter üretimine yol açıyor. Karakter üretilemediyse fallback
+            # olarak ürün görsellerini kullan (yine de ref-image modunda kalsın).
             product_image_urls = list(reference_images or [])
             if character_image_url:
-                reference_images = ([character_image_url] + product_image_urls)[:9]
+                reference_images = [character_image_url]
                 log.info(
-                    f"Referans görseller hazır: 1 karakter + {len(product_image_urls)} ürün "
-                    f"= {len(reference_images)} (max 9)"
+                    f"Referans görseller hazır: 1/1 (sadece karakter) — "
+                    f"{len(product_image_urls)} ürün görseli prompt'a bırakıldı, "
+                    f"Seedance'a referans olarak gönderilmiyor (tutarlılık için)"
                 )
             else:
                 reference_images = product_image_urls[:9]
+                log.warning(
+                    f"Karakter görseli üretilemedi → fallback: {len(reference_images)} "
+                    f"ürün görseli referans olarak kullanılacak"
+                )
 
-            # Video duration'ı ses süresine göre round et (Seedance 5/10/15)
-            def _round_to_seedance_duration(audio_sec: float) -> int:
-                if audio_sec <= 7:
-                    return 5
-                elif audio_sec <= 12:
-                    return 10
-                elif audio_sec <= 15:
-                    return 15
-                else:
-                    # >15s: multi-scene'e bırak — caller >15 olduğunda multi'ye girer
-                    return 15
+            # ── DİNAMİK SCENE_COUNT (sync için kritik) ──
+            # WHY: Voiceover süresi ölçüldükten sonra sahne sayısını dinamik hesaplıyoruz.
+            # Her sahne 5s → toplam video = N × 5s. Min 3 sahne (15s), max 5 sahne (25s)
+            # garanti. Voiceover 35-kelime sınırına uyduysa ses ≤ 14s → 3 sahne yeterli.
+            # Ses uzun çıkarsa 4-5 sahneye genişler. LLM 5 sahne planladı; biz ilk N'i alırız.
+            import math
+            scenes_list_raw = scenario.get("scenes") or []
+            llm_scene_count = len(scenes_list_raw)
 
             if audio_duration > 0:
-                new_duration = _round_to_seedance_duration(audio_duration)
-                if new_duration != duration:
-                    log.info(
-                        f"Video duration ses süresine göre güncellendi: "
-                        f"{duration}s → {new_duration}s (ses {audio_duration:.1f}s)"
-                    )
-                duration = new_duration
-
-            # Multi-scene sınırlama: Seedance min 5s/sahne → max sahne = duration // 5
-            # WHY: Dolunay multi-scene istiyor (dinamik kamera + farklı ortam).
-            # Tek-sahneye sadece duration < 10s ise düşürüyoruz (1×5s dışında seçenek yok).
-            scenes_list = scenario.get("scenes") or []
-            requested_scene_count = max(len(scenes_list), int(scenario.get("scene_count", 1) or 1))
-            max_possible_scenes = max(1, duration // 5)
-            final_scene_count = min(requested_scene_count, max_possible_scenes)
-
-            if final_scene_count < requested_scene_count:
-                log.warning(
-                    f"Sahne sayısı {requested_scene_count} → {final_scene_count} sınırlandırıldı "
-                    f"(duration {duration}s, min 5s/sahne)"
+                # ceil(ses/5) sahne yeter; tampon için en az 3 sahne (15s)
+                ideal_scene_count = max(3, math.ceil(audio_duration / 5))
+                # LLM'in planladığı sahnelerle sınırla (yoksa dolduramayız)
+                final_scene_count = min(ideal_scene_count, max(1, llm_scene_count))
+                # Min 1
+                final_scene_count = max(1, final_scene_count)
+                duration = final_scene_count * 5
+                log.info(
+                    f"Dinamik sahne sayısı: {final_scene_count} "
+                    f"(ses {audio_duration:.1f}s, ideal {ideal_scene_count}, "
+                    f"LLM planı {llm_scene_count}) → toplam video {duration}s"
                 )
-                if scenes_list:
-                    scenario["scenes"] = scenes_list[:final_scene_count]
+            else:
+                # Ses yok/ölçülemedi — LLM'in planladığı sayıyı kullan ama 5 ile sınırla
+                final_scene_count = max(1, min(llm_scene_count, 5)) if llm_scene_count else 3
+                duration = final_scene_count * 5
+                log.info(
+                    f"Voiceover ölçülemedi, varsayılan sahne sayısı: {final_scene_count} "
+                    f"(LLM planı {llm_scene_count}) → toplam video {duration}s"
+                )
+
+            # İlk N sahneyi al (kalan sahneler render edilmeyecek)
+            if scenes_list_raw and final_scene_count < llm_scene_count:
+                scenario["scenes"] = scenes_list_raw[:final_scene_count]
+                log.info(
+                    f"LLM {llm_scene_count} sahne planladı, ilk {final_scene_count}'i kullanılacak "
+                    f"(geri kalanı render edilmedi → tasarruf)"
+                )
+            elif scenes_list_raw:
+                scenario["scenes"] = scenes_list_raw[:final_scene_count]
 
             scenario["scene_count"] = final_scene_count
             scenario["is_multi_scene"] = final_scene_count > 1
