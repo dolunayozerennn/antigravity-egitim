@@ -78,16 +78,20 @@ prompt'ta mutlaka GERÇEK BİR İNSAN (model) tanımla — kafası kopuk kıyafe
   "title": "Senaryo başlığı (Türkçe)",
   "summary": "1-2 cümlelik Türkçe özet",
   "hook_pattern": "Sürpriz reveal | Before/After | POV | Problem-Solution | ASMR | Unexpected analogy",
+  "narrative_pattern": "linear | before_after | transformation | reveal",
   "voice_name": "Ahu",
   "character_gender": "kadın",
   "scene_count": 5,
   "duration": 25,
-  "character_visual_prompt": "GPT-Image 2 için TEK karakter portresi İngilizce promptu",
+  "character_visual_prompt": "Nano Banana 2 için TEK karakter portresi İngilizce promptu (linear/reveal için ana, before_after/transformation için fallback)",
+  "character_visual_prompt_before": "Sadece narrative_pattern=before_after veya transformation ise: 'önceki/kötü/problem' state İngilizce portresi (örn. 'tired, dull skin with visible pores, no makeup')",
+  "character_visual_prompt_after": "Sadece narrative_pattern=before_after veya transformation ise: 'sonraki/iyi/çözüm' state İngilizce portresi (örn. 'glowing flawless skin, fresh face, healthy radiance')",
   "scenes": [
     {
       "scene_name": "Sahne adı (İngilizce, kısa)",
       "video_prompt": "Seedance 2.0 için DETAYLI İngilizce video promptu",
-      "voiceover_segment": "Bu sahnede karakterin söylediği Türkçe içses parçası (5-15 kelime, audio tag dahil değil)"
+      "voiceover_segment": "Bu sahnede karakterin söylediği Türkçe içses parçası (5-15 kelime, audio tag dahil değil)",
+      "character_state": "before | after | transitional (linear için 'after' yaz)"
     }
   ],
   "voiceover_text": "Türkçe dış ses metni (tüm voiceover_segment'lerin doğal birleşimi + audio tag'ler)",
@@ -224,6 +228,45 @@ woman in beige oversized knit" diye geçir. Sahneden sahneye outfit/saç değiş
 `character_gender`, voice cinsiyeti VE `character_visual_prompt` cinsiyeti — üçü
 aynı olmalı.
 
+## 🎭 NARRATIVE PATTERN — Karakter State Mimarisi (KATI)
+
+Senaryo başlamadan ÖNCE `narrative_pattern` seç (4 değerden biri):
+
+- **`before_after`** → "Eskiden X, şimdi Y" yapısı. Skincare/sağlık/fitness/diş ürünleri için VARSAYILAN.
+  Karakterin İKİ varyantı üretilir: `character_visual_prompt_before` (problem state) + `character_visual_prompt_after` (çözüm state).
+  Sahnelerde `character_state`: ilk 1-2 sahne `before`, kalan sahneler `after`.
+- **`transformation`** → Kademeli geçiş (makyaj uygulama, saç kesimi, antrenman ilerlemesi).
+  Yine 2 varyant: `before` + `after`. Sahnelerde 1 sahne `before`, 1 `transitional`, 2-3 `after`.
+- **`reveal`** → Sürpriz reveal. Tek karakter state. `character_state`: tüm sahneler `after`.
+- **`linear`** → Tek state ürün gösterimi (Tech, Fashion, gadget, accessory). Tek karakter portresi.
+  Tüm sahneler `character_state: "after"`.
+
+### Pattern seçim rehberi (kategori → pattern):
+- Skincare / serum / cilt bakımı / kozmetik → **`before_after`** (varsayılan)
+- Diş bakımı / saç bakımı / fitness / supplement → **`before_after`** veya **`transformation`**
+- Tech (kulaklık, telefon, gadget) → **`linear`**
+- Fashion (ayakkabı, kıyafet, çanta) → **`linear`** veya **`reveal`**
+- Yemek / içecek → **`linear`** veya **`reveal`**
+
+### `character_visual_prompt_before` / `character_visual_prompt_after` yazımı:
+ZORUNLU AYNI KİŞİ — yaş, etnisite, saç rengi/stili, yüz şekli, kıyafet AYNI olmalı. Sadece
+spesifik özellik (cilt durumu, ifade, postür) farklı olsun. Pipeline `before` portresinden
+image-to-image ile `after` üretecek; aynı yüz korunacak.
+
+✅ ÖRNEK (skincare):
+- `character_visual_prompt_before`: "Single late-20s Turkish woman, dark wavy shoulder-length hair, tired expression, dull lifeless skin with visible pores around nose, dark under-eye circles, slight redness on cheeks, no makeup, beige oversized knit sweater, head and shoulders three-quarter shot, plain neutral studio background, photorealistic, soft frontal lighting, candid expression"
+- `character_visual_prompt_after`: "Single late-20s Turkish woman, dark wavy shoulder-length hair, glowing flawless dewy skin, refreshed bright eyes, healthy radiance, even skin tone, no makeup, beige oversized knit sweater, head and shoulders three-quarter shot, plain neutral studio background, photorealistic, soft frontal lighting, content subtle smile"
+
+❌ YASAK: before ve after'da farklı saç rengi, farklı yaş, farklı kıyafet — tutarsız karakter.
+
+### `character_state` sahne dağılımı:
+- `before_after` (5 sahne): scene 1-2 → `before`, scene 3-5 → `after`
+- `before_after` (3 sahne): scene 1 → `before`, scene 2-3 → `after`
+- `transformation` (5 sahne): scene 1 → `before`, scene 2 → `transitional`, scene 3-5 → `after`
+- `linear`/`reveal`: tüm sahneler → `after` (tek portre kullanılacak)
+
+KRİTİK: voiceover tense'i `character_state` ile uyumlu olmalı (aşağıda):
+
 ## ⏳ SES-GÖRSEL TENSE DİSİPLİNİ (MUTLAK UYUM)
 
 Voiceover'daki ZAMAN KİPİ (tense), o sahnede gösterilen GÖRSEL DURUMLA birebir uyumlu olmalı.
@@ -284,7 +327,7 @@ Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerd
 1. **HER ZAMAN 5 SAHNE PLANLA** (`scene_count = 5`, `duration = 25`).
    Pipeline voiceover ses süresini ölçtükten sonra `scene_count = max(3, ceil(audio/5))`
    ile ilk N sahneyi alır, kalanlar render edilmez. Yani sen 5 sahne yaz; pipeline
-   gereken kadarını kullanır. Bu sayede ses ne kadar uzun çıkarsa çıksın (35 kelime
+   gereken kadarını kullanır. Bu sayede ses ne kadar uzun çıkarsa çıksın (25 kelime
    sınırı içinde) sahne sayısı dinamik adapte olur.
 2. **HER SAHNE 5 SANİYE** (Seedance sabit). Yani sen sahneleri 5s'lik bağımsız
    "shot"lar olarak tasarla — sahneler birleşince hikâye anlamlı kalsın ama her sahne
@@ -340,11 +383,11 @@ Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerd
 ### Voiceover (Türkçe — UGC ARKADAŞ TONU + V3 AUDIO TAGS):
 
 **🚨 VAZGEÇİLMEZ KATI KURAL — VOICEOVER KELİME LİMİTİ 🚨**
-**`voiceover_text` MAKSİMUM 30 KELİME OLABİLİR. ASLA AŞMA.**
+**`voiceover_text` MAKSİMUM 25 KELİME OLABİLİR. ASLA AŞMA.**
 **Aştığın takdirde sistem voiceover'ını otomatik kesip son cümleleri silecek — bu kullanıcıya zarar verir.**
-**Bu yüzden 30 kelime sınırına kendin uy: 25-30 arası ideal, 30 üstü YASAK.**
-- Türkçe ortalama 2.5 kelime/saniye → 30 kelime ≈ 12 saniye (rahat tampon).
-- 30 üstüne çıkarsan video sesi ortada kesilir. 25-30 arası ideal.
+**Bu yüzden 25 kelime sınırına kendin uy: 18-25 arası ideal, 25 üstü YASAK.**
+- Türkçe ortalama 2.5 kelime/saniye → 25 kelime ≈ 10 saniye (3 sahne × 5s = 15s'lik videoya rahat sığar).
+- 25 üstüne çıkarsan video sesi ortada kesilir. 18-25 arası ideal.
 - Audio tag'ler (`[whispers]`, `[pause]`, `[delighted]`, `[laughs softly]` vb.)
   KELİME SAYISINA DAHİL DEĞİL — onlar serbestçe ekle, sadece konuşulan Türkçe
   kelimeleri say.
@@ -380,7 +423,7 @@ Generic "X ile Y'ye kavuşun" / "doğal parlaklığa ulaşın" tarzı klişelerd
 4. **Sayılar TÜRKÇE YAZIYLA — ASLA RAKAM KULLANMA**:
    - "10%" → "yüzde on", "30 ml" → "otuz mililitre", "2.5 saat" → "iki nokta beş saat"
    - Marka adlarındaki rakamlar (Air Force 1, AirPods Pro, iPhone 15) KORUNUR.
-5. **Süre**: doğal akıcı 2-3 cümle, ama **KESİNLİKLE 30 KELİMEYİ AŞMA** (yukarıdaki
+5. **Süre**: doğal akıcı 2-3 cümle, ama **KESİNLİKLE 25 KELİMEYİ AŞMA** (yukarıdaki
    vazgeçilmez kural). Akıcılığı koru ama sıkı sınır içinde kal. Net ama samimi.
 6. Hook formülü voiceover'ın TONUNDA da hissedilmeli — sadece kelimelerle değil,
    tag'lerle (örn. Sürpriz reveal hook → [in awe] / [surprised] / [whispers] kullan).
@@ -579,6 +622,58 @@ class ScenarioEngine:
                 scenario["voice_name"] = fallback
         except Exception:
             log.warning("Cinsiyet validation hatası (yok sayıldı)", exc_info=True)
+
+        # ── NARRATIVE PATTERN + character_state validasyonu ──
+        # WHY: before_after / transformation pattern'larında dual karakter üreteceğiz;
+        # eksik field'ları auto-fix et, sahnelerde character_state default'unu doldur.
+        narrative_pattern = (scenario.get("narrative_pattern") or "").strip().lower()
+        if narrative_pattern not in {"linear", "before_after", "transformation", "reveal"}:
+            log.warning(
+                f"⚠️ Geçersiz narrative_pattern '{narrative_pattern}' → 'linear' fallback"
+            )
+            narrative_pattern = "linear"
+        scenario["narrative_pattern"] = narrative_pattern
+        log.info(f"🎭 narrative_pattern: {narrative_pattern}")
+
+        # before_after / transformation → before/after prompt'ları zorunlu
+        if narrative_pattern in {"before_after", "transformation"}:
+            cvp_before = (scenario.get("character_visual_prompt_before") or "").strip()
+            cvp_after = (scenario.get("character_visual_prompt_after") or "").strip()
+            cvp_main = (scenario.get("character_visual_prompt") or "").strip()
+            if not cvp_before:
+                log.warning(
+                    "⚠️ narrative_pattern=before_after/transformation ama "
+                    "character_visual_prompt_before boş → ana character_visual_prompt'a fallback"
+                )
+                scenario["character_visual_prompt_before"] = cvp_main
+            if not cvp_after:
+                log.warning(
+                    "⚠️ narrative_pattern=before_after/transformation ama "
+                    "character_visual_prompt_after boş → 'linear' fallback (single karakter)"
+                )
+                scenario["narrative_pattern"] = "linear"
+                narrative_pattern = "linear"
+
+        # Sahne character_state default doldurma
+        scenes_for_state = scenario.get("scenes", [])
+        for idx, scene in enumerate(scenes_for_state, 1):
+            cs = (scene.get("character_state") or "").strip().lower()
+            if cs not in {"before", "after", "transitional"}:
+                # Default: linear/reveal → after; before_after → ilk yarı before
+                if narrative_pattern in {"before_after"}:
+                    half = max(1, len(scenes_for_state) // 2)
+                    cs = "before" if idx <= half else "after"
+                elif narrative_pattern == "transformation":
+                    if idx == 1:
+                        cs = "before"
+                    elif idx == 2:
+                        cs = "transitional"
+                    else:
+                        cs = "after"
+                else:
+                    cs = "after"
+                scene["character_state"] = cs
+            log.info(f"  Sahne {idx} character_state: {scene['character_state']}")
 
         # ── NARRATIVE HOOK + voiceover_segment validasyonu ──
         # WHY: voiceover/sahne kopukluğu kök problem; LLM'in hook + segment yazma

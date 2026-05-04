@@ -379,6 +379,163 @@ class KieAIService:
         log.info(f"Karakter görseli URL: {url[:80]}...")
         return url
 
+    def create_character_with_product(
+        self,
+        character_prompt: str,
+        product_image_url: str,
+        aspect_ratio: str = "9:16",
+    ) -> str:
+        """
+        Nano Banana 2 image-to-image ile karakter+ürün KOMPOZIT görseli üretir.
+
+        WHY: Seedance reference'ında SADECE karakter portresi → karakter tutarlı ama
+        ürün görseli prompt'tan hayali geliyor (yanlış model/renk). Çözüm: karakter
+        portresi + ürün'ü tek bir kompozit görselde birleştir; bu kompozit Seedance'a
+        ref olarak verildiğinde hem karakter hem ürün netleşir.
+
+        Args:
+            character_prompt: Karakter için İngilizce prompt
+            product_image_url: nano-banana-2'ye image_input olarak verilecek ürün
+                               referans görseli (Trendyol/Amazon/marka sayfası)
+            aspect_ratio: "9:16" (default) — dikey portre
+
+        Returns:
+            str: Üretilen kompozit görselin URL'si
+
+        Raises:
+            RuntimeError: Üretim başarısız olursa
+        """
+        composite_prompt = (
+            f"{character_prompt}. The person is holding/wearing the product shown "
+            f"in the reference image. Plain studio background, photorealistic, "
+            f"9:16 vertical, the EXACT same product visible (same model, same color, "
+            f"same shape, same details), sharp focus on both the face and the product, "
+            f"no text, no watermark, no logos overlay"
+        )
+        safe_aspect = normalize_aspect_ratio(aspect_ratio)
+
+        payload = {
+            "model": "nano-banana-2",
+            "input": {
+                "prompt": composite_prompt,
+                "aspect_ratio": safe_aspect,
+                "image_input": [product_image_url],
+            },
+        }
+
+        task_id = self._create_task(payload)
+        log.info(
+            f"Karakter+ürün kompozit görev oluşturuldu (nano-banana-2 i2i): {task_id} "
+            f"({safe_aspect}) — product_ref={product_image_url[:80]}..."
+        )
+
+        result = self.poll_task(task_id)
+        if result.get("status") != "success" or not result.get("urls"):
+            raise RuntimeError(
+                f"Karakter+ürün kompozit üretimi başarısız: "
+                f"{result.get('error', 'Bilinmeyen hata')}"
+            )
+
+        url = result["urls"][0]
+        log.info(f"Karakter+ürün kompozit görseli üretildi: {url}")
+        return url
+
+    async def async_create_character_with_product(
+        self,
+        character_prompt: str,
+        product_image_url: str,
+        aspect_ratio: str = "9:16",
+    ) -> str:
+        """
+        Async varyant — voiceover ve diğer karakter üretimleriyle paralel çalıştırmak için.
+        """
+        import asyncio as _asyncio
+        composite_prompt = (
+            f"{character_prompt}. The person is holding/wearing the product shown "
+            f"in the reference image. Plain studio background, photorealistic, "
+            f"9:16 vertical, the EXACT same product visible (same model, same color, "
+            f"same shape, same details), sharp focus on both the face and the product, "
+            f"no text, no watermark, no logos overlay"
+        )
+        safe_aspect = normalize_aspect_ratio(aspect_ratio)
+
+        payload = {
+            "model": "nano-banana-2",
+            "input": {
+                "prompt": composite_prompt,
+                "aspect_ratio": safe_aspect,
+                "image_input": [product_image_url],
+            },
+        }
+        task_id = await _asyncio.to_thread(self._create_task, payload)
+        log.info(
+            f"Karakter+ürün kompozit görev (async, nano-banana-2 i2i): {task_id} "
+            f"({safe_aspect}) — product_ref={product_image_url[:80]}..."
+        )
+        result = await self.async_poll_task(task_id)
+        if result.get("status") != "success" or not result.get("urls"):
+            raise RuntimeError(
+                f"Karakter+ürün kompozit üretimi başarısız: "
+                f"{result.get('error', 'Bilinmeyen hata')}"
+            )
+        url = result["urls"][0]
+        log.info(f"Karakter+ürün kompozit görseli üretildi: {url}")
+        return url
+
+    async def async_create_character_variant_from_image(
+        self,
+        base_image_url: str,
+        variant_prompt: str,
+        aspect_ratio: str = "9:16",
+    ) -> str:
+        """
+        Mevcut karakter görselinden yeni varyant üret (image-to-image).
+
+        Kullanım: before/after dual karakter — base 'before' portresinden 'after'
+        portresini üret. Aynı yüz/saç/kıyafet, sadece variant_prompt'ta belirtilen
+        özellik (cilt durumu vb.) değişir.
+
+        Args:
+            base_image_url: Temel karakter görseli URL'si
+            variant_prompt: Değişecek özelliği tarif eden İngilizce prompt
+                            (örn. "glowing flawless skin, fresh face, healthy radiance")
+            aspect_ratio: "9:16"
+
+        Returns:
+            str: Üretilen varyant görselinin URL'si
+        """
+        import asyncio as _asyncio
+        full_prompt = (
+            f"Same face, same hairstyle, same outfit, same person — but with "
+            f"{variant_prompt}. Plain studio background, photorealistic, 9:16 vertical, "
+            f"sharp focus on the face, head and shoulders three-quarter shot, "
+            f"no text, no watermark"
+        )
+        safe_aspect = normalize_aspect_ratio(aspect_ratio)
+
+        payload = {
+            "model": "nano-banana-2",
+            "input": {
+                "prompt": full_prompt,
+                "aspect_ratio": safe_aspect,
+                "image_input": [base_image_url],
+            },
+        }
+        task_id = await _asyncio.to_thread(self._create_task, payload)
+        log.info(
+            f"Karakter varyant görev (async, nano-banana-2 i2i): {task_id} "
+            f"({safe_aspect}) — variant: {variant_prompt[:80]}..."
+        )
+        result = await self.async_poll_task(task_id)
+        if result.get("status") != "success" or not result.get("urls"):
+            raise RuntimeError(
+                f"Karakter varyant üretimi başarısız: "
+                f"{result.get('error', 'Bilinmeyen hata')}"
+            )
+        url = result["urls"][0]
+        log.info(f"Karakter varyant görseli üretildi: {url}")
+        return url
+
     async def async_create_character_image(
         self,
         prompt: str,

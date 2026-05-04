@@ -184,31 +184,32 @@ class ProductionPipeline:
             else:
                 log.warning("⚠️ Narrative hook eksik — voiceover/sahne paralelliği zayıf olabilir")
 
-            # Voiceover kelime sayısı log (35 limit kontrolü — sadece konuşulan kelimeler)
+            # Voiceover kelime sayısı log (25 limit kontrolü — sadece konuşulan kelimeler)
             if voiceover_text:
                 import re as _re_count
                 # Audio tag'leri çıkar: [whispers], [pause], [delighted] vb.
                 _spoken = _re_count.sub(r"\[[^\]]+\]", " ", voiceover_text)
                 _word_count = len([w for w in _spoken.split() if w.strip()])
                 _est_sec = _word_count / 2.5
-                if _word_count > 35:
+                if _word_count > 25:
                     log.warning(
                         f"⚠️ Voiceover kelime sayısı limiti aştı: {_word_count} kelime "
-                        f"(~{_est_sec:.1f}s) — LLM 35 kelime sınırına uymadı, ses kesilebilir"
+                        f"(~{_est_sec:.1f}s) — LLM 25 kelime sınırına uymadı, kırpılacak"
                     )
                 else:
                     log.info(
                         f"Voiceover kelime sayısı: {_word_count} kelime "
-                        f"(~{_est_sec:.1f}s) — limit 35 ✅"
+                        f"(~{_est_sec:.1f}s) — limit 25 ✅"
                     )
 
             # ── ZORLA KELİME KIRPMA (post-process) ──
-            # WHY: LLM 30 kelime sınırına uymuyor (43-50 kelime üretiyor) → ses video'dan
-            # uzun çıkıyor. Cümle bütünlüğünü koruyacak şekilde son cümleden başlayarak kırp.
+            # WHY: LLM 25 kelime sınırına uymuyor → ses video'dan uzun çıkıyor.
+            # Cümle bütünlüğünü koruyacak şekilde son cümleden başlayarak kırp.
+            # Hedef: 25 kelime (~10s) → min 3 sahne (15s) videoya 5s tampon.
             if voiceover_text:
                 from utils.text_normalizer import trim_voiceover_to_word_limit
                 trimmed, orig_wc, final_wc, dropped = trim_voiceover_to_word_limit(
-                    voiceover_text, max_words=30, min_words=20
+                    voiceover_text, max_words=25, min_words=18
                 )
                 if dropped > 0 or final_wc != orig_wc:
                     log.info(
@@ -230,8 +231,15 @@ class ProductionPipeline:
                     voiceover_text = normalized
 
             character_visual_prompt = (scenario.get("character_visual_prompt") or "").strip()
+            character_visual_prompt_before = (scenario.get("character_visual_prompt_before") or "").strip()
+            character_visual_prompt_after = (scenario.get("character_visual_prompt_after") or "").strip()
+            narrative_pattern = (scenario.get("narrative_pattern") or "linear").strip().lower()
             character_gender = (scenario.get("character_gender") or "").strip()
             voice_name = (scenario.get("voice_name") or "Ahu").strip()
+            # Ürün referans görseli — ilk geçerli ürün görselini kompozit için kullan
+            product_image_for_composite = None
+            if reference_images:
+                product_image_for_composite = reference_images[0]
 
             async def _produce_voiceover():
                 """Voiceover üret. Return: (audio_bytes, audio_url, audio_duration, success, err)."""
@@ -269,56 +277,194 @@ class ProductionPipeline:
                     return None, "", 0.0, False, str(vo_err)[:300]
 
             async def _produce_character_image():
-                """Karakter portresi üret. Fail olursa None — pipeline ürün görselleriyle devam eder."""
-                if not character_visual_prompt:
+                """
+                Karakter portresi(leri) üret. Pattern'e göre:
+                - linear/reveal: tek karakter. Ürün ref'i varsa kompozit (karakter+ürün);
+                  yoksa klasik text-to-image.
+                - before_after/transformation: iki karakter (before + after). Before
+                  text-to-image ile, after image-to-image ile before'dan üretilir
+                  (aynı yüz korunsun). Ürün ref'i kompozite enjekte EDİLMEZ — burada
+                  öncelik karakter cilt durumu tutarlılığı (Skincare).
+
+                Dönüş: dict {
+                    "main": <url|None>,
+                    "before": <url|None>,
+                    "after": <url|None>,
+                }
+                """
+                out = {"main": None, "before": None, "after": None}
+                if not (character_visual_prompt or character_visual_prompt_before):
                     log.info("character_visual_prompt boş — karakter üretimi atlanıyor (geriye dönük uyum)")
-                    return None
-                try:
-                    if progress_callback:
-                        await progress_callback(
-                            "step_character",
-                            "👤 Karakter portresi üretiliyor (GPT-Image 2)..."
+                    return out
+
+                # ── DUAL KARAKTER (before/after) ──
+                if narrative_pattern in {"before_after", "transformation"} and character_visual_prompt_before and character_visual_prompt_after:
+                    try:
+                        if progress_callback:
+                            await progress_callback(
+                                "step_character",
+                                "👤 İki karakter varyantı üretiliyor (before + after)..."
+                            )
+                        log.info(
+                            f"Dual karakter (pattern={narrative_pattern}, gender={character_gender or '?'}, "
+                            f"voice={voice_name})"
                         )
-                    log.info(
-                        f"Karakter prompt (gender={character_gender or '?'}, voice={voice_name}): "
-                        f"{character_visual_prompt[:140]}..."
-                    )
-                    cu = await self.kie.async_create_character_image(
-                        prompt=character_visual_prompt,
-                        aspect_ratio="9:16",
-                        resolution="2K",
-                    )
-                    log.info(f"Karakter görseli üretildi: {cu}")
-                    return cu
+                        log.info(f"  before prompt: {character_visual_prompt_before[:140]}...")
+                        log.info(f"  after prompt:  {character_visual_prompt_after[:140]}...")
+
+                        # 1) before portresi (text-to-image)
+                        before_url = await self.kie.async_create_character_image(
+                            prompt=character_visual_prompt_before,
+                            aspect_ratio="9:16",
+                            resolution="2K",
+                        )
+                        log.info(f"Karakter (before) üretildi: {before_url}")
+                        out["before"] = before_url
+
+                        # 2) after = before'dan i2i varyant (aynı yüz)
+                        try:
+                            after_url = await self.kie.async_create_character_variant_from_image(
+                                base_image_url=before_url,
+                                variant_prompt=character_visual_prompt_after,
+                                aspect_ratio="9:16",
+                            )
+                            log.info(f"Karakter (after) üretildi (i2i variant): {after_url}")
+                            out["after"] = after_url
+                        except Exception as e2:
+                            log.warning(
+                                f"Karakter (after) i2i fail → text-to-image fallback: {e2}"
+                            )
+                            after_url = await self.kie.async_create_character_image(
+                                prompt=character_visual_prompt_after,
+                                aspect_ratio="9:16",
+                                resolution="2K",
+                            )
+                            log.info(f"Karakter (after) üretildi (t2i fallback): {after_url}")
+                            out["after"] = after_url
+
+                        out["main"] = out["after"] or out["before"]
+                        return out
+                    except Exception as ce:
+                        log.warning(
+                            f"Dual karakter üretimi fail → linear fallback'a düşülüyor: {ce}",
+                            exc_info=True,
+                        )
+                        # Linear flow'a düş
+
+                # ── LINEAR / REVEAL (tek karakter) ──
+                # Ürün ref'i varsa kompozit kullan; yoksa klasik
+                base_prompt = character_visual_prompt or character_visual_prompt_before or character_visual_prompt_after
+                if not base_prompt:
+                    return out
+
+                try:
+                    if product_image_for_composite:
+                        if progress_callback:
+                            await progress_callback(
+                                "step_character",
+                                "👤 Karakter+ürün kompozit görsel üretiliyor (nano-banana-2 i2i)..."
+                            )
+                        log.info(
+                            f"Karakter+ürün kompozit (gender={character_gender or '?'}, "
+                            f"voice={voice_name}, product_ref={product_image_for_composite[:80]}...)"
+                        )
+                        cu = await self.kie.async_create_character_with_product(
+                            character_prompt=base_prompt,
+                            product_image_url=product_image_for_composite,
+                            aspect_ratio="9:16",
+                        )
+                        log.info(f"Karakter+ürün kompozit görseli üretildi: {cu}")
+                        out["main"] = cu
+                        return out
+                    else:
+                        if progress_callback:
+                            await progress_callback(
+                                "step_character",
+                                "👤 Karakter portresi üretiliyor (text-to-image)..."
+                            )
+                        log.info(
+                            f"Karakter prompt (gender={character_gender or '?'}, voice={voice_name}, "
+                            f"product_ref=YOK): {base_prompt[:140]}..."
+                        )
+                        cu = await self.kie.async_create_character_image(
+                            prompt=base_prompt,
+                            aspect_ratio="9:16",
+                            resolution="2K",
+                        )
+                        log.info(f"Karakter görseli üretildi: {cu}")
+                        out["main"] = cu
+                        return out
                 except Exception as ce:
                     log.warning(
                         f"Karakter görseli üretilemedi, ürün görselleriyle devam ediliyor: {ce}",
                         exc_info=True,
                     )
-                    return None
+                    # Kompozit fail ise klasik text-to-image son şans
+                    if product_image_for_composite:
+                        try:
+                            log.info("Kompozit fail → klasik text-to-image fallback")
+                            cu = await self.kie.async_create_character_image(
+                                prompt=base_prompt,
+                                aspect_ratio="9:16",
+                                resolution="2K",
+                            )
+                            out["main"] = cu
+                            log.info(f"Karakter (fallback) üretildi: {cu}")
+                        except Exception as ce2:
+                            log.warning(f"Karakter fallback de fail: {ce2}")
+                    return out
 
-            (vo_bytes, audio_url, audio_duration, voiceover_succeeded, vo_err_msg), character_image_url = (
+            (vo_bytes, audio_url, audio_duration, voiceover_succeeded, vo_err_msg), character_images = (
                 await asyncio.gather(_produce_voiceover(), _produce_character_image())
             )
+            character_image_url = character_images.get("main")
+            character_before_url = character_images.get("before")
+            character_after_url = character_images.get("after")
 
             if audio_url:
                 result["audio_url"] = audio_url
             if vo_err_msg:
                 result["voiceover_error"] = vo_err_msg
 
-            # WHY: Seedance ağırlığı bölmesin diye SADECE karakter görselini referans
-            # olarak veriyoruz. Ürün görselleri zaten LLM tarafından video_prompt
-            # içinde marka+ürün adıyla net tarif ediliyor — referans olarak gönderilmesi
-            # tutarsız karakter üretimine yol açıyor. Karakter üretilemediyse fallback
-            # olarak ürün görsellerini kullan (yine de ref-image modunda kalsın).
+            # WHY: Seedance reference'ı tek bir KARAKTER+ÜRÜN kompozit görseliyle
+            # besliyoruz. Bu kompozit hem karakter tutarlılığını hem ürün doğruluğunu
+            # garanti ediyor (Air Force 1 yerine yanlış model çıkması probleminin çözümü).
+            # before_after pattern'da her sahnenin character_state'ine göre doğru
+            # portreyi (before veya after) referans olarak vereceğiz.
             product_image_urls = list(reference_images or [])
+            state_to_ref: dict[str, str] = {}
+            if character_before_url:
+                state_to_ref["before"] = character_before_url
+            if character_after_url:
+                state_to_ref["after"] = character_after_url
+            # transitional → after varyantı (yoksa before)
+            if character_after_url:
+                state_to_ref["transitional"] = character_after_url
+            elif character_before_url:
+                state_to_ref["transitional"] = character_before_url
+            # Tek karakter modunda main URL fallback olarak tüm state'leri karşılar
+            if character_image_url and not state_to_ref:
+                state_to_ref = {
+                    "before": character_image_url,
+                    "after": character_image_url,
+                    "transitional": character_image_url,
+                }
+
             if character_image_url:
                 reference_images = [character_image_url]
-                log.info(
-                    f"Referans görseller hazır: 1/1 (sadece karakter) — "
-                    f"{len(product_image_urls)} ürün görseli prompt'a bırakıldı, "
-                    f"Seedance'a referans olarak gönderilmiyor (tutarlılık için)"
-                )
+                if state_to_ref and (character_before_url or character_after_url):
+                    log.info(
+                        f"Referans görseller hazır: dual karakter (pattern={narrative_pattern}) — "
+                        f"before={'✓' if character_before_url else '✗'}, "
+                        f"after={'✓' if character_after_url else '✗'} | "
+                        f"{len(product_image_urls)} ürün görseli prompt'a bırakıldı"
+                    )
+                else:
+                    log.info(
+                        f"Referans görseller hazır: 1/1 (karakter+ürün kompozit) — "
+                        f"{len(product_image_urls)} ürün görseli prompt'a bırakıldı, "
+                        f"Seedance'a referans olarak gönderilmiyor (kompozit görselde zaten var)"
+                    )
             else:
                 reference_images = product_image_urls[:9]
                 log.warning(
@@ -382,6 +528,7 @@ class ProductionPipeline:
                     duration=duration,
                     aspect_ratio=aspect_ratio,
                     progress_callback=progress_callback,
+                    state_to_ref=state_to_ref,
                 )
                 result["raw_video_url"] = raw_video_url
                 log.info(
@@ -695,6 +842,7 @@ class ProductionPipeline:
         duration: int,
         aspect_ratio: str,
         progress_callback=None,
+        state_to_ref: dict | None = None,
     ) -> tuple[str, int, int]:
         """
         Multi-scene video üretim akışı.
@@ -741,14 +889,29 @@ class ProductionPipeline:
 
             Reference image Seedance tarafından reddedilirse (örn. SVG/uzantısız OG image),
             otomatik olarak text-to-video moduna fallback yapar — sahne yine de üretilir.
+
+            character_state varsa state_to_ref'ten doğru karakter portresini ref olarak verir
+            (before_after pattern desteği).
             """
             prompt = scene.get("video_prompt", "")
             scene_name = scene.get("scene_name", f"Scene_{idx}")
+            scene_state = (scene.get("character_state") or "").strip().lower()
+
+            # State'e göre doğru ref'i seç; yoksa default reference_images
+            scene_refs = list(reference_images) if reference_images else []
+            if state_to_ref and scene_state and scene_state in state_to_ref:
+                state_ref_url = state_to_ref[scene_state]
+                if state_ref_url:
+                    scene_refs = [state_ref_url]
+                    log.info(
+                        f"Sahne {idx+1}/{scene_count} character_state='{scene_state}' → "
+                        f"ref={state_ref_url[:80]}..."
+                    )
 
             if "no dialogue" not in prompt.lower() and "no speaking" not in prompt.lower():
                 prompt += f" {no_dialogue}"
 
-            log.info(f"Sahne {idx+1}/{scene_count} başlatılıyor: {scene_name}")
+            log.info(f"Sahne {idx+1}/{scene_count} başlatılıyor: {scene_name} (state={scene_state or '?'})")
 
             async def _run(use_refs: bool) -> dict:
                 task = await asyncio.to_thread(
@@ -757,7 +920,7 @@ class ProductionPipeline:
                     duration=per_scene_duration,
                     aspect_ratio=aspect_ratio,
                     generate_audio=True,
-                    reference_images=reference_images if (use_refs and reference_images) else None,
+                    reference_images=scene_refs if (use_refs and scene_refs) else None,
                 )
                 return await self.kie.async_poll_task(task)
 
