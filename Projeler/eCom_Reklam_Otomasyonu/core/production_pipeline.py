@@ -271,8 +271,10 @@ class ProductionPipeline:
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             # ADIM 1: VIDEO ÜRETİMİ
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            multi_succeeded_count = 0
+            multi_per_scene_duration = 0
             if scenario.get("is_multi_scene"):
-                raw_video_url = await self._produce_multi_scene(
+                raw_video_url, multi_succeeded_count, multi_per_scene_duration = await self._produce_multi_scene(
                     scenario=scenario,
                     reference_images=reference_images,
                     duration=duration,
@@ -280,7 +282,10 @@ class ProductionPipeline:
                     progress_callback=progress_callback,
                 )
                 result["raw_video_url"] = raw_video_url
-                log.info(f"Multi-scene video üretildi: {raw_video_url[:60]}...")
+                log.info(
+                    f"Multi-scene video üretildi: {raw_video_url[:60]}... "
+                    f"({multi_succeeded_count} sahne × {multi_per_scene_duration}s)"
+                )
             else:
                 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 # ADIM 1: Video Üretimi (Seedance 2.0 — Reference Image) [TEK SAHNE]
@@ -387,6 +392,21 @@ class ProductionPipeline:
             # ADIM 2: Video + Ses Birleştirme (Replicate)
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             # Voiceover ADIM 0'da üretildi. Burada sadece merge.
+            #
+            # SYNC KORUYUCU: Multi-scene degraded mode'da (örn. 1 sahne copyright fail)
+            # gerçek video süresi planlananın altına düşer. duration_mode="audio" olursa
+            # video kalan ses süresince freeze eder. Bu durumda duration_mode="video"
+            # kullanıp sesi video boyuna kırpıyoruz (mesajın sonu kesilebilir ama sync OK).
+            duration_mode = "audio"
+            if scenario.get("is_multi_scene") and multi_succeeded_count and multi_per_scene_duration:
+                actual_video_duration = multi_succeeded_count * multi_per_scene_duration
+                if voiceover_succeeded and audio_duration > actual_video_duration + 0.5:
+                    duration_mode = "video"
+                    log.warning(
+                        f"Degraded multi-scene sync koruyucu: ses {audio_duration:.1f}s, "
+                        f"video {actual_video_duration}s → duration_mode=video (ses video boyuna kırpılacak)"
+                    )
+
             if voiceover_succeeded and audio_url:
                 try:
                     if progress_callback:
@@ -398,6 +418,7 @@ class ProductionPipeline:
                         video_url=raw_video_url,
                         audio_url=audio_url,
                         replace_audio=False,  # Ambient sesler + Türkçe dış ses
+                        duration_mode=duration_mode,
                     )
                     log.info(f"Video+ses birleştirildi: {final_video_url[:60]}...")
                 except Exception as merge_err:
@@ -572,23 +593,18 @@ class ProductionPipeline:
         duration: int,
         aspect_ratio: str,
         progress_callback=None,
-    ) -> str:
+    ) -> tuple[str, int, int]:
         """
         Multi-scene video üretim akışı.
 
         1. Her sahne için paralel Seedance 2.0 task'ı başlat
-        2. Tüm sahneleri bekle (asyncio.gather)
-        3. Replicate video-merge ile birleştir
-
-        Args:
-            scenario: UGC senaryo (scenes listesi içerir)
-            reference_images: Ürün görselleri
-            duration: Toplam video süresi
-            aspect_ratio: Video formatı
-            progress_callback: İlerleme callback'i
+        2. Fail eden sahneleri safety rewrite + image-format fallback ile kurtar
+        3. Tüm sahneleri bekle (asyncio.gather)
+        4. Replicate video-merge ile birleştir
 
         Returns:
-            str: Birleştirilmiş video URL'i
+            (concat_url, succeeded_scene_count, per_scene_duration)
+            — caller degraded mode tespit edip ses senkronu için kullanır.
         """
         scenes = scenario.get("scenes", [])
         if not scenes:
@@ -657,6 +673,34 @@ class ProductionPipeline:
                 )
                 result = await _run(use_refs=False)
 
+            # Safety/copyright/sensitive content → prompt rewrite + retry
+            # WHY: Tek başarısız sahne tüm video'nun ses senkronunu bozabiliyor.
+            err_str = str(result.get("error", "")).lower()
+            if (
+                result.get("status") != "success"
+                and any(kw in err_str for kw in ["safety", "copyright", "sensitive", "content policy", "nsfw"])
+            ):
+                log.warning(
+                    f"Sahne {idx+1}/{scene_count} safety/copyright filtreye takıldı, prompt rewrite deneniyor: "
+                    f"{result.get('error')}"
+                )
+                try:
+                    rewritten = await self._rewrite_prompt_for_safety(prompt)
+                    if rewritten and rewritten != prompt:
+                        original_prompt = prompt
+                        prompt = rewritten + " " + no_dialogue
+                        result = await _run(use_refs=True)
+                        # Rewrite + ref image hâlâ fail ediyorsa, ref'siz dene
+                        if (
+                            result.get("status") != "success"
+                            and reference_images
+                            and "image format" in str(result.get("error", "")).lower()
+                        ):
+                            result = await _run(use_refs=False)
+                        prompt = original_prompt  # diagnostic için
+                except Exception as rewrite_err:
+                    log.warning(f"Sahne {idx+1} safety rewrite başarısız: {rewrite_err}")
+
             if result["status"] != "success" or not result.get("urls"):
                 error = result.get("error", "Bilinmeyen hata")
                 raise RuntimeError(f"Sahne '{scene_name}' üretimi başarısız: {error}")
@@ -706,4 +750,4 @@ class ProductionPipeline:
         concat_url = await self.replicate.async_concat_videos(list(scene_video_urls))
         log.info(f"Multi-scene concat tamamlandı: {concat_url[:60]}...")
 
-        return concat_url
+        return concat_url, len(scene_video_urls), per_scene_duration
