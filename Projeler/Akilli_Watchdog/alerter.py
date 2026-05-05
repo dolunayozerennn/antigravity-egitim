@@ -130,9 +130,26 @@ def build_html_report(
     # Antigravity Prompt (Kullanıcının kopyalayacağı kısım)
     antigravity_prompt_html = ""
     if all_issues:
-        prompt_text = "Merhaba Antigravity, Akıllı Watchdog sisteminden aşağıdaki hataları tespit ettim. Lütfen bu sorunları inceleyip çözer misin?\n\nWatchdog Çıktısı:\n"
-        for issue in all_issues:
-            prompt_text += f"- {issue}\n"
+        issues_block = "\n".join(f"- {i}" for i in all_issues)
+        prompt_text = (
+            "Akıllı Watchdog şu an aşağıdaki sorunları raporladı. Mimar Modu'ndasın: teşhisi ve düzeltmeyi sen yap, "
+            "bana teknik karar sorma, sadece sonucu ürün dilinde raporla.\n\n"
+            f"TARİH: {timestamp}\n"
+            f"SORUN SAYISI: {len(all_issues)}\n\n"
+            "RAPORLANAN SORUNLAR:\n"
+            f"{issues_block}\n\n"
+            "YAPMAN GEREKENLER:\n"
+            "1. Her sorunu sırayla teşhis et. Railway sorunları için service_id ile GraphQL üzerinden son deployment "
+            "loglarını çek (master.env içindeki RAILWAY_TOKEN, endpoint backboard.railway.com/graphql/v2).\n"
+            "2. Kök neden bulunca düzelt — kod fix'i, env var, redeploy, cron schedule override (min 5dk) gerekirse.\n"
+            "3. Düzeltme sonrası Watchdog'u tekrar tetikle (Akilli_Watchdog projesinin Railway servisini redeploy et) "
+            "ve issue'ların gerçekten düştüğünü doğrula.\n"
+            "4. Self-Review: 'yaptım' deme — 'doğruladım: X servisi şu an SUCCESS, Y kontrolü temiz' formatında raporla.\n\n"
+            "İPUÇLARI:\n"
+            "- Railway 'SKIPPED' = monorepo watch pattern, alarm değil; yanlış raporlanıyorsa watchdog mantığını düzelt.\n"
+            "- Notion/Sheets sorunları için ilgili projenin son commit'ini ve env değişkenlerini kontrol et.\n"
+            "- Token Freshness CRITICAL ise master.env + Railway service env'ini birlikte güncelle, sonra etkilenen servisleri redeploy et.\n"
+        )
             
         antigravity_prompt_html = f"""
         <div style="margin-bottom: 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">

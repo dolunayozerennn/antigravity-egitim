@@ -360,8 +360,8 @@ def run_health_check(force_email: bool = False) -> dict:
             logger.info(f"  ✅ {rr['name']} → {rr['status']} ({rr['created_at']})")
         else:
             msg = (
-                f"🚨 [{rr['name']}] Railway deployment FAILED! "
-                f"Status: {rr['status']}, Son deploy: {rr['created_at']}"
+                f"🚨 [Railway] {rr['name']} — deployment {rr['status']} "
+                f"(son deploy: {rr['created_at']}, service_id: {rr['service_id']})"
             )
             all_issues.append(msg)
             logger.critical(f"  {msg}")
