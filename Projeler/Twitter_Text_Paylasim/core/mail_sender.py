@@ -166,7 +166,7 @@ def send_summary_mail(drafts: list[dict] | None = None) -> bool:
         ops.error("Gmail auth hatası", exception=e)
         return False
 
-    subject = f"X Draft'ları ({len(drafts)}) — {datetime.now().strftime('%d.%m.%Y')}"
+    subject = "X Postunuz hazır"
     html = _build_html(drafts)
 
     message = MIMEMultipart("alternative")
