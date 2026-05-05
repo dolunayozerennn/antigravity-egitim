@@ -117,3 +117,84 @@ def normalize_for_tts(text: str) -> str:
 
     text = _restore_brands(text, protected)
     return text
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 🪓 VOICEOVER KELİME KIRPMA (POST-PROCESS)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Audio tag pattern: [whispers], [pause], [delighted], [laughs softly] vb.
+_AUDIO_TAG_RE = re.compile(r"\[[^\]]+\]")
+# Cümle ayırıcı: . ! ? + opsiyonel boşluk
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _count_spoken_words(text: str) -> int:
+    """Audio tag'ler hariç konuşulan kelimeleri sayar."""
+    spoken = _AUDIO_TAG_RE.sub(" ", text)
+    return len([w for w in spoken.split() if w.strip()])
+
+
+def trim_voiceover_to_word_limit(
+    text: str,
+    max_words: int = 25,
+    min_words: int = 18,
+) -> tuple[str, int, int, int]:
+    """
+    Voiceover_text'i max kelime sayısına kırpar.
+
+    - Audio tag'ler ([whispers], [pause]) kelime sayılmaz, korunur.
+    - Cümle bütünlüğü için son cümleden geriye doğru cümle atar.
+    - min_words altına düşmemeye çalışır; düşerse zorla word-level kırpar.
+
+    Returns:
+        (trimmed_text, original_word_count, final_word_count, sentences_dropped)
+    """
+    if not text:
+        return text, 0, 0, 0
+
+    original_count = _count_spoken_words(text)
+
+    if original_count <= max_words:
+        return text, original_count, original_count, 0
+
+    # Cümlelere ayır (audio tag'leri ortada koruyor — sadece nokta/!/? ile böler)
+    sentences = _SENTENCE_SPLIT_RE.split(text.strip())
+    sentences = [s.strip() for s in sentences if s.strip()]
+
+    if not sentences:
+        return text, original_count, original_count, 0
+
+    # Son cümleden geriye atarak yeniden kur
+    dropped = 0
+    while len(sentences) > 1:
+        candidate = " ".join(sentences)
+        if _count_spoken_words(candidate) <= max_words:
+            break
+        sentences.pop()
+        dropped += 1
+
+    trimmed = " ".join(sentences)
+    final_count = _count_spoken_words(trimmed)
+
+    # Cümle kırpmasıyla hâlâ üzerindeyse veya min altına düştüyse word-level kırp
+    if final_count > max_words:
+        # Word-level: tag'leri koruyarak kelime kırp
+        tokens = re.findall(r"\[[^\]]+\]|\S+", trimmed)
+        out_tokens = []
+        word_count = 0
+        for tok in tokens:
+            if _AUDIO_TAG_RE.fullmatch(tok):
+                out_tokens.append(tok)
+            else:
+                if word_count >= max_words:
+                    break
+                out_tokens.append(tok)
+                word_count += 1
+        trimmed = " ".join(out_tokens).rstrip(",;:")
+        # Cümle sonu yoksa nokta ekle
+        if trimmed and trimmed[-1] not in ".!?":
+            trimmed += "."
+        final_count = _count_spoken_words(trimmed)
+
+    return trimmed, original_count, final_count, dropped

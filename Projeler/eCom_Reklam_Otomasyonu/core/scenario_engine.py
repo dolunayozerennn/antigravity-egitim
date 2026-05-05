@@ -567,11 +567,60 @@ class ScenarioEngine:
 
         log.info(f"Senaryo üretimi başlıyor: {brand} — {product} (Dynamic Producer)")
 
+        # ── 1. AŞAMA: LLM çağrısı (hata olursa fallback template) ──
         try:
             scenario = self.openai.chat_json(messages, temperature=0.8, max_tokens=3000)
         except Exception:
-            log.error("Senaryo üretimi hatası", exc_info=True)
-            raise
+            log.error(
+                "Senaryo üretimi LLM hatası — fallback template kullanılacak",
+                exc_info=True,
+            )
+            scenario = self._fallback_template_scenario(
+                collected_data, preferences, aspect_ratio_override
+            )
+
+        # ── 2. AŞAMA: Kalite validation + 1 kez corrective retry ──
+        issues = self._scenario_quality_issues(scenario)
+        if issues:
+            log.warning(
+                f"Senaryo kalite sorunları ({len(issues)}): {issues[:3]}{'...' if len(issues)>3 else ''} — retry"
+            )
+            try:
+                # LLM'e ilk çıktısını göster + neyin yanlış olduğunu söyle, baştan üret
+                import json as _j
+                first_dump = _j.dumps(scenario, ensure_ascii=False)
+                if len(first_dump) > 4000:
+                    first_dump = first_dump[:4000] + "..."
+                corrective = (
+                    "Önceki cevabında şu kalite sorunları var:\n"
+                    + "\n".join(f"- {iss}" for iss in issues)
+                    + "\n\nLütfen senaryoyu TAMAMEN BAŞTAN üret. Bu sefer KESİNLİKLE:\n"
+                    + "1) `narrative_hook` 1. tekil şahıs tek cümle, 8-20 kelime, somut bir AN/HİS.\n"
+                    + "2) Her sahnenin `voiceover_segment`'i 5-15 kelime, sahnede olanı anlatır.\n"
+                    + "3) Tüm sahnelerde `character_state` (before/after/transitional) dolu.\n"
+                    + "4) `voiceover_text` audio tag'ler hariç MAKSIMUM 25 kelime — 18-22 ideal.\n"
+                    + "5) Voiceover son cümlesi PAYOFF — kısaltma yapacaksan baştan kısa yaz, sondan kesilmesin.\n"
+                    + "6) Aynı JSON şeması, aynı format."
+                )
+                retry_messages = list(messages) + [
+                    {"role": "assistant", "content": first_dump},
+                    {"role": "user", "content": corrective},
+                ]
+                scenario_retry = self.openai.chat_json(
+                    retry_messages, temperature=0.7, max_tokens=3000
+                )
+                retry_issues = self._scenario_quality_issues(scenario_retry)
+                if len(retry_issues) < len(issues):
+                    log.info(
+                        f"✅ Retry kaliteyi artırdı: {len(issues)} → {len(retry_issues)} sorun"
+                    )
+                    scenario = scenario_retry
+                else:
+                    log.warning(
+                        f"⚠️ Retry kaliteyi artırmadı ({len(retry_issues)} sorun), ilk çıktı kullanılıyor"
+                    )
+            except Exception:
+                log.warning("Senaryo retry başarısız, ilk çıktı kullanılıyor", exc_info=True)
 
         # Dinamik parametreleri varsayılan değerlerle güvene al
         duration = scenario.get("duration", 10)
@@ -733,6 +782,181 @@ class ScenarioEngine:
         )
 
         return scenario
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🔍 KALİTE VALIDATION (retry tetikleyici)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    @staticmethod
+    def _scenario_quality_issues(scenario: dict) -> list[str]:
+        """Senaryo kalitesinde retry'i hak edecek somut sorunları çıkarır."""
+        issues: list[str] = []
+
+        # 1) narrative_hook
+        hook = (scenario.get("narrative_hook") or "").strip()
+        hook_words = len(hook.split()) if hook else 0
+        if not hook:
+            issues.append("narrative_hook boş — 1. tekil şahıs tek cümle, somut AN/HİS olmalı")
+        elif hook_words < 5:
+            issues.append(f"narrative_hook çok kısa ({hook_words} kelime, 8-20 ideal)")
+
+        # 2) Sahne ve voiceover_segment kontrolü
+        scenes = scenario.get("scenes") or []
+        if not scenes:
+            issues.append("scenes listesi boş")
+        else:
+            for idx, scene in enumerate(scenes, 1):
+                if not isinstance(scene, dict):
+                    issues.append(f"sahne {idx} obje değil")
+                    continue
+                if not (scene.get("video_prompt") or "").strip():
+                    issues.append(f"sahne {idx} video_prompt boş")
+                seg = (scene.get("voiceover_segment") or "").strip()
+                if not seg:
+                    issues.append(f"sahne {idx} voiceover_segment boş")
+                else:
+                    wc = len([w for w in seg.split() if w.strip()])
+                    if wc < 3:
+                        issues.append(f"sahne {idx} voiceover_segment çok kısa ({wc} kelime, 5-15 ideal)")
+                    elif wc > 18:
+                        issues.append(f"sahne {idx} voiceover_segment çok uzun ({wc} kelime, 5-15 ideal)")
+
+        # 3) voiceover_text 25 kelime sınırı (audio tag'ler hariç)
+        import re as _re
+        vo = scenario.get("voiceover_text") or ""
+        spoken = _re.sub(r"\[[^\]]+\]", " ", vo)
+        vo_words = len([w for w in spoken.split() if w.strip()])
+        if vo_words == 0:
+            issues.append("voiceover_text boş")
+        elif vo_words > 28:
+            issues.append(f"voiceover_text {vo_words} kelime (max 25 — son cümle kesilir)")
+
+        # 4) character_visual_prompt eksiklikleri
+        narrative_pattern = (scenario.get("narrative_pattern") or "").strip().lower()
+        if narrative_pattern in {"before_after", "transformation"}:
+            if not (scenario.get("character_visual_prompt_before") or "").strip():
+                issues.append("character_visual_prompt_before boş (before_after pattern için zorunlu)")
+            if not (scenario.get("character_visual_prompt_after") or "").strip():
+                issues.append("character_visual_prompt_after boş (before_after pattern için zorunlu)")
+        else:
+            if not (scenario.get("character_visual_prompt") or "").strip():
+                issues.append("character_visual_prompt boş — karakter portresi üretilemez")
+
+        return issues
+
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    # 🛟 FALLBACK TEMPLATE (LLM tamamen patladığında)
+    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    @staticmethod
+    def _fallback_template_scenario(
+        collected_data: dict,
+        preferences: dict | None,
+        aspect_ratio: str = FIXED_ASPECT_RATIO,
+    ) -> dict:
+        """LLM hata verirse yayında kalmak için minimal şablon senaryo.
+
+        Brief'in ürünsel özünü koruyup 3-sahne UGC reklam üretir. Kalite ideal değil
+        ama kullanıcı baştan başlamak zorunda kalmaz; bot çıkmaz sokağa girmez.
+        """
+        brand = (collected_data.get("brand_name") or "").strip() or "marka"
+        product = (collected_data.get("product_name") or "").strip() or "ürün"
+        prefs = preferences or {}
+        style_note = prefs.get("video_style") or "UGC samimi"
+
+        char_prompt = (
+            "Single late-20s Turkish woman, dark wavy shoulder-length hair, warm honey-brown eyes, "
+            "natural fresh skin with subtle imperfections, casual cream knit sweater, "
+            "head and shoulders three-quarter shot showing upper chest, plain neutral studio "
+            "background, soft frontal lighting, sharp focus on facial features, photorealistic, "
+            "candid neutral expression, no text, no watermark, no logos, 9:16 vertical"
+        )
+
+        intro_clip = (
+            "The EXACT same person from the reference image (do not generate a different person — "
+            "same face, hair, outfit, build): "
+        )
+        no_dialogue = (
+            "No character dialogue, no speaking, no lip movement. Enable ambient and "
+            "environmental sounds. NEGATIVE: no professional studio lighting, no smooth gimbal "
+            "movement, no color grading, no studio backdrop, no cinematic grade."
+        )
+
+        scenes = [
+            {
+                "scene_name": "Hook",
+                "video_prompt": (
+                    intro_clip
+                    + "UGC creator footage, vertical 9:16, handheld iPhone 15 Pro front camera. "
+                    + "Setting: cluttered home desk with afternoon window light. "
+                    + f"Action: hand enters frame from right holding {brand} {product} packaging, "
+                    + "slight wobble, camera tilts to follow. "
+                    + "Behavior detail: imperfect framing, real skin texture with visible pores, "
+                    + "phone sensor grain. "
+                    + no_dialogue
+                ),
+                "voiceover_segment": f"Tamam söylüyorum, {brand} {product}'u sonunda denedim.",
+                "character_state": "after",
+            },
+            {
+                "scene_name": "Build",
+                "video_prompt": (
+                    "Sudden jump cut from previous angle. " + intro_clip
+                    + "UGC creator footage, vertical 9:16, handheld iPhone 15 Pro back camera. "
+                    + "Setting: bathroom counter mirror, harsh overhead daylight. "
+                    + "Action: close-up of hand using the product, single press or drop motion, "
+                    + "slight motion blur. "
+                    + "Behavior detail: real skin texture, phone sensor grain. "
+                    + no_dialogue
+                ),
+                "voiceover_segment": "[pause] kullanırken farkı cidden hissettim, beklemiyordum.",
+                "character_state": "after",
+            },
+            {
+                "scene_name": "Payoff",
+                "video_prompt": (
+                    "Sudden jump cut. " + intro_clip
+                    + "UGC creator footage, vertical 9:16, iPhone 15 Pro front camera selfie angle. "
+                    + f"Setting: same bathroom, holding the {brand} {product} close to camera. "
+                    + "Action: content subtle smile, product visible in frame near face. "
+                    + "Behavior detail: real skin texture, phone sensor grain, candid. "
+                    + no_dialogue
+                ),
+                "voiceover_segment": f"[delighted] artık {product}'suz olmuyor abi.",
+                "character_state": "after",
+            },
+        ]
+
+        voiceover_text = (
+            f"[laughs softly] Tamam söylüyorum, {brand} {product}'u sonunda denedim. "
+            f"[pause] Kullanırken farkı cidden hissettim, beklemiyordum. "
+            f"[delighted] Artık {product}'suz olmuyor abi."
+        )
+
+        log.warning(
+            f"🛟 Fallback template senaryo üretildi: {brand} — {product} (style={style_note})"
+        )
+
+        return {
+            "narrative_hook": (
+                f"{brand} {product}'u denedim, beklediğimden çok daha iyi çıktı."
+            ),
+            "title": f"{brand} {product} — UGC Reklam",
+            "summary": f"{product} kullanım anı, samimi UGC tonunda 3 sahnelik mini reklam.",
+            "hook_pattern": "Sürpriz reveal",
+            "narrative_pattern": "linear",
+            "voice_name": "Ahu",
+            "character_gender": "kadın",
+            "scene_count": 3,
+            "duration": 15,
+            "character_visual_prompt": char_prompt,
+            "scenes": scenes,
+            "voiceover_text": voiceover_text,
+            "technical_notes": (
+                "Fallback template — LLM hata verdiğinde kullanıldı. Aspect ratio: "
+                + aspect_ratio
+            ),
+        }
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # 💰 MALİYET HESAPLAMA

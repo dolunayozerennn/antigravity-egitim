@@ -142,35 +142,47 @@ async def _cleanup_idle_sessions(app=None):
             import time as _time
             now = _time.time()
             to_delete = []
-            with conversation_mgr._lock:
-                for uid, session in conversation_mgr.sessions.items():
-                    if not hasattr(session, '_last_activity'):
-                        continue
-                    idle_seconds = now - session._last_activity
-                    state_name = session.state.name
+            # Snapshot iteration: asyncio single-threaded olsa da, gelecek bir await
+            # eklenirse iteration sırasında dict mutate olmasın diye list() ile dondur.
+            for uid, session in list(conversation_mgr.sessions.items()):
+                if not hasattr(session, '_last_activity'):
+                    continue
+                idle_seconds = now - session._last_activity
+                state_name = session.state.name
 
-                    # PRODUCING ve RESEARCHING/URL_PROCESSING korunur
-                    if state_name in ("PRODUCING", "RESEARCHING", "URL_PROCESSING"):
-                        if idle_seconds > 7200:
-                            to_delete.append(uid)
-                        continue
-
-                    # IDLE/DELIVERED → 10 dakika sonra temizle
-                    if state_name in ("IDLE", "DELIVERED") and idle_seconds > 600:
+                # PRODUCING ve RESEARCHING/URL_PROCESSING korunur
+                if state_name in ("PRODUCING", "RESEARCHING", "URL_PROCESSING"):
+                    if idle_seconds > 7200:
                         to_delete.append(uid)
-                    # Brief akışı / Scenario approval → 30 dakika sonra temizle
-                    elif state_name in (
-                        "SCENARIO_APPROVAL",
-                        "ASKING_FORMAT",
-                        "ASKING_STYLE",
-                        "WAITING_STYLE_TEXT",
-                        "ASKING_CUSTOM_NOTE",
-                        "WAITING_CUSTOM_NOTE_TEXT",
-                    ) and idle_seconds > 1800:
-                        to_delete.append(uid)
+                    continue
 
-                for uid in to_delete:
-                    del conversation_mgr.sessions[uid]
+                # IDLE/DELIVERED → 10 dakika sonra temizle
+                if state_name in ("IDLE", "DELIVERED") and idle_seconds > 600:
+                    to_delete.append(uid)
+                # Brief akışı / Scenario approval → 30 dakika sonra temizle
+                elif state_name in (
+                    "SCENARIO_APPROVAL",
+                    "ASKING_FORMAT",
+                    "ASKING_STYLE",
+                    "WAITING_STYLE_TEXT",
+                    "ASKING_CUSTOM_NOTE",
+                    "WAITING_CUSTOM_NOTE_TEXT",
+                ) and idle_seconds > 1800:
+                    to_delete.append(uid)
+
+            # Silmeden önce final state check — arada PRODUCING'a geçtiyse koru
+            for uid in to_delete:
+                sess = conversation_mgr.sessions.get(uid)
+                if sess is None:
+                    continue
+                if sess.state.name in ("PRODUCING", "RESEARCHING", "URL_PROCESSING"):
+                    log.info(f"Session {uid} silmesi iptal edildi (state={sess.state.name})")
+                    continue
+                # Üretim task'ı hâlâ aktifse koru
+                if sess.production_task is not None and not sess.production_task.done():
+                    log.info(f"Session {uid} silmesi iptal (aktif production_task)")
+                    continue
+                del conversation_mgr.sessions[uid]
             if to_delete:
                 log.info(f"Session temizliği: {len(to_delete)} session kaldırıldı, "
                          f"kalan: {len(conversation_mgr.sessions)}")
@@ -495,13 +507,37 @@ async def _process_url_and_scenario(message, user_id: int, url: str):
     except Exception as e:
         log.error(f"URL işleme/senaryo hatası: {e}", exc_info=True)
         session.state = ConversationState.IDLE
-        
-        error_reply = (
-            f"⚠️ Ürün bilgisi çıkarılamadı veya senaryo üretilemedi.\n\n"
-            f"Hata detayı: {str(e)[:200]}\n\n"
-            f"Lütfen bağlantıyı kontrol et ve tekrar dene."
-        )
-        await message.reply_text(error_reply, parse_mode=None)
+
+        err_lower = str(e).lower()
+        # Hata tipine göre aksiyon-odaklı mesaj
+        if "url" in err_lower and ("hiçbir veri" in err_lower or "extract" in err_lower):
+            error_reply = (
+                "🔗 Bu sayfadan ürün bilgisi okuyamadım.\n\n"
+                "Olası sebepler:\n"
+                "• Sayfa JavaScript ile dinamik yükleniyor (scraper göremedi)\n"
+                "• Link bir kategori/ana sayfa, doğrudan ürün sayfası değil\n"
+                "• Site bot trafiğini engelliyor\n\n"
+                "💡 **Çözüm:** Ürünün tek-ürün detay sayfasının linkini gönder "
+                "(örn. `marka.com/urun/X` gibi, `marka.com/kategori` değil)."
+            )
+        elif "timeout" in err_lower or "timed out" in err_lower:
+            error_reply = (
+                "⏱️ Sayfa yanıt vermedi (timeout).\n\n"
+                "Site yavaş ya da bot engeli olabilir. Bir kaç dakika sonra tekrar dener misin? "
+                "Yine olmazsa farklı bir ürün linkiyle devam edelim."
+            )
+        elif "image" in err_lower and "format" in err_lower:
+            error_reply = (
+                "🖼️ Sayfadaki ürün görselleri desteklenmiyor (muhtemelen SVG/AVIF).\n\n"
+                "Aynı ürünün başka bir sayfasını veya farklı bir ürün linkini dener misin?"
+            )
+        else:
+            error_reply = (
+                f"⚠️ Ürün bilgisi çıkarılamadı.\n\n"
+                f"Detay: {str(e)[:160]}\n\n"
+                f"Linki kontrol edip tekrar dene, ya da başka bir ürün linki gönder."
+            )
+        await message.reply_text(error_reply, parse_mode="Markdown")
         await chat_tracker.log_interaction(str(user_id), "[Sistem - Fallback URL Hatası]", error_reply)
 
 
