@@ -804,7 +804,13 @@ class ScenarioEngine:
         scenes = scenario.get("scenes") or []
         if not scenes:
             issues.append("scenes listesi boş")
-        else:
+        elif len(scenes) < 4:
+            # Ses uzun çıkarsa video genişletme için minimum 4 sahne lazım
+            issues.append(
+                f"sadece {len(scenes)} sahne var — minimum 4-5 sahne yaz "
+                f"(ses uzunsa video uzatma için gerekli)"
+            )
+        if scenes:
             for idx, scene in enumerate(scenes, 1):
                 if not isinstance(scene, dict):
                     issues.append(f"sahne {idx} obje değil")
