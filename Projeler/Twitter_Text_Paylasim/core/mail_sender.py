@@ -10,7 +10,10 @@ Receiver: ozerendolunay@gmail.com (kendine)
 
 import os
 import sys
+import json
+import hmac
 import base64
+import hashlib
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -19,6 +22,23 @@ import requests
 
 from ops_logger import get_ops_logger
 from config import settings
+
+
+APPROVAL_BASE_URL = os.environ.get("APPROVAL_BASE_URL", "").rstrip("/")
+APPROVAL_SECRET = os.environ.get("APPROVAL_SECRET", "")
+
+
+def _make_approval_url(draft_id: str, row_id: str, title: str) -> str:
+    if not (APPROVAL_BASE_URL and APPROVAL_SECRET and draft_id and row_id):
+        return ""
+    payload = {"d": str(draft_id), "r": row_id, "title": title[:80]}
+    payload_b64 = base64.urlsafe_b64encode(
+        json.dumps(payload, ensure_ascii=False).encode()
+    ).decode().rstrip("=")
+    sig = hmac.new(
+        APPROVAL_SECRET.encode(), payload_b64.encode(), hashlib.sha256
+    ).hexdigest()
+    return f"{APPROVAL_BASE_URL}/approve?t={payload_b64}.{sig}"
 
 ops = get_ops_logger("Twitter_Text_Paylasim", "MailSender")
 
@@ -81,9 +101,11 @@ def _fetch_today_drafts() -> list[dict]:
         source = (props.get("Source", {}).get("select") or {}).get("name") or "?"
         draft_url = props.get("Typefully Draft URL", {}).get("url") or ""
         tweet_text = "".join(t.get("plain_text", "") for t in props.get("Tweet Text", {}).get("rich_text", []))
+        draft_id = "".join(t.get("plain_text", "") for t in props.get("Typefully Draft ID", {}).get("rich_text", []))
         drafts.append({
             "title": title, "score": score, "source": source,
             "draft_url": draft_url, "tweet_text": tweet_text,
+            "draft_id": draft_id, "row_id": row.get("id", ""),
         })
     return drafts
 
@@ -94,6 +116,10 @@ def _build_html(drafts: list[dict]) -> str:
         emoji = SOURCE_EMOJI.get(d["source"], "📝")
         link = d["draft_url"] or "https://typefully.com/"
         preview = (d["tweet_text"][:160] + "…") if len(d["tweet_text"]) > 160 else d["tweet_text"]
+        approve_url = _make_approval_url(d.get("draft_id", ""), d.get("row_id", ""), d["title"])
+        approve_btn = ""
+        if approve_url:
+            approve_btn = f"""<a href="{approve_url}" style="display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600;margin-left:8px;">✓ Onayla ve yayına al</a>"""
         rows.append(f"""
 <tr>
   <td style="padding:14px 0;border-bottom:1px solid #eee;">
@@ -101,6 +127,7 @@ def _build_html(drafts: list[dict]) -> str:
     <div style="font-size:16px;font-weight:600;margin:6px 0;color:#111;">{d['title']}</div>
     <div style="font-size:14px;color:#444;line-height:1.5;margin-bottom:10px;">{preview}</div>
     <a href="{link}" style="display:inline-block;background:#1da1f2;color:#fff;text-decoration:none;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600;">Typefully'de Aç →</a>
+    {approve_btn}
   </td>
 </tr>""")
 

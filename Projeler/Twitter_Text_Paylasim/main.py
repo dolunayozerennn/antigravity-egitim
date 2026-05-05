@@ -59,6 +59,7 @@ def _push_or_skip(notion: NotionLogger, publisher: TypefullyDraftPublisher,
                 tweet_text=thread[0] if thread else "",
                 thread_tweets=thread,
                 draft_url=tdraft.get("share_url", ""),
+                draft_id=tdraft.get("draft_id", ""),
                 title=f"{source} thread (skor {score})",
             )
             # Her standalone tweet ayrı draft
@@ -69,6 +70,7 @@ def _push_or_skip(notion: NotionLogger, publisher: TypefullyDraftPublisher,
                 notion.log_draft(
                     source=source, source_url=source_url, score=score,
                     tweet_text=st, draft_url=sdraft.get("share_url", ""),
+                    draft_id=sdraft.get("draft_id", ""),
                     title=f"{source} standalone (skor {score})",
                 )
             ops.success(f"{source}: 1 thread + {len(standalones)} standalone draft oluşturuldu")
@@ -81,6 +83,7 @@ def _push_or_skip(notion: NotionLogger, publisher: TypefullyDraftPublisher,
             notion.log_draft(
                 source=source, source_url=source_url, score=score,
                 tweet_text=tweet, draft_url=draft.get("share_url", ""),
+                draft_id=draft.get("draft_id", ""),
                 title=f"{source} (skor {score})",
             )
             ops.success(f"{source}: draft oluşturuldu (skor {score})")
@@ -185,6 +188,7 @@ def run_ai_use_case_job():
             notion.log_draft(source="AI Use Case", source_url="", score=score,
                              tweet_text=thread[0], thread_tweets=thread,
                              draft_url=draft.get("share_url", ""),
+                             draft_id=draft.get("draft_id", ""),
                              title=title, image_url=image_url)
             ops.success(f"AI Use Case thread draft ({len(thread)} tweet, skor {score})")
         else:
@@ -195,6 +199,7 @@ def run_ai_use_case_job():
                 draft = publisher.create_single_draft(tweet)
             notion.log_draft(source="AI Use Case", source_url="", score=score,
                              tweet_text=tweet, draft_url=draft.get("share_url", ""),
+                             draft_id=draft.get("draft_id", ""),
                              title=title, image_url=image_url)
             ops.success(f"AI Use Case draft (skor {score})")
     except TypefullyDraftError as e:

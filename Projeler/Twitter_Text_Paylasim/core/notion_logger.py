@@ -121,7 +121,8 @@ class NotionLogger:
 
     def log_draft(self, source: str, source_url: str, score: int,
                   tweet_text: str = "", thread_tweets: list = None,
-                  draft_url: str = "", title: str = "", image_url: str = ""):
+                  draft_url: str = "", title: str = "", image_url: str = "",
+                  draft_id: str = ""):
         """Draft olarak Typefully'ye gönderilmiş içeriği logla."""
         title = (title or tweet_text[:60] or f"{source} draft")[:200]
         thread_str = "\n\n---\n\n".join(thread_tweets) if thread_tweets else ""
@@ -134,6 +135,7 @@ class NotionLogger:
             "Thread": {"rich_text": [{"text": {"content": thread_str[:1990]}}]},
             "Source URL": {"url": source_url or None},
             "Typefully Draft URL": {"url": draft_url or None},
+            "Typefully Draft ID": {"rich_text": [{"text": {"content": str(draft_id)[:200]}}]} if draft_id else {"rich_text": []},
             "Date": {"date": {"start": datetime.now(timezone.utc).isoformat()}},
         }
         if image_url:

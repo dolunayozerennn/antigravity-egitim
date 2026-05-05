@@ -179,3 +179,6 @@ Projeler/Whatsapp_Onboarding/utils/phone.js
 **/mcp_files.json
 **/samples.json
 **/schema.json
+
+# Standalone repo — has its own GitHub repo + Railway service
+Projeler/Twitter_Onay_Api/
