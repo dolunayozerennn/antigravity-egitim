@@ -729,16 +729,14 @@ async def _run_production(message, user_id: int):
         await message.reply_text("⚠️ Senaryo bulunamadı. /start ile tekrar başla.")
         return
 
-    # Progress mesajlarına da iptal butonu eklemek için yardımcı keyboard
-    cancel_kb = InlineKeyboardMarkup([[InlineKeyboardButton("❌ İptal", callback_data="prod:cancel")]])
-
+    # İptal butonu sadece üretim başlangıç mesajında bir kez gösteriliyor (yukarıda).
+    # Progress mesajları sade — her mesajda buton spam'ı yok.
     async def progress_callback(step: str, msg: str):
         try:
-            await message.reply_text(msg, parse_mode="Markdown", reply_markup=cancel_kb)
+            await message.reply_text(msg, parse_mode="Markdown")
         except Exception:
-            # Markdown parse hatası — düz metin ile tekrar dene
             try:
-                await message.reply_text(msg, parse_mode=None, reply_markup=cancel_kb)
+                await message.reply_text(msg, parse_mode=None)
             except Exception:
                 log.error(f"Progress bildirim hatası: {step}", exc_info=True)
 

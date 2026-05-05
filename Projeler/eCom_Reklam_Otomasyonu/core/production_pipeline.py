@@ -472,28 +472,107 @@ class ProductionPipeline:
                     f"ürün görseli referans olarak kullanılacak"
                 )
 
-            # ── DİNAMİK SCENE_COUNT (sync için kritik) ──
-            # WHY: Voiceover süresi ölçüldükten sonra sahne sayısını dinamik hesaplıyoruz.
-            # Her sahne 5s → toplam video = N × 5s. Min 3 sahne (15s), max 5 sahne (25s)
-            # garanti. Voiceover 35-kelime sınırına uyduysa ses ≤ 14s → 3 sahne yeterli.
-            # Ses uzun çıkarsa 4-5 sahneye genişler. LLM 5 sahne planladı; biz ilk N'i alırız.
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            # SES-VIDEO SYNC: Kompres-Retry → Genişletme
+            # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            # WHY: Tarihi sorun — ses video'dan uzun çıkıyor, bitemiyor, kesiliyor.
+            # İki katmanlı çözüm:
+            #   1) Ses LLM'in planladığı süreden uzunsa → metni LLM'e sıkıştırt,
+            #      yeni TTS üret, yeni süreyi ölç (PAYOFF cümlesi korunur).
+            #   2) Sıkıştırma sonrası HÂLÂ uzunsa → video'yu uzat (son sahneyi
+            #      tekrarla), ses bitene kadar görsel kalır.
             import math
             scenes_list_raw = scenario.get("scenes") or []
             llm_scene_count = len(scenes_list_raw)
 
-            if audio_duration > 0:
-                # ceil(ses/5) sahne yeter; tampon için en az 3 sahne (15s)
-                ideal_scene_count = max(3, math.ceil(audio_duration / 5))
-                # LLM'in planladığı sahnelerle sınırla (yoksa dolduramayız)
-                final_scene_count = min(ideal_scene_count, max(1, llm_scene_count))
-                # Min 1
-                final_scene_count = max(1, final_scene_count)
-                duration = final_scene_count * 5
-                log.info(
-                    f"Dinamik sahne sayısı: {final_scene_count} "
-                    f"(ses {audio_duration:.1f}s, ideal {ideal_scene_count}, "
-                    f"LLM planı {llm_scene_count}) → toplam video {duration}s"
+            llm_target_duration = max(1, llm_scene_count) * 5  # LLM'in planladığı video süresi
+            SYNC_TOLERANCE = 1.5  # ses video+1.5s'i aşarsa müdahale
+
+            if (
+                voiceover_succeeded
+                and audio_duration > 0
+                and llm_scene_count >= 1
+                and audio_duration > llm_target_duration + SYNC_TOLERANCE
+                and voiceover_text
+            ):
+                # 1. KATMAN: Metni hedef kelime sayısına sıkıştırt
+                # Türkçe ~2.5 wps → hedef kelime = target_duration * 2.5 - 2 tampon
+                target_words = max(8, int(llm_target_duration * 2.5) - 2)
+                log.warning(
+                    f"⚠️ Ses uzun: {audio_duration:.1f}s > video {llm_target_duration}s "
+                    f"(+{SYNC_TOLERANCE}s tolerans) — metni {target_words} kelimeye sıkıştırıp "
+                    f"tekrar üreteceğim"
                 )
+                if progress_callback:
+                    await progress_callback(
+                        "voiceover_resync",
+                        f"🎚️ Ses video'dan uzun çıktı ({audio_duration:.0f}s) — metni "
+                        f"sıkıştırıp tekrar sentezliyorum..."
+                    )
+                try:
+                    compressed_text = await self._compress_voiceover(
+                        voiceover_text, target_words=target_words
+                    )
+                    if compressed_text and compressed_text.strip() != voiceover_text.strip():
+                        log.info(
+                            f"Voiceover sıkıştırıldı: '{voiceover_text[:80]}...' → "
+                            f"'{compressed_text[:80]}...'"
+                        )
+                        # Yeni TTS + yeni upload + yeni ölçüm
+                        new_bytes = await asyncio.to_thread(
+                            self.elevenlabs.generate_speech,
+                            text=compressed_text,
+                            voice_name=voice_name,
+                        )
+                        from services.elevenlabs_service import ElevenLabsService as _EL
+                        new_duration = _EL.measure_audio_duration(new_bytes)
+                        log.info(
+                            f"Sıkıştırılmış ses süresi: {new_duration:.2f}s "
+                            f"(önceki: {audio_duration:.2f}s)"
+                        )
+                        if new_duration > 0 and new_duration < audio_duration:
+                            new_url = await self.replicate.async_upload_audio(new_bytes)
+                            voiceover_text = compressed_text
+                            audio_duration = new_duration
+                            audio_url = new_url
+                            scenario["voiceover_text"] = compressed_text
+                            result["audio_url"] = audio_url
+                            log.info(
+                                f"✅ Ses-video sync: yeni ses {audio_duration:.1f}s, "
+                                f"hedef {llm_target_duration}s"
+                            )
+                        else:
+                            log.warning(
+                                "Sıkıştırılmış ses kısalmadı, eski ses kullanılıyor — "
+                                "video genişletme katmanına devredilecek"
+                            )
+                    else:
+                        log.warning("Ses sıkıştırma başarısız (LLM aynı/boş döndü)")
+                except Exception:
+                    log.warning("Ses sıkıştırma katmanı başarısız", exc_info=True)
+
+            # ── DİNAMİK SCENE_COUNT (sync için kritik) ──
+            # WHY: Sıkıştırma sonrası ses süresine göre sahne sayısını yeniden hesapla.
+            # 2. KATMAN: Ses hâlâ LLM planından uzunsa → son sahneyi tekrarlayarak
+            # video'yu sese kadar uzat. Bu sayede ses kesilmez, görsel ses bitene
+            # kadar PAYOFF anında kalır.
+            if audio_duration > 0:
+                ideal_scene_count = max(3, math.ceil(audio_duration / 5))
+                final_scene_count = max(1, ideal_scene_count)
+                duration = final_scene_count * 5
+                if final_scene_count > llm_scene_count and llm_scene_count >= 1:
+                    log.warning(
+                        f"📐 Video genişletme: ses {audio_duration:.1f}s, "
+                        f"LLM {llm_scene_count} sahne planladı → {final_scene_count} sahneye "
+                        f"çıkarılıyor (son sahne {final_scene_count - llm_scene_count} kez "
+                        f"daha render edilecek)"
+                    )
+                else:
+                    log.info(
+                        f"Dinamik sahne sayısı: {final_scene_count} "
+                        f"(ses {audio_duration:.1f}s, ideal {ideal_scene_count}, "
+                        f"LLM planı {llm_scene_count}) → toplam video {duration}s"
+                    )
             else:
                 # Ses yok/ölçülemedi — LLM'in planladığı sayıyı kullan ama 5 ile sınırla
                 final_scene_count = max(1, min(llm_scene_count, 5)) if llm_scene_count else 3
@@ -503,18 +582,26 @@ class ProductionPipeline:
                     f"(LLM planı {llm_scene_count}) → toplam video {duration}s"
                 )
 
-            # İlk N sahneyi al (kalan sahneler render edilmeyecek)
-            if scenes_list_raw and final_scene_count < llm_scene_count:
-                scenario["scenes"] = scenes_list_raw[:final_scene_count]
-                log.info(
-                    f"LLM {llm_scene_count} sahne planladı, ilk {final_scene_count}'i kullanılacak "
-                    f"(geri kalanı render edilmedi → tasarruf)"
-                )
-            elif scenes_list_raw:
-                scenario["scenes"] = scenes_list_raw[:final_scene_count]
+            # Sahne listesini final_scene_count'a uydur:
+            # - Daha az gerekiyorsa: ilk N sahne render edilir
+            # - Daha fazla gerekiyorsa: render listesi LLM planında kalır, ekstra
+            #   tekrarlar concat aşamasında son URL'in duplicate'i ile yapılır
+            #   (tek render maliyeti, görsel tutarlılık).
+            extra_payoff_repeats = 0
+            if scenes_list_raw:
+                if final_scene_count <= llm_scene_count:
+                    scenario["scenes"] = scenes_list_raw[:final_scene_count]
+                else:
+                    extra_payoff_repeats = final_scene_count - llm_scene_count
+                    scenario["scenes"] = list(scenes_list_raw)  # orijinal LLM planı
+                    log.info(
+                        f"Render planı: {llm_scene_count} sahne; concat sırasında son sahne "
+                        f"{extra_payoff_repeats} kez tekrarlanacak (toplam {final_scene_count} segment)"
+                    )
 
             scenario["scene_count"] = final_scene_count
             scenario["is_multi_scene"] = final_scene_count > 1
+            scenario["_extra_payoff_repeats"] = extra_payoff_repeats
 
             # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             # ADIM 1: VIDEO ÜRETİMİ
@@ -795,6 +882,66 @@ class ProductionPipeline:
             return None
 
     @staticmethod
+    async def _compress_voiceover(original_text: str, target_words: int) -> str:
+        """Voiceover metnini hedef kelime sayısına sıkıştır.
+
+        WHY: Ses video'dan uzun çıktığında, dumb-trim son cümleyi (PAYOFF) keser.
+        Burada LLM'e "anlamı koru, son cümleyi koru, audio tag'ler hariç X kelime"
+        diyerek akıllı sıkıştırma yaptırıyoruz.
+
+        Args:
+            original_text: Orijinal voiceover (audio tag'ler dahil)
+            target_words: Hedef kelime sayısı (audio tag'ler hariç)
+
+        Returns:
+            str: Sıkıştırılmış metin, ya da boş string (başarısızsa)
+        """
+        import openai
+        import os
+        try:
+            client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
+            response = await asyncio.to_thread(
+                client.chat.completions.create,
+                model="gpt-4.1-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "Sen bir Türkçe reklam metni editörüsün. Verilen voiceover "
+                            "metnini hedef kelime sayısına SIKIŞTIRACAKSIN. KURALLAR:\n"
+                            "1. SON CÜMLE (PAYOFF) MUTLAKA KORUNUR — kısaltabilirsin ama atlama.\n"
+                            "2. Hedef kelime sayısı: audio tag'ler ([whispers], [pause], "
+                            "[delighted] vb.) HARİÇ konuşulan Türkçe kelimeler.\n"
+                            "3. 1. tekil şahıs ton korunur (ben/benim/-yorum).\n"
+                            "4. Audio tag'ler korunur ama gerekiyorsa azaltılabilir.\n"
+                            "5. Anlam ve hikaye akışı bozulmaz.\n"
+                            "6. SADECE sıkıştırılmış metni döndür, açıklama yazma."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Hedef kelime sayısı (audio tag'ler hariç): {target_words}\n\n"
+                            f"Orijinal metin:\n{original_text}\n\n"
+                            f"Sıkıştırılmış metin:"
+                        ),
+                    },
+                ],
+                max_completion_tokens=400,
+            )
+            compressed = (response.choices[0].message.content or "").strip()
+            if compressed.startswith("```"):
+                lines = [ln for ln in compressed.split("\n") if not ln.startswith("```")]
+                compressed = "\n".join(lines).strip()
+            return compressed
+        except Exception as e:
+            from logger import get_logger
+            get_logger("production_pipeline").error(
+                f"Voiceover sıkıştırma hatası: {e}", exc_info=True
+            )
+            return ""
+
+    @staticmethod
     async def _rewrite_prompt_for_safety(original_prompt: str) -> str:
         """
         Safety filter'a takılan prompt'u daha güvenli hale yeniden yazar.
@@ -860,14 +1007,18 @@ class ProductionPipeline:
         if not scenes:
             raise RuntimeError("Multi-scene senaryo 'scenes' listesi boş")
 
-        scene_count = len(scenes)
-        per_scene_duration = max(5, duration // scene_count)  # Minimum 5 saniye/sahne
-        # WHY: gerçek üretilen toplam süre — cost calculation için scenario_engine ile aynı formül
-        actual_total_duration = per_scene_duration * scene_count
-        if actual_total_duration != duration:
+        # Seedance design: her sahne 5s sabit. Render edilen sahne sayısı LLM planından
+        # gelir; ses uzunsa _extra_payoff_repeats kadar son sahne URL'i duplicate edilir.
+        extra_payoff_repeats = int(scenario.get("_extra_payoff_repeats", 0) or 0)
+        render_scene_count = len(scenes)
+        total_segment_count = render_scene_count + extra_payoff_repeats
+        per_scene_duration = 5  # sabit
+        scene_count = render_scene_count  # geriye dönük log uyumu
+        if extra_payoff_repeats > 0:
             log.info(
-                f"Multi-scene gerçek süre: {actual_total_duration}s "
-                f"(senaryo {duration}s, {scene_count} × {per_scene_duration}s)"
+                f"Multi-scene plan: {render_scene_count} sahne render + "
+                f"{extra_payoff_repeats} payoff tekrar = {total_segment_count} segment "
+                f"({total_segment_count * per_scene_duration}s toplam video)"
             )
 
         if progress_callback:
@@ -1028,13 +1179,24 @@ class ProductionPipeline:
                     f"{actual_count} sahneye düştü ({actual_count * per_scene_duration}s)"
                 )
 
-        log.info(f"{len(scene_video_urls)} sahne hazır, concat başlıyor")
+        # ── PAYOFF EXTENSION: ses video'dan uzunsa son URL'i tekrarla ──
+        # WHY: Tek render maliyetiyle videoyu uzatır + görsel tutarlılık (aynı kare).
+        if extra_payoff_repeats > 0 and scene_video_urls:
+            last_url = scene_video_urls[-1]
+            for _ in range(extra_payoff_repeats):
+                scene_video_urls.append(last_url)
+            log.info(
+                f"Payoff extension: son sahne URL'i {extra_payoff_repeats} kez "
+                f"daha eklendi → toplam {len(scene_video_urls)} segment"
+            )
+
+        log.info(f"{len(scene_video_urls)} segment hazır, concat başlıyor")
 
         # ── VIDEO CONCAT ──
         if progress_callback:
             await progress_callback(
                 "step_1b",
-                f"🔗 {scene_count} sahne birleştiriliyor..."
+                f"🔗 {len(scene_video_urls)} sahne birleştiriliyor..."
             )
 
         concat_url = await self.replicate.async_concat_videos(list(scene_video_urls))
