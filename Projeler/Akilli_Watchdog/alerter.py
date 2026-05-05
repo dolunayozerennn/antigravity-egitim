@@ -92,6 +92,10 @@ def build_html_report(
         r.get("overall_status") == "CRITICAL" or not r.get("healthy", True)
         for r in sheets_results + notion_results + llm_results
     )
+    if railway_results and any(not rr.get("healthy", True) for rr in railway_results):
+        has_critical = True
+    if token_results and any(tr.get("status") == "CRITICAL" for tr in token_results):
+        has_critical = True
     has_warning = any(
         r.get("overall_status") == "WARNING"
         for r in llm_results
